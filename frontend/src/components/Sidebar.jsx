@@ -25,6 +25,9 @@ export default function Sidebar() {
         <NavLink to="/feedback" className="block p-2 rounded-lg hover:bg-[#1ED292]">
           Employee Feedback
         </NavLink>
+        <NavLink to="/hiring" className="block p-2 rounded-lg hover:bg-[#1ED292]">
+          Hiring Management
+        </NavLink>
       </nav>
     </div>
   );

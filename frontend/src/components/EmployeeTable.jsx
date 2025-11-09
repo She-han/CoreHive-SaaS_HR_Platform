@@ -1,22 +1,32 @@
-import { FaEdit, FaTrash } from "react-icons/fa"; //Imports Font icons (edit 🖊️ and trash 🗑️) 
-import { useState , useEffect } from "react";
+import { FaEdit, FaTrash } from "react-icons/fa";
+import { useState, useEffect } from "react";
 import axios from "axios";
+import EmployeeModal from "./EmployeeModal"; // ✅ import modal
 
 export default function EmployeeTable({ search, filterBy }) {
-   const [employees, setEmployees] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-   useEffect(() => {
-    axios.get("http://localhost:8080/api/employees")
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/employees")
       .then((res) => setEmployees(res.data))
       .catch(console.error);
   }, []);
 
-//   const filteredEmployees = employees.filter((emp) =>
-//     emp[filterBy].toLowerCase().includes(search.toLowerCase())
-//   );
+  const handleRowClick = (employee) => {
+    setSelectedEmployee(employee);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedEmployee(null);
+  };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto relative">
       <table className="w-full text-left border-collapse">
         <thead className="bg-[#F1FDF9] text-[#0C397A]">
           <tr>
@@ -33,7 +43,8 @@ export default function EmployeeTable({ search, filterBy }) {
           {employees.map((emp) => (
             <tr
               key={emp.id}
-              className="border-b hover:bg-[#F1FDF9] transition"
+              className="border-b hover:bg-[#F1FDF9] transition cursor-pointer"
+              onClick={() => handleRowClick(emp)}
             >
               <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
               <td className="p-3">{emp.firstName} {emp.lastName}</td>
@@ -51,7 +62,10 @@ export default function EmployeeTable({ search, filterBy }) {
                   {emp.isActive ? "Active" : "Inactive"}
                 </span>
               </td>
-              <td className="p-3 flex justify-center gap-4">
+              <td
+                className="p-3 flex justify-center gap-4"
+                onClick={(e) => e.stopPropagation()} // Prevent row click when clicking icons
+              >
                 <button className="text-[#05668D] hover:text-[#02C39A]">
                   <FaEdit />
                 </button>
@@ -63,6 +77,13 @@ export default function EmployeeTable({ search, filterBy }) {
           ))}
         </tbody>
       </table>
+
+      {/* ✅ Include Modal Component */}
+      <EmployeeModal
+        employee={selectedEmployee}
+        isOpen={isModalOpen}
+        onClose={closeModal}
+      />
     </div>
   );
 }

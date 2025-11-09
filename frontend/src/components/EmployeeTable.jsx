@@ -1,16 +1,19 @@
 import { FaEdit, FaTrash } from "react-icons/fa"; //Imports Font icons (edit 🖊️ and trash 🗑️) 
-import { useState } from "react";
+import { useState , useEffect } from "react";
+import axios from "axios";
 
 export default function EmployeeTable({ search, filterBy }) {
-  const [employees] = useState([
-    { id: 1, employeeCode: "EMP001", name: "John Doe", designation: "HR Officer", department: "HR", phone: "(+94)77 123 4567", isActive: true },
-    { id: 2, employeeCode: "EMP002", name: "Jane Smith", designation: "Software Engineer", department: "IT", phone: "(+94)77 987 6543", isActive: false },
-    { id: 3, employeeCode: "EMP003", name: "Michael Brown", designation: "Project Manager", department: "IT", phone: "(+94)71 234 5678", isActive: true },
-  ]);
+   const [employees, setEmployees] = useState([]);
 
-  const filteredEmployees = employees.filter((emp) =>
-    emp[filterBy].toLowerCase().includes(search.toLowerCase())
-  );
+   useEffect(() => {
+    axios.get("http://localhost:8080/api/employees")
+      .then((res) => setEmployees(res.data))
+      .catch(console.error);
+  }, []);
+
+//   const filteredEmployees = employees.filter((emp) =>
+//     emp[filterBy].toLowerCase().includes(search.toLowerCase())
+//   );
 
   return (
     <div className="overflow-x-auto">
@@ -27,13 +30,13 @@ export default function EmployeeTable({ search, filterBy }) {
           </tr>
         </thead>
         <tbody>
-          {filteredEmployees.map((emp) => (
+          {employees.map((emp) => (
             <tr
               key={emp.id}
               className="border-b hover:bg-[#F1FDF9] transition"
             >
               <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
-              <td className="p-3">{emp.name}</td>
+              <td className="p-3">{emp.firstName} {emp.lastName}</td>
               <td className="p-3">{emp.designation}</td>
               <td className="p-3">{emp.department}</td>
               <td className="p-3">{emp.phone}</td>

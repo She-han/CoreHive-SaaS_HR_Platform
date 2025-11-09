@@ -1,84 +1,65 @@
-export default function EmployeeTable() {
-  const employees = [
-    // Sample employee data
-    { name: "John Doe", type: "Monthly", dept: "HR", salary: "75,000", status: "Active" },
-    { name: "Jane Smith", type: "Daily", dept: "IT", salary: "3,000", status: "Inactive" },
-    { name: "Robert Brown", type: "Daily", dept: "Finance", salary: "2,500", status: "Inactive" },
-    { name: "Emily Johnson", type: "Daily", dept: "IT", salary: "2,500", status: "Active" },
-  ];
+import { FaEdit, FaTrash } from "react-icons/fa"; //Imports Font icons (edit 🖊️ and trash 🗑️) 
+import { useState } from "react";
+
+export default function EmployeeTable({ search, filterBy }) {
+  const [employees] = useState([
+    { id: 1, employeeCode: "EMP001", name: "John Doe", designation: "HR Officer", department: "HR", phone: "(+94)77 123 4567", isActive: true },
+    { id: 2, employeeCode: "EMP002", name: "Jane Smith", designation: "Software Engineer", department: "IT", phone: "(+94)77 987 6543", isActive: false },
+    { id: 3, employeeCode: "EMP003", name: "Michael Brown", designation: "Project Manager", department: "IT", phone: "(+94)71 234 5678", isActive: true },
+  ]);
+
+  const filteredEmployees = employees.filter((emp) =>
+    emp[filterBy].toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      {/* Responsive Table Wrapper */}
-      <div className="overflow-x-auto">
-        {/* Table for Medium & Larger Screens */}
-        <table className="hidden sm:table min-w-full text-sm">
-          <thead>
-            <tr className="border-b text-left bg-gray-100">
-              <th className="p-3 font-semibold">Name</th>
-              <th className="p-3 font-semibold">Type</th>
-              <th className="p-3 font-semibold">Department</th>
-              <th className="p-3 font-semibold">Salary</th>
-              <th className="p-3 font-semibold">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((emp, i) => (
-              <tr key={i} className="border-b hover:bg-gray-50 transition">
-                <td className="p-3">{emp.name}</td>
-                <td className="p-3">{emp.type}</td>
-                <td className="p-3">{emp.dept}</td>
-                <td className="p-3">{emp.salary}</td>
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      emp.status === "Active"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {emp.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Card Layout for Mobile Screens */}
-        <div className="sm:hidden space-y-4">
-          {employees.map((emp, i) => (
-            <div
-              key={i}
-              className="border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-gray-50"
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse">
+        <thead className="bg-[#F1FDF9] text-[#0C397A]">
+          <tr>
+            <th className="p-3">Emp Code</th>
+            <th className="p-3">Name</th>
+            <th className="p-3">Designation</th>
+            <th className="p-3">Department</th>
+            <th className="p-3">Contact</th>
+            <th className="p-3">Status</th>
+            <th className="p-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredEmployees.map((emp) => (
+            <tr
+              key={emp.id}
+              className="border-b hover:bg-[#F1FDF9] transition"
             >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-base font-semibold text-gray-900">{emp.name}</h3>
+              <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
+              <td className="p-3">{emp.name}</td>
+              <td className="p-3">{emp.designation}</td>
+              <td className="p-3">{emp.department}</td>
+              <td className="p-3">{emp.phone}</td>
+              <td className="p-3">
                 <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    emp.status === "Active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-600"
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    emp.isActive
+                      ? "bg-[#1ED292]/10 text-[#1ED292]"
+                      : "bg-red-100 text-red-500"
                   }`}
                 >
-                  {emp.status}
+                  {emp.isActive ? "Active" : "Inactive"}
                 </span>
-              </div>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p>
-                  <span className="font-medium text-gray-900">Type:</span> {emp.type}
-                </p>
-                <p>
-                  <span className="font-medium text-gray-900">Department:</span> {emp.dept}
-                </p>
-                <p>
-                  <span className="font-medium text-gray-900">Salary:</span> {emp.salary}
-                </p>
-              </div>
-            </div>
+              </td>
+              <td className="p-3 flex justify-center gap-4">
+                <button className="text-[#05668D] hover:text-[#02C39A]">
+                  <FaEdit />
+                </button>
+                <button className="text-red-500 hover:text-red-700">
+                  <FaTrash />
+                </button>
+              </td>
+            </tr>
           ))}
-        </div>
-      </div>
+        </tbody>
+      </table>
     </div>
   );
 }

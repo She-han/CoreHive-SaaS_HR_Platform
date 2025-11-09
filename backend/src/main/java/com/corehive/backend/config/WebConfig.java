@@ -1,5 +1,4 @@
 package com.corehive.backend.config;
 
-public class SecurityConfig {
-
+public class WebConfig {
 }

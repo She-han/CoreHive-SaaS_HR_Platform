@@ -1,11 +1,18 @@
 package com.corehive.backend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_request")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class LeaveRequest {
 
     @Id
@@ -48,6 +55,7 @@ public class LeaveRequest {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
 
     // Enum for Leave Status
     public enum LeaveStatus {

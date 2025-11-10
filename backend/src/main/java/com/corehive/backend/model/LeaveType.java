@@ -1,11 +1,17 @@
 package com.corehive.backend.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "LeaveType")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class LeaveType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

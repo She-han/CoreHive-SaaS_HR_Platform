@@ -32,5 +32,8 @@ public class EmployeeService {
         return false;  // not found
     }
 
+    public Employee saveEmployee(Employee employee){
+        return employeeRepository.save(employee);
+    }
 
 }

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 function Dashboard() {
   return (
-     <div className="space-y-6">
+     <div className="space-y-6 m-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Welcome to CoreHive</h1>
       </div>

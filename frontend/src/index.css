@@ -1,1 +1,208 @@
 @import "tailwindcss";
+
+/* Remove this line completely */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap'); */
+
+/* Custom CSS Variables for CoreHive Brand Colors */
+:root {
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-500: #02C39A;
+  --color-primary-600: #1ED292;
+  --color-primary-700: #059669;
+  
+  --color-secondary-50: #eff6ff;
+  --color-secondary-100: #dbeafe;
+  --color-secondary-500: #0C397A;
+  --color-secondary-600: #05668D;
+  --color-secondary-700: #1e40af;
+  
+  --color-background-primary: #F1FDF9;
+  --color-background-white: #FFFFFF;
+  
+  --color-text-primary: #333333;
+  --color-text-secondary: #9B9B9B;
+  --color-text-inverse: #FFFFFF;
+}
+
+/* Base Styles */
+body {
+  background-color: var(--color-background-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: var(--color-text-primary);
+  font-feature-settings: "rlig" 1, "calt" 1;
+  line-height: 1.6;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Component Classes */
+.btn-primary {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-decoration: none;
+  user-select: none;
+  min-height: 44px;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-600);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(2, 195, 154, 0.2);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary-500);
+  color: var(--color-text-inverse);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-decoration: none;
+  user-select: none;
+  min-height: 44px;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-secondary-600);
+  box-shadow: 0 4px 6px -1px rgba(12, 57, 122, 0.2);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-primary-500);
+  border: 2px solid var(--color-primary-500);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-decoration: none;
+  user-select: none;
+  min-height: 44px;
+}
+
+.btn-outline:hover {
+  background-color: var(--color-primary-500);
+  color: var(--color-text-inverse);
+}
+
+/* Card Components */
+.card {
+  background-color: var(--color-background-white);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 15px -3px rgba(12, 57, 122, 0.1), 0 4px 6px -2px rgba(12, 57, 122, 0.05);
+  border: 1px solid #f1f5f9;
+  transition: all 0.2s ease;
+}
+
+/* Navigation */
+.nav-link {
+  color: var(--color-text-secondary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: var(--color-primary-500);
+  background-color: rgba(2, 195, 154, 0.05);
+}
+
+.nav-link-active {
+  color: var(--color-primary-500);
+  background-color: var(--color-primary-50);
+}
+
+/* Utility Classes for CoreHive Colors */
+.bg-primary-50 { background-color: var(--color-primary-50) !important; }
+.bg-primary-100 { background-color: var(--color-primary-100) !important; }
+.bg-primary-500 { background-color: var(--color-primary-500) !important; }
+.bg-primary-600 { background-color: var(--color-primary-600) !important; }
+.bg-primary-700 { background-color: var(--color-primary-700) !important; }
+
+.bg-secondary-50 { background-color: var(--color-secondary-50) !important; }
+.bg-secondary-100 { background-color: var(--color-secondary-100) !important; }
+.bg-secondary-500 { background-color: var(--color-secondary-500) !important; }
+.bg-secondary-600 { background-color: var(--color-secondary-600) !important; }
+.bg-secondary-700 { background-color: var(--color-secondary-700) !important; }
+
+.text-primary-500 { color: var(--color-primary-500) !important; }
+.text-primary-600 { color: var(--color-primary-600) !important; }
+.text-secondary-500 { color: var(--color-secondary-500) !important; }
+.text-secondary-600 { color: var(--color-secondary-600) !important; }
+
+.text-text-primary { color: var(--color-text-primary) !important; }
+.text-text-secondary { color: var(--color-text-secondary) !important; }
+.text-text-inverse { color: var(--color-text-inverse) !important; }
+
+.border-primary-500 { border-color: var(--color-primary-500) !important; }
+.border-secondary-500 { border-color: var(--color-secondary-500) !important; }
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid rgba(2, 195, 154, 0.3);
+  border-top: 3px solid var(--color-primary-500);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}

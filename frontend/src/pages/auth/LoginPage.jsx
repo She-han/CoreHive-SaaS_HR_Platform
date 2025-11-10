@@ -1,0 +1,315 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { Mail, Lock, ArrowRight, Building2, AlertCircle } from 'lucide-react';
+
+import { 
+  loginUser, 
+  clearError, 
+  selectIsAuthenticated, 
+  selectIsLoading, 
+  selectError 
+} from '../../store/slices/authSlice';
+
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
+import Alert from '../../components/common/Alert';
+
+/**
+ * Login Page Component
+ * Universal login page (System Admin සහ Organization Users දෙකටම)
+ */
+const LoginPage = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  
+  const [formErrors, setFormErrors] = useState({});
+  
+  // Get redirect path from location state (protected route redirect)
+  const from = location.state?.from?.pathname || '/dashboard';
+  
+  // Redirect if already authenticated - UPDATED VERSION
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Don't auto-redirect, let handleSubmit handle the logic
+      console.log('🔍 User already authenticated, but allowing manual navigation logic');
+    }
+  }, [isAuthenticated]);
+  
+  // Clear errors when component mounts
+  useEffect(() => {
+    dispatch(clearError());
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+  
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear specific field error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+  
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Password must be at least 6 characters';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+  
+  // Handle form submission - FIXED VERSION
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    try {
+      const resultAction = await dispatch(loginUser(formData));
+      
+      if (loginUser.fulfilled.match(resultAction)) {
+        console.log('✅ Login successful');
+        
+        // Get user data from result
+        const userData = resultAction.payload;
+        
+        // Handle redirect based on user type and configuration status
+        if (userData.userType === 'ORG_USER' && userData.role === 'ORG_ADMIN') {
+          if (!userData.modulesConfigured) {
+            // First-time ORG_ADMIN - redirect to module configuration
+            console.log('🔄 First-time ORG_ADMIN - redirecting to module configuration...');
+            navigate('/configure-modules', { replace: true });
+            return;
+          } else {
+            // Existing ORG_ADMIN with modules configured - go to dashboard
+            console.log('✅ ORG_ADMIN with configured modules - redirecting to dashboard...');
+            navigate('/dashboard', { replace: true });
+            return;
+          }
+        } else if (userData.userType === 'SYSTEM_ADMIN') {
+          // System admin - go to admin dashboard
+          console.log('🔧 SYSTEM_ADMIN - redirecting to admin dashboard...');
+          navigate('/dashboard', { replace: true });
+          return;
+        } else {
+          // Other org users - go to dashboard
+          console.log('👤 Regular user - redirecting to dashboard...');
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+    }
+  };
+  
+  // Handle demo login (development only)
+  const handleDemoLogin = (userType) => {
+    const demoCredentials = {
+      admin: {
+        email: 'admin@corehive.com',
+        password: 'Admin@123'
+      },
+      org: {
+        email: 'admin@testcompany.com',
+        password: 'TempPass123!'
+      }
+    };
+    
+    const credentials = demoCredentials[userType];
+    setFormData(credentials);
+    
+    // Auto submit after a short delay
+    setTimeout(() => {
+      dispatch(loginUser(credentials));
+    }, 500);
+  };
+  
+  return (
+    <div className="min-h-screen bg-background-primary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex justify-center items-center space-x-2 mb-6">
+            <Building2 className="h-12 w-12 text-primary-500" />
+            <span className="text-3xl font-bold text-text-primary">
+              Core<span className="text-primary-500">Hive</span>
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-2">
+            Welcome back
+          </h2>
+          <p className="text-text-secondary">
+            Sign in to your account to continue
+          </p>
+        </div>
+        
+        {/* Login form */}
+        <Card className="animate-slide-up bg-white shadow-md ">
+          {/* API Error Alert */}
+          {error && (
+            <Alert 
+              type="error" 
+              message={error} 
+              onClose={() => dispatch(clearError())}
+              className="mb-6"
+            />
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email field */}
+            <Input
+              label="Email Address"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="Enter your email"
+              icon={Mail}
+              error={formErrors.email}
+              required
+              disabled={isLoading}
+              autoComplete="email"
+            />
+            
+            {/* Password field */}
+            <Input
+              label="Password"
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              placeholder="Enter your password"
+              icon={Lock}
+              error={formErrors.password}
+              required
+              disabled={isLoading}
+              showPasswordToggle={true}
+              autoComplete="current-password"
+            />
+            
+            {/* Forgot password link */}
+            <div className="flex justify-end">
+              <Link 
+                to="/forgot-password"
+                className="text-sm text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+            
+            {/* Submit button */}
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={isLoading}
+              disabled={isLoading || !formData.email || !formData.password}
+              className="w-full"
+              icon={ArrowRight}
+              iconPosition="right"
+            >
+              {isLoading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
+          
+          {/* Demo login buttons (development only) */}
+          {import.meta.env.DEV && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-xs text-center text-text-secondary mb-3">
+                Demo Logins (Development Only)
+              </p>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoLogin('admin')}
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  Login as System Admin
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDemoLogin('org')}
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  Login as Org Admin
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Sign up link */}
+          <div className="mt-6 text-center">
+            <p className="text-text-secondary">
+              Don't have an account?{' '}
+              <Link 
+                to="/signup"
+                className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
+              >
+                Register your company
+              </Link>
+            </p>
+          </div>
+        </Card>
+        
+        {/* Support info */}
+        <div className="text-center">
+          <p className="text-sm text-text-secondary">
+            Need help?{' '}
+            <Link 
+              to="/contact"
+              className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
+            >
+              Contact support
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;

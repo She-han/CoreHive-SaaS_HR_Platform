@@ -5,13 +5,13 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "leave_type")
-public class leave_type {
+@Table(name = "LeaveType")
+public class LeaveType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "organization_uuid", nullable = false)
+    @Column(name = "organization_uuid", nullable = false , length = 36)
     private String organizationUuid;
 
     @Column(nullable = false, length = 100)

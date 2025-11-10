@@ -16,7 +16,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())// disable CSRF for API use
                 //.cors(cors -> {})             // enable CORS from WebConfig
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/employees/**").permitAll() // allow employee endpoints
+                        .requestMatchers("/api/**").permitAll() // allow employee endpoints
                         .anyRequest().authenticated()                      // other endpoints need login
                 )
                 .formLogin(login -> login.disable())  // disable default login form

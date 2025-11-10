@@ -12,7 +12,7 @@ public class LeaveRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "organization_uuid", nullable = false)
+    @Column(name = "organization_uuid", nullable = false , length = 36)
     private String organizationUuid;
 
     @ManyToOne(fetch = FetchType.LAZY)

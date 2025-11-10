@@ -1,2 +1,2 @@
 # CoreHive-SaaS_HR_Platform
-Multi-Tenant HR SaaS Platform with React and Springboot
+Multi-Tenant HR SaaS Platform 

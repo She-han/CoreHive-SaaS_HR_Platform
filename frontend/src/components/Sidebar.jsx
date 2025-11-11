@@ -87,7 +87,7 @@ export default function Sidebar() {
 
         {/* Hiring Management */}
         <NavLink
-          to="/hiring"
+          to="/HiringManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"

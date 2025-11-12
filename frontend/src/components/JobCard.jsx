@@ -2,6 +2,7 @@ import React from "react";
 import { Calendar, Briefcase, Users, Edit3, Trash2 } from "lucide-react";
 
 const JobCard = ({
+  id,
   avatar,
   title,
   description,
@@ -11,6 +12,7 @@ const JobCard = ({
   vacancies,
   postedDate,
   closingDate,
+  onDelete
 }) => {
   // Themed status colors
   const statusColors = {
@@ -90,7 +92,9 @@ const JobCard = ({
         <button className="flex items-center gap-1 text-[#05668D] hover:text-[#02C39A] text-sm font-medium px-3 py-2 rounded-lg hover:bg-white transition-all">
           <Edit3 size={16} /> Edit
         </button>
-        <button className="flex items-center gap-1 text-red-500 hover:text-red-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition-all">
+        <button 
+        onClick={()=>onDelete(id)}
+        className="flex items-center gap-1 text-red-500 hover:text-red-600 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50 transition-all">
           <Trash2 size={16} /> Delete
         </button>
       </div>

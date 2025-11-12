@@ -4,6 +4,11 @@ import { FaPlus } from "react-icons/fa";
 import FilterBar from "../components/FilterBar";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+
+const MySwal = withReactContent(Swal);
 
 export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
@@ -26,6 +31,53 @@ export default function HiringManagement() {
 
     fetchJobs();
   }, []);
+
+
+   //Delete job posting with confirmation popup
+  const handleDeleteJob = async (id) => {
+    const result = await MySwal.fire({
+      title: "Delete Job Posting?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#02C39A",
+      background: "#FFFFFF",
+      color: "#333333",
+      iconColor: "#05668D",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`http://localhost:8080/api/job-postings/${id}`);
+        setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
+
+        MySwal.fire({
+          title: "Deleted!",
+          text: "The job posting has been removed.",
+          icon: "success",
+          confirmButtonColor: "#1ED292",
+          background: "#F1FDF9",
+          color: "#0C397A",
+          iconColor: "#1ED292",
+        });
+      } catch (error) {
+        console.error("Error deleting job posting:", error);
+        MySwal.fire({
+          title: "Error",
+          text: "Failed to delete job posting. Please try again.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+          background: "#FFFFFF",
+          color: "#333333",
+          iconColor: "#d33",
+        });
+      }
+    }
+  };
+
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(filter.role.toLowerCase()) &&
@@ -82,9 +134,10 @@ export default function HiringManagement() {
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#02C39A]/40 scrollbar-track-gray-100 rounded-md pr-1">
   {filteredJobs.length > 0 ? (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
-      {filteredJobs.map((job, index) => (
+      {filteredJobs.map((job) => (
         <JobCard
-          key={index}
+          key={job.id}
+          id={job.id}
           avatar={job.avatar}
           title={job.title}
           description={job.description}
@@ -102,6 +155,7 @@ export default function HiringManagement() {
           vacancies={job.availableVacancies}
           postedDate={job.postedDate}
           closingDate={job.closingDate}
+          onDelete={handleDeleteJob} 
         />
       ))}
     </div>

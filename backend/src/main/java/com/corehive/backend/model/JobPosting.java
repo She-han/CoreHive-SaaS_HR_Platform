@@ -25,6 +25,9 @@ public class JobPosting {
     @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

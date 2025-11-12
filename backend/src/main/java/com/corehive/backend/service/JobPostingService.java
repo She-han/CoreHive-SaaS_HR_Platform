@@ -46,6 +46,10 @@ public class JobPostingService {
         existing.setAvailableVacancies(updatedJob.getAvailableVacancies());
         existing.setOrganizationUuid(updatedJob.getOrganizationUuid());
 
+        if (updatedJob.getAvatarUrl() != null && !updatedJob.getAvatarUrl().isEmpty()) {
+            existing.setAvatarUrl(updatedJob.getAvatarUrl());
+        }
+
         return jobPostingRepository.save(existing);
     }
 

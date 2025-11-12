@@ -1,45 +1,31 @@
-import { useState } from "react";
+import { useState , useEffect } from "react";
 import JobCard from "../components/JobCard";
 import { FaPlus } from "react-icons/fa";
 import FilterBar from "../components/FilterBar";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
 
-  const jobs = [
-    {
-      title: "Senior Python Developer",
-      description: "Develop and maintain web applications...",
-      department: "Engineering",
-      employeeType: "Full-time",
-      status: "Open",
-      vacancies: 5,
-      postedDate: "2024-07-25",
-      closingDate: "2024-08-25",
-    },
-    {
-      title: "HR Coordinator",
-      description: "Coordinate and support HR operations...",
-      department: "Human Resources",
-      employeeType: "Part-time",
-      status: "Draft",
-      vacancies: 2,
-      postedDate: "2024-07-25",
-      closingDate: "2024-08-25",
-    },
-    {
-      title: "Full-Stack Engineer",
-      description: "Build scalable full-stack applications...",
-      department: "IT Department",
-      employeeType: "Contract",
-      status: "Closed",
-      vacancies: 3,
-      postedDate: "2024-08-01",
-      closingDate: "2024-09-01",
-    },
-  ];
+   const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch job postings from backend
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await axios.get("http://localhost:8080/api/job-postings");
+        setJobs(res.data);
+      } catch (error) {
+        console.error("Error fetching job postings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
   const filteredJobs = jobs.filter(
     (job) =>
       job.title.toLowerCase().includes(filter.role.toLowerCase()) &&
@@ -94,18 +80,38 @@ export default function HiringManagement() {
 
       {/* ===== SCROLLABLE CARD SECTION ===== */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#02C39A]/40 scrollbar-track-gray-100 rounded-md pr-1">
-        {filteredJobs.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
-            {filteredJobs.map((job, index) => (
-              <JobCard key={index} {...job} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center text-[#9B9B9B] mt-10">
-            No job postings found.
-          </div>
-        )}
-      </div>
+  {filteredJobs.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+      {filteredJobs.map((job, index) => (
+        <JobCard
+          key={index}
+          avatar={job.avatar}
+          title={job.title}
+          description={job.description}
+          department={job.department}
+          employeeType={
+            job.employmentType
+              ? job.employmentType.replace("_", " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+              : ""
+          }
+          status={
+            job.status
+              ? job.status.charAt(0).toUpperCase() + job.status.slice(1).toLowerCase()
+              : ""
+          }
+          vacancies={job.availableVacancies}
+          postedDate={job.postedDate}
+          closingDate={job.closingDate}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className="text-center text-[#9B9B9B] mt-10">
+      No job postings found.
+    </div>
+  )}
+</div>
+
     </div>
   );
 }

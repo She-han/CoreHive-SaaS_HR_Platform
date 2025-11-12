@@ -35,7 +35,7 @@ const JobCard = ({
           </div>
         </div>
         <span
-          className={`px-3 py-[4px] text-xs md:text-sm font-semibold rounded-full whitespace-nowrap ${statusColors[status]}`}
+          className={`px-3 py-1 text-xs md:text-sm font-semibold rounded-full whitespace-nowrap ${statusColors[status]}`}
         >
           {status}
         </span>

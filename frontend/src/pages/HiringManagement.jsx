@@ -8,12 +8,12 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
 
-const MySwal = withReactContent(Swal);
+const MySwal = withReactContent(Swal);//allowing you to use React elements inside popups.
 
 export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
 
-   const [jobs, setJobs] = useState([]);
+   const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
   const [loading, setLoading] = useState(true);
 
   // Fetch job postings from backend
@@ -31,7 +31,7 @@ export default function HiringManagement() {
 
     fetchJobs();
   }, []);
-
+  //[] means this effect runs only once (on initial load).
 
    //Delete job posting with confirmation popup
   const handleDeleteJob = async (id) => {
@@ -89,7 +89,7 @@ export default function HiringManagement() {
   };
 
   return (
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
+    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8"> {/*Creates a full-screen white container with padding.*/}
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>

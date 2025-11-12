@@ -15,6 +15,8 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/layout/Footer';
 
 /**
  * Login Page Component
@@ -112,29 +114,41 @@ const LoginPage = () => {
         // Get user data from result
         const userData = resultAction.payload;
         
-        // Handle redirect based on user type and configuration status
-        if (userData.userType === 'ORG_USER' && userData.role === 'ORG_ADMIN') {
-          if (!userData.modulesConfigured) {
-            // First-time ORG_ADMIN - redirect to module configuration
-            console.log('🔄 First-time ORG_ADMIN - redirecting to module configuration...');
-            navigate('/configure-modules', { replace: true });
+        // Handle redirect based on user role and configuration status
+        // Role අනුව proper path එකට redirect කරනවා
+        if (userData.userType === 'SYSTEM_ADMIN' && userData.role === 'SYS_ADMIN') {
+          // System admin - platform management dashboard
+          console.log('🔧 SYSTEM_ADMIN - redirecting to sys_admin dashboard...');
+          navigate('/sys_admin/dashboard', { replace: true });
+          return;
+        } 
+        else if (userData.userType === 'ORG_USER') {
+          // Organization users - role අනුව different paths
+          if (userData.role === 'ORG_ADMIN') {
+            if (!userData.modulesConfigured) {
+              // First-time ORG_ADMIN - module configuration first
+              console.log('🔄 First-time ORG_ADMIN - redirecting to module configuration...');
+              navigate('/configure-modules', { replace: true });
+              return;
+            } else {
+              // Existing ORG_ADMIN - organization management dashboard
+              console.log('✅ ORG_ADMIN - redirecting to org_admin dashboard...');
+              navigate('/org_admin/dashboard', { replace: true });
+              return;
+            }
+          } 
+          else if (userData.role === 'HR_STAFF') {
+            // HR Staff - HR management dashboard
+            console.log('� HR_STAFF - redirecting to hr_staff dashboard...');
+            navigate('/hr_staff/dashboard', { replace: true });
             return;
-          } else {
-            // Existing ORG_ADMIN with modules configured - go to dashboard
-            console.log('✅ ORG_ADMIN with configured modules - redirecting to dashboard...');
-            navigate('/dashboard', { replace: true });
+          } 
+          else if (userData.role === 'EMPLOYEE') {
+            // Employee - self-service profile
+            console.log('👤 EMPLOYEE - redirecting to employee profile...');
+            navigate('/employee/profile', { replace: true });
             return;
           }
-        } else if (userData.userType === 'SYSTEM_ADMIN') {
-          // System admin - go to admin dashboard
-          console.log('🔧 SYSTEM_ADMIN - redirecting to admin dashboard...');
-          navigate('/dashboard', { replace: true });
-          return;
-        } else {
-          // Other org users - go to dashboard
-          console.log('👤 Regular user - redirecting to dashboard...');
-          navigate('/dashboard', { replace: true });
-          return;
         }
       }
     } catch (error) {
@@ -165,6 +179,8 @@ const LoginPage = () => {
   };
   
   return (
+    <>
+    <Navbar/>
     <div className="min-h-screen bg-background-primary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
@@ -309,6 +325,8 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 

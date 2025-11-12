@@ -22,6 +22,41 @@ import ModuleConfigPage from './pages/auth/ModuleConfigPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import OrgDashboard from './pages/dashboard/OrgDashboard';
 
+// Temporary Placeholder Components (Development use) 
+// මේවා development phase එකේ විතරයි - actual components හදලා ඊට පස්සේ replace කරන්න
+const AdminApprovals = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Approvals Page</h1><p>Organization approval requests manage කරන page එක</p></div>;
+const AdminOrganizations = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Organizations Page</h1><p>සියලු organizations list කරන page එක</p></div>;
+const AdminOrganizationDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Detail Page</h1><p>Organization එකක් detail view කරන page එක</p></div>;
+const AdminReports = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Reports Page</h1><p>Platform level reports page එක</p></div>;
+const AdminSettings = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Settings Page</h1><p>System settings manage කරන page එක</p></div>;
+
+// Organization Admin Components
+const OrgSettings = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Settings</h1><p>Organization settings manage කරන page එක</p></div>;
+const EmployeeManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Management</h1><p>සියලු employees manage කරන page එක</p></div>;
+const AddEmployee = () => <div className="p-8"><h1 className="text-2xl font-bold">Add Employee</h1><p>නව employee කෙනෙක් add කරන page එක</p></div>;
+const EmployeeDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Detail</h1><p>Employee කෙනෙකුගේ details view කරන page එක</p></div>;
+const EditEmployee = () => <div className="p-8"><h1 className="text-2xl font-bold">Edit Employee</h1><p>Employee details edit කරන page එක</p></div>;
+const PayrollManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Payroll Management</h1><p>Payroll process කරන page එක</p></div>;
+const ProcessPayroll = () => <div className="p-8"><h1 className="text-2xl font-bold">Process Payroll</h1><p>Monthly payroll process කරන page එක</p></div>;
+const PayslipManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Payslip Management</h1><p>Payslips manage කරන page එක</p></div>;
+const LeaveManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Leave Management</h1><p>සියලු leaves manage කරන page එක</p></div>;
+const LeaveApprovals = () => <div className="p-8"><h1 className="text-2xl font-bold">Leave Approvals</h1><p>Leave requests approve/reject කරන page එක</p></div>;
+const AttendanceManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Attendance Management</h1><p>Attendance records manage කරන page එක</p></div>;
+const OrgReports = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Reports</h1><p>Organization level reports page එක</p></div>;
+
+// HR Staff Components  
+const HRDashboard = () => <div className="p-8"><h1 className="text-2xl font-bold">HR Staff Dashboard</h1><p>HR Staff dashboard page එක</p></div>;
+const HRReports = () => <div className="p-8"><h1 className="text-2xl font-bold">HR Reports</h1><p>HR level reports page එක</p></div>;
+
+// Employee Components
+const EmployeeProfile = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Profile</h1><p>Employee profile page එක</p></div>;
+const EditProfile = () => <div className="p-8"><h1 className="text-2xl font-bold">Edit Profile</h1><p>Profile edit කරන page එක</p></div>;
+const ViewAttendance = () => <div className="p-8"><h1 className="text-2xl font-bold">View Attendance</h1><p>Own attendance view කරන page එක</p></div>;
+const ViewLeaves = () => <div className="p-8"><h1 className="text-2xl font-bold">View Leaves</h1><p>Own leaves view කරන page එක</p></div>;
+const ApplyLeave = () => <div className="p-8"><h1 className="text-2xl font-bold">Apply Leave</h1><p>Leave apply කරන page එක</p></div>;
+const ViewPayslips = () => <div className="p-8"><h1 className="text-2xl font-bold">View Payslips</h1><p>Own payslips view කරන page එක</p></div>;
+const PayslipDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Payslip Detail</h1><p>Payslip detail view කරන page එක</p></div>;
+
 // Admin Pages
 /* import AdminApprovals from './pages/admin/AdminApprovals';
 import AdminOrganizations from './pages/admin/AdminOrganizations';
@@ -40,7 +75,13 @@ import UnauthorizedPage from './pages/common/UnauthorizedPage'; */
 
 /**
  * Main App Component
- * Application routing සහ global providers
+ * Application routing සහ role-based access control
+ * 
+ * හැම user type එකටම වෙනම path structure එකක්:
+ * - System Admin: /sys_admin/* 
+ * - Org Admin: /org_admin/*
+ * - HR Staff: /hr_staff/* 
+ * - Employee: /employee/*
  */
 function App() {
   return (
@@ -49,17 +90,17 @@ function App() {
         <AuthWrapper>
           <div className="min-h-screen bg-background-primary flex flex-col">
             {/* Navigation Bar */}
-            <Navbar />
+            
             
             {/* Main Content */}
             <main className="flex-1">
               <Routes>
-                {/* Public Routes */}
+                {/* Public Routes - සියලු users ලට access කරන්න පුළුවන් */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 
-                {/* Module Configuration (First-time ORG_ADMIN) */}
+                {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route 
                   path="/configure-modules" 
                   element={
@@ -68,98 +109,65 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
-                
-                {/* Dashboard Routes */}
+
+                {/* Legacy Dashboard Route - Redirects to role-specific dashboard */}
                 <Route 
                   path="/dashboard" 
                   element={
                     <ProtectedRoute>
-                      <DashboardRouter />
+                      <DashboardRedirect />
                     </ProtectedRoute>
                   } 
                 />
                 
-                {/* System Admin Routes */}
+                {/* System Admin Routes - SYS_ADMIN role විතරක් */}
                 <Route 
-                  path="/admin/*" 
+                  path="/sys_admin/*" 
                   element={
                     <ProtectedRoute requiredUserType="SYSTEM_ADMIN" requiredRole="SYS_ADMIN">
-                      <AdminRoutes />
+                      <SystemAdminRoutes />
                     </ProtectedRoute>
                   } 
                 />
                 
-                {/* Organization Routes */}
+                {/* Organization Admin Routes - ORG_ADMIN role විතරක් */}
                 <Route 
-                  path="/employees/*" 
+                  path="/org_admin/*" 
                   element={
                     <ProtectedRoute 
                       requiredUserType="ORG_USER" 
+                      requiredRole="ORG_ADMIN"
+                      requireModulesConfigured={true}
+                    >
+                      <OrgAdminRoutes />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* HR Staff Routes - HR_STAFF role විතරක් */}
+                <Route 
+                  path="/hr_staff/*" 
+                  element={
+                    <ProtectedRoute 
+                      requiredUserType="ORG_USER" 
+                      requiredRole="HR_STAFF"
+                      requireModulesConfigured={true}
+                    >
+                      <HRStaffRoutes />
+                    </ProtectedRoute>
+                  } 
+                />
+
+                {/* Employee Routes - EMPLOYEE role විතරක් */}
+                <Route 
+                  path="/employee/*" 
+                  element={
+                    <ProtectedRoute 
+                      requiredUserType="ORG_USER" 
+                      requiredRole="EMPLOYEE"
                       requireModulesConfigured={true}
                     >
                       <EmployeeRoutes />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/payroll/*" 
-                  element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER" 
-                      requiredRole="ORG_ADMIN"
-                      requireModulesConfigured={true}
-                    >
-                      <PayrollRoutes />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/leaves/*" 
-                  element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER"
-                      requireModulesConfigured={true}
-                    >
-                      <LeaveRoutes />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/attendance/*" 
-                  element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER"
-                      requireModulesConfigured={true}
-                    >
-                      <AttendanceRoutes />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/reports/*" 
-                  element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER"
-                      requireModulesConfigured={true}
-                    >
-                      <ReportRoutes />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/settings/*" 
-                  element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER" 
-                      requiredRole="ORG_ADMIN"
-                      requireModulesConfigured={true}
-                    >
-                      <SettingsRoutes />
                     </ProtectedRoute>
                   } 
                 />
@@ -172,7 +180,7 @@ function App() {
             </main>
             
             {/* Footer */}
-            <Footer />
+           
           </div>
           
           {/* Global Toast Notifications */}
@@ -207,30 +215,35 @@ function App() {
 }
 
 /**
- * Dashboard Router Component
- * Role-based dashboard routing
+ * Dashboard Redirect Component
+ * User ගේ role අනුව proper dashboard එකට redirect කරනවා
  */
-const DashboardRouter = () => {
+const DashboardRedirect = () => {
   const user = useSelector(selectUser);
   
-  if (user?.userType === 'SYSTEM_ADMIN') {
-    return <AdminDashboard />;
-  } else if (user?.userType === 'ORG_USER') {
-    return <OrgDashboard />;
-  } else {
-    return <Navigate to="/unauthorized" replace />;
+  switch (user?.role) {
+    case 'SYS_ADMIN':
+      return <Navigate to="/sys_admin/dashboard" replace />;
+    case 'ORG_ADMIN':
+      return <Navigate to="/org_admin/dashboard" replace />;
+    case 'HR_STAFF':
+      return <Navigate to="/hr_staff/dashboard" replace />;
+    case 'EMPLOYEE':
+      return <Navigate to="/employee/profile" replace />;
+    default:
+      return <Navigate to="/unauthorized" replace />;
   }
 };
 
 /**
- * Admin Routes Component
- * System admin nested routes
+ * System Admin Routes Component
+ * SYS_ADMIN role එකට විතරක් access - platform management
  */
-const AdminRoutes = () => {
+const SystemAdminRoutes = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<AdminDashboard />} />
-      <Route path="approvals" element={<AdminApprovals />} />
+      <Route path="requests" element={<AdminApprovals />} />
       <Route path="organizations" element={<AdminOrganizations />} />
       <Route path="organizations/:id" element={<AdminOrganizationDetail />} />
       <Route path="reports" element={<AdminReports />} />
@@ -241,97 +254,69 @@ const AdminRoutes = () => {
 };
 
 /**
+ * Organization Admin Routes Component  
+ * ORG_ADMIN role එකට - organization හි සියලු permissions
+ * Path structure: /org_admin/* (relative paths භාවිතා කරනවා)
+ */
+const OrgAdminRoutes = () => {
+  return (
+    <Routes>
+      <Route path="dashboard" element={<OrgDashboard />} />
+      <Route path="settings" element={<OrgSettings />} />
+      <Route path="employeemanagement" element={<EmployeeManagement />} />
+      <Route path="employeemanagement/add" element={<AddEmployee />} />
+      <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
+      <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />
+      <Route path="payrollmanagement" element={<PayrollManagement />} />
+      <Route path="payrollmanagement/process" element={<ProcessPayroll />} />
+      <Route path="payrollmanagement/payslips" element={<PayslipManagement />} />
+      <Route path="leavemanagement" element={<LeaveManagement />} />
+      <Route path="leavemanagement/approvals" element={<LeaveApprovals />} />
+      <Route path="attendancemanagement" element={<AttendanceManagement />} />
+      <Route path="reports" element={<OrgReports />} />
+      <Route path="" element={<Navigate to="dashboard" replace />} />
+    </Routes>
+  );
+};
+
+/**
+ * HR Staff Routes Component
+ * HR_STAFF role එකට - HR related permissions (payroll නැතුව)
+ */
+const HRStaffRoutes = () => {
+  return (
+    <Routes>
+      <Route path="dashboard" element={<HRDashboard />} />
+      <Route path="employeemanagement" element={<EmployeeManagement />} />
+      <Route path="employeemanagement/add" element={<AddEmployee />} />
+      <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
+      <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />
+      <Route path="payrollmanagement" element={<PayrollManagement />} />
+      <Route path="payrollmanagement/payslips" element={<PayslipManagement />} />
+      <Route path="leavemanagement" element={<LeaveManagement />} />
+      <Route path="leavemanagement/approvals" element={<LeaveApprovals />} />
+      <Route path="attendancemanagement" element={<AttendanceManagement />} />
+      <Route path="reports" element={<HRReports />} />
+      <Route path="" element={<Navigate to="dashboard" replace />} />
+    </Routes>
+  );
+};
+
+/**
  * Employee Routes Component
- * Employee management nested routes
+ * EMPLOYEE role එකට - self-service functions විතරක්
  */
 const EmployeeRoutes = () => {
   return (
     <Routes>
-      <Route path="" element={<EmployeesPage />} />
-      <Route path="add" element={<AddEmployeePage />} />
-      <Route path=":id" element={<EmployeeDetailPage />} />
-      <Route path=":id/edit" element={<EditEmployeePage />} />
-    </Routes>
-  );
-};
-
-/**
- * Payroll Routes Component
- * Payroll management nested routes
- */
-const PayrollRoutes = () => {
-  return (
-    <Routes>
-      <Route path="" element={<PayrollPage />} />
-      <Route path="process" element={<ProcessPayrollPage />} />
-      <Route path="payslips" element={<PayslipsPage />} />
-      <Route path="payslips/:id" element={<PayslipDetailPage />} />
-      <Route path="components" element={<PayrollComponentsPage />} />
-    </Routes>
-  );
-};
-
-/**
- * Leave Routes Component
- * Leave management nested routes
- */
-const LeaveRoutes = () => {
-  return (
-    <Routes>
-      <Route path="" element={<LeavesPage />} />
-      <Route path="apply" element={<ApplyLeavePage />} />
-      <Route path="pending" element={<PendingLeavesPage />} />
-      <Route path="balance" element={<LeaveBalancePage />} />
-      <Route path="my" element={<MyLeavesPage />} />
-      <Route path="types" element={<LeaveTypesPage />} />
-    </Routes>
-  );
-};
-
-/**
- * Attendance Routes Component
- * Attendance management nested routes
- */
-const AttendanceRoutes = () => {
-  return (
-    <Routes>
-      <Route path="" element={<AttendancePage />} />
-      <Route path="mark" element={<MarkAttendancePage />} />
-      <Route path="my" element={<MyAttendancePage />} />
-      <Route path="reports" element={<AttendanceReportsPage />} />
-    </Routes>
-  );
-};
-
-/**
- * Report Routes Component
- * Reports and analytics nested routes
- */
-const ReportRoutes = () => {
-  return (
-    <Routes>
-      <Route path="" element={<ReportsPage />} />
-      <Route path="employees" element={<EmployeeReportsPage />} />
-      <Route path="payroll" element={<PayrollReportsPage />} />
-      <Route path="attendance" element={<AttendanceReportsPage />} />
-      <Route path="leaves" element={<LeaveReportsPage />} />
-    </Routes>
-  );
-};
-
-/**
- * Settings Routes Component
- * Organization settings nested routes
- */
-const SettingsRoutes = () => {
-  return (
-    <Routes>
-      <Route path="" element={<SettingsPage />} />
-      <Route path="organization" element={<OrganizationSettingsPage />} />
-      <Route path="users" element={<UserManagementPage />} />
-      <Route path="modules" element={<ModuleSettingsPage />} />
-      <Route path="payroll" element={<PayrollSettingsPage />} />
-      <Route path="leaves" element={<LeaveSettingsPage />} />
+      <Route path="profile" element={<EmployeeProfile />} />
+      <Route path="profile/edit" element={<EditProfile />} />
+      <Route path="viewattendance" element={<ViewAttendance />} />
+      <Route path="viewleaves" element={<ViewLeaves />} />
+      <Route path="viewleaves/apply" element={<ApplyLeave />} />
+      <Route path="viewpayslips" element={<ViewPayslips />} />
+      <Route path="viewpayslips/:id" element={<PayslipDetail />} />
+      <Route path="" element={<Navigate to="profile" replace />} />
     </Routes>
   );
 };

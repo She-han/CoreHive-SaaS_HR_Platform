@@ -20,6 +20,8 @@ import {
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/layout/Footer';
 
 /**
  * Module Configuration Page
@@ -100,11 +102,11 @@ const handleSubmit = async (e) => {
     const resultAction = await dispatch(configureModules(moduleConfig));
     
     if (configureModules.fulfilled.match(resultAction)) {
-      console.log('✅ Modules configured successfully, navigating to dashboard...');
+      console.log('✅ Modules configured successfully, navigating to org_admin dashboard...');
       
-      // Small delay to ensure state update
+      // Module config වෙලා ORG_ADMIN dashboard එකට redirect කරනවා
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate('/org_admin/dashboard', { replace: true });
       }, 500);
     } else {
       console.error('❌ Module configuration failed:', resultAction.payload);
@@ -127,11 +129,11 @@ const handleSkip = async () => {
     const resultAction = await dispatch(configureModules(basicConfig));
     
     if (configureModules.fulfilled.match(resultAction)) {
-      console.log('✅ Basic configuration saved, navigating to dashboard...');
+      console.log('✅ Basic configuration saved, navigating to org_admin dashboard...');
       
-      // Small delay to ensure state update
+      // Basic modules සමඟ ORG_ADMIN dashboard එකට redirect කරනවා
       setTimeout(() => {
-        navigate('/dashboard', { replace: true });
+        navigate('/org_admin/dashboard', { replace: true });
       }, 500);
     } else {
       console.error('❌ Basic configuration failed:', resultAction.payload);
@@ -142,6 +144,8 @@ const handleSkip = async () => {
 };
   
   return (
+    <>
+    <Navbar/>
     <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -298,6 +302,8 @@ const handleSkip = async () => {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 

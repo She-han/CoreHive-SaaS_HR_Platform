@@ -38,49 +38,49 @@ const Navbar = () => {
     setIsUserMenuOpen(false);
   };
   
-  // Navigation links based on user type
+  // Navigation links based on user role - UPDATED FOR NEW ROUTES
   const getNavigationLinks = () => {
     if (!isAuthenticated) {
       return [
         { name: 'Home', href: '/', current: location.pathname === '/' },
-        { name: 'Features', href: '/features', current: location.pathname === '/features' },
-        { name: 'Pricing', href: '/pricing', current: location.pathname === '/pricing' },
+        { name: 'Features', href: '/#features', current: false },
+        { name: 'Pricing', href: '/#pricing', current: false },
         { name: 'Contact', href: '/contact', current: location.pathname === '/contact' }
       ];
     }
     
-    switch (user?.userType) {
-      case 'SYSTEM_ADMIN':
+    // Role අනුව navigation paths - නව route structure අනුව
+    switch (user?.role) {
+      case 'SYS_ADMIN':
         return [
-          { name: 'Dashboard', href: '/admin/dashboard', current: location.pathname === '/admin/dashboard' },
-          { name: 'Organizations', href: '/admin/organizations', current: location.pathname.startsWith('/admin/organizations') },
-          { name: 'Approvals', href: '/admin/approvals', current: location.pathname === '/admin/approvals' },
-          { name: 'Reports', href: '/admin/reports', current: location.pathname === '/admin/reports' }
+          { name: 'Dashboard', href: '/sys_admin/dashboard', current: location.pathname === '/sys_admin/dashboard' },
+          { name: 'Organizations', href: '/sys_admin/organizations', current: location.pathname.startsWith('/sys_admin/organizations') },
+          { name: 'Requests', href: '/sys_admin/requests', current: location.pathname.startsWith('/sys_admin/requests') },
+          { name: 'Reports', href: '/sys_admin/reports', current: location.pathname.startsWith('/sys_admin/reports') }
         ];
       
-      case 'ORG_USER':
-        const orgLinks = [
-          { name: 'Dashboard', href: '/dashboard', current: location.pathname === '/dashboard' }
+      case 'ORG_ADMIN':
+        return [
+          { name: 'Dashboard', href: '/org_admin/dashboard', current: location.pathname === '/org_admin/dashboard' },
+          { name: 'Employees', href: '/org_admin/employeemanagement', current: location.pathname.startsWith('/org_admin/employeemanagement') },
+          { name: 'Reports', href: '/org_admin/reports', current: location.pathname.startsWith('/org_admin/reports') },
+          { name: 'Settings', href: '/org_admin/settings', current: location.pathname.startsWith('/org_admin/settings') }
         ];
         
-        // Role-based navigation additions
-        if (user?.role === 'ORG_ADMIN' || user?.role === 'HR_STAFF') {
-          orgLinks.push(
-            { name: 'Employees', href: '/employees', current: location.pathname.startsWith('/employees') },
-            { name: 'Leave', href: '/leaves', current: location.pathname.startsWith('/leaves') },
-            { name: 'Attendance', href: '/attendance', current: location.pathname.startsWith('/attendance') }
-          );
-        }
+      case 'HR_STAFF':
+        return [
+          { name: 'Dashboard', href: '/hr_staff/dashboard', current: location.pathname === '/hr_staff/dashboard' },
+          { name: 'Employees', href: '/hr_staff/employeemanagement', current: location.pathname.startsWith('/hr_staff/employeemanagement') },
+          { name: 'Leaves', href: '/hr_staff/leavemanagement', current: location.pathname.startsWith('/hr_staff/leavemanagement') },
+          { name: 'Reports', href: '/hr_staff/reports', current: location.pathname.startsWith('/hr_staff/reports') }
+        ];
         
-        if (user?.role === 'ORG_ADMIN') {
-          orgLinks.push(
-            { name: 'Payroll', href: '/payroll', current: location.pathname.startsWith('/payroll') },
-            { name: 'Reports', href: '/reports', current: location.pathname.startsWith('/reports') },
-            { name: 'Settings', href: '/settings', current: location.pathname.startsWith('/settings') }
-          );
-        }
-        
-        return orgLinks;
+      case 'EMPLOYEE':
+        return [
+          { name: 'Profile', href: '/employee/profile', current: location.pathname === '/employee/profile' },
+          { name: 'Leaves', href: '/employee/viewleaves', current: location.pathname.startsWith('/employee/viewleaves') },
+          { name: 'Attendance', href: '/employee/viewattendance', current: location.pathname.startsWith('/employee/viewattendance') }
+        ];
       
       default:
         return [];
@@ -90,16 +90,14 @@ const Navbar = () => {
   const navigationLinks = getNavigationLinks();
   
   return (
-    <nav className="bg-background-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <nav className="bg-[#F1FDF9] shadow-sm border-b opacity-100 border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <img src={Logo} alt="CoreHive Logo" className="w-36" />
-              <span className="text-2xl font-bold text-text-primary">
-                Core<span className="text-primary-500">Hive</span>
-              </span>
+              
             </Link>
           </div>
           

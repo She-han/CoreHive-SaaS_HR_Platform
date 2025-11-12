@@ -23,6 +23,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 /**
  * Organization Dashboard Component
@@ -230,14 +231,14 @@ const OrgDashboard = () => {
 
   if (isLoading && dashboardData.totalEmployees === 0) {
     return (
-      <div className="min-h-screen bg-background-primary">
+      <DashboardLayout>
         <LoadingSpinner centerScreen size="lg" text="Loading dashboard..." />
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-primary">
+    <DashboardLayout title="Dashboard">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -370,7 +371,7 @@ const OrgDashboard = () => {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

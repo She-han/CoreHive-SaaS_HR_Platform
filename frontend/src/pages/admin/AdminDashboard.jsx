@@ -21,6 +21,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 
 /**
  * System Admin Dashboard Component
@@ -148,14 +149,14 @@ const AdminDashboard = () => {
 
   if (isLoading && stats.totalOrganizations === 0) {
     return (
-      <div className="min-h-screen bg-background-primary">
+      <DashboardLayout>
         <LoadingSpinner centerScreen size="lg" text="Loading dashboard..." />
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-primary">
+    <DashboardLayout title="System Administration">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -376,7 +377,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

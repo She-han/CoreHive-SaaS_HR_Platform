@@ -2,7 +2,7 @@ import React from 'react'
 
 const RequestHandling = () => {
   return (
-    <div>
+    <div className='bg-amber-400'>
       
     </div>
   )

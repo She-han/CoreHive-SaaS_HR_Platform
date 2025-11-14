@@ -56,7 +56,7 @@ export default function HiringManagement() {
 
         MySwal.fire({
           title: "Deleted!",
-          text: "The job posting has been removed.",
+          text: "The job posting has been removed",
           icon: "success",
           confirmButtonColor: "#1ED292",
           background: "#F1FDF9",

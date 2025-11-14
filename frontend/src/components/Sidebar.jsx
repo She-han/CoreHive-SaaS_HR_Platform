@@ -8,6 +8,11 @@ import {
   Briefcase,
 } from "lucide-react"; // ✅ importing icons
 import EmployeeManagement from "../pages/EmployeeManagement.jsx";
+import LeaveManagement from "../pages/LeaveManagement.jsx";
+import HiringManagement from "../pages/HiringManagement.jsx";
+import HRReportingManagement from "../pages/HRReportingManagement.jsx";
+import FeedBackManagement from "../pages/FeedBackManagement.jsx";
+import AttendanceManagement from "../pages/AttendanceManagement.jsx";
 
 export default function Sidebar() {
   return (
@@ -22,7 +27,7 @@ export default function Sidebar() {
       <nav className="space-y-2"> {/* Adds vertical space (0.5rem) between each link */}
         {/* Employee Management */}
         <NavLink
-          to="/EmployeeManagement"
+          to="/hr_staff/EmployeeManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
@@ -35,7 +40,7 @@ export default function Sidebar() {
 
         {/* Leave Management */}
         <NavLink
-          to="/leaves"
+          to="/hr_staff/LeaveManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
@@ -48,7 +53,7 @@ export default function Sidebar() {
 
         {/* Attendance Management */}
         <NavLink
-          to="/attendance"
+          to="/hr_staff/AttendanceManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
@@ -61,7 +66,7 @@ export default function Sidebar() {
 
         {/* HR Reporting */}
         <NavLink
-          to="/reports"
+          to="/hr_staff/HRReportingManagement"
          className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
@@ -74,7 +79,7 @@ export default function Sidebar() {
 
         {/* Employee Feedback */}
         <NavLink
-          to="/feedback"
+          to="/hr_staff/FeedBackManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
@@ -87,7 +92,7 @@ export default function Sidebar() {
 
         {/* Hiring Management */}
         <NavLink
-          to="/HiringManagement"
+          to="/hr_staff/HiringManagement"
           className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"

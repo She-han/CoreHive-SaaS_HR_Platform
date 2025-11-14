@@ -21,41 +21,14 @@ import ModuleConfigPage from './pages/auth/ModuleConfigPage';
 // Dashboard Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import OrgDashboard from './pages/dashboard/OrgDashboard';
-
-// Temporary Placeholder Components (Development use) 
-// මේවා development phase එකේ විතරයි - actual components හදලා ඊට පස්සේ replace කරන්න
-const AdminApprovals = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Approvals Page</h1><p>Organization approval requests manage කරන page එක</p></div>;
-const AdminOrganizations = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Organizations Page</h1><p>සියලු organizations list කරන page එක</p></div>;
-const AdminOrganizationDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Detail Page</h1><p>Organization එකක් detail view කරන page එක</p></div>;
-const AdminReports = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Reports Page</h1><p>Platform level reports page එක</p></div>;
-const AdminSettings = () => <div className="p-8"><h1 className="text-2xl font-bold">Admin Settings Page</h1><p>System settings manage කරන page එක</p></div>;
-
-// Organization Admin Components
-const OrgSettings = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Settings</h1><p>Organization settings manage කරන page එක</p></div>;
-const EmployeeManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Management</h1><p>සියලු employees manage කරන page එක</p></div>;
-const AddEmployee = () => <div className="p-8"><h1 className="text-2xl font-bold">Add Employee</h1><p>නව employee කෙනෙක් add කරන page එක</p></div>;
-const EmployeeDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Detail</h1><p>Employee කෙනෙකුගේ details view කරන page එක</p></div>;
-const EditEmployee = () => <div className="p-8"><h1 className="text-2xl font-bold">Edit Employee</h1><p>Employee details edit කරන page එක</p></div>;
-const PayrollManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Payroll Management</h1><p>Payroll process කරන page එක</p></div>;
-const ProcessPayroll = () => <div className="p-8"><h1 className="text-2xl font-bold">Process Payroll</h1><p>Monthly payroll process කරන page එක</p></div>;
-const PayslipManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Payslip Management</h1><p>Payslips manage කරන page එක</p></div>;
-const LeaveManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Leave Management</h1><p>සියලු leaves manage කරන page එක</p></div>;
-const LeaveApprovals = () => <div className="p-8"><h1 className="text-2xl font-bold">Leave Approvals</h1><p>Leave requests approve/reject කරන page එක</p></div>;
-const AttendanceManagement = () => <div className="p-8"><h1 className="text-2xl font-bold">Attendance Management</h1><p>Attendance records manage කරන page එක</p></div>;
-const OrgReports = () => <div className="p-8"><h1 className="text-2xl font-bold">Organization Reports</h1><p>Organization level reports page එක</p></div>;
-
-// HR Staff Components  
-const HRDashboard = () => <div className="p-8"><h1 className="text-2xl font-bold">HR Staff Dashboard</h1><p>HR Staff dashboard page එක</p></div>;
-const HRReports = () => <div className="p-8"><h1 className="text-2xl font-bold">HR Reports</h1><p>HR level reports page එක</p></div>;
-
-// Employee Components
-const EmployeeProfile = () => <div className="p-8"><h1 className="text-2xl font-bold">Employee Profile</h1><p>Employee profile page එක</p></div>;
-const EditProfile = () => <div className="p-8"><h1 className="text-2xl font-bold">Edit Profile</h1><p>Profile edit කරන page එක</p></div>;
-const ViewAttendance = () => <div className="p-8"><h1 className="text-2xl font-bold">View Attendance</h1><p>Own attendance view කරන page එක</p></div>;
-const ViewLeaves = () => <div className="p-8"><h1 className="text-2xl font-bold">View Leaves</h1><p>Own leaves view කරන page එක</p></div>;
-const ApplyLeave = () => <div className="p-8"><h1 className="text-2xl font-bold">Apply Leave</h1><p>Leave apply කරන page එක</p></div>;
-const ViewPayslips = () => <div className="p-8"><h1 className="text-2xl font-bold">View Payslips</h1><p>Own payslips view කරන page එක</p></div>;
-const PayslipDetail = () => <div className="p-8"><h1 className="text-2xl font-bold">Payslip Detail</h1><p>Payslip detail view කරන page එක</p></div>;
+import HRDashboard from './pages/Dashboard';
+import MainHRLayout from "../src/components/layout/MainHRLayout"; 
+import EmployeeManagement from './pages/EmployeeManagement';
+import LeaveManagement from './pages/LeaveManagement';
+import HiringManagement from './pages/HiringManagement';
+import HRReportingManagement from './pages/HRReportingManagement';
+import FeedBackManagement from './pages/FeedBackManagement';
+import AttendanceManagement from './pages/AttendanceManagement';
 
 // Admin Pages
 /* import AdminApprovals from './pages/admin/AdminApprovals';
@@ -114,9 +87,9 @@ function App() {
                 <Route 
                   path="/dashboard" 
                   element={
-                    <ProtectedRoute>
+                   
                       <DashboardRedirect />
-                    </ProtectedRoute>
+                   
                   } 
                 />
                 
@@ -148,13 +121,9 @@ function App() {
                 <Route 
                   path="/hr_staff/*" 
                   element={
-                    <ProtectedRoute 
-                      requiredUserType="ORG_USER" 
-                      requiredRole="HR_STAFF"
-                      requireModulesConfigured={true}
-                    >
+             
                       <HRStaffRoutes />
-                    </ProtectedRoute>
+                   
                   } 
                 />
 
@@ -283,24 +252,25 @@ const OrgAdminRoutes = () => {
  * HR Staff Routes Component
  * HR_STAFF role එකට - HR related permissions (payroll නැතුව)
  */
+// MainHRLayout is the parent layout
+// HRDashboard and EmployeeManagement are child pages
 const HRStaffRoutes = () => {
   return (
     <Routes>
-      <Route path="dashboard" element={<HRDashboard />} />
-      <Route path="employeemanagement" element={<EmployeeManagement />} />
-      <Route path="employeemanagement/add" element={<AddEmployee />} />
-      <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
-      <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />
-      <Route path="payrollmanagement" element={<PayrollManagement />} />
-      <Route path="payrollmanagement/payslips" element={<PayslipManagement />} />
-      <Route path="leavemanagement" element={<LeaveManagement />} />
-      <Route path="leavemanagement/approvals" element={<LeaveApprovals />} />
-      <Route path="attendancemanagement" element={<AttendanceManagement />} />
-      <Route path="reports" element={<HRReports />} />
-      <Route path="" element={<Navigate to="dashboard" replace />} />
+      <Route element={<MainHRLayout />}>
+        <Route path="dashboard" element={<HRDashboard />} />
+        {/* Add more HR pages here later */}
+        <Route path="EmployeeManagement" element={<EmployeeManagement />} /> 
+        <Route path="HiringManagement" element={<HiringManagement />} /> 
+        <Route path="LeaveManagement" element={<LeaveManagement />} /> 
+        <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
+        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
+        <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
+      </Route>
     </Routes>
   );
 };
+
 
 /**
  * Employee Routes Component

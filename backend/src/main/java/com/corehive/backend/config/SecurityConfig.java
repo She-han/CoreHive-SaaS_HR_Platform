@@ -62,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
+                        .requestMatchers("/api/employees").permitAll()
+                        .requestMatchers("/api/job-postings").permitAll()
 
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
@@ -122,7 +124,8 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/", configuration);
+        source.registerCorsConfiguration("/**", configuration);
+
 
         return source;
     }

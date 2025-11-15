@@ -60,20 +60,22 @@ public class SecurityConfig {
                         // Public endpoints (authentication නැතිව access කරන්න පුළුවන්)
                         .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
-                        .requestMatchers("/api/public/**").permitAll() // Future public APIs
+                        .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
+                        .requestMatchers("/api/employees").permitAll()
+                        .requestMatchers("/api/job-postings").permitAll()
 
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 
                         // Admin-only endpoints
-                        .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
+                        .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
 
                         // Organization-level endpoints
-                        .requestMatchers("/api/org/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
-                        .requestMatchers("/api/employee/**").hasRole("EMPLOYEE")
-                        .requestMatchers("/api/hr/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
-                        .requestMatchers("/api/payroll/**").hasRole("ORG_ADMIN")
+                        .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
+                        .requestMatchers("/api/employee/").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/hr/").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+                        .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/dashboard").authenticated() // Dashboard requires authentication
 
                         // Any other request needs authentication
@@ -123,6 +125,7 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
 
         return source;
     }

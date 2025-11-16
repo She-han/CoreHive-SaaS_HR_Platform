@@ -51,7 +51,7 @@ public class OrganizationService {
     }
 
     /**
-     * Approve organization registration - FIXED VERSION
+     * Approve organization registration - ENHANCED ERROR HANDLING VERSION
      */
     @Transactional
     public ApiResponse<String> approveOrganization(String organizationUuid) {
@@ -60,35 +60,76 @@ public class OrganizationService {
 
             Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
             if (orgOpt.isEmpty()) {
+                log.warn("Organization not found: {}", organizationUuid);
                 return ApiResponse.error("Organization not found");
             }
 
             Organization organization = orgOpt.get();
+            log.info("Found organization: {} with status: {}", organization.getName(), organization.getStatus());
 
-            // Status check - FIXED VERSION
+            // Status check
             if (!organization.isPendingApproval()) {
-                return ApiResponse.error("Organization is not in pending approval status");
+                log.warn("Organization {} is not in pending approval status. Current status: {}", 
+                        organizationUuid, organization.getStatus());
+                return ApiResponse.error("Organization is not in pending approval status. Current status: " + organization.getStatus());
             }
 
-            // Organization status update 
+            // Organization status update
+            log.info("Updating organization status to ACTIVE for: {}", organization.getName());
             organization.setStatus(OrganizationStatus.ACTIVE);
             organizationRepository.save(organization);
+            log.info("Organization status updated successfully to ACTIVE: {}", organization.getName());
 
-            // Admin user activate 
+            // Admin user activate - SIMPLIFIED VERSION USING ONLY STRING METHOD
+            log.info("Starting user activation process for organization: {}", organizationUuid);
+            
+            // Use only the string method since that works correctly
             List<AppUser> adminUsers = appUserRepository
                     .findByOrganizationUuidAndRole(organizationUuid, AppUserRole.ORG_ADMIN.name());
-
-            for (AppUser adminUser : adminUsers) {
-                adminUser.setIsActive(true);
-                appUserRepository.save(adminUser);
+            log.info("Found {} admin users using string role '{}' for organization: {}", 
+                    adminUsers.size(), AppUserRole.ORG_ADMIN.name(), organizationUuid);
+            
+            if (adminUsers.isEmpty()) {
+                log.warn("No ORG_ADMIN users found for organization: {}", organizationUuid);
+                // Let's also try to find all users for this organization to debug
+                List<AppUser> allUsers = appUserRepository.findByOrganizationUuid(organizationUuid);
+                log.info("Total users found for organization {}: {}", organizationUuid, allUsers.size());
+                for (AppUser user : allUsers) {
+                    log.info("User found: email={}, role={}, isActive={}", user.getEmail(), user.getRole(), user.getIsActive());
+                }
+                
+                // Continue with approval but note that no admin users were activated
+                log.info("Organization approved successfully: {} ({}) - No admin users found to activate", 
+                        organization.getName(), organizationUuid);
+                return ApiResponse.success("Organization approved successfully (no admin users found to activate)", null);
             }
 
-            log.info("Organization approved successfully: {} ({})", organization.getName(), organizationUuid);
+            log.info("Activating {} admin users for organization: {}", adminUsers.size(), organizationUuid);
+            int activatedCount = 0;
+            for (AppUser adminUser : adminUsers) {
+                try {
+                    boolean wasActive = adminUser.getIsActive();
+                    log.info("Processing admin user: {} (currently active: {})", adminUser.getEmail(), wasActive);
+                    
+                    adminUser.setIsActive(true);
+                    AppUser savedUser = appUserRepository.save(adminUser);
+                    activatedCount++;
+                    
+                    log.info("Admin user activated successfully: {} (was active: {}, now active: {})", 
+                            savedUser.getEmail(), wasActive, savedUser.getIsActive());
+                } catch (Exception e) {
+                    log.error("Error activating admin user: {}", adminUser.getEmail(), e);
+                    throw e; // Re-throw to fail the transaction
+                }
+            }
+
+            log.info("Organization approved successfully: {} ({}) - Activated {} admin users", 
+                    organization.getName(), organizationUuid, activatedCount);
             return ApiResponse.success("Organization approved successfully", null);
 
         } catch (Exception e) {
-            log.error("Error approving organization: {}", organizationUuid, e);
-            return ApiResponse.error("Failed to approve organization");
+            log.error("Error approving organization: {} - Exception: {}", organizationUuid, e.getMessage(), e);
+            return ApiResponse.error("Failed to approve organization: " + e.getMessage());
         }
     }
 
@@ -206,6 +247,31 @@ public class OrganizationService {
         } catch (Exception e) {
             log.error("Error changing organization status: {}", organizationUuid, e);
             return ApiResponse.error("Failed to change organization status");
+        }
+    }
+
+    /**
+     * Get organization details by UUID
+     * For admin review and approval workflow
+     */
+    public ApiResponse<OrganizationSummaryResponse> getOrganizationDetails(String organizationUuid) {
+        try {
+            log.info("Fetching organization details: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+            OrganizationSummaryResponse response = convertToSummaryResponse(organization);
+
+            log.info("Organization details retrieved: {}", organization.getName());
+            return ApiResponse.success("Organization details retrieved successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error fetching organization details: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to retrieve organization details");
         }
     }
 

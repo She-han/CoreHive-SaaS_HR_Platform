@@ -40,34 +40,34 @@ apiClient.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         if (import.meta.env.DEV) {
-          console.log(`🔑 Token added to ${config.url}:`, token.substring(0, 20) + '...');
+          console.log(` Token added to ${config.url}:`, token.substring(0, 20) + '...');
         }
       } else {
-        console.warn(`⚠️ No token found for protected endpoint: ${config.url}`);
+        console.warn(` No token found for protected endpoint: ${config.url}`);
         
         // Check if user data exists but token is missing
         const userData = localStorage.getItem('corehive_user');
         if (userData) {
-          console.error('❌ User data exists but token missing! This is a bug.');
-          console.log('🔍 Stored user data:', JSON.parse(userData));
+          console.error(' User data exists but token missing! This is a bug.');
+          console.log(' Stored user data:', JSON.parse(userData));
         }
       }
     } else {
       // Log for token-free endpoints
       if (import.meta.env.DEV) {
-        console.log(`🔓 Token-free endpoint: ${config.url}`);
+        console.log(` Token-free endpoint: ${config.url}`);
       }
     }
     
     // Log request (in development mode)
     if (import.meta.env.DEV) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(` API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
     
     return config;
   },
   (error) => {
-    console.error('❌ Request Error:', error);
+    console.error(' Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -80,7 +80,7 @@ apiClient.interceptors.response.use(
   (response) => {
     // Log success response (in development mode)
     if (import.meta.env.DEV) {
-      console.log(`✅ API Response: ${response.config.url}`, response.data);
+      console.log(` API Response: ${response.config.url}`, response.data);
     }
     
     return response;
@@ -89,7 +89,7 @@ apiClient.interceptors.response.use(
     const { response, request, message } = error;
     
     // Log error
-    console.error('❌ API Error:', error);
+    console.error(' API Error:', error);
     
     // Response error handling
     if (response) {

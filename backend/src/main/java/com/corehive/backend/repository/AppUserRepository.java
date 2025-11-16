@@ -37,7 +37,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
      * Organization's specific role users
      * Role-based filtering
      */
-    @Query("SELECT u FROM AppUser u WHERE u.organizationUuid = :orgUuid AND u.role = :role")
+    @Query("SELECT u FROM AppUser u WHERE u.organizationUuid = :orgUuid AND CAST(u.role AS string) = :role")
     List<AppUser> findByOrganizationUuidAndRole(@Param("orgUuid") String organizationUuid, @Param("role") String role);
 
     /**

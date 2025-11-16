@@ -83,14 +83,14 @@ public class AdminController {
 
             HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
 
-            log.info("Organization {} approval by {}: {}",
-                    organizationUuid, adminEmail, response.isSuccess() ? "SUCCESS" : "FAILED");
+            log.info("Organization {} approval by {}: {} - Message: {}",
+                    organizationUuid, adminEmail, response.isSuccess() ? "SUCCESS" : "FAILED", response.getMessage());
 
             return ResponseEntity.status(status).body(response);
 
         } catch (Exception e) {
             log.error("Error approving organization {} by admin: {}", organizationUuid, adminEmail, e);
-            ApiResponse<String> errorResponse = ApiResponse.error("Failed to approve organization");
+            ApiResponse<String> errorResponse = ApiResponse.error("Failed to approve organization: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
@@ -248,6 +248,42 @@ public class AdminController {
             log.error("Error retrieving platform statistics for admin: {}", adminEmail, e);
             ApiResponse<PlatformStatistics> errorResponse =
                     ApiResponse.error("Failed to retrieve platform statistics");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get Organization Details by UUID
+     * GET /api/admin/organizations/{organizationUuid}
+     *
+     * Get detailed organization information for review
+     */
+    @GetMapping("/organizations/{organizationUuid}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<OrganizationSummaryResponse>> getOrganizationDetails(
+            @PathVariable String organizationUuid,
+            HttpServletRequest request) {
+        
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Organization details request from admin: {} for org: {}", adminEmail, organizationUuid);
+
+        try {
+            ApiResponse<OrganizationSummaryResponse> response = 
+                    organizationService.getOrganizationDetails(organizationUuid);
+            
+            HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.NOT_FOUND;
+            
+            if (response.isSuccess()) {
+                log.info("Organization details retrieved by {}: {}", adminEmail, organizationUuid);
+            }
+            
+            return ResponseEntity.status(status).body(response);
+
+        } catch (Exception e) {
+            log.error("Error retrieving organization details for admin: {} and org: {}", 
+                    adminEmail, organizationUuid, e);
+            ApiResponse<OrganizationSummaryResponse> errorResponse =
+                    ApiResponse.error("Failed to retrieve organization details");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }

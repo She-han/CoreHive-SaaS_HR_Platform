@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * Admin Controller
- * System Admin operations සඳහා (Platform level)
+ * System Admin operations (Platform level)
  */
 @RestController
 @RequestMapping("/api/admin")
@@ -34,7 +34,7 @@ public class AdminController {
      * Get Pending Organization Approvals
      * GET /api/admin/organizations/pending
      *
-     * System admin dashboard එකේ approval queue show කරන්න
+     * Show approval queue in system admin dashboard
      */
     @GetMapping("/organizations/pending")
     @PreAuthorize("hasRole('SYS_ADMIN')") // Extra security check
@@ -67,7 +67,7 @@ public class AdminController {
      * Approve Organization Registration
      * PUT /api/admin/organizations/{organizationUuid}/approve
      *
-     * Organization registration approve කරන්න
+     * Approve organization registration
      */
     @PutMapping("/organizations/{organizationUuid}/approve")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -99,7 +99,7 @@ public class AdminController {
      * Reject Organization Registration
      * PUT /api/admin/organizations/{organizationUuid}/reject
      *
-     * Organization registration reject කරන්න
+     * Reject organization registration
      */
     @PutMapping("/organizations/{organizationUuid}/reject")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -131,7 +131,7 @@ public class AdminController {
      * Get All Organizations (with pagination)
      * GET /api/admin/organizations?page=0&size=10&sort=createdAt,desc
      *
-     * System admin dashboard එකේ සියලු organizations list
+     * List all organizations for system admin dashboard
      */
     @GetMapping("/organizations")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -146,11 +146,11 @@ public class AdminController {
         log.info("All organizations request from admin: {} (page: {}, size: {})", adminEmail, page, size);
 
         try {
-            // Sort direction determine කරන්න
+            // Determine sort direction
             Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ?
                     Sort.Direction.DESC : Sort.Direction.ASC;
 
-            // Pageable object create කරන්න
+            // Create Pageable object
             Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
             ApiResponse<Page<OrganizationSummaryResponse>> response =
@@ -178,7 +178,7 @@ public class AdminController {
      * Change Organization Status
      * PUT /api/admin/organizations/{organizationUuid}/status
      *
-     * Organization status change කරන්න (ACTIVE, DORMANT, SUSPENDED)
+     * Change organization status (ACTIVE, DORMANT, SUSPENDED)
      */
     @PutMapping("/organizations/{organizationUuid}/status")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -192,7 +192,7 @@ public class AdminController {
                 adminEmail, organizationUuid, status);
 
         try {
-            // Valid status values check කරන්න
+            // Check valid status values
             if (!isValidStatus(status)) {
                 ApiResponse<String> errorResponse =
                         ApiResponse.error("Invalid status. Allowed: ACTIVE, DORMANT, SUSPENDED");
@@ -220,7 +220,7 @@ public class AdminController {
      * Get Platform Statistics
      * GET /api/admin/statistics
      *
-     * Platform level statistics (dashboard charts සඳහා)
+     * Platform level statistics (for dashboard charts)
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -231,7 +231,7 @@ public class AdminController {
 
         try {
             // TODO: Implement PlatformStatistics service
-            // දැනට basic response එකක් return කරන්නම්
+            // Currently returning basic response
             PlatformStatistics stats = PlatformStatistics.builder()
                     .totalOrganizations(10L)
                     .activeOrganizations(8L)
@@ -253,7 +253,7 @@ public class AdminController {
     }
 
     /**
-     * Helper method - Valid organization status check කරන්න
+     * Helper method - Check valid organization status
      */
     private boolean isValidStatus(String status) {
         return status != null && (

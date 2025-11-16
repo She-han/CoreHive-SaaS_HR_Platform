@@ -2,7 +2,7 @@ import { apiGet, apiPut } from './axios';
 
 /**
  * System Admin API Calls
- * Platform level admin operations සඳහා
+ * Platform level admin operations
  */
 
 const ADMIN_ENDPOINTS = {

@@ -7,26 +7,26 @@ import java.util.Optional;
 
 /**
  * SystemUser Repository
- * System admin users database access සඳහා
+ * System admin users database access
  */
 @Repository
 public interface SystemUserRepository extends JpaRepository<SystemUser, Long> {
 
     /**
-     * Email address එකෙන් system user find කරන්න
-     * Login වෙලාවේ use වෙනවා
+     * System user find by Email address   
+     * Use when Login
      */
     Optional<SystemUser> findByEmail(String email);
 
     /**
-     * Email address එක exist කරනවාද check කරන්න
-     * Registration validation සඳහා
+     * Email address existence check
+     * Registration validation
      */
     boolean existsByEmail(String email);
 
     /**
      * Active system users count
-     * Statistics සඳහා
+     * for Statistics 
      */
     long countByIsActiveTrue();
 }

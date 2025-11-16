@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * Module Configuration Request DTO
- * First-time login වෙලාවේ ORG_ADMIN modules configure කරන්න
+ * Configure modules for ORG_ADMIN during first-time login
  */
 @Data
 @NoArgsConstructor

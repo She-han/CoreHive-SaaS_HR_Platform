@@ -23,36 +23,36 @@ import java.util.UUID;
 
 /**
  * Authentication Service
- * සියලු authentication related business logic මේකේ තියෙනවා
+ * Contains all authentication related business logic
  */
 @Service
-@RequiredArgsConstructor // Lombok: Final fields සඳහා constructor auto generate
-@Slf4j // Logging සඳහා
+@RequiredArgsConstructor // Lombok: Auto generate constructor for final fields
+@Slf4j // For logging
 public class AuthService {
 
     // Dependencies injection (Constructor injection - recommended way)
     private final OrganizationRepository organizationRepository;
     private final SystemUserRepository systemUserRepository;
     private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder; // Passwords hash කරන්න
-    private final JwtUtil jwtUtil; // JWT operations සඳහා
+    private final PasswordEncoder passwordEncoder; // For password hashing 
+    private final JwtUtil jwtUtil; // For JWT operations
 
     /**
      * Organization Registration (Company Signup)
-     * @param request Frontend එකෙන් එන registration data
+     * @param request Registration data from frontend
      * @return Success/Error response with message
      */
-    @Transactional // Database consistency සඳහා transaction wrapper
+    @Transactional // Transaction wrapper for database consistency
     public ApiResponse<String> signupOrganization(OrganizationSignupRequest request) {
         try {
             log.info("Processing organization signup for email: {}", request.getAdminEmail());
 
-            // 1. Validation - Email already exists ද?
+            // 1. Validation - Does email already exist?
             if (organizationRepository.existsByEmail(request.getAdminEmail())) {
                 return ApiResponse.error("Email address already registered");
             }
 
-            // 2. Business Registration Number duplicate ද?
+            // 2. Is Business Registration Number duplicate?
             if (organizationRepository.existsByBusinessRegistrationNumber(request.getBusinessRegistrationNumber())) {
                 return ApiResponse.error("Business registration number already exists");
             }
@@ -67,7 +67,7 @@ public class AuthService {
                     .modulePerformanceTracking(request.getModulePerformanceTracking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
                     .moduleHiringManagement(request.getModuleHiringManagement())
-                    .modulesConfigured(false) // First time login වෙලාවේ configure කරන්න වෙනවා
+                    .modulesConfigured(false) // Will be configured during first time login
                     .build();
 
             // 4. Save Organization
@@ -75,14 +75,14 @@ public class AuthService {
             log.info("Organization saved with UUID: {}", savedOrganization.getOrganizationUuid());
 
             // 5. Create Default ORG_ADMIN User
-            String temporaryPassword = generateTemporaryPassword(); // Development සඳහා simple password
+            String temporaryPassword = generateTemporaryPassword(); // Simple password for development
 
             AppUser adminUser = AppUser.builder()
                     .organizationUuid(savedOrganization.getOrganizationUuid())
                     .email(request.getAdminEmail())
-                    .passwordHash(passwordEncoder.encode(temporaryPassword)) // Password hash කරන්න
+                    .passwordHash(passwordEncoder.encode(temporaryPassword)) // Hash password
                     .role(AppUserRole.ORG_ADMIN)
-                    .isActive(false) // Organization approve වෙනතුරු inactive
+                    .isActive(false) // Inactive until organization is approved
                     .build();
 
             appUserRepository.save(adminUser);
@@ -106,9 +106,9 @@ public class AuthService {
     }
 
     /**
-     * Universal Login (System Admin සහ Organization Users දෙකටම)
+     * Universal Login (For both System Admin and Organization Users)
      * @param request Email + Password
-     * @return JWT token with user details හෝ error message
+     * @return JWT token with user details or error message
      */
     public ApiResponse<LoginResponse> login(LoginRequest request) {
         try {
@@ -139,22 +139,22 @@ public class AuthService {
     }
 
     /**
-     * System User Login Handle කරන්න
+     * Handle System User Login
      */
     private ApiResponse<LoginResponse> handleSystemUserLogin(SystemUser systemUser, String password) {
-        // 1. Password verify කරන්න
+        // 1. Verify password
         if (!passwordEncoder.matches(password, systemUser.getPasswordHash())) {
             log.warn("System user login failed - wrong password: {}", systemUser.getEmail());
             return ApiResponse.error("Invalid email or password");
         }
 
-        // 2. User active ද check කරන්න
+        // 2. Check if user is active
         if (!systemUser.getIsActive()) {
             log.warn("System user login failed - account inactive: {}", systemUser.getEmail());
             return ApiResponse.error("Account is inactive");
         }
 
-        // 3. JWT Token generate කරන්න
+        // 3. Generate JWT Token
         Map<String, Object> userDetails = new HashMap<>();
         userDetails.put("userId", systemUser.getId());
         userDetails.put("email", systemUser.getEmail());
@@ -162,16 +162,16 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(userDetails, "SYSTEM_ADMIN");
 
-        // 4. Response build කරන්න
+        // 4. Build response
         LoginResponse response = LoginResponse.builder()
                 .token(token)
                 .userId(systemUser.getId())
                 .email(systemUser.getEmail())
                 .userType("SYSTEM_ADMIN")
                 .role(systemUser.getRole())
-                .organizationUuid(null) // System admin එකට organization නෑ
+                .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
-                .modulesConfigured(true) // System admin ට modules නෑ
+                .modulesConfigured(true) // System admin -> no modules
                 .moduleConfig(null)
                 .build();
 
@@ -181,22 +181,22 @@ public class AuthService {
 
 
     /**
-     * App User (Organization User) Login Handle කරන්න - FIXED VERSION
+     * Handle App User (Organization User) Login - FIXED VERSION
      */
     private ApiResponse<LoginResponse> handleAppUserLogin(AppUser appUser, String password) {
-        // 1. Password verify කරන්න
+        // 1. Verify password
         if (!passwordEncoder.matches(password, appUser.getPasswordHash())) {
             log.warn("App user login failed - wrong password: {}", appUser.getEmail());
             return ApiResponse.error("Invalid email or password");
         }
 
-        // 2. User active ද check කරන්න
+        // 2. Check if user is active
         if (!appUser.getIsActive()) {
             log.warn("App user login failed - account inactive: {}", appUser.getEmail());
             return ApiResponse.error("Account is inactive. Please contact your administrator.");
         }
 
-        // 3. Organization status check කරන්න
+        // 3. Organization status check 
         Optional<Organization> organizationOpt = organizationRepository
                 .findByOrganizationUuid(appUser.getOrganizationUuid());
 
@@ -207,7 +207,7 @@ public class AuthService {
 
         Organization organization = organizationOpt.get();
 
-        // 4. Organization approved ද check කරන්න
+        // 4. Check if organization is approved
         if (!organization.isActive()) {
             String message;
             if (organization.getStatus() == OrganizationStatus.PENDING_APPROVAL) {
@@ -221,7 +221,7 @@ public class AuthService {
             return ApiResponse.error(message);
         }
 
-        // 5. JWT Token generate කරන්න
+        // 5. Generate JWT Token
         Map<String, Object> userDetails = new HashMap<>();
         userDetails.put("userId", appUser.getId());
         userDetails.put("email", appUser.getEmail());
@@ -230,10 +230,10 @@ public class AuthService {
 
         String token = jwtUtil.generateToken(userDetails, "ORG_USER");
 
-        // 6. Module configuration map build කරන්න
+        // 6. Build module configuration map
         Map<String, Boolean> moduleConfig = buildModuleConfig(organization);
 
-        // 7. Response build කරන්න - FIXED: Include all required fields
+        // 7. Build response - FIXED: Include all required fields
         LoginResponse response = LoginResponse.builder()
                 .token(token)
                 .userId(appUser.getId())
@@ -261,7 +261,7 @@ public class AuthService {
         try {
             log.info("Configuring modules for organization: {}", organizationUuid);
 
-            // 1. Organization find කරන්න
+            // 1. Find organization
             Optional<Organization> organizationOpt = organizationRepository
                     .findByOrganizationUuid(organizationUuid);
 
@@ -271,12 +271,12 @@ public class AuthService {
 
             Organization organization = organizationOpt.get();
 
-            // 2. Already configured ද check කරන්න
+            // 2. Check if already configured
             if (organization.getModulesConfigured()) {
                 return ApiResponse.error("Modules already configured");
             }
 
-            // 3. Module selections update කරන්න
+            // 3. Update module selections
             organization.setModulePerformanceTracking(request.getModulePerformanceTracking());
             organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
             organization.setModuleHiringManagement(request.getModuleHiringManagement());
@@ -297,11 +297,11 @@ public class AuthService {
     /**
      * Get Current User Info (Token validation + user details)
      * @param token JWT token
-     * @return User details හෝ error
+     * @return User details or error
      */
     public ApiResponse<LoginResponse> getCurrentUser(String token) {
         try {
-            // 1. Token validate කරන්න
+            // 1. Validate token
             String email = jwtUtil.extractEmail(token);
             String userType = jwtUtil.extractUserType(token);
 
@@ -320,7 +320,7 @@ public class AuthService {
     }
 
     /**
-     * Helper method - Module config map build කරන්න
+     * Helper method - Build module config map
      */
     private Map<String, Boolean> buildModuleConfig(Organization organization) {
         Map<String, Boolean> moduleConfig = new HashMap<>();
@@ -347,8 +347,8 @@ public class AuthService {
      * Helper method - Temporary password generate (Development only)
      */
     private String generateTemporaryPassword() {
-        // Production එකේ strong random password generate කරන්න
-        // දැනට simple password එකක්
+        // Generate strong random password in production 
+        // Currently using simple password
         return "TempPass123!";
     }
 

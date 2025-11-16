@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * Login Request DTO
- * Universal login (System Admin සහ Organization Users දෙකටම use වෙනවා)
+ * Universal login (Used by both System Admin and Organization Users)
  */
 @Data
 @NoArgsConstructor

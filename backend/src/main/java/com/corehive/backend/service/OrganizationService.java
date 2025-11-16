@@ -70,11 +70,11 @@ public class OrganizationService {
                 return ApiResponse.error("Organization is not in pending approval status");
             }
 
-            // Organization status update කරන්න
+            // Organization status update 
             organization.setStatus(OrganizationStatus.ACTIVE);
             organizationRepository.save(organization);
 
-            // Admin user activate කරන්න
+            // Admin user activate 
             List<AppUser> adminUsers = appUserRepository
                     .findByOrganizationUuidAndRole(organizationUuid, AppUserRole.ORG_ADMIN.name());
 
@@ -112,7 +112,7 @@ public class OrganizationService {
                 return ApiResponse.error("Organization is not in pending approval status");
             }
 
-            // Status update කරන්න
+            // Status update 
             organization.setStatus(OrganizationStatus.SUSPENDED);
             organizationRepository.save(organization);
 
@@ -191,7 +191,7 @@ public class OrganizationService {
             organization.setStatus(targetStatus);
             organizationRepository.save(organization);
 
-            // Status අනුව users activate/deactivate කරන්න
+            // Status users activate/deactivate 
             List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
             boolean shouldActivateUsers = targetStatus.allowsLogin();
 

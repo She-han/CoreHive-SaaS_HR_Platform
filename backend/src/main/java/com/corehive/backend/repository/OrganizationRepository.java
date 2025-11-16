@@ -12,49 +12,49 @@ import java.util.Optional;
 
 /**
  * Organization Repository
- * Organizations database access සඳහා
+ * Organizations database access 
  */
 @Repository
 public interface OrganizationRepository extends JpaRepository<Organization, Long> {
 
     /**
-     * Organization UUID එකෙන් find කරන්න
-     * Multi-tenant operations සඳහා
+     * find by Organization UUID   
+     * Multi-tenant operations 
      */
     Optional<Organization> findByOrganizationUuid(String organizationUuid);
 
     /**
-     * Email address එකෙන් organization find කරන්න
-     * Registration time duplicate check සඳහා
+     * Organization find by Email address   
+     * Registration time duplicate check 
      */
     Optional<Organization> findByEmail(String email);
 
     /**
-     * Status අනුව organizations filter කරන්න
-     * System admin dashboard සඳහා
+     * Organizations filter according to status 
+     * System admin dashboard 
      */
     Page<Organization> findByStatus(String status, Pageable pageable);
 
     /**
      * Pending approval organizations list
-     * System admin approval queue සඳහා
+     * System admin approval queue 
      */
     @Query("SELECT o FROM Organization o WHERE o.status = 'PENDING_APPROVAL' ORDER BY o.createdAt ASC")
     List<Organization> findPendingApprovals();
 
     /**
-     * Status එක අනුව count
-     * Dashboard statistics සඳහා
+     * Count by status
+     * Dashboard statistics 
      */
     long countByStatus(String status);
 
     /**
-     * Email already registered ද check කරන්න
+     * Email already registered or not checking 
      */
     boolean existsByEmail(String email);
 
     /**
-     * Business Registration Number duplicate ද check කරන්න
+     * Business Registration Number duplicate checking
      */
     boolean existsByBusinessRegistrationNumber(String brNumber);
 }

@@ -18,7 +18,9 @@ import Button from '../common/Button';
 
 /**
  * Navigation Bar Component
- * Site-wide navigation සඳහා responsive navbar
+ * Site-wide Navigation
+ * Responsive navbar for site-wide navigation
+ * Adaptive menu based on authentication and user role
  */
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -49,7 +51,7 @@ const Navbar = () => {
       ];
     }
     
-    // Role අනුව navigation paths - නව route structure අනුව
+    // Navigation paths based on role - according to new route structure
     switch (user?.role) {
       case 'SYS_ADMIN':
         return [

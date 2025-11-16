@@ -2,7 +2,7 @@ package com.corehive.backend.model;
 
 /**
  * Organization Status Enum
- * Organization වල status values සඳහා
+ * Status of Organizations
  */
 public enum OrganizationStatus {
     PENDING_APPROVAL("Pending Approval", "Registration submitted, waiting for admin approval"),

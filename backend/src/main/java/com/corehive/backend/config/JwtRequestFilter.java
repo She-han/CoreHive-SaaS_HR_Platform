@@ -21,7 +21,7 @@ import java.util.Arrays;
 
 /**
  * JWT Request Filter
- * හැම request එකකම JWT token validate කරනවා
+ * Validates JWT token for every request
  */
 @Component
 @RequiredArgsConstructor
@@ -34,15 +34,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
 
-        // 1. Authorization header එකෙන් JWT token extract කරන්න
+        // 1. Extract JWT token from Authorization header   
         final String requestTokenHeader = request.getHeader("Authorization");
 
         String email = null;
         String jwtToken = null;
 
-        // Bearer token format check කරන්න
+        // Check Bearer token format
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7); // "Bearer " remove කරන්න
+            jwtToken = requestTokenHeader.substring(7); // Remove "Bearer " 
             try {
                 email = jwtUtil.extractEmail(jwtToken);
             } catch (Exception e) {
@@ -50,29 +50,29 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. Token valid නම් authentication set කරන්න
+        // 2. If token is valid, set authentication
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // Token validate කරන්න
+            // Validate token
             if (jwtUtil.validateToken(jwtToken, email)) {
 
-                // User roles extract කරන්න
+                // Extract user roles 
                 String role = jwtUtil.extractRole(jwtToken);
                 String userType = jwtUtil.extractUserType(jwtToken);
 
-                // Spring Security authorities create කරන්න
+                // Spring Security authorities create 
                 List<SimpleGrantedAuthority> authorities = createAuthorities(role);
 
-                // Authentication object create කරන්න
+                // Create authentication object
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(email, null, authorities);
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // Security context එකේ authentication set කරන්න
+                // Set authentication in Security context   
                 SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                // Request attributes එකේ user info store කරන්න (Controller වලින් access කරන්න)
+                // Store user info in request attributes (for Controller access)
                 request.setAttribute("userId", jwtUtil.extractUserId(jwtToken));
                 request.setAttribute("userEmail", email);
                 request.setAttribute("userRole", role);
@@ -83,27 +83,27 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             }
         }
 
-        // 3. Filter chain continue කරන්න
+        // 3. Continue filter chain
         chain.doFilter(request, response);
     }
 
     /**
-     * User role අනුව Spring Security authorities create කරන්න
+     * Create Spring Security authorities based on user role
      */
     private List<SimpleGrantedAuthority> createAuthorities(String role) {
-        // ROLE_ prefix add කරන්න (Spring Security requirement)
+        // ROLE_ prefix add  (Spring Security requirement)
         return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     /**
-     * Public endpoints සඳහා filter skip කරන්න (FIXED VERSION)
-     * configure-modules endpoint එකට authentication ඕනේ නිසා එය exclude කරනවා
+     * Skip filter for public endpoints (FIXED VERSION)
+     * configure-modules endpoint requires authentication, so exclude it
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         
-        // Public endpoints (token required නැහැ)
+        // Public endpoints (no token required)
         List<String> publicPaths = Arrays.asList(
             "/api/auth/login",
             "/api/auth/signup"

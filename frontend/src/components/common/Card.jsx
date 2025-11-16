@@ -2,7 +2,7 @@ import React from 'react';
 
 /**
  * Reusable Card Component
- * Content containers සඳහා consistent styling
+ * Consistent styling for content containers
  */
 const Card = ({
   children,

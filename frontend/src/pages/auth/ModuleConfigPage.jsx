@@ -25,7 +25,7 @@ import Footer from '../../components/layout/Footer';
 
 /**
  * Module Configuration Page
- * First-time ORG_ADMIN login වෙලාවේ modules configure කරන්න
+ * Configure modules during first-time ORG_ADMIN login
  */
 const ModuleConfigPage = () => {
   const dispatch = useDispatch();
@@ -104,7 +104,7 @@ const handleSubmit = async (e) => {
     if (configureModules.fulfilled.match(resultAction)) {
       console.log('✅ Modules configured successfully, navigating to org_admin dashboard...');
       
-      // Module config වෙලා ORG_ADMIN dashboard එකට redirect කරනවා
+      // After module config, redirect to ORG_ADMIN dashboard
       setTimeout(() => {
         navigate('/org_admin/dashboard', { replace: true });
       }, 500);
@@ -131,7 +131,7 @@ const handleSkip = async () => {
     if (configureModules.fulfilled.match(resultAction)) {
       console.log('✅ Basic configuration saved, navigating to org_admin dashboard...');
       
-      // Basic modules සමඟ ORG_ADMIN dashboard එකට redirect කරනවා
+      // Redirect to ORG_ADMIN dashboard with basic modules
       setTimeout(() => {
         navigate('/org_admin/dashboard', { replace: true });
       }, 500);

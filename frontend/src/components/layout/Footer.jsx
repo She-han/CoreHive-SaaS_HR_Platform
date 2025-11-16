@@ -17,7 +17,7 @@ const Footer = () => {
           {/* Company info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <Building2 className="h-8 w-8 text-primary-500" />
+              
               <span className="text-2xl font-bold">
                 Core<span className="text-primary-500">Hive</span>
               </span>
@@ -142,7 +142,7 @@ const Footer = () => {
         {/* Bottom footer */}
         <div className="border-t border-blue-400 py-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-blue-100 text-sm">
-            © {currentYear} CoreHive. All rights reserved. Made with ❤️ in Sri Lanka.
+            © {currentYear} CoreHive. All rights reserved. 
           </p>
           
           {/* Social links */}

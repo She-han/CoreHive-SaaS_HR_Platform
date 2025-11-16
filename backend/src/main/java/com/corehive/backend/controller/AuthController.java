@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Authentication Controller
- * සියලු authentication related API endpoints
+ * All authentication related API endpoints
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -31,17 +31,17 @@ public class AuthController {
      * Organization Registration Endpoint
      * POST /api/auth/signup
      *
-     * Frontend signup form එකෙන් එන data process කරනවා
+     * Process data from frontend signup form
      */
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse<String>> signup(@Valid @RequestBody OrganizationSignupRequest request) {
         log.info("Organization signup request received for: {}", request.getAdminEmail());
 
         try {
-            // Service layer එකට request forward කරනවා
+            // Forward request to service layer
             ApiResponse<String> response = authService.signupOrganization(request);
 
-            // Response status determine කරන්න
+            // Determine response status
             HttpStatus status = response.isSuccess() ? HttpStatus.CREATED : HttpStatus.BAD_REQUEST;
 
             log.info("Signup response for {}: {}", request.getAdminEmail(),
@@ -60,14 +60,14 @@ public class AuthController {
      * Universal Login Endpoint
      * POST /api/auth/login
      *
-     * System Admin සහ Organization Users දෙකටම login support
+     * Login support for both System Admin and Organization Users
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request,
                                                             HttpServletRequest httpRequest) {
         log.info("Login request received for: {}", request.getEmail());
 
-        // Client IP address log කරන්න (security සඳහා)
+        // Log client IP address (for security)
         String clientIp = getClientIpAddress(httpRequest);
         log.debug("Login attempt from IP: {}", clientIp);
 
@@ -96,14 +96,14 @@ public class AuthController {
      * Module Configuration Endpoint
      * POST /api/auth/configure-modules
      *
-     * First-time ORG_ADMIN login වෙලාවේ modules configure කරන්න
+     * Configure modules during first-time ORG_ADMIN login
      */
     @PostMapping("/configure-modules")
     public ResponseEntity<ApiResponse<String>> configureModules(
             @Valid @RequestBody ModuleConfigurationRequest request,
             HttpServletRequest httpRequest) {
 
-        // JWT token එකෙන් organization UUID extract කරන්න
+        // Extract organization UUID from JWT token
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
         String userRole = (String) httpRequest.getAttribute("userRole");
@@ -151,7 +151,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<LoginResponse>> getCurrentUser(HttpServletRequest request) {
 
-        // JWT token extract කරන්න
+        // Extract JWT token
         String authHeader = request.getHeader("Authorization");
         String userEmail = (String) request.getAttribute("userEmail");
 
@@ -163,7 +163,7 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
             }
 
-            String token = authHeader.substring(7); // "Bearer " remove කරන්න
+            String token = authHeader.substring(7); // Remove "Bearer "
             ApiResponse<LoginResponse> response = authService.getCurrentUser(token);
 
             HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
@@ -178,27 +178,27 @@ public class AuthController {
     }
 
     /**
-     * Logout Endpoint (Optional - JWT stateless නිසා server-side logout නෑ)
+     * Logout Endpoint (Optional - No server-side logout needed for JWT stateless)
      * POST /api/auth/logout
      *
-     * Client-side token clear කරන්න කියන්න විතරයි
+     * Just tell client to clear token
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<String>> logout(HttpServletRequest request) {
         String userEmail = (String) request.getAttribute("userEmail");
         log.info("Logout request from: {}", userEmail);
 
-        // JWT stateless නිසා server එකේ කරන්න දෙයක් නෑ
-        // Frontend එකේ token clear කරන්න කියන්න විතරයි
+        // No server-side action needed for JWT stateless
+        // Just tell frontend to clear token
         ApiResponse<String> response = ApiResponse.success("Logout successful. Please clear your token.", null);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Helper method - Client IP address extract කරන්න
+     * Helper method - Extract client IP address
      */
     private String getClientIpAddress(HttpServletRequest request) {
-        // Reverse proxy (nginx, cloudflare) පිටිපස්සෙ තියෙනවා නම් real IP extract කරන්න
+        // Extract real IP if behind reverse proxy (nginx, cloudflare)
         String xForwardedFor = request.getHeader("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
             return xForwardedFor.split(",")[0].trim();

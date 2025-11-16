@@ -12,7 +12,7 @@ import java.util.Map;
 
 /**
  * Dashboard Controller
- * Role-based dashboard data provide කරනවා
+ * Provides role-based dashboard data
  */
 @RestController
 @RequestMapping("/api/dashboard")
@@ -25,7 +25,7 @@ public class DashboardController {
      * Get Dashboard Data
      * GET /api/dashboard
      *
-     * User role අනුව dashboard data return කරනවා
+     * Return dashboard data based on user role
      */
     @GetMapping
     public ResponseEntity<ApiResponse<Map<String, Object>>> getDashboardData(HttpServletRequest request) {
@@ -40,14 +40,14 @@ public class DashboardController {
         try {
             Map<String, Object> dashboardData = new HashMap<>();
 
-            // User type අනුව dashboard data prepare කරන්න
+            // Prepare dashboard data based on user type
             if ("SYSTEM_ADMIN".equals(userType)) {
                 dashboardData = prepareSysAdminDashboard();
             } else if ("ORG_USER".equals(userType)) {
                 dashboardData = prepareOrgUserDashboard(userRole, organizationUuid);
             }
 
-            // Common user info add කරන්න
+            // Add common user info
             dashboardData.put("userInfo", Map.of(
                     "email", userEmail,
                     "role", userRole,
@@ -101,7 +101,7 @@ public class DashboardController {
     private Map<String, Object> prepareOrgUserDashboard(String role, String organizationUuid) {
         Map<String, Object> data = new HashMap<>();
 
-        // Role අනුව different data return කරන්න
+        // Return different data based on role.
         switch (role) {
             case "ORG_ADMIN":
                 data.putAll(prepareOrgAdminDashboard(organizationUuid));

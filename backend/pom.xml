@@ -77,7 +77,7 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- JWT Token Library - Token generation සහ validation -->
+		<!-- JWT Token Library - Token generation and validation -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>

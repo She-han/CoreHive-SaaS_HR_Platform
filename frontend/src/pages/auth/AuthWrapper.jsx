@@ -11,7 +11,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 /**
  * Authentication Wrapper
- * App load වෙලාවේ authentication state initialize කරන්න
+ * Initialize authentication state when app loads
  */
 const AuthWrapper = ({ children }) => {
   const dispatch = useDispatch();

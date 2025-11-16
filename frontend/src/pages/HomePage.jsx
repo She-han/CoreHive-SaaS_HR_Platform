@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 import { 
   ArrowRight, 
   CheckCircle, 
@@ -9,19 +15,180 @@ import {
   Shield, 
   Clock, 
   Zap,
-  Building2,
   Star
+  
 } from 'lucide-react';
 
-
+import Marquee from '../components/common/Marquee';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import Navbar from '../components/layout/Navbar';
+import Footer from '../components/layout/Footer';
 
 /**
  * Homepage Component
  * Main landing page for CoreHive platform
  */
 const HomePage = () => {
+  
+  // 3D Tilt Card Configuration
+  const ROTATION_RANGE = 32.5;
+  const HALF_ROTATION_RANGE = 32.5 / 2;
+
+  const TiltCard = () => {
+    const ref = useRef(null);
+
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+
+    const xSpring = useSpring(x);
+    const ySpring = useSpring(y);
+
+    const transform = useMotionTemplate`rotateX(${xSpring}deg) rotateY(${ySpring}deg)`;
+
+    const handleMouseMove = (e) => {
+      if (!ref.current) return [0, 0];
+
+      const rect = ref.current.getBoundingClientRect();
+
+      const width = rect.width;
+      const height = rect.height;
+
+      const mouseX = (e.clientX - rect.left) * ROTATION_RANGE;
+      const mouseY = (e.clientY - rect.top) * ROTATION_RANGE;
+
+      const rX = (mouseY / height - HALF_ROTATION_RANGE) * -1;
+      const rY = mouseX / width - HALF_ROTATION_RANGE;
+
+      x.set(rX);
+      y.set(rY);
+    };
+
+    const handleMouseLeave = () => {
+      x.set(0);
+      y.set(0);
+    };
+
+    return (
+      <motion.div
+        ref={ref}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          transformStyle: "preserve-3d",
+          transform,
+        }}
+        className="relative h-96 w-[550px] mx-auto rounded-xl bg-gradient-to-br from-primary-400 to-secondary-500 shadow-2xl"
+      >
+        <div
+          style={{
+            transform: "translateZ(75px)",
+            transformStyle: "preserve-3d",
+          }}
+          className="absolute inset-4 grid place-content-center rounded-xl bg-white shadow-lg overflow-hidden"
+        >
+          {/* Background Pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-secondary-50 opacity-30" />
+          
+          {/* Main Content */}
+          <div className="relative z-10 text-center p-6">
+            {/* Main Image Container */}
+            <div
+              style={{
+                transform: "translateZ(100px)",
+              }}
+              className="mx-auto mb-4 relative w-32 h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-primary-100 to-secondary-100"
+            >
+              {/* Professional HR Illustration */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-24 h-24">
+                  {/* Team/People Icons */}
+                  <div className="absolute inset-0 grid grid-cols-2 gap-1">
+                    <div className="bg-primary-500 rounded-full flex items-center justify-center">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="bg-secondary-500 rounded-full flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="bg-green-500 rounded-full flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="bg-blue-500 rounded-full flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  
+                 {/*  {/* Central connecting element 
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-md flex items-center justify-center z-10">
+                    <Building2 className="w-3 h-3 text-primary-500" />
+                  </div> */}
+                </div>
+              </div>
+              
+              {/* Animated pulse effect */}
+              <motion.div
+                className="absolute inset-0 bg-primary-500 rounded-2xl opacity-20"
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.2, 0.1, 0.2],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </div>
+            
+            {/* Title */}
+            <h3
+              style={{
+                transform: "translateZ(40px)",
+              }}
+              className="text-xl font-bold text-text-primary mb-2"
+            >
+              Join 500+ Companies
+            </h3>
+            
+            {/* Subtitle */}
+            <p
+              style={{
+                transform: "translateZ(30px)",
+              }}
+              className="text-xl text-text-secondary mb-6"
+            >
+              Leading Sri Lankan SMEs
+            </p>
+            
+            {/* Statistics Grid */}
+            <div
+              style={{
+                transform: "translateZ(25px)",
+              }}
+              className="grid grid-cols-3 gap-4 text-xs"
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary-500">500+</div>
+                <div className="text-text-secondary">Companies</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary-500">15K+</div>
+                <div className="text-text-secondary">Employees</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary-500">98%</div>
+                <div className="text-text-secondary">Satisfaction</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Floating Elements */}
+      
+        </div>
+      </motion.div>
+    );
+  };
+  
   
   // Feature highlights
   const features = [
@@ -136,9 +303,11 @@ const HomePage = () => {
   ];
 
   return (
+    <>
+    <Navbar/>
     <div className="bg-background-primary">
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 lg:py-28">
+      <section className="relative overflow-hidden py-20 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-center">
             {/* Hero content */}
@@ -146,6 +315,7 @@ const HomePage = () => {
               <div className="animate-fade-in">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-tight">
                   Modern HR for{' '}
+                  <br/>
                   <span className="text-primary-500">Sri Lankan</span>{' '}
                   SMEs
                 </h1>
@@ -197,36 +367,17 @@ const HomePage = () => {
               </div>
             </div>
             
-            {/* Hero image/illustration */}
+            {/* Hero image/illustration - 3D Animated Card */}
             <div className="mt-12 lg:mt-0 lg:col-span-6">
-              <div className="animate-slide-up">
-                <Card className="p-8 bg-gradient-to-br from-primary-50 to-secondary-50 border-primary-200">
-                  <div className="text-center">
-                    <Building2 className="w-32 h-32 text-primary-500 mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold text-text-primary mb-4">
-                      Join 500+ Sri Lankan Companies
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary-500">500+</div>
-                        <div className="text-text-secondary">Companies</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary-500">15K+</div>
-                        <div className="text-text-secondary">Employees</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-primary-500">98%</div>
-                        <div className="text-text-secondary">Satisfaction</div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+              <div className="animate-slide-up flex justify-center">
+                <TiltCard />
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <Marquee/>
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-background-white">
@@ -450,6 +601,8 @@ const HomePage = () => {
         </div>
       </section>
     </div>
+    <Footer/>
+    </>
   );
 };
 

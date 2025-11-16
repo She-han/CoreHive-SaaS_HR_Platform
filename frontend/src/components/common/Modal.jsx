@@ -4,7 +4,7 @@ import Button from './Button';
 
 /**
  * Reusable Modal Component
- * Overlays සහ dialogs සඳහා
+ * For overlays and dialogs
  */
 const Modal = ({
   isOpen = false,

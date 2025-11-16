@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * Login Response DTO
- * Login success වෙලාවේ return කරන data
+ * Data returned on successful login
  */
 @Data
 @NoArgsConstructor

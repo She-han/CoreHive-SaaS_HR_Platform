@@ -21,6 +21,8 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
 
 /**
  * System Admin Dashboard Component
@@ -40,6 +42,10 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  
+  // Modal state
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
 
   // Load dashboard data
   const loadDashboardData = async () => {
@@ -76,6 +82,23 @@ const AdminDashboard = () => {
   // Refresh handler
   const handleRefresh = () => {
     loadDashboardData();
+  };
+
+  // Handle organization review
+  const handleOrganizationReview = (organization) => {
+    setSelectedOrganization(organization);
+    setIsReviewModalOpen(true);
+  };
+
+  // Handle organization approval success
+  const handleApprovalSuccess = () => {
+    loadDashboardData(); // Refresh data after approval/rejection
+  };
+
+  // Close modal
+  const closeReviewModal = () => {
+    setIsReviewModalOpen(false);
+    setSelectedOrganization(null);
   };
 
   // Statistics cards data
@@ -148,14 +171,14 @@ const AdminDashboard = () => {
 
   if (isLoading && stats.totalOrganizations === 0) {
     return (
-      <div className="min-h-screen bg-background-primary">
+      <DashboardLayout>
         <LoadingSpinner centerScreen size="lg" text="Loading dashboard..." />
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-primary">
+    <DashboardLayout title="System Administration">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -256,11 +279,13 @@ const AdminDashboard = () => {
                         </p>
                       </div>
                       
-                      <Link to={`/admin/organizations/${org.organizationUuid}`}>
-                        <Button variant="outline" size="sm">
-                          Review
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleOrganizationReview(org)}
+                      >
+                        Review
+                      </Button>
                     </div>
                   ))}
                   
@@ -376,7 +401,16 @@ const AdminDashboard = () => {
           </Card>
         </div>
       </div>
-    </div>
+
+      {/* Organization Review Modal */}
+      <OrganizationReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={closeReviewModal}
+        organization={selectedOrganization}
+        onApprove={handleApprovalSuccess}
+        onReject={handleApprovalSuccess}
+      />
+    </DashboardLayout>
   );
 };
 

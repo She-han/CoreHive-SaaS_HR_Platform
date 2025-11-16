@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 /**
  * Organization Summary Response DTO
- * Organization list සඳහා (System Admin dashboard)
+ * For organization list (System Admin dashboard)
  */
 @Data
 @NoArgsConstructor

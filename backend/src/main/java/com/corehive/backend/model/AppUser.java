@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 /**
  * AppUser Entity - Organization level users
- * මේ users specific organization එකක් සමඟ bound වෙලා තියෙනවා
+ *  These App users bond specific organization (each have organization uuid) 
  */
 @Entity
 @Table(name = "app_user")

@@ -2,7 +2,7 @@ import { apiPost, apiGet } from './axios';
 
 /**
  * Authentication API Calls
- * සියලු authentication related API calls
+ * All authentication related API calls
  */
 
 const AUTH_ENDPOINTS = {

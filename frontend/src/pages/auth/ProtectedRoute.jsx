@@ -45,18 +45,18 @@ const ProtectedRoute = ({
     return <Navigate to="/unauthorized" replace />;
   }
   
-  // FIXED: Module configuration check
+  // ENHANCED: Module configuration check for ORG users
   if (user?.userType === 'ORG_USER' && user?.role === 'ORG_ADMIN') {
-    // If ORG_ADMIN hasn't configured modules and not already on config page
+    // If ORG_ADMIN hasn't configured modules, go to config page
     if (!user?.modulesConfigured && location.pathname !== '/configure-modules') {
-      console.log('🔄 Redirecting to module configuration...');
+      console.log('🔄 ORG_ADMIN needs module configuration...');
       return <Navigate to="/configure-modules" replace />;
     }
     
-    // If on config page but modules already configured, redirect to dashboard
+    // If on config page but modules already configured, go to dashboard
     if (user?.modulesConfigured && location.pathname === '/configure-modules') {
-      console.log('✅ Modules already configured, redirecting to dashboard...');
-      return <Navigate to="/dashboard" replace />;
+      console.log('✅ Modules already configured, redirecting to org_admin dashboard...');
+      return <Navigate to="/org_admin/dashboard" replace />;
     }
   }
   

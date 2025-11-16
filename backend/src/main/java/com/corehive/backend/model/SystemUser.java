@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * SystemUser Entity - Platform level administrators
- * මේ users ට platform level access තියෙනවා, specific organization එකකට bound වෙන්නේ නෑ
+ * Platform level access -> view organization basic data (but not sensitive data) 
  */
 @Entity
 @Table(name = "system_user")

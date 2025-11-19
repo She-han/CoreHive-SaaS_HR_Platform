@@ -104,7 +104,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:3000",    // React development server
                 "http://localhost:3001",    // Alternative port
-                "https://yourdomain.com"    // Production domain
+                "https://corehive-frontend-app.azurewebsites.net"    // Production domain
         ));
 
         // Allow specific HTTP methods

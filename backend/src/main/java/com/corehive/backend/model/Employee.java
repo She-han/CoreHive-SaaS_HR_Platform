@@ -46,7 +46,7 @@ public class Employee {
         private String designation;
 
         @Column(name = "department_id")
-        private Long departmentId;
+        private Long departmentId; // Note: This is currently a loose reference, not a foreign key
 
         @Column(name = "basic_salary", precision = 12, scale = 2)
         private BigDecimal basicSalary;

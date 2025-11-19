@@ -1,46 +1,46 @@
 # =========================================================================
 # Stage 1: Build the Spring Boot Application with Maven and JDK 21
 # =========================================================================
-# Official Maven image එකක් use කරනවා, ඒකෙ JDK 21 (eclipse-temurin) තියෙනවා.
-# මේ stage එකේදී application code එක compile කරලා executable JAR file එක හදනවා.
+# Use official Maven image with JDK 21 (eclipse-temurin)
+# This stage compiles application code and creates executable JAR file
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 LABEL maintainer="She-han <shehan@corehive.lk>"
 
-# Application එකේ working directory එක set කරනවා
+# Set working directory for the application
 WORKDIR /app
 
-# මුලින්ම pom.xml එක copy කරලා dependencies download කරනවා.
-# මේකෙන් source code change උනත්, dependencies change උනේ නැත්නම් layer cache use වෙනවා, build time එක අඩු වෙනවා.
+# First copy pom.xml and download dependencies
+# This allows layer caching - if dependencies don't change, build time is reduced
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Source code එකේ ඉතුරු ටික copy කරනවා
+# Copy the rest of the source code
 COPY src ./src
 
-# Maven package command එකෙන් application එක build කරනවා.
-# -DskipTests=true use කරලා build time එකේදී tests run වෙන එක නවත්තනවා.
+# Build the application using Maven package command
+# Use -DskipTests=true to skip running tests during build time
 RUN mvn clean package -DskipTests=true
 
 # =========================================================================
 # Stage 2: Create the Final Lightweight Runtime Image
 # =========================================================================
-# Application එක run කරන්න විතරක් අවශ්‍ය JRE (Java Runtime Environment) 21 තියෙන lightweight image එකක් use කරනවා.
-# මේකෙන් final Docker image size එක ගොඩක් අඩු වෙනවා.
+# Use lightweight image with only JRE (Java Runtime Environment) 21 needed to run the application
+# This significantly reduces the final Docker image size
 FROM eclipse-temurin:21-jre-jammy
 
-# App එකට run වෙන්න වෙනම user කෙනෙක් create කරනවා (security best practice)
+# Create a separate user for running the app (security best practice)
 RUN useradd -ms /bin/bash corehive
 USER corehive
 
-# Application එකේ working directory එක
+# Application working directory
 WORKDIR /app
 
-# Build stage එකෙන් හදපු JAR file එක final image එකට copy කරනවා
+# Copy JAR file created in build stage to final image
 COPY --from=build /app/target/*.jar /app/application.jar
 
-# Container එක run වෙන්න ඕනේ port එක (Spring Boot default port)
+# Port that container needs to run on (Spring Boot default port)
 EXPOSE 8080
 
-# Container එක start වෙද්දී execute වෙන command එක
-# java -jar command එකෙන් Spring Boot application එක run කරනවා
+# Command to execute when container starts
+# Run Spring Boot application using java -jar command
 ENTRYPOINT ["java", "-jar", "/app/application.jar"]

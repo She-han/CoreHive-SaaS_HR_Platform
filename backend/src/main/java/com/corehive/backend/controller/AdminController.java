@@ -22,7 +22,7 @@ import java.util.List;
  * System Admin operations (Platform level)
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/sys_admin")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "http://localhost:3000")

@@ -28,17 +28,17 @@ import HRReportingManagement from './pages/HRReportingManagement';
 import FeedBackManagement from './pages/FeedBackManagement';
 import AttendanceManagement from './pages/AttendanceManagement';
 
-// Admin Pages
-/* import AdminApprovals from './pages/admin/AdminApprovals';
-import AdminOrganizations from './pages/admin/AdminOrganizations';
+/* // Admin Pages
+ import AdminApprovals from './pages/admin/AdminApprovals';
+import AdminOrganizations from './pages/admin/AdminOrganizations'; */
 
 // Organization Pages
-import EmployeesPage from './pages/org/EmployeesPage';
-import PayrollPage from './pages/org/PayrollPage';
+import HRStaffManagement from './pages/org_admin/HRStaffManagement';
+/* import PayrollPage from './pages/org/PayrollPage';
 import LeavesPage from './pages/org/LeavesPage';
 import AttendancePage from './pages/org/AttendancePage';
 import ReportsPage from './pages/org/ReportsPage';
-import SettingsPage from './pages/org/SettingsPage'; */
+import SettingsPage from './pages/org/SettingsPage'; */ 
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
@@ -229,8 +229,8 @@ const OrgAdminRoutes = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<OrgDashboard />} />
-    {/*   <Route path="settings" element={<OrgSettings />} />
-      <Route path="employeemanagement" element={<EmployeeManagement />} />
+     <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
+     {/*   <Route path="employeemanagement" element={<EmployeeManagement />} />
       <Route path="employeemanagement/add" element={<AddEmployee />} />
       <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
       <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />

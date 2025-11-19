@@ -67,7 +67,7 @@ const AdminDashboard = () => {
       
       setLastRefresh(new Date());
     } catch (err) {
-      console.error('❌ Error loading dashboard data:', err);
+      console.error(' Error loading dashboard data:', err);
       setError('Failed to load dashboard data. Please try again.');
     } finally {
       setIsLoading(false);

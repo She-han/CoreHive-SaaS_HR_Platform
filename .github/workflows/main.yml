@@ -1,0 +1,80 @@
+# Workflow name (name shown in GitHub Actions tab)
+name: CoreHive CI/CD Pipeline to Azure
+
+# -----------------
+# 1. TRIGGER
+# -----------------
+# Define when this workflow should run
+on:
+  # Run when code is pushed to 'main' branch
+  push:
+    branches: [ main ]
+  # Add button to manually run from GitHub Actions UI
+  workflow_dispatch:
+
+# -----------------
+# 2. JOBS
+# -----------------
+# Define the work that needs to be done
+jobs:
+  # Create a single job named 'build-and-deploy'
+  build-and-deploy:
+    # This job runs on Microsoft's 'ubuntu-latest' virtual machine
+    runs-on: ubuntu-latest
+    
+    # -----------------
+    # 3. STEPS
+    # -----------------
+    # Steps that run sequentially within the job
+    steps:
+    # Step 1: Download code from GitHub repository to runner machine
+    - name: 'Step 1: Checkout repository code'
+      uses: actions/checkout@v4
+
+    # Step 2: Log in to Azure (using our created Service Principal secret)
+    - name: 'Step 2: Log in to Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # Step 3: Docker login to Azure Container Registry (ACR)
+    - name: 'Step 3: Log in to Azure Container Registry (ACR)'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    # Step 4: Build Backend Docker image and push to ACR
+    - name: 'Step 4: Build and Push Backend Image'
+      run: |
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }} -f backend/Dockerfile ./backend
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}
+
+    # Step 5: Build Frontend Docker image and push to ACR
+    - name: 'Step 5: Build and Push Frontend Image'
+      run: |
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app.azurewebsites.net/api -f frontend/Dockerfile ./frontend
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}
+      # Important: Put your exact backend app name here (in --build-arg)
+
+    # Step 6: Deploy Backend to Azure App Service
+    - name: 'Step 6: Deploy Backend to App Service'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.BACKEND_APP_NAME }}
+        images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}'
+
+    # Step 7: Deploy Frontend to Azure App Service
+    - name: 'Step 7: Deploy Frontend to App Service'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.FRONTEND_APP_NAME }}
+        images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}'
+
+    # Step 8: Logout from Azure and ACR (security best practice)
+    - name: 'Step 8: Logout from Azure and ACR'
+      if: always() # This step runs whether workflow fails or succeeds
+      run: |
+        docker logout ${{ secrets.ACR_LOGIN_SERVER }}
+        az logout

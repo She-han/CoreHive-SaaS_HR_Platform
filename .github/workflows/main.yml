@@ -1,0 +1,80 @@
+# Workflow එකේ නම (GitHub Actions tab එකේ පේන නම)
+name: CoreHive CI/CD Pipeline to Azure
+
+# -----------------
+# 1. TRIGGER
+# -----------------
+# මේ workflow එක run වෙන්න ඕනේ කොයි වෙලාවටද කියලා කියනවා
+on:
+  # 'main' branch එකට code push කරාම run වෙන්න
+  push:
+    branches: [ main ]
+  # GitHub Actions UI එකෙන් manually run කරන්නත් button එකක් add කරනවා
+  workflow_dispatch:
+
+# -----------------
+# 2. JOBS
+# -----------------
+# කරන්න තියෙන වැඩ ටික define කරනවා
+jobs:
+  # අපි එක job එකක් හදනවා 'build-and-deploy' නමින්
+  build-and-deploy:
+    # මේ job එක run වෙන්නේ Microsoft එකෙන් දෙන 'ubuntu-latest' virtual machine එකක
+    runs-on: ubuntu-latest
+    
+    # -----------------
+    # 3. STEPS
+    # -----------------
+    # Job එක ඇතුලේ පිළිවෙලට run වෙන steps ටික
+    steps:
+    # Step 1: GitHub repository එකේ code ටික runner machine එකට download කරනවා
+    - name: 'Step 1: Checkout repository code'
+      uses: actions/checkout@v4
+
+    # Step 2: Azure වලට login වෙනවා (අපි හදපු Service Principal secret එක use කරලා)
+    - name: 'Step 2: Log in to Azure'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    # Step 3: Azure Container Registry (ACR) එකට Docker login වෙනවා
+    - name: 'Step 3: Log in to Azure Container Registry (ACR)'
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+    # Step 4: Backend Docker image එක build කරලා ACR එකට push කරනවා
+    - name: 'Step 4: Build and Push Backend Image'
+      run: |
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }} -f backend/Dockerfile ./backend
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}
+
+    # Step 5: Frontend Docker image එක build කරලා ACR එකට push කරනවා
+    - name: 'Step 5: Build and Push Frontend Image'
+      run: |
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app.azurewebsites.net/api -f frontend/Dockerfile ./frontend
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}
+      # වැදගත්: ඔයාගේ backend app name එක හරියටම මෙතනට දාන්න (--build-arg එකේ)
+
+    # Step 6: Backend එක Azure App Service එකට deploy කරනවා
+    - name: 'Step 6: Deploy Backend to App Service'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.BACKEND_APP_NAME }}
+        images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}'
+
+    # Step 7: Frontend එක Azure App Service එකට deploy කරනවා
+    - name: 'Step 7: Deploy Frontend to App Service'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.FRONTEND_APP_NAME }}
+        images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}'
+
+    # Step 8: Azure සහ ACR වලින් logout වෙනවා (security best practice)
+    - name: 'Step 8: Logout from Azure and ACR'
+      if: always() # Workflow එක fail උනත්, success උනත් මේ step එක run වෙනවා
+      run: |
+        docker logout ${{ secrets.ACR_LOGIN_SERVER }}
+        az logout

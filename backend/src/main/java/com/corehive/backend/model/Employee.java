@@ -45,6 +45,10 @@ public class Employee {
         @Column(name = "designation", length = 100)
         private String designation;
 
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "department_id", referencedColumnName = "id", insertable = false, updatable = false)
+        private Department department;
+
         @Column(name = "department_id")
         private Long departmentId;
 

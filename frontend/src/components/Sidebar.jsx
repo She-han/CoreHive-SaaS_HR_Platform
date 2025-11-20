@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import {
   Users,
   Calendar,
@@ -13,6 +13,7 @@ import HiringManagement from "../pages/HiringManagement.jsx";
 import HRReportingManagement from "../pages/HRReportingManagement.jsx";
 import FeedBackManagement from "../pages/FeedBackManagement.jsx";
 import AttendanceManagement from "../pages/AttendanceManagement.jsx";
+import Dashboard from "../pages/Dashboard.jsx";
 
 export default function Sidebar() {
   return (
@@ -20,7 +21,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className="flex flex-col items-center mb-10"> 
         <div className="w-16 h-16 bg-blue-300 rounded-full mb-3"></div> {/* The circle’s width and height are 4rem each. */}
-        <h2 className="text-xl font-semibold">HR Panel</h2>
+        <Link to="/hr_staff/Dashboard"><h2 className="text-xl font-semibold">HR Panel</h2></Link>
       </div>
 
       {/* Navigation */}

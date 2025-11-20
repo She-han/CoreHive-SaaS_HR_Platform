@@ -19,6 +19,36 @@ export default function EmployeeTable({ search, filterBy }) {
       .catch(console.error);
   }, []);
 
+  //Filtering Logic
+  const filteredEmployees = employees.filter((emp) => {
+    const text = search.toLowerCase();
+
+    switch (filterBy) {
+      case "name":
+        return (
+          emp.firstName.toLowerCase().includes(text) ||
+          emp.lastName.toLowerCase().includes(text)
+        );
+
+      case "employeeCode":
+        return emp.employeeCode.toLowerCase().includes(text);
+
+      case "designation":
+        return emp.designation.toLowerCase().includes(text);
+
+      case "department":
+        return emp.department?.name?.toLowerCase().includes(text);
+
+      case "status":{
+        const status = emp.isActive ? "active" : "inactive";
+        return status.includes(text);
+      }
+
+      default:
+        return true;
+    }
+  });
+
   const handleDelete = async (id) => {
     const result = await MySwal.fire({
       title: "Delete Employee?",
@@ -104,8 +134,8 @@ export default function EmployeeTable({ search, filterBy }) {
           </thead>
 
           <tbody>
-            {employees.length > 0 ? (
-              employees.map((emp) => (
+            {filteredEmployees.length > 0 ? (
+              filteredEmployees.map((emp) => (
                 <tr
                   key={emp.id}
                   className="border-b hover:bg-[#F1FDF9] transition cursor-pointer"
@@ -114,7 +144,7 @@ export default function EmployeeTable({ search, filterBy }) {
                   <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
                   <td className="p-3">{emp.firstName} {emp.lastName}</td>
                   <td className="p-3">{emp.designation}</td>
-                  <td className="p-3">{emp.department}</td>
+                  <td className="p-3">{emp.department?.name}</td>
                   <td className="p-3">{emp.phone}</td>
                   <td className="p-3">
                     <span
@@ -131,15 +161,20 @@ export default function EmployeeTable({ search, filterBy }) {
                     className="p-3 flex justify-center gap-4"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button className="text-[#05668D] hover:text-[#02C39A]">
+                    <button className="text-[#05668D] hover:text-[#02C39A]"
+                     onClick={(e) => e.stopPropagation()}
+                    >
                       <FaEdit />
                     </button>
-                    <button
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleDelete(emp.id)}
-                    >
-                      <FaTrash />
-                    </button>
+                   <button
+                className="text-red-500 hover:text-red-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(emp.id);
+                }}
+              >
+                <FaTrash />
+              </button>
                   </td>
                 </tr>
               ))

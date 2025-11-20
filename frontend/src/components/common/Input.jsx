@@ -3,7 +3,7 @@ import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 /**
  * Reusable Input Component
- * Form inputs සඳහා validation සහ styling
+ * Validation and styling for form inputs
  */
 const Input = forwardRef(({
   label,

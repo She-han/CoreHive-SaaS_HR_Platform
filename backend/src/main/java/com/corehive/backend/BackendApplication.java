@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
  * Spring Boot application main class
  */
 @SpringBootApplication
-@EnableTransactionManagement // @Transactional annotations enable කරන්න
+@EnableTransactionManagement // Enable @Transactional annotations
 public class BackendApplication {
 
 	public static void main(String[] args) {

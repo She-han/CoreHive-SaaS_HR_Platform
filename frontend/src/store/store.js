@@ -5,7 +5,7 @@ import adminSlice from './slices/adminSlice';
 
 /**
  * Redux Store Configuration
- * Global state management සඳහා
+ * For global state management
  */
 export const store = configureStore({
   reducer: {
@@ -20,7 +20,7 @@ export const store = configureStore({
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
     }),
-  devTools: import.meta.env.DEV, // Redux DevTools development mode එකේ විතරක්
+  devTools: import.meta.env.DEV, // Redux DevTools in development mode only
 });
 
 export default store;

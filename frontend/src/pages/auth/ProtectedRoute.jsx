@@ -47,15 +47,15 @@ const ProtectedRoute = ({
   
   // ENHANCED: Module configuration check for ORG users
   if (user?.userType === 'ORG_USER' && user?.role === 'ORG_ADMIN') {
-    // ORG_ADMIN modules configure කරලා නැත්නම් config page එකට යන්න
+    // If ORG_ADMIN hasn't configured modules, go to config page
     if (!user?.modulesConfigured && location.pathname !== '/configure-modules') {
-      console.log('🔄 ORG_ADMIN needs module configuration...');
+      console.log(' ORG_ADMIN needs module configuration...');
       return <Navigate to="/configure-modules" replace />;
     }
     
-    // Config page එකේ ඉන්නවා නමුත් modules configure කරලා තියෙනවා නම් dashboard එකට
+    // If on config page but modules already configured, go to dashboard
     if (user?.modulesConfigured && location.pathname === '/configure-modules') {
-      console.log('✅ Modules already configured, redirecting to org_admin dashboard...');
+      console.log(' Modules already configured, redirecting to org_admin dashboard...');
       return <Navigate to="/org_admin/dashboard" replace />;
     }
   }

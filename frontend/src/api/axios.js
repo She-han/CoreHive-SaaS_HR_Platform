@@ -3,10 +3,10 @@ import toast from 'react-hot-toast';
 
 /**
  * Axios Instance Configuration
- * Backend API calls සඳහා base configuration
+ * Base configuration for backend API calls
  */
 
-// Base API URL - Environment variable වලින් load කරන්න
+// Base API URL - Load from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // Main axios instance
@@ -21,66 +21,66 @@ const apiClient = axios.create({
 
 /**
  * Request Interceptor
- * හැම API call එකකම JWT token add කරන්න
+ * Add JWT token to every API call
  */
 /**
  * Request Interceptor - FIXED VERSION
- * Specific public endpoints විතරයි token-free
+ * Only specific public endpoints are token-free
  */
 apiClient.interceptors.request.use(
   (config) => {
-    // Token-free endpoints (login, signup විතරයි)
+    // Token-free endpoints (only login, signup)
     const tokenFreeEndpoints = ['/auth/login', '/auth/signup'];
     const isTokenFreeEndpoint = tokenFreeEndpoints.some(endpoint => config.url?.includes(endpoint));
     
     if (!isTokenFreeEndpoint) {
-      // Protected endpoints වලට token add කරන්න (configure-modules ඇතුළුව)
+      // Add token to protected endpoints (including configure-modules)
       const token = localStorage.getItem('corehive_token');
       
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
         if (import.meta.env.DEV) {
-          console.log(`🔑 Token added to ${config.url}:`, token.substring(0, 20) + '...');
+          console.log(` Token added to ${config.url}:`, token.substring(0, 20) + '...');
         }
       } else {
-        console.warn(`⚠️ No token found for protected endpoint: ${config.url}`);
+        console.warn(` No token found for protected endpoint: ${config.url}`);
         
         // Check if user data exists but token is missing
         const userData = localStorage.getItem('corehive_user');
         if (userData) {
-          console.error('❌ User data exists but token missing! This is a bug.');
-          console.log('🔍 Stored user data:', JSON.parse(userData));
+          console.error(' User data exists but token missing! This is a bug.');
+          console.log(' Stored user data:', JSON.parse(userData));
         }
       }
     } else {
       // Log for token-free endpoints
       if (import.meta.env.DEV) {
-        console.log(`🔓 Token-free endpoint: ${config.url}`);
+        console.log(` Token-free endpoint: ${config.url}`);
       }
     }
     
-    // Request log කරන්න (development mode එකේ)
+    // Log request (in development mode)
     if (import.meta.env.DEV) {
-      console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      console.log(` API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
     
     return config;
   },
   (error) => {
-    console.error('❌ Request Error:', error);
+    console.error(' Request Error:', error);
     return Promise.reject(error);
   }
 );
 
 /**
  * Response Interceptor
- * API responses handle කරන්න, errors catch කරන්න
+ * Handle API responses, catch errors
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // Success response log කරන්න (development mode එකේ)
+    // Log success response (in development mode)
     if (import.meta.env.DEV) {
-      console.log(`✅ API Response: ${response.config.url}`, response.data);
+      console.log(` API Response: ${response.config.url}`, response.data);
     }
     
     return response;
@@ -88,8 +88,8 @@ apiClient.interceptors.response.use(
   (error) => {
     const { response, request, message } = error;
     
-    // Error log කරන්න
-    console.error('❌ API Error:', error);
+    // Log error
+    console.error(' API Error:', error);
     
     // Response error handling
     if (response) {

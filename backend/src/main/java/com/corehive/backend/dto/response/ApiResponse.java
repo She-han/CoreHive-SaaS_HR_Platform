@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * Generic API Response Wrapper
- * සියලු API responses සඳහා common structure
+ * Common structure for all API responses
  */
 @Data
 @NoArgsConstructor
@@ -22,7 +22,7 @@ public class ApiResponse<T> {
     private T data;
     private LocalDateTime timestamp;
 
-    // Success response create කරන්න helper method
+    // Helper method to create success response
     public static <T> ApiResponse<T> success(String message, T data) {
         return ApiResponse.<T>builder()
                 .success(true)
@@ -32,7 +32,7 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    // Error response create කරන්න helper method
+    // Helper method to create error response
     public static <T> ApiResponse<T> error(String message) {
         return ApiResponse.<T>builder()
                 .success(false)

@@ -2,7 +2,7 @@ import { useState } from "react";
 import EmployeeTable from "../components/EmployeeTable";
 import { FaPlus } from "react-icons/fa";
 import { Link } from "react-router-dom";
-//import AddEmployeeForm from "./AddEmployeeForm.jsx";
+import AddEmployee from "../components/AddEmployee";
 
 export default function EmployeeManagement() {
   const [search, setSearch] = useState("");
@@ -36,7 +36,7 @@ export default function EmployeeManagement() {
             <option value="department">Department</option>
             <option value="status">Status</option>
           </select>
-          <Link to="/add-employee" className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]">
+          <Link to="/hr_staff/addemployee" className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]">
             <FaPlus /> Add Employee
           </Link>
         </div>

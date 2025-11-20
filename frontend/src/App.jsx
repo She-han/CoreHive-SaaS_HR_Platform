@@ -29,6 +29,7 @@ import HiringManagement from './pages/HiringManagement';
 import HRReportingManagement from './pages/HRReportingManagement';
 import FeedBackManagement from './pages/FeedBackManagement';
 import AttendanceManagement from './pages/AttendanceManagement';
+import AddEmployee from './components/AddEmployee';
 
 // Admin Pages
 /* import AdminApprovals from './pages/admin/AdminApprovals';
@@ -266,6 +267,7 @@ const HRStaffRoutes = () => {
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
+        <Route path="addemployee" element={<AddEmployee />} />
       </Route>
     </Routes>
   );

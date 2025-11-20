@@ -159,7 +159,6 @@ export default function EmployeeTable({ search, filterBy }) {
                   </td>
                   <td
                     className="p-3 flex justify-center gap-4"
-                    onClick={(e) => e.stopPropagation()}
                   >
                     <button className="text-[#05668D] hover:text-[#02C39A]"
                      onClick={(e) => e.stopPropagation()}

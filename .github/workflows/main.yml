@@ -33,6 +33,7 @@ on:
       - dev
 
   # Allows manual triggering of the workflow from the GitHub Actions UI
+   # Allows manual triggering of the workflow from the GitHub Actions UI
   workflow_dispatch:
 
 # -----------------

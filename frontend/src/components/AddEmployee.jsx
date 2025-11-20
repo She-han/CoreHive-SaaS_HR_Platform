@@ -1,7 +1,15 @@
-import React, { useState } from "react";
+import React, { useState ,useEffect} from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { useNavigate } from "react-router-dom";
+
 
 export default function AddEmployeeForm() {
   const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    designation: "",
     employeeCode: "",
     department: "",
     email: "",
@@ -13,13 +21,51 @@ export default function AddEmployeeForm() {
     status: "Active",
   });
 
+    const navigate = useNavigate();
+
+    const [departments, setDepartments] = useState([]);
+
+    useEffect(() => {
+  axios.get("http://localhost:8080/api/departments")
+    .then(res => setDepartments(res.data))
+    .catch(err => console.error("Error loading departments", err));
+}, []);
+
+  
+
+  const handleSubmit = async (e)=>{
+    e.preventDefault();
+
+    try{
+        const response = await axios.post("http://localhost:8080/api/employees", formData);
+
+        Swal.fire({
+      title: "Success!",
+      text: "Employee added successfully",
+      icon: "success",
+      confirmButtonColor: "#02C39A",
+    }).then(()=>{
+        navigate("/hr_staff/employeemanagement");
+    });
+
+    console.log("Saved:", response.data);
+
+    }catch(error){
+      console.error("Error adding employee:", error);
+     Swal.fire({
+      title: "Error!",
+      text: "Failed to save employee",
+      icon: "error",
+      confirmButtonColor: "#d33",
+    });
+
+    console.error("Save error:", error);
+    }
+  }
+
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitted:", formData);
-  };
 
   return (
     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
@@ -49,16 +95,59 @@ export default function AddEmployeeForm() {
                 />
               </Field>
 
-              <Field label="Department">
+              <Field label="First Name">
                 <input
-                  name="department"
-                  placeholder="HR / IT / Finance"
-                  value={formData.department}
-                  onChange={handleChange}
-                  className="input-box"
-                  required
+                    name="firstName"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="input-box"
+                    required
                 />
-              </Field>
+                </Field>
+
+                <Field label="Last Name">
+                <input
+                    name="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="input-box"
+                    required
+                />
+                </Field>
+
+                <Field label="Designation">
+                <input
+                    name="designation"
+                    placeholder="Software Engineer"
+                    value={formData.designation}
+                    onChange={handleChange}
+                    className="input-box"
+                    required
+                />
+                </Field>
+
+
+
+              <Field label="Department">
+                <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    className="input-box"
+                    required
+                >
+                    <option value="">Select Department</option>
+                    {departments.map(dep => (
+                    <option key={dep.id} value={dep.id}>
+                        {dep.name}
+                    </option>
+                    ))}
+                </select>
+                </Field>
+
+
 
               <Field label="Email">
                 <input
@@ -97,8 +186,9 @@ export default function AddEmployeeForm() {
                   onChange={handleChange}
                   className="input-box"
                 >
-                  <option value="Monthly">Monthly</option>
-                  <option value="Daily">Daily</option>
+                  <option value="MONTHLY">Monthly</option>
+                <option value="DAILY">Daily</option>
+
                 </select>
               </Field>
 
@@ -165,7 +255,7 @@ export default function AddEmployeeForm() {
   {/* Cancel Button */}
   <button
     type="button"
-    onClick={() => window.history.back()}
+    onClick={() => window.history.back()} //go to Employee Management page
     className="px-6 py-3 rounded-xl border border-gray-400 text-gray-700 
                hover:bg-gray-100 transition font-medium"
   >

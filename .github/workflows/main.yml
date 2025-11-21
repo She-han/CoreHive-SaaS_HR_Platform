@@ -24,13 +24,13 @@ on:
   push:
     branches:
       - main
-      - dev
+      
 
   # Also trigger when a Pull Request is opened or updated against 'main' or 'dev'
   pull_request:
     branches:
       - main
-      - dev
+     
 
   # Allows manual triggering of the workflow from the GitHub Actions UI
    # Allows manual triggering of the workflow from the GitHub Actions UI
@@ -80,7 +80,7 @@ jobs:
     # The VITE_API_BASE_URL is passed as a build argument to connect the frontend to the production backend
     - name: 'Step 5: Build and Push Frontend Image'
       run: |
-        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app-sh.azurewebsites.net/api -f frontend/Dockerfile ./frontend
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app-gtdreadhagd9ggfc.southeastasia-01.azurewebsites.net/api -f frontend/Dockerfile ./frontend
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}
       # IMPORTANT: Verify that 'corehive-backend-app-sh' matches your actual backend app name in the --build-arg URL.
 

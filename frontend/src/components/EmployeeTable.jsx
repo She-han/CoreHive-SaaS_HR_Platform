@@ -4,6 +4,7 @@ import axios from "axios";
 import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { Link } from "react-router-dom";
 
 const MySwal = withReactContent(Swal);
 
@@ -160,11 +161,11 @@ export default function EmployeeTable({ search, filterBy }) {
                   <td
                     className="p-3 flex justify-center gap-4"
                   >
-                    <button className="text-[#05668D] hover:text-[#02C39A]"
+                    <Link to={`/hr_staff/editemployee/${emp.id}`} className="text-[#05668D] hover:text-[#02C39A]"
                      onClick={(e) => e.stopPropagation()}
                     >
                       <FaEdit />
-                    </button>
+                    </Link>
                    <button
                 className="text-red-500 hover:text-red-700"
                 onClick={(e) => {

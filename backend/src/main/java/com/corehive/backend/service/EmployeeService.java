@@ -67,4 +67,41 @@ public class EmployeeService {
 
         return employeeRepository.save(emp);
     }
+
+    public Employee updateEmployee(Long id, EmployeeRequestDTO req) {
+
+        Optional<Employee> optional = employeeRepository.findById(id);
+        if (optional.isEmpty()) {
+            return null;  // Employee not found
+        }
+
+        Employee emp = optional.get();
+
+        // Update fields
+        emp.setEmployeeCode(req.getEmployeeCode());
+        emp.setFirstName(req.getFirstName());
+        emp.setLastName(req.getLastName());
+        emp.setDesignation(req.getDesignation());
+        emp.setEmail(req.getEmail());
+        emp.setPhone(req.getPhone());
+        emp.setDepartmentId(req.getDepartment());
+        emp.setLeaveCount(req.getLeaveCount());
+
+        // Salary Type ENUM
+        emp.setSalaryType(Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase()));
+
+        // Salary (BigDecimal)
+        emp.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+
+        // Date Joined
+        emp.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+
+        // Active / NonActive
+        emp.setIsActive(req.getStatus().equalsIgnoreCase("Active"));
+
+        // Organization UUID should remain same for existing employees
+
+        return employeeRepository.save(emp);
+    }
+
 }

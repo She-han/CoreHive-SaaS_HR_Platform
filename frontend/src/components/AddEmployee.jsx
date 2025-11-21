@@ -5,7 +5,7 @@ import withReactContent from "sweetalert2-react-content";
 import { useNavigate } from "react-router-dom";
 
 
-export default function AddEmployeeForm() {
+export default function AddEmployee() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",

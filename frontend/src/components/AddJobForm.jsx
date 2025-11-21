@@ -46,93 +46,85 @@ export default function AddJobForm() {
     setAvatarFile(file || null);
   }
 
-//   const handleSubmit = async (e)=>{
-//     e.preventDefault();
-
-//     try{
-//         const response = await axios.post("http://localhost:8080/api/employees", formData);
-
-//         Swal.fire({
-//       title: "Success!",
-//       text: "Employee added successfully",
-//       icon: "success",
-//       confirmButtonColor: "#02C39A",
-//     }).then(()=>{
-//         navigate("/hr_staff/employeemanagement");
-//     });
-
-//     console.log("Saved:", response.data);
-
-//     }catch(error){
-//       console.error("Error adding employee:", error);
-//      Swal.fire({
-//       title: "Error!",
-//       text: "Failed to save employee",
-//       icon: "error",
-//       confirmButtonColor: "#d33",
-//     });
-
-//     console.error("Save error:", error);
-//     }
-//   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    try{
-        const response = await axios.post("http://localhost:8080/api/job-postings", form);
+  // Validate required fields using SweetAlert
+  if (!form.title.trim()) {
+    Swal.fire("Required!", "Job title is required.", "warning");
+    return;
+  }
+  if (!form.department) {
+    Swal.fire("Required!", "Please select a department.", "warning");
+    return;
+  }
+  if (!form.employmentType) {
+    Swal.fire("Required!", "Please select an employment type.", "warning");
+    return;
+  }
+  if (!form.postedDate) {
+    Swal.fire("Required!", "Posted date is required.", "warning");
+    return;
+  }
+  if (!form.closingDate) {
+    Swal.fire("Required!", "Closing date is required.", "warning");
+    return;
+  }
+  if (!form.status) {
+    Swal.fire("Required!", "Please select a status.", "warning");
+    return;
+  }
+  if (!form.availableVacancies || form.availableVacancies < 1) {
+    Swal.fire("Required!", "Available vacancies must be at least 1.", "warning");
+    return;
+  }
+  if (!form.description.trim()) {
+    Swal.fire("Required!", "Job description is required.", "warning");
+    return;
+  }
 
-        Swal.fire({
+  setLoading(true);
+
+  try {
+    const payload = new FormData();
+    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
+    if (avatarFile) payload.append("avatar", avatarFile);
+
+    const response = await axios.post(
+      "http://localhost:8080/api/job-postings",
+      payload,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    Swal.fire({
       title: "Success!",
-      text: "Job Post added successfully",
+      text: "Job posting created successfully",
       icon: "success",
       confirmButtonColor: "#02C39A",
-    }).then(()=>{
-        navigate("/hr_staff/HiringManagement");
+    }).then(() => {
+      navigate("/hr_staff/HiringManagement");
     });
 
     console.log("Saved:", response.data);
 
-    }catch(error){
-      console.error("Error adding Job Post:", error);
-     Swal.fire({
+  } catch (error) {
+    console.error("Error creating job posting:", error);
+
+    Swal.fire({
       title: "Error!",
-      text: "Failed to save job post",
+      text: "Failed to create job posting",
       icon: "error",
       confirmButtonColor: "#d33",
     });
 
-    console.error("Save error:", error);
-    }
-
-    if (!form.title.trim()) {
-      alert("Job title is required.");
-      return;
-    }
-    if (!form.department) {
-      alert("Please select a department.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const payload = new FormData();
-      Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-      if (avatarFile) payload.append("avatar", avatarFile);
-
-      await axios.post("http://localhost:8080/api/job-postings", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      alert("Job posting created successfully!");
-      navigate("/hr_staff/hiring-management");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create job posting.");
-    } finally {
-      setLoading(false);
-    }
+  } finally {
+    setLoading(false);
   }
+}
+
+
+   
 
   return (
      <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">

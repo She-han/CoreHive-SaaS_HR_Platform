@@ -1,6 +1,8 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.JobPostingRequestDTO;
+import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.service.JobPostingService;
@@ -43,12 +45,17 @@ public class JobPostingController {
 
     //UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<JobPosting> updateJobPosting(
-            @PathVariable Long id ,
-            @RequestBody JobPosting jobPosting
-    ){
-        return ResponseEntity.ok(jobPostingService.updateJobPosting(id , jobPosting));
+    public ResponseEntity<?> updateJobPosting(@PathVariable Long id, @RequestBody JobPostingRequestDTO req) {
+
+        JobPosting updated = jobPostingService.updateJobPosting(id, req);
+
+        if (updated == null) {
+            return ResponseEntity.badRequest().body("Employee not found");
+        }
+
+        return ResponseEntity.ok(updated);
     }
+
 
     //DELETE
     @DeleteMapping("/{id}")

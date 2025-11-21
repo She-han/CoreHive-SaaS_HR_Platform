@@ -1,10 +1,13 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.JobPostingRequestDTO;
+import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,27 +65,31 @@ public class JobPostingService {
     }
 
     //UPDATE
-    public JobPosting updateJobPosting(Long id, JobPosting updatedJob) {
-        JobPosting existing = jobPostingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job posting not found with id " + id));
+    public JobPosting updateJobPosting(Long id, JobPostingRequestDTO req) {
 
-        existing.setTitle(updatedJob.getTitle());
-        existing.setDescription(updatedJob.getDescription());
-        existing.setDepartment(updatedJob.getDepartment());
-        existing.setEmploymentType(updatedJob.getEmploymentType());
-        existing.setStatus(updatedJob.getStatus());
-        existing.setPostedDate(updatedJob.getPostedDate());
-        existing.setClosingDate(updatedJob.getClosingDate());
-        existing.setPostedBy(updatedJob.getPostedBy());
-        existing.setAvailableVacancies(updatedJob.getAvailableVacancies());
-        existing.setOrganizationUuid(updatedJob.getOrganizationUuid());
+        Optional<JobPosting> optional = jobPostingRepository.findById(id);
+        if (optional.isEmpty()) {
+            return null;  // Employee not found
+        }
 
-//        if (updatedJob.getAvatarUrl() != null && !updatedJob.getAvatarUrl().isEmpty()) {
-//            existing.setAvatarUrl(updatedJob.getAvatarUrl());
-//        }
+        JobPosting job = optional.get();
 
-        return jobPostingRepository.save(existing);
-    }
+        // Update fields
+        job.setTitle(req.getTitle());
+        job.setDescription(req.getDescription());
+        job.setDepartment(req.getDepartment());
+        job.setPostedDate(LocalDate.parse(req.getPostedDate()));
+        job.setClosingDate(LocalDate.parse(req.getClosingDate()));
+        job.setAvailableVacancies(req.getAvailableVacancies());
+
+        // Employee Type ENUM
+        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
+
+        // Status Type ENUM
+        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
+
+        return jobPostingRepository.save(job);
+  }
 
 
     // DELETE

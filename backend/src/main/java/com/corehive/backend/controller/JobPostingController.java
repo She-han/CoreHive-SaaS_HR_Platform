@@ -1,5 +1,6 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.JobPostingRequestDTO;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.service.JobPostingService;
@@ -20,10 +21,11 @@ public class JobPostingController {
 
     //CREATE
     @PostMapping
-    public ResponseEntity<JobPosting> createJobPosting(@RequestBody JobPosting jobPosting){
-        JobPosting created = jobPostingService.CreateJobPosting(jobPosting);
+    public ResponseEntity<JobPosting> createJobPosting(@RequestBody JobPostingRequestDTO req) {
+        JobPosting created = jobPostingService.createJobPosting(req);
         return ResponseEntity.ok(created);
     }
+
 
     //READ ALL
     @GetMapping

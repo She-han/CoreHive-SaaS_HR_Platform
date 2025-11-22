@@ -100,11 +100,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow specific origins (development -> localhost:3000)
+        // Allow specific origins
         configuration.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:3000",    // React development server
-                "http://localhost:3001",    // Alternative port
-                "https://corehive-frontend-app.azurewebsites.net"    // Production domain
+                "http://localhost:3000",      // React development server
+                "http://localhost:3001",      // Alternative port
+                "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net" // production frontend url
         ));
 
         // Allow specific HTTP methods
@@ -114,7 +114,7 @@ public class SecurityConfig {
 
         // Allow specific headers
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"
+                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"
         ));
 
         // Allow credentials (cookies, authorization headers)
@@ -125,7 +125,6 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
 
         return source;
     }

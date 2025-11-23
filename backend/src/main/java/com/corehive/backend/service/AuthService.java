@@ -92,9 +92,8 @@ public class AuthService {
             String message = String.format(
                     "Organization registration successful! " +
                             "Your request is pending approval. " +
-                            "Temporary login: %s / %s " +
-                            "(You can login after admin approval)",
-                    request.getAdminEmail(), temporaryPassword
+
+                            "(You can login after admin approval)"
             );
 
             return ApiResponse.success(message, savedOrganization.getOrganizationUuid());

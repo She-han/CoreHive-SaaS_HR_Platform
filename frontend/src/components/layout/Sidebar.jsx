@@ -46,12 +46,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'Organizations',
             icon: BuildingOfficeIcon,
             path: '/sys_admin/organizations',
-            current: location.pathname.startsWith('/sys_admin/organizations'),
-            submenu: [
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
               { name: 'All Organizations', path: '/sys_admin/organizations' },
               { name: 'Add Organization', path: '/sys_admin/organizations/add' },
               { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
-            ]
+            ]*/
           },
           {
             name: 'System Requests',

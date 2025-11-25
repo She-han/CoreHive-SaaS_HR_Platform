@@ -20,20 +20,20 @@ name: CoreHive CI/CD Pipeline to Azure
 # -----------------
 # Defines when this workflow should be automatically executed.
 on:
-  # Trigger on pushes to the 'main' and 'dev' branches
+  # Trigger on pushes to the 'main' branches
   push:
     branches:
       - main
       
 
-  # Also trigger when a Pull Request is opened or updated against 'main' or 'dev'
+  # Also trigger when a Pull Request is opened or updated against 'main' branch
   pull_request:
     branches:
       - main
      
 
   # Allows manual triggering of the workflow from the GitHub Actions UI
-   # Allows manual triggering of the workflow from the GitHub Actions UI
+   
   workflow_dispatch:
 
 # -----------------

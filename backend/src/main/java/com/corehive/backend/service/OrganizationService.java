@@ -10,14 +10,17 @@ import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +30,8 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final AppUserRepository appUserRepository;
-
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     /**
      * Get all pending organization approvals
      */
@@ -74,8 +78,16 @@ public class OrganizationService {
                 return ApiResponse.error("Organization is not in pending approval status. Current status: " + organization.getStatus());
             }
 
+
             // Organization status update
             log.info("Updating organization status to ACTIVE for: {}", organization.getName());
+
+
+
+
+            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+            String hashedPassword = passwordEncoder.encode(tempPassword);
+
             organization.setStatus(OrganizationStatus.ACTIVE);
             organizationRepository.save(organization);
             log.info("Organization status updated successfully to ACTIVE: {}", organization.getName());
@@ -112,9 +124,14 @@ public class OrganizationService {
                     log.info("Processing admin user: {} (currently active: {})", adminUser.getEmail(), wasActive);
                     
                     adminUser.setIsActive(true);
+                    adminUser.setPasswordHash(hashedPassword);
                     AppUser savedUser = appUserRepository.save(adminUser);
                     activatedCount++;
-                    
+                    try {
+                        emailService.sendPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
+                    } catch (Exception e) {
+                        System.err.println("Failed to send email: " + e.getMessage());
+                    }
                     log.info("Admin user activated successfully: {} (was active: {}, now active: {})", 
                             savedUser.getEmail(), wasActive, savedUser.getIsActive());
                 } catch (Exception e) {

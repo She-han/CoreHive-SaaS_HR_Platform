@@ -18,6 +18,13 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { FaRegChartBar } from "react-icons/fa";
+import { FiUsers, FiHeadphones  } from "react-icons/fi";
+import { LiaMoneyBillSolid } from "react-icons/lia";
+import { HiOutlineDocumentReport } from "react-icons/hi";
+import { VscGraphLine } from "react-icons/vsc";
+
+
+
 
 
 const Sidebar = ({ isCollapsed = false }) => {
@@ -57,7 +64,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Users',
-            icon: BuildingOfficeIcon,
+            icon: FiUsers,
             path: '/sys_admin/organizations',
             current: location.pathname.startsWith('/sys_admin/organizations')
             /*submenu: [
@@ -68,7 +75,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Billing & Plans',
-            icon: BuildingOfficeIcon,
+            icon: LiaMoneyBillSolid,
             path: '/sys_admin/organizations',
             current: location.pathname.startsWith('/sys_admin/organizations')
             /*submenu: [
@@ -79,7 +86,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Audit Logs',
-            icon: BuildingOfficeIcon,
+            icon: HiOutlineDocumentReport,
             path: '/sys_admin/organizations',
             current: location.pathname.startsWith('/sys_admin/organizations')
             /*submenu: [
@@ -90,7 +97,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Support',
-            icon: BuildingOfficeIcon,
+            icon: FiHeadphones ,
             path: '/sys_admin/organizations',
             current: location.pathname.startsWith('/sys_admin/organizations')
             /*submenu: [
@@ -101,7 +108,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Syatem Analytics',
-            icon: BuildingOfficeIcon,
+            icon: VscGraphLine,
             path: '/sys_admin/organizations',
             current: location.pathname.startsWith('/sys_admin/organizations')
             /*submenu: [
@@ -349,10 +356,10 @@ const Sidebar = ({ isCollapsed = false }) => {
         ) : (
           <Link
             to={item.path}
-            className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+            className={`flex items-center px-3 py-3 text-[15px] font-medium rounded-lg transition-colors duration-200 ${
               item.current
                 ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
             }`}
           >
             <item.icon
@@ -361,7 +368,7 @@ const Sidebar = ({ isCollapsed = false }) => {
             />
             {!isCollapsed && <span>{item.name}</span>}
           </Link>
-        )};
+        )}
 
         {/* Submenu */}
         {hasSubmenu && isExpanded && !isCollapsed && (

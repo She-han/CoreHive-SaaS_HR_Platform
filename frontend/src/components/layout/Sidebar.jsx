@@ -17,6 +17,8 @@ import {
   ChevronDownIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import { FaRegChartBar } from "react-icons/fa";
+
 
 const Sidebar = ({ isCollapsed = false }) => {
   const location = useLocation();
@@ -38,7 +40,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         return [
           {
             name: 'Dashboard',
-            icon: HomeIcon,
+            icon: FaRegChartBar,
             path: '/sys_admin/dashboard',
             current: location.pathname === '/sys_admin/dashboard'
           },
@@ -53,6 +55,62 @@ const Sidebar = ({ isCollapsed = false }) => {
               { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
             ]*/
           },
+          {
+            name: 'Users',
+            icon: BuildingOfficeIcon,
+            path: '/sys_admin/organizations',
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
+              { name: 'All Organizations', path: '/sys_admin/organizations' },
+              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
+              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
+            ]*/
+          },
+          {
+            name: 'Billing & Plans',
+            icon: BuildingOfficeIcon,
+            path: '/sys_admin/organizations',
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
+              { name: 'All Organizations', path: '/sys_admin/organizations' },
+              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
+              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
+            ]*/
+          },
+          {
+            name: 'Audit Logs',
+            icon: BuildingOfficeIcon,
+            path: '/sys_admin/organizations',
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
+              { name: 'All Organizations', path: '/sys_admin/organizations' },
+              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
+              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
+            ]*/
+          },
+          {
+            name: 'Support',
+            icon: BuildingOfficeIcon,
+            path: '/sys_admin/organizations',
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
+              { name: 'All Organizations', path: '/sys_admin/organizations' },
+              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
+              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
+            ]*/
+          },
+          {
+            name: 'Syatem Analytics',
+            icon: BuildingOfficeIcon,
+            path: '/sys_admin/organizations',
+            current: location.pathname.startsWith('/sys_admin/organizations')
+            /*submenu: [
+              { name: 'All Organizations', path: '/sys_admin/organizations' },
+              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
+              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
+            ]*/
+          },
+          /*
           {
             name: 'System Requests',
             icon: DocumentTextIcon,
@@ -74,7 +132,7 @@ const Sidebar = ({ isCollapsed = false }) => {
               { name: 'Performance', path: '/sys_admin/reports/performance' },
               { name: 'System Health', path: '/sys_admin/reports/health' }
             ]
-          },
+          },*/
           {
             name: 'System Settings',
             icon: Cog6ToothIcon,

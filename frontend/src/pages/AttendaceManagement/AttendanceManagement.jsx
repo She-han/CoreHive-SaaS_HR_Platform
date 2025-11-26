@@ -7,6 +7,7 @@ export default function AttendanceManagement() {
   const [activeTab, setActiveTab] = useState("monitor");
 
   return (
+    
     <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
@@ -57,7 +58,7 @@ export default function AttendanceManagement() {
       </div>
 
       {/* CONTENT */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#02C39A]/40 scrollbar-track-gray-100 rounded-md pr-1">
+      <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
         {activeTab === "daily" && <DailySummary />}
         {activeTab === "monthly" && <MonthlyReport />}

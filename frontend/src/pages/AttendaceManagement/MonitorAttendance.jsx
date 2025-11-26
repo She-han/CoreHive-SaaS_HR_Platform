@@ -2,24 +2,54 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 export default function MonitorAttendance() {
-  const [selectedDate, setSelectedDate] = useState("2025-11-10");
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [weekData, setWeekData] = useState({}); // { empId: { name, dept, days:{ '2025-11-09':{...}, ... } } }
 
-  // Get full week dates (Sun → Sat)
+//   👉 මේක තෝරාගත් දිනය save කරලා තියෙන්නේ.
+// 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
+  const [selectedDate, setSelectedDate] = useState("2025-11-10");
+
+
+   // Search bar text
+  const [search, setSearch] = useState("");
+
+  //when data loading display loading message
+  const [loading, setLoading] = useState(false);
+
+   /**
+   * weekData structure:
+   * {
+   *   1: { employeeId:1, name:"John", dept:"IT", days:{ "2025-11-10":{...}, "2025-11-11": {...} } },
+   *   2: { employeeId:2, ... }
+   * }
+   */
+  const [weekData, setWeekData] = useState({}); 
+
+  // Get full week dates (Sun → Sat) of selectedDate
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
+  //Load attendance for all 7 days when selectedDate changes
   useEffect(() => {
     loadWeekAttendance();
   }, [selectedDate]);
+
+   /* ---------------------------------------------------------
+        Load Attendance for full week
+     - Calls backend 7 times: one for each day
+     - Combines all results into a weekly structure per employee
+  --------------------------------------------------------- */
 
   async function loadWeekAttendance() {
     setLoading(true);
     const map = {};
 
-    // create structure
+    // It loops through each date and creates an empty array for that date inside the object.
     weekDates.forEach(d => (map[d] = []));
+
+//     {
+//   date: "2025-11-10",
+//   data: [list of employees for that day]
+// }
+
+// If backend sends nothing → you put empty array [].
 
     try {
       // fetch all 7 days
@@ -30,9 +60,20 @@ export default function MonitorAttendance() {
 
       const results = await Promise.all(fetches);
 
+      //Promise.all(fetches) runs all 7 API calls together (not one by one)
+      //await pauses code until all 7 calls are finished
+
       // reorganize by employee
       const empMap = {};
 
+//   Loops through 7 days
+//  Loops through all employees in each day
+//  Groups employees together
+//  Adds each day's attendance under the correct date
+
+
+// this date = that date
+// data =  employee attendance list of that date
       results.forEach(({ date, data }) => {
         data.forEach(row => {
           const id = row.employeeId;
@@ -44,7 +85,7 @@ export default function MonitorAttendance() {
               days: {}
             };
           }
-          empMap[id].days[date] = row;
+          empMap[id].days[date] = row; //add result of that day to employee days object 
         });
       });
 
@@ -68,7 +109,7 @@ export default function MonitorAttendance() {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6 h-screen overflow-hidden">
 
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

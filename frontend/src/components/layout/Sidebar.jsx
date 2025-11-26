@@ -86,6 +86,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/org_admin/hrstaffmanagement')
           },
           {
+            name: 'Department Management',
+            icon: UsersIcon,
+            path: '/org_admin/departmentmanagement',
+            current: location.pathname.startsWith('/org_admin/departmentmanagement')
+          },
+          {
             name: 'Employee Management',
             icon: UsersIcon,
             path: '/org_admin/employeemanagement',

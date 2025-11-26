@@ -28,11 +28,11 @@ import LeaveManagement from './pages/LeaveManagement';
 import HiringManagement from './pages/HiringManagement';
 import HRReportingManagement from './pages/HRReportingManagement';
 import FeedBackManagement from './pages/FeedBackManagement';
-import AttendanceManagement from './pages/AttendanceManagement';
 import AddEmployee from './components/AddEmployee';
 import EditeEmployee from './components/EditeEmployee';
 import AddJobForm from './components/AddJobForm';
 import EditeJobPosting from './components/EditeJobPosting';
+import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
 
 // Admin Pages
 /* import AdminApprovals from './pages/admin/AdminApprovals';

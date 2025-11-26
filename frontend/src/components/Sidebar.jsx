@@ -12,7 +12,7 @@ import LeaveManagement from "../pages/LeaveManagement.jsx";
 import HiringManagement from "../pages/HiringManagement.jsx";
 import HRReportingManagement from "../pages/HRReportingManagement.jsx";
 import FeedBackManagement from "../pages/FeedBackManagement.jsx";
-import AttendanceManagement from "../pages/AttendanceManagement.jsx";
+import AttendanceManagement from "../pages/AttendaceManagement/AttendanceManagement.jsx";
 import Dashboard from "../pages/Dashboard.jsx";
 
 export default function Sidebar() {

@@ -67,6 +67,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/api/job-postings/**").permitAll()
                         .requestMatchers("api/departments").permitAll()
+                        .requestMatchers("api/attendance").permitAll()
+                        .requestMatchers("api/attendance/**").permitAll()
+
 
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()

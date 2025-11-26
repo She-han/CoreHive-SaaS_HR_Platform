@@ -5,6 +5,8 @@ import com.corehive.backend.dto.DailyMonitorDto;
 import com.corehive.backend.dto.DailySummaryCountDTO;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.repository.AttendanceRepository;
+import com.corehive.backend.repository.DepartmentRepository;
+import com.corehive.backend.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ import java.util.stream.Collectors;
 public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
+    private final EmployeeRepository employeeRepository;
+    private final DepartmentRepository departmentRepository;
 
     public DailyMonitorDto getAttendance(LocalDate date) {
 
@@ -44,11 +48,26 @@ public class AttendanceService {
                 case HOLIDAY -> holiday++;
             }
 
+            // FETCH EMPLOYEE
+            var emp = employeeRepository.findById(r.getEmployeeId()).orElse(null);
+
+            String empName = "Unknown";
+            String deptName = "Unknown";
+
+            if (emp != null) {
+                empName = emp.getFirstName() + " " + emp.getLastName();
+
+                if (emp.getDepartmentId() != null) {
+                    var dept = departmentRepository.findById(emp.getDepartmentId()).orElse(null);
+                    if (dept != null) deptName = dept.getName();
+                }
+            }
+
             // BUILD ROW
             rows.add(new AttendanceRowDto(
                     r.getEmployeeId(),
-                    "Employee " + r.getEmployeeId(),  // replace with join if employee table exists
-                    "Department",                     // placeholder
+                    empName,
+                    deptName,                     // placeholder
                     checkIn,
                     checkOut,
                     workingMinutes,

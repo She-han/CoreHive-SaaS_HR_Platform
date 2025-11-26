@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import AttendancePopup from "../../components/AttendanceManagement/AttendancePopup";
 
 export default function MonitorAttendance() {
 
@@ -31,6 +32,10 @@ export default function MonitorAttendance() {
    * }
    */
   const [weekData, setWeekData] = useState({}); 
+
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupData, setPopupData] = useState(null);
+
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -133,6 +138,23 @@ export default function MonitorAttendance() {
     emp.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  function handleCellClick(record, date) {
+  const popup = {
+    date,
+    checkIn: record.checkIn || "N/A",
+    checkOut: record.checkOut || "N/A",
+    worked: record.workingMinutes
+      ? formatHours(record.workingMinutes)
+      : "0h 0m",
+    status: record.status,
+    lateMinutes: record.lateMinutes || 0
+  };
+
+  setPopupData(popup);
+  setShowPopup(true);
+}
+
+
   return (
     <div className="flex flex-col gap-6 p-6 h-screen overflow-hidden">
 
@@ -213,6 +235,7 @@ export default function MonitorAttendance() {
                     dayRecord={emp.days[date]}
                     date={date}
                     isToday={date === today}  // ← REAL TODAY ONLY
+                    onClick={handleCellClick}
                     />
                 </div>
                 ))}
@@ -220,15 +243,20 @@ export default function MonitorAttendance() {
           ))}
         </div>
       </div>
+
+       {/* ==== POPUP CARD HERE ==== */}
+      {showPopup && (
+        <AttendancePopup
+          data={popupData}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
     </div>
   );
 }
 
-/* --- DayCell Rules --- */
-function DayCell({ dayRecord, date, isToday }) {
-  const dateLabel = dateNumber(date);
 
-  {/* 
+ {/* 
              If TODAY → show:
             ✔ date
             ✔ status badge (Present / Absent / Leave)
@@ -241,45 +269,60 @@ function DayCell({ dayRecord, date, isToday }) {
             ✔ date
             ✔ status badge */}
 
-  if (!dayRecord) {
-    return (
-      <div className="flex flex-col">
-        <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
-        <span className="text-xs text-[#9B9B9B]">-</span>
-      </div>
-    );
-  }
-
-  const status = dayRecord.status?.toUpperCase() || "ABSENT";
-  const worked = dayRecord.workingMinutes > 0;
-
-  if (isToday) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
-        <StatusBadge status={status} />
-      </div>
-    );
-  }
-
-  if (worked) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
-        <div className="bg-[#E6F9F2] text-[#02C39A] px-3 py-1 rounded-md text-sm">
-          {formatHours(dayRecord.workingMinutes)}
-        </div>
-      </div>
-    );
-  }
+{/* --- DayCell Rules --- */}
+function DayCell({ dayRecord, date, isToday, onClick }) {
+  const dateLabel = dateNumber(date);
 
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
-      <StatusBadge status={status} />
+    <div
+      onClick={() => dayRecord && onClick(dayRecord, date)}
+      className="cursor-pointer"
+    >
+      {/* NO DATA (empty cell) */}
+      {!dayRecord && (
+        <div className="flex flex-col">
+          <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
+          <span className="text-xs text-[#9B9B9B]">-</span>
+        </div>
+      )}
+
+      {/* IF RECORD EXISTS */}
+      {dayRecord && (() => {
+        const status = dayRecord.status?.toUpperCase() || "ABSENT";
+        const worked = dayRecord.workingMinutes > 0;
+
+        if (isToday) {
+          return (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
+              <StatusBadge status={status} />
+            </div>
+          );
+        }
+
+        if (worked) {
+          return (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
+              <div className="bg-[#E6F9F2] text-[#02C39A] px-3 py-1 rounded-md text-sm">
+                {formatHours(dayRecord.workingMinutes)}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-[#9B9B9B]">{dateLabel}</span>
+            <StatusBadge status={status} />
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
+
 
 /* --- Status Colors --- */
 function StatusBadge({ status }) {

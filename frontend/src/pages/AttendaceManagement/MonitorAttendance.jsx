@@ -3,6 +3,7 @@ import axios from "axios";
 
 export default function MonitorAttendance() {
 
+
 //   👉 මේක තෝරාගත් දිනය save කරලා තියෙන්නේ.
 // 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
   const [selectedDate, setSelectedDate] = useState("2025-11-10");
@@ -22,6 +23,9 @@ export default function MonitorAttendance() {
    * }
    */
   const [weekData, setWeekData] = useState({}); 
+
+  const today = new Date().toISOString().slice(0, 10);
+
 
   // Get full week dates (Sun → Sat) of selectedDate
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
@@ -180,15 +184,15 @@ export default function MonitorAttendance() {
               </div>
 
               {/* 7 day cells */}
-              {weekDates.map(date => (
+             {weekDates.map(date => (
                 <div key={date} className="p-2">
-                  <DayCell
+                    <DayCell
                     dayRecord={emp.days[date]}
                     date={date}
-                    isToday={date === selectedDate}
-                  />
+                    isToday={date === today}  // ← REAL TODAY ONLY
+                    />
                 </div>
-              ))}
+                ))}
             </div>
           ))}
         </div>

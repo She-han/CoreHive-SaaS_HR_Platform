@@ -1,6 +1,7 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.DailyMonitorDto;
+import com.corehive.backend.dto.DailySummaryCountDTO;
 import com.corehive.backend.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,4 +23,12 @@ public class AttendanceController {
     ) {
         return attendanceService.getAttendance(date);
     }
+
+    @GetMapping("/summary")
+    public DailySummaryCountDTO getTodayCounts(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return attendanceService.getTodaySummary(date);
+    }
+
 }

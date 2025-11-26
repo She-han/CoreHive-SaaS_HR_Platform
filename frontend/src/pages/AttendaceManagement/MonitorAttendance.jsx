@@ -8,6 +8,14 @@ export default function MonitorAttendance() {
 // 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
   const [selectedDate, setSelectedDate] = useState("2025-11-10");
 
+  const [summary, setSummary] = useState({
+  present: 0,
+  late: 0,
+  onLeave: 0,
+  absent: 0
+});
+
+
 
    // Search bar text
   const [search, setSearch] = useState("");
@@ -30,10 +38,23 @@ export default function MonitorAttendance() {
   // Get full week dates (Sun → Sat) of selectedDate
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
 
-  //Load attendance for all 7 days when selectedDate changes
   useEffect(() => {
-    loadWeekAttendance();
-  }, [selectedDate]);
+  loadWeekAttendance();     // Load 7-day grid
+  loadTodaySummary();       // Load summary cards (Present, Late, Leave, Absent)
+}, [selectedDate]);
+
+    async function loadTodaySummary() {
+  try {
+    const res = await axios.get(
+      `http://localhost:8080/api/attendance/summary?date=${today}`
+    );
+    setSummary(res.data);  // Save into summary state
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+
 
    /* ---------------------------------------------------------
         Load Attendance for full week
@@ -117,10 +138,10 @@ export default function MonitorAttendance() {
 
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard title="Present Today" value="40" color="#02C39A" />
-        <SummaryCard title="Late Entry" value="26" color="#05668D" />
-        <SummaryCard title="On Leave" value="4" color="#1ED292" />
-        <SummaryCard title="Absent" value="1" color="#0C397A" />
+        <SummaryCard title="Present Today" value={summary.present} color="#02C39A" />
+        <SummaryCard title="Late Entry" value={summary.late} color="#05668D" />
+        <SummaryCard title="On Leave" value={summary.onLeave} color="#1ED292" />
+        <SummaryCard title="Absent" value={summary.absent} color="#0C397A" />
       </div>
 
       {/* SEARCH + FILTERS */}
@@ -159,6 +180,8 @@ export default function MonitorAttendance() {
 
         {/* BODY (scrollable only) */}
         <div className="max-h-[500px] overflow-y-auto">
+
+
           {loading && (
             <div className="p-6 text-center text-sm text-[#9B9B9B]">Loading...</div>
           )}
@@ -204,6 +227,19 @@ export default function MonitorAttendance() {
 /* --- DayCell Rules --- */
 function DayCell({ dayRecord, date, isToday }) {
   const dateLabel = dateNumber(date);
+
+  {/* 
+             If TODAY → show:
+            ✔ date
+            ✔ status badge (Present / Absent / Leave)
+
+            If worked that day
+            ✔ date
+            ✔ working hours box ("8h 20m")
+
+             If absent/leave
+            ✔ date
+            ✔ status badge */}
 
   if (!dayRecord) {
     return (
@@ -287,12 +323,17 @@ function getWeekDates(iso) {
   });
 }
 
+//convert iso date to day name
 function dayName(iso) {
   return new Date(iso).toLocaleDateString("en-US", { weekday: "short" });
 }
+
+//get date number from iso date "2025-11-10" → 10
 function dateNumber(iso) {
   return new Date(iso).getDate();
 }
+
+//convert minutes to "Xh Ym" format
 function formatHours(min) {
   const h = Math.floor(min / 60);
   const m = min % 60;

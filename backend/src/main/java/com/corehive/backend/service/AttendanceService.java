@@ -2,6 +2,7 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.AttendanceRowDto;
 import com.corehive.backend.dto.DailyMonitorDto;
+import com.corehive.backend.dto.DailySummaryCountDTO;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.repository.AttendanceRepository;
 import lombok.RequiredArgsConstructor;
@@ -63,4 +64,34 @@ public class AttendanceService {
 
         return new DailyMonitorDto(date.toString(), summary, rows);
     }
+
+    public DailySummaryCountDTO getTodaySummary(LocalDate date) {
+
+        List<AttendanceRowDto> list = getAttendance(date).getData();
+
+        int present = 0;
+        int late = 0;
+        int leave = 0;
+        int absent = 0;
+
+        for (AttendanceRowDto row : list) {
+            switch (row.getStatus().toLowerCase()) {
+                case "present":
+                    present++;
+                    break;
+                case "late":
+                    late++;
+                    break;
+                case "leave":
+                    leave++;
+                    break;
+                case "absent":
+                    absent++;
+                    break;
+            }
+        }
+
+        return new DailySummaryCountDTO(present, late, leave, absent);
+    }
+
 }

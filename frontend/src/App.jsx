@@ -34,6 +34,7 @@ import AdminOrganizations from './pages/admin/AdminOrganizations'; */
 
 // Organization Pages
 import HRStaffManagement from './pages/org_admin/HRStaffManagement';
+import DepartmentManagement from './pages/org_admin/DepartmentManagement';
 /* import PayrollPage from './pages/org/PayrollPage';
 import LeavesPage from './pages/org/LeavesPage';
 import AttendancePage from './pages/org/AttendancePage';
@@ -230,6 +231,7 @@ const OrgAdminRoutes = () => {
     <Routes>
       <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
+     <Route path="departmentmanagement" element={<DepartmentManagement />} />
      {/*   <Route path="employeemanagement" element={<EmployeeManagement />} />
       <Route path="employeemanagement/add" element={<AddEmployee />} />
       <Route path="employeemanagement/:id" element={<EmployeeDetail />} />

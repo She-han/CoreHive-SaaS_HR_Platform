@@ -1,5 +1,6 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.CreateDepartmentRequest;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service for managing departments
@@ -88,4 +90,25 @@ public class DepartmentService {
     public boolean validateDepartment(Long departmentId, String organizationUuid) {
         return departmentRepository.existsByIdAndOrganizationUuid(departmentId, organizationUuid);
     }
+
+    @Transactional
+    public Department createDepartment(String organizationUuid, CreateDepartmentRequest request) {
+        Optional<Department> existingDept = departmentRepository
+                .findByOrganizationUuidAndName(organizationUuid, request.getName());
+        if(existingDept.isPresent()) {
+            throw new RuntimeException("Department with the same name already exists");
+        }
+
+        Department department = new Department();
+        department.setOrganizationUuid(organizationUuid);
+        department.setName(request.getName());
+        department.setCode(request.getCode());
+        department.setManagerId(request.getManagerId());
+        department.setIsActive(true);
+        department.setCreatedAt(LocalDateTime.now());
+
+        return departmentRepository.save(department);
+    }
+
+
 }

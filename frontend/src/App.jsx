@@ -28,7 +28,7 @@ import Users from './pages/admin/Users';
 import Organizations from './pages/admin/Organizations';
 
 
-import OrgDashboard from './pages/dashboard/OrgDashboard';
+import OrgDashboard from './pages/org_admin/OrgDashboard';
 import HRDashboard from './pages/Dashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/EmployeeManagement';

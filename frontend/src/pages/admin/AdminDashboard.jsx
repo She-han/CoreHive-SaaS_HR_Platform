@@ -189,7 +189,7 @@ const AdminDashboard = () => {
                 Welcome back, {user?.email?.split('@')[0]}!
               </h1>
               <p className="text-text-secondary mt-2">
-                Platform Administrator Dashboard
+                Monitor platform performance and tenant activity
               </p>
             </div>
             
@@ -221,19 +221,15 @@ const AdminDashboard = () => {
         )}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-#fifdf9 lg:grid-cols-4 gap-6 mb-8">
           {statCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-center">
-                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm text-text-secondary">{stat.title}</p>
-                    <p className="text-2xl font-bold text-text-primary">
+              <Card key={index} className="hover:shadow-lg border-2 bg-white transition-shadow duration-200">
+                <div className="flex items-center">                 
+                  <div className="ml-4 p-2 flex-1">
+                    <p className="text-sm mb-2 text-text-secondary">{stat.title}</p>
+                    <p className="text-2xl mb-2 font-semi-bold text-text-primary">
                       {stat.value}
                     </p>
                     <p className={`text-xs ${
@@ -242,6 +238,9 @@ const AdminDashboard = () => {
                     }`}>
                       {stat.change}
                     </p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`w-7 h-7 ${stat.color}`} />
                   </div>
                 </div>
               </Card>

@@ -3,6 +3,9 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
 import { Bell, LogOut } from "lucide-react";
 
+
+
+
 /**
  * Dashboard Layout with Sidebar
  * Provides consistent layout structure for all dashboard pages
@@ -11,6 +14,9 @@ const DashboardLayout = ({ children, title }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+
+
+
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
@@ -18,6 +24,9 @@ const DashboardLayout = ({ children, title }) => {
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
+
+  
+
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -94,14 +103,14 @@ const DashboardLayout = ({ children, title }) => {
             {/*profile*/}
             <div className="flex items-center gap-3">
               {/* Avatar */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                SA
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+                CH
               </div>
 
               {/* Name + Email */}
               <div className="leading-tight">
-                <p className="text-[13px] text-gray-900">System Admin</p>
-                <p className="text-xs text-gray-500">admin@corehive.com</p>
+                <p className="text-[13px] text-gray-900">p</p>
+                <p className="text-xs text-gray-500">pp</p>
               </div>
             </div>
             {/* Logout Icon */  }

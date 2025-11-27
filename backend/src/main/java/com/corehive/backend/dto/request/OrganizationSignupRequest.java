@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * Organization Registration Request DTO
- * Frontend එකෙන් company registration data ගන්න
+ * Get company registration data from frontend
  */
 @Data
 @NoArgsConstructor

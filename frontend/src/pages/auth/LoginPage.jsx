@@ -20,7 +20,7 @@ import Footer from '../../components/layout/Footer';
 
 /**
  * Login Page Component
- * Universal login page (System Admin සහ Organization Users දෙකටම)
+ * Universal login page (For both System Admin and Organization Users)
  */
 const LoginPage = () => {
   const dispatch = useDispatch();
@@ -115,7 +115,7 @@ const LoginPage = () => {
         const userData = resultAction.payload;
         
         // Handle redirect based on user role and configuration status
-        // Role අනුව proper path එකට redirect කරනවා
+        // Redirect to proper path based on role
         if (userData.userType === 'SYSTEM_ADMIN' && userData.role === 'SYS_ADMIN') {
           // System admin - platform management dashboard
           console.log('🔧 SYSTEM_ADMIN - redirecting to sys_admin dashboard...');
@@ -123,7 +123,7 @@ const LoginPage = () => {
           return;
         } 
         else if (userData.userType === 'ORG_USER') {
-          // Organization users - role අනුව different paths
+          // Organization users - different paths based on role
           if (userData.role === 'ORG_ADMIN') {
             if (!userData.modulesConfigured) {
               // First-time ORG_ADMIN - module configuration first

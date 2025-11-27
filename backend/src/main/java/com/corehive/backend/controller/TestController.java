@@ -9,7 +9,7 @@ import java.util.Map;
 
 /**
  * Test Controller
- * API testing සහ health checks සඳහා
+ * For API testing and health checks
  */
 @RestController
 @RequestMapping("/api")
@@ -18,7 +18,7 @@ public class TestController {
 
     /**
      * Public Test Endpoint
-     * Authentication නැතිව test කරන්න
+     * Test without authentication
      */
     @GetMapping("/test")
     public ResponseEntity<Map<String, Object>> test() {

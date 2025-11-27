@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * JWT Authentication Entry Point
- * Authentication failures handle කරනවා
+ * Authentication failures handling
  */
 @Component
 @Slf4j
@@ -27,7 +27,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         log.warn("Unauthorized access attempt to: {} from IP: {}",
                 request.getRequestURI(), getClientIpAddress(request));
 
-        // Response headers set කරන්න
+        // Response headers set 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
@@ -39,13 +39,13 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         body.put("timestamp", System.currentTimeMillis());
         body.put("path", request.getRequestURI());
 
-        // JSON response write කරන්න
+        // JSON response write 
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(response.getOutputStream(), body);
     }
 
     /**
-     * Client IP address extract කරන්න (Logging සඳහා)
+     * Client IP address extract  (Logging purpose)
      */
     private String getClientIpAddress(HttpServletRequest request) {
         String xForwardedFor = request.getHeader("X-Forwarded-For");

@@ -18,7 +18,7 @@ import java.util.Arrays;
 
 /**
  * Spring Security Configuration
- * Authentication සහ Authorization rules configure කරනවා
+ * Authentication and Authorization rules configure 
  */
 @Configuration
 @EnableWebSecurity
@@ -30,7 +30,7 @@ public class SecurityConfig {
 
     /**
      * Password Encoder Bean
-     * Passwords hash කරන්න BCrypt algorithm use කරනවා
+     * Passwords hash  BCrypt algorithm use 
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -39,25 +39,25 @@ public class SecurityConfig {
 
     /**
      * Security Filter Chain Configuration
-     * මේකේ තමයි security rules define කරන්නේ
+     * Define security rules
      */
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // CSRF disable කරනවා (JWT use කරනවා)
+                // CSRF disable  (JWT use )
                 .csrf(csrf -> csrf.disable())
 
-                // CORS enable කරනවා (React frontend සඳහා)
+                // CORS enable  (for React frontend )
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                // Session management disable කරනවා (Stateless JWT)
+                // Session management disable  (Stateless JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // Request authorization rules
                 .authorizeHttpRequests(authz -> authz
-                        // Public endpoints (authentication නැතිව access කරන්න පුළුවන්)
+                        // Public endpoints (can access without authentication)
                         .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
@@ -100,17 +100,17 @@ public class SecurityConfig {
 
     /**
      * CORS Configuration
-     * React frontend ට API calls කරන්න allow කරනවා
+     * Allow API calls from React frontend   
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allow specific origins (development සඳහා localhost:3000)
+        // Allow specific origins
         configuration.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:3000",    // React development server
-                "http://localhost:3001",    // Alternative port
-                "https://yourdomain.com"    // Production domain
+                "http://localhost:3000",      // React development server
+                "http://localhost:3001",      // Alternative port
+                "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net" // production frontend url
         ));
 
         // Allow specific HTTP methods
@@ -120,7 +120,7 @@ public class SecurityConfig {
 
         // Allow specific headers
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"
+                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"
         ));
 
         // Allow credentials (cookies, authorization headers)
@@ -131,7 +131,6 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-
 
         return source;
     }

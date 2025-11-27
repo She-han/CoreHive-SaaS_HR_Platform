@@ -25,7 +25,7 @@ import Footer from '../../components/layout/Footer';
 
 /**
  * Module Configuration Page
- * First-time ORG_ADMIN login වෙලාවේ modules configure කරන්න
+ * Configure modules during first-time ORG_ADMIN login
  */
 const ModuleConfigPage = () => {
   const dispatch = useDispatch();
@@ -102,17 +102,17 @@ const handleSubmit = async (e) => {
     const resultAction = await dispatch(configureModules(moduleConfig));
     
     if (configureModules.fulfilled.match(resultAction)) {
-      console.log('✅ Modules configured successfully, navigating to org_admin dashboard...');
+      console.log(' Modules configured successfully, navigating to org_admin dashboard...');
       
-      // Module config වෙලා ORG_ADMIN dashboard එකට redirect කරනවා
+      // After module config, redirect to ORG_ADMIN dashboard
       setTimeout(() => {
         navigate('/org_admin/dashboard', { replace: true });
       }, 500);
     } else {
-      console.error('❌ Module configuration failed:', resultAction.payload);
+      console.error(' Module configuration failed:', resultAction.payload);
     }
   } catch (error) {
-    console.error('❌ Module configuration error:', error);
+    console.error(' Module configuration error:', error);
   }
 };
 
@@ -125,21 +125,21 @@ const handleSkip = async () => {
   };
   
   try {
-    console.log('⏭️ Skipping module configuration...');
+    console.log('⏭Skipping module configuration...');
     const resultAction = await dispatch(configureModules(basicConfig));
     
     if (configureModules.fulfilled.match(resultAction)) {
-      console.log('✅ Basic configuration saved, navigating to org_admin dashboard...');
+      console.log(' Basic configuration saved, navigating to org_admin dashboard...');
       
-      // Basic modules සමඟ ORG_ADMIN dashboard එකට redirect කරනවා
+      // Redirect to ORG_ADMIN dashboard with basic modules
       setTimeout(() => {
         navigate('/org_admin/dashboard', { replace: true });
       }, 500);
     } else {
-      console.error('❌ Basic configuration failed:', resultAction.payload);
+      console.error(' Basic configuration failed:', resultAction.payload);
     }
   } catch (error) {
-    console.error('❌ Basic configuration error:', error);
+    console.error(' Basic configuration error:', error);
   }
 };
   

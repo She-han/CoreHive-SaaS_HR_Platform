@@ -5,7 +5,7 @@ import './index.css';
 
 /**
  * Application Entry Point
- * React 18 concurrent features සමඟ
+ * With React 18 concurrent features
  */
 
 // Create root and render app

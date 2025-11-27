@@ -27,7 +27,6 @@ export default function AttendancePopup({ data, onClose }) {
           <DetailRow label="Hours Worked" value={data.worked} />
 
             
-
           {/* <DetailRow label="Late minutes" value={data.lateMinutes > 0 ? `${data.lateMinutes} minutes` : "On Time"} /> */}
           
           <div className="flex items-center justify-between">

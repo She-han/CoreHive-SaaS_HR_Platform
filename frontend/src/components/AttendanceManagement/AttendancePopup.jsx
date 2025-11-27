@@ -18,12 +18,17 @@ export default function AttendancePopup({ data, onClose }) {
         </div>
 
         {/* Content */}
+  
         <div className="p-6 space-y-4 text-gray-700">
           
           <DetailRow label="Date" value={data.date} />
           <DetailRow label="Check In" value={data.checkIn} />
           <DetailRow label="Check Out" value={data.checkOut} />
           <DetailRow label="Hours Worked" value={data.worked} />
+
+            
+
+          {/* <DetailRow label="Late minutes" value={data.lateMinutes > 0 ? `${data.lateMinutes} minutes` : "On Time"} /> */}
           
           <div className="flex items-center justify-between">
             <span className="font-medium text-gray-600">Status</span>

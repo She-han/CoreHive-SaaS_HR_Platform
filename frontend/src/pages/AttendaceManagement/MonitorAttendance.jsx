@@ -7,7 +7,9 @@ export default function MonitorAttendance() {
 
 //   👉 මේක තෝරාගත් දිනය save කරලා තියෙන්නේ.
 // 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
-  const [selectedDate, setSelectedDate] = useState("2025-11-10");
+
+    const today = new Date().toISOString().slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(today);
 
   const [summary, setSummary] = useState({
   present: 0,
@@ -35,9 +37,6 @@ export default function MonitorAttendance() {
 
   const [showPopup, setShowPopup] = useState(false);
   const [popupData, setPopupData] = useState(null);
-
-
-  const today = new Date().toISOString().slice(0, 10);
 
 
   // Get full week dates (Sun → Sat) of selectedDate

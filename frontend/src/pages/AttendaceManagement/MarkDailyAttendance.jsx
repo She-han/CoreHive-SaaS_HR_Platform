@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function DailySummary() {
+export default function MarkDailyAttendance() {
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {

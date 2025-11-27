@@ -1,6 +1,6 @@
 import { useState } from "react";
 import MonitorAttendance from "./MonitorAttendance";
-import DailySummary from "./DailySummary";
+import MarkDailyAttendance from "./MarkDailyAttendance";
 import MonthlyReport from "./MonthlyReport";
 
 export default function AttendanceManagement() {
@@ -41,7 +41,7 @@ export default function AttendanceManagement() {
             }`}
             onClick={() => setActiveTab("daily")}
           >
-            Daily Summary
+            Mark Daily Attendance
           </button>
 
           <button
@@ -60,7 +60,7 @@ export default function AttendanceManagement() {
       {/* CONTENT */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
-        {activeTab === "daily" && <DailySummary />}
+        {activeTab === "daily" && <MarkDailyAttendance />}
         {activeTab === "monthly" && <MonthlyReport />}
       </div>
     </div>

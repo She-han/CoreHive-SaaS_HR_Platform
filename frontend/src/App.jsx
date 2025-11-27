@@ -18,7 +18,7 @@ import ModuleConfigPage from './pages/auth/ModuleConfigPage';
 
 // Dashboard Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import OrgDashboard from './pages/dashboard/OrgDashboard';
+import OrgDashboard from './pages/org_admin/OrgDashboard';
 import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';

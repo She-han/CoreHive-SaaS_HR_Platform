@@ -23,11 +23,7 @@ public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
 
-    public DepartmentService(DepartmentRepository departmentRepository) {
-        this.departmentRepository = departmentRepository;
-    }
-
-        /**
+    /**
      * Ensure default departments exist for an organization
      */
     @Transactional
@@ -58,12 +54,12 @@ public class DepartmentService {
 
         // Default departments
         String[][] deptData = {
-            {"Human Resources", "HR"},
-            {"Information Technology", "IT"},
-            {"Finance", "FIN"},
-            {"Operations", "OPS"},
-            {"Sales", "SALES"},
-            {"Marketing", "MKT"}
+                {"Human Resources", "HR"},
+                {"Information Technology", "IT"},
+                {"Finance", "FIN"},
+                {"Operations", "OPS"},
+                {"Sales", "SALES"},
+                {"Marketing", "MKT"}
         };
 
         for (String[] dept : deptData) {
@@ -98,12 +94,17 @@ public class DepartmentService {
     public List<Department> getAll() {
         return departmentRepository.findAll();
     }
-}
+
+    /**
+     * Create a new department for an organization
+     */
     @Transactional
     public Department createDepartment(String organizationUuid, CreateDepartmentRequest request) {
-        Optional<Department> existingDept = departmentRepository
-                .findByOrganizationUuidAndName(organizationUuid, request.getName());
-        if(existingDept.isPresent()) {
+
+        Optional<Department> existingDept =
+                departmentRepository.findByOrganizationUuidAndName(organizationUuid, request.getName());
+
+        if (existingDept.isPresent()) {
             throw new RuntimeException("Department with the same name already exists");
         }
 
@@ -117,6 +118,5 @@ public class DepartmentService {
 
         return departmentRepository.save(department);
     }
-
 
 }

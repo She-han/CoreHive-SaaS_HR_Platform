@@ -63,13 +63,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/employees").permitAll()
-                        .requestMatchers("/api/employees/**").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
-                        .requestMatchers("/api/job-postings/**").permitAll()
-                        .requestMatchers("api/departments").permitAll()
-                        .requestMatchers("api/attendance").permitAll()
-                        .requestMatchers("api/attendance/**").permitAll()
-
+                        .requestMatchers( "/api/attendance" ,"/api/attendance/**").permitAll()
 
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
@@ -100,7 +95,7 @@ public class SecurityConfig {
 
     /**
      * CORS Configuration
-     * Allow API calls from React frontend   
+     * Allow API calls from React frontend
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

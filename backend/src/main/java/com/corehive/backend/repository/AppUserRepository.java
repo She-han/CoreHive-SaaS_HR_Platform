@@ -10,38 +10,38 @@ import java.util.Optional;
 
 /**
  * AppUser Repository
- * Organization users database access සඳහා
+ * Organization users database access 
  */
 @Repository
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
     /**
-     * Email address එකෙන් app user find කරන්න
-     * Login වෙලාවේ use වෙනවා
+     * App user find by Email address
+     * Use when login
      */
     Optional<AppUser> findByEmail(String email);
 
     /**
-     * Organization UUID සහ email එකෙන් find කරන්න
-     * Multi-tenant environment එකේ specific user find කරන්න
+     * Find by Organization UUID & email 
+     * Can find specific user in Multi-tenant environment
      */
     Optional<AppUser> findByOrganizationUuidAndEmail(String organizationUuid, String email);
 
     /**
-     * Organization එකේ සියලු users
-     * User management සඳහා
+     * Find  all Organization users
+     * for User management
      */
     List<AppUser> findByOrganizationUuid(String organizationUuid);
 
     /**
-     * Organization එකේ specific role එකේ users
-     * Role-based filtering සඳහා
+     * Organization's specific role users
+     * Role-based filtering
      */
-    @Query("SELECT u FROM AppUser u WHERE u.organizationUuid = :orgUuid AND u.role = :role")
+    @Query("SELECT u FROM AppUser u WHERE u.organizationUuid = :orgUuid AND CAST(u.role AS string) = :role")
     List<AppUser> findByOrganizationUuidAndRole(@Param("orgUuid") String organizationUuid, @Param("role") String role);
 
     /**
-     * Organization එකේ active users count
+     * Organization's active users count
      */
     long countByOrganizationUuidAndIsActiveTrue(String organizationUuid);
 

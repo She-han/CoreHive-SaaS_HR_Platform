@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 
 /**
  * Reusable Button Component
- * Different variants සමඟ customizable button
+ * Customizable button with different variants
  */
 const Button = ({
   children,

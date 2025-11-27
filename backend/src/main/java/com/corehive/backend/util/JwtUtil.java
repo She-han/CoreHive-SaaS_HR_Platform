@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 /**
  * JWT Utility Class - Updated for JWT 0.12.x
- * JWT tokens generate කරන්න සහ validate කරන්න methods
+ * Methods to generate and validate JWT tokens
  */
 @Component
 public class JwtUtil {
@@ -27,18 +27,18 @@ public class JwtUtil {
     private Long expiration;
 
     /**
-     * JWT Token generate කරන්න
+     * Generate JWT Token
      */
     public String generateToken(Map<String, Object> userDetails, String userType) {
         Map<String, Object> claims = new HashMap<>();
 
-        // Token eke payload එකේ තියෙන data
+        // Data in token payload
         claims.put("userId", userDetails.get("userId"));
         claims.put("email", userDetails.get("email"));
         claims.put("role", userDetails.get("role"));
         claims.put("userType", userType);
 
-        // Organization user නම් organization UUID එකත් add කරන්න
+        // Add organization UUID if organization user
         if ("ORG_USER".equals(userType)) {
             claims.put("organizationUuid", userDetails.get("organizationUuid"));
         }
@@ -47,34 +47,34 @@ public class JwtUtil {
     }
 
     /**
-     * Token create කරන්න private method
+     * Private method to create token
      */
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
-                .claims(claims) // Custom claims set කරන්න
+                .claims(claims) // Set custom claims
                 .subject(subject) // Usually email address
                 .issuedAt(new Date(System.currentTimeMillis())) // Token issue time
                 .expiration(new Date(System.currentTimeMillis() + expiration)) // Expiry time
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Secret key සමඟ sign කරන්න
-                .compact(); // Final token string generate කරන්න
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256) // Sign with secret key
+                .compact(); // Generate final token string
     }
 
     /**
-     * Token වලින් email address extract කරන්න
+     * Extract email address from token
      */
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     /**
-     * Token වලින් expiration date extract කරන්න
+     * Extract expiration date from token
      */
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
     /**
-     * Token වලින් specific claim එකක් extract කරන්න
+     * Extract specific claim from token
      */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
@@ -82,7 +82,7 @@ public class JwtUtil {
     }
 
     /**
-     * Token වලින් සියලු claims extract කරන්න - UPDATED VERSION
+     * Extract all claims from token - UPDATED VERSION
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parser()  // Updated method
@@ -93,14 +93,14 @@ public class JwtUtil {
     }
 
     /**
-     * Token expired වෙලාද check කරන්න
+     * Check if token is expired
      */
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
     /**
-     * Token valid ද check කරන්න
+     * Check if token is valid
      */
     public Boolean validateToken(String token, String email) {
         try {
@@ -112,7 +112,7 @@ public class JwtUtil {
     }
 
     /**
-     * Token වලින් user role extract කරන්න
+     * Extract user role from token
      */
     public String extractRole(String token) {
         final Claims claims = extractAllClaims(token);
@@ -120,7 +120,7 @@ public class JwtUtil {
     }
 
     /**
-     * Token වලින් user type extract කරන්න
+     * Extract user type from token
      */
     public String extractUserType(String token) {
         final Claims claims = extractAllClaims(token);
@@ -128,7 +128,7 @@ public class JwtUtil {
     }
 
     /**
-     * Token වලින් organization UUID extract කරන්න
+     * Extract organization UUID from token
      */
     public String extractOrganizationUuid(String token) {
         final Claims claims = extractAllClaims(token);
@@ -136,7 +136,7 @@ public class JwtUtil {
     }
 
     /**
-     * Token වලින් user ID extract කරන්න
+     * Extract user ID from token
      */
     public Long extractUserId(String token) {
         final Claims claims = extractAllClaims(token);
@@ -148,7 +148,7 @@ public class JwtUtil {
     }
 
     /**
-     * Signing key generate කරන්න
+     * Generate signing key
      */
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());

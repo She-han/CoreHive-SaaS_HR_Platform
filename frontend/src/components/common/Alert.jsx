@@ -3,7 +3,7 @@ import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 
 /**
  * Alert Component
- * Different types එක්ක messages display කරන්න
+ * Display messages with different types
  */
 const Alert = ({
   type = 'info',

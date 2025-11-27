@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { motion } from 'framer-motion';
 import {
   HomeIcon,
   BuildingOfficeIcon,
@@ -13,9 +12,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   UserIcon,
-  EyeIcon,
-  ChevronDownIcon,
-  ChevronRightIcon
+  EyeIcon
 } from '@heroicons/react/24/outline';
 import { FaRegChartBar } from "react-icons/fa";
 import { FiUsers, FiHeadphones  } from "react-icons/fi";
@@ -30,15 +27,6 @@ import { VscGraphLine } from "react-icons/vsc";
 const Sidebar = ({ isCollapsed = false }) => {
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
-  const [expandedMenus, setExpandedMenus] = useState({});
-
-  // Toggle submenu expansion
-  const toggleMenu = (menuKey) => {
-    setExpandedMenus(prev => ({
-      ...prev,
-      [menuKey]: !prev[menuKey]
-    }));
-  };
 
   // Role-based navigation configurations
   const getNavigationConfig = () => {
@@ -157,71 +145,52 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname === '/org_admin/dashboard'
           },
           {
+            name: 'HR Staff Management',
+            icon: UsersIcon,
+            path: '/org_admin/hrstaffmanagement',
+            current: location.pathname.startsWith('/org_admin/hrstaffmanagement')
+          },
+          {
+            name: 'Department Management',
+            icon: UsersIcon,
+            path: '/org_admin/departmentmanagement',
+            current: location.pathname.startsWith('/org_admin/departmentmanagement')
+          },
+          {
             name: 'Employee Management',
             icon: UsersIcon,
             path: '/org_admin/employeemanagement',
-            current: location.pathname.startsWith('/org_admin/employeemanagement'),
-            submenu: [
-              { name: 'All Employees', path: '/org_admin/employeemanagement' },
-              { name: 'Add Employee', path: '/org_admin/employeemanagement/add' },
-              { name: 'Departments', path: '/org_admin/employeemanagement/departments' },
-              { name: 'Positions', path: '/org_admin/employeemanagement/positions' }
-            ]
+            current: location.pathname.startsWith('/org_admin/employeemanagement')
           },
           {
             name: 'Leave Management',
             icon: CalendarDaysIcon,
             path: '/org_admin/leavemanagement',
-            current: location.pathname.startsWith('/org_admin/leavemanagement'),
-            submenu: [
-              { name: 'Leave Requests', path: '/org_admin/leavemanagement/requests' },
-              { name: 'Leave Policies', path: '/org_admin/leavemanagement/policies' },
-              { name: 'Leave Calendar', path: '/org_admin/leavemanagement/calendar' }
-            ]
+            current: location.pathname.startsWith('/org_admin/leavemanagement')
           },
           {
             name: 'Attendance Management',
             icon: ClockIcon,
             path: '/org_admin/attendancemanagement',
-            current: location.pathname.startsWith('/org_admin/attendancemanagement'),
-            submenu: [
-              { name: 'Daily Attendance', path: '/org_admin/attendancemanagement/daily' },
-              { name: 'Attendance Reports', path: '/org_admin/attendancemanagement/reports' },
-              { name: 'Time Tracking', path: '/org_admin/attendancemanagement/tracking' }
-            ]
+            current: location.pathname.startsWith('/org_admin/attendancemanagement')
           },
           {
             name: 'Payroll Management',
             icon: CurrencyDollarIcon,
             path: '/org_admin/payroll',
-            current: location.pathname.startsWith('/org_admin/payroll'),
-            submenu: [
-              { name: 'Salary Processing', path: '/org_admin/payroll/processing' },
-              { name: 'Payslips', path: '/org_admin/payroll/payslips' },
-              { name: 'Tax Management', path: '/org_admin/payroll/tax' }
-            ]
+            current: location.pathname.startsWith('/org_admin/payroll')
           },
           {
             name: 'Reports & Analytics',
             icon: ChartBarIcon,
             path: '/org_admin/reports',
-            current: location.pathname.startsWith('/org_admin/reports'),
-            submenu: [
-              { name: 'HR Analytics', path: '/org_admin/reports/analytics' },
-              { name: 'Custom Reports', path: '/org_admin/reports/custom' },
-              { name: 'Export Data', path: '/org_admin/reports/export' }
-            ]
+            current: location.pathname.startsWith('/org_admin/reports')
           },
           {
             name: 'Organization Settings',
             icon: Cog6ToothIcon,
             path: '/org_admin/settings',
-            current: location.pathname.startsWith('/org_admin/settings'),
-            submenu: [
-              { name: 'Company Profile', path: '/org_admin/settings/profile' },
-              { name: 'Module Configuration', path: '/org_admin/settings/modules' },
-              { name: 'User Permissions', path: '/org_admin/settings/permissions' }
-            ]
+            current: location.pathname.startsWith('/org_admin/settings')
           }
         ];
 
@@ -237,44 +206,25 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'Employee Management',
             icon: UsersIcon,
             path: '/hr_staff/employeemanagement',
-            current: location.pathname.startsWith('/hr_staff/employeemanagement'),
-            submenu: [
-              { name: 'Employee Directory', path: '/hr_staff/employeemanagement' },
-              { name: 'Add Employee', path: '/hr_staff/employeemanagement/add' },
-              { name: 'Employee Records', path: '/hr_staff/employeemanagement/records' }
-            ]
+            current: location.pathname.startsWith('/hr_staff/employeemanagement')
           },
           {
             name: 'Leave Management',
             icon: CalendarDaysIcon,
             path: '/hr_staff/leavemanagement',
-            current: location.pathname.startsWith('/hr_staff/leavemanagement'),
-            submenu: [
-              { name: 'Leave Requests', path: '/hr_staff/leavemanagement/requests' },
-              { name: 'Approve Leaves', path: '/hr_staff/leavemanagement/approve' },
-              { name: 'Leave Balance', path: '/hr_staff/leavemanagement/balance' }
-            ]
+            current: location.pathname.startsWith('/hr_staff/leavemanagement')
           },
           {
             name: 'Attendance Management',
             icon: ClockIcon,
             path: '/hr_staff/attendancemanagement',
-            current: location.pathname.startsWith('/hr_staff/attendancemanagement'),
-            submenu: [
-              { name: 'Mark Attendance', path: '/hr_staff/attendancemanagement/mark' },
-              { name: 'Attendance Reports', path: '/hr_staff/attendancemanagement/reports' }
-            ]
+            current: location.pathname.startsWith('/hr_staff/attendancemanagement')
           },
           {
             name: 'HR Reports',
             icon: ChartBarIcon,
             path: '/hr_staff/reports',
-            current: location.pathname.startsWith('/hr_staff/reports'),
-            submenu: [
-              { name: 'Employee Reports', path: '/hr_staff/reports/employees' },
-              { name: 'Leave Reports', path: '/hr_staff/reports/leaves' },
-              { name: 'Attendance Reports', path: '/hr_staff/reports/attendance' }
-            ]
+            current: location.pathname.startsWith('/hr_staff/reports')
           }
         ];
 
@@ -290,23 +240,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'My Leaves',
             icon: CalendarDaysIcon,
             path: '/employee/viewleaves',
-            current: location.pathname.startsWith('/employee/viewleaves'),
-            submenu: [
-              { name: 'Apply Leave', path: '/employee/viewleaves/apply' },
-              { name: 'Leave History', path: '/employee/viewleaves/history' },
-              { name: 'Leave Balance', path: '/employee/viewleaves/balance' }
-            ]
+            current: location.pathname.startsWith('/employee/viewleaves')
           },
           {
             name: 'My Attendance',
             icon: ClockIcon,
             path: '/employee/viewattendance',
-            current: location.pathname.startsWith('/employee/viewattendance'),
-            submenu: [
-              { name: 'Check In/Out', path: '/employee/viewattendance/checkin' },
-              { name: 'Attendance History', path: '/employee/viewattendance/history' },
-              { name: 'Time Reports', path: '/employee/viewattendance/reports' }
-            ]
+            current: location.pathname.startsWith('/employee/viewattendance')
           },
           {
             name: 'My Payslips',
@@ -324,9 +264,6 @@ const Sidebar = ({ isCollapsed = false }) => {
   const navigationItems = getNavigationConfig();
 
   const renderMenuItem = (item) => {
-    const hasSubmenu = item.submenu && item.submenu.length > 0;
-    const isExpanded = expandedMenus[item.name];
-
     return (
       <div key={item.name} className="mb-1">
         {hasSubmenu ? (

@@ -4,7 +4,7 @@ import Button from './Button';
 
 /**
  * Reusable Modal Component
- * Overlays සහ dialogs සඳහා
+ * For overlays and dialogs
  */
 const Modal = ({
   isOpen = false,
@@ -54,10 +54,10 @@ const Modal = ({
   if (!isOpen) return null;
   
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto ">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="absolute bg-black/30 inset-0 transition-all duration-100  backdrop-blur-sm"
         onClick={closeOnOverlayClick ? onClose : undefined}
       />
       
@@ -65,8 +65,8 @@ const Modal = ({
       <div className="flex min-h-full items-center justify-center p-4">
         <div 
           className={`
-            relative w-full ${sizeClasses[size]} bg-background-white 
-            rounded-xl shadow-xl transform transition-all animate-slide-up
+            relative w-full ${sizeClasses[size]} bg-white
+            rounded-xl shadow-xl transform transition-all animate-slide-up translate-z-80
             ${className}
           `}
           {...props}

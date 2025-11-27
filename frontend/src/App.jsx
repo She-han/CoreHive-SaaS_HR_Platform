@@ -31,6 +31,11 @@ import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee
 import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
 import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
+import PayrollDashboard from './pages/hrstaff/payroll/PayrollDashboard';
+import SalaryStructure from './pages/hrstaff/payroll/SalaryStructure';
+import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
+import PayslipList from './pages/hrstaff/payroll/PayslipList';
+import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -275,6 +280,11 @@ const HRStaffRoutes = () => {
         <Route path="editemployee/:id" element={<EditeEmployee />} />
         <Route path="addjobform" element={<AddJobForm />} />
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
+        <Route path="PayrollDashboard" element={<PayrollDashboard />} />
+        <Route path="payroll/salary-structure" element={<SalaryStructure />} />
+        <Route path="payroll/payroll-run" element={<PayrollRun />} />
+        <Route path="payroll/payslips" element={<PayslipList />} />
+        <Route path="payroll/reports" element={<PayrollReports />} />
       </Route>
     </Routes>
   );

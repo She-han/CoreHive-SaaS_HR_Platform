@@ -16,8 +16,18 @@ import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import ModuleConfigPage from './pages/auth/ModuleConfigPage';
 
-// Dashboard Pages
+// System admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminApprovals from './pages/admin/AdminApprovals';
+import Settings from './pages/admin/Settings';
+import Support from './pages/admin/Support';
+import AuditLogs from './pages/admin/AuditLogs';
+import Analytics from './pages/admin/SystemAnalytics';
+import Billing from './pages/admin/BillingAndPlans';
+import Users from './pages/admin/Users';
+import Organizations from './pages/admin/Organizations';
+
+
 import OrgDashboard from './pages/dashboard/OrgDashboard';
 import HRDashboard from './pages/Dashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
@@ -211,12 +221,19 @@ const SystemAdminRoutes = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<AdminDashboard />} />
-     {/*  <Route path="requests" element={<AdminApprovals />} />
-      <Route path="organizations" element={<AdminOrganizations />} />
+      <Route path="approvals" element={<AdminApprovals />} />
+      <Route path="settings" element={<Settings />} />
+      <Route path="support" element={<Support />} />
+      <Route path="audits" element={<AuditLogs />} />
+      <Route path='analytics' element={<Analytics />} />
+      <Route path='billing' element={<Billing />} />
+      <Route path='users' element={<Users />} />
+      <Route path='organizations' element={<Organizations />} />
+ {/*      <Route path="organizations" element={<AdminOrganizations />} />
       <Route path="organizations/:id" element={<AdminOrganizationDetail />} />
       <Route path="reports" element={<AdminReports />} />
-      <Route path="settings" element={<AdminSettings />} /> */}
-      <Route path="" element={<Navigate to="dashboard" replace />} />
+      <Route path="settings" element={<AdminSettings />} /> 
+      <Route path="" element={<Navigate to="dashboard" replace />} /> */}
     </Routes>
   );
 };

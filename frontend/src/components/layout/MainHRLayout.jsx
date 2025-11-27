@@ -1,5 +1,5 @@
 import React from "react";
-import Sidebar from "../Sidebar";
+import Sidebar from "../hrstaff/Sidebar";
 import {Outlet} from "react-router-dom";
 
 function MainHRLayout() {

@@ -1,7 +1,7 @@
 import { useState , useEffect } from "react";
-import JobCard from "../components/JobCard";
+import JobCard from "../../components/hrstaff/hiringmanagement/JobCard";
 import { FaPlus } from "react-icons/fa";
-import FilterBar from "../components/FilterBar";
+import FilterBar from "../../components/hrstaff/FilterBar";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";

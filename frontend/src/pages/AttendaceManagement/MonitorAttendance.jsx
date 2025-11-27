@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import AttendancePopup from "../../components/AttendanceManagement/AttendancePopup";
+import AttendancePopup from "../../components/hrstaff/attendanceManagement/AttendancePopup";
 
 export default function MonitorAttendance() {
 

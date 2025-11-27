@@ -21,17 +21,17 @@ import ModuleConfigPage from './pages/auth/ModuleConfigPage';
 // Dashboard Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import OrgDashboard from './pages/dashboard/OrgDashboard';
-import HRDashboard from './pages/Dashboard';
+import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
-import EmployeeManagement from './pages/EmployeeManagement';
-import LeaveManagement from './pages/LeaveManagement';
-import HiringManagement from './pages/HiringManagement';
-import HRReportingManagement from './pages/HRReportingManagement';
-import FeedBackManagement from './pages/FeedBackManagement';
-import AddEmployee from './components/AddEmployee';
-import EditeEmployee from './components/EditeEmployee';
-import AddJobForm from './components/AddJobForm';
-import EditeJobPosting from './components/EditeJobPosting';
+import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
+import LeaveManagement from './pages/hrstaff/LeaveManagement';
+import HiringManagement from './pages/hrstaff/HiringManagement';
+import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
+import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
+import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
+import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
+import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
+import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
 
 // Admin Pages

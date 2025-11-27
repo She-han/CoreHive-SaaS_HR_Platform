@@ -1,8 +1,8 @@
 import { useState } from "react";
-import EmployeeTable from "../components/EmployeeTable";
+import EmployeeTable from "../../components/hrstaff/employeemanagement/EmployeeTable";
 import { FaPlus } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import AddEmployee from "../components/AddEmployee";
+import AddEmployee from "../../components/hrstaff/employeemanagement/AddEmployee";
 
 export default function EmployeeManagement() {
   const [search, setSearch] = useState("");

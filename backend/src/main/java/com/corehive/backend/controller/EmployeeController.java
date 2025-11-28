@@ -1,5 +1,6 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
 import org.springframework.http.ResponseEntity;
@@ -40,9 +41,22 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public Employee createEmployee(@RequestBody Employee employee) {
-        return employeeService.saveEmployee(employee);
+    public Employee createEmployee(@RequestBody EmployeeRequestDTO req) {
+        return employeeService.createEmployee(req);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO req) {
+
+        Employee updated = employeeService.updateEmployee(id, req);
+
+        if (updated == null) {
+            return ResponseEntity.badRequest().body("Employee not found");
+        }
+
+        return ResponseEntity.ok(updated);
+    }
+
 
 
 }

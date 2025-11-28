@@ -18,7 +18,7 @@ export default function EmployeeModal({ employee, isOpen, onClose }) {
         {/* Avatar + Name */}
         <div className="text-center mb-5">
           <div className="w-16 h-16 mx-auto rounded-full bg-[#F1FDF9] flex items-center justify-center text-2xl text-[#0C397A] font-semibold">
-            {employee.firstName?.[0]}
+            {employee.firstName?.[0] || "?"}
           </div>
           <h2 className="mt-3 text-xl font-semibold text-[#333333]">
             {employee.firstName} {employee.lastName}
@@ -32,7 +32,7 @@ export default function EmployeeModal({ employee, isOpen, onClose }) {
             <b>Employee Code:</b> {employee.employeeCode}
           </p>
           <p>
-            <b>Department:</b> {employee.department}
+            <b>Department:</b> {employee.department?.name || "—"}
           </p>
           <p>
             <b>Email:</b> {employee.email || "—"}

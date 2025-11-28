@@ -1,5 +1,7 @@
 import React from "react";
 import { Calendar, Briefcase, Users, Edit3, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+
 
 const JobCard = ({
   id,
@@ -116,9 +118,9 @@ const JobCard = ({
 
       {/* ACTIONS */}
       <div className="flex justify-end gap-3 border-t border-[#02C39A]/15 pt-3">
-        <button className="flex items-center gap-1 text-[#05668D] hover:text-[#02C39A] text-sm font-medium px-4 py-2 rounded-lg bg-[#02C39A]/5 hover:bg-[#02C39A]/10 transition-all duration-200">
+        <Link to={`/hr_staff/editejobposting/${id}`} className="flex items-center gap-1 text-[#05668D] hover:text-[#02C39A] text-sm font-medium px-4 py-2 rounded-lg bg-[#02C39A]/5 hover:bg-[#02C39A]/10 transition-all duration-200">
           <Edit3 size={16} /> Edit
-        </button>
+        </Link>
         <button
           onClick={() => onDelete(id)}
           className="flex items-center gap-1 text-[#FFFFFF] bg-[#FF4D4F] hover:bg-[#E63946] text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm"

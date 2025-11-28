@@ -32,7 +32,7 @@ public class DepartmentService {
             log.info("Ensuring default departments exist for organization: {}", organizationUuid);
 
             List<Department> existingDepts = departmentRepository.findByOrganizationUuid(organizationUuid);
-            
+
             if (existingDepts.isEmpty()) {
                 log.info("No departments found. Creating default departments for organization: {}", organizationUuid);
                 createDefaultDepartments(organizationUuid);
@@ -54,12 +54,12 @@ public class DepartmentService {
 
         // Default departments
         String[][] deptData = {
-            {"Human Resources", "HR"},
-            {"Information Technology", "IT"},
-            {"Finance", "FIN"},
-            {"Operations", "OPS"},
-            {"Sales", "SALES"},
-            {"Marketing", "MKT"}
+                {"Human Resources", "HR"},
+                {"Information Technology", "IT"},
+                {"Finance", "FIN"},
+                {"Operations", "OPS"},
+                {"Sales", "SALES"},
+                {"Marketing", "MKT"}
         };
 
         for (String[] dept : deptData) {
@@ -69,7 +69,7 @@ public class DepartmentService {
             department.setCode(dept[1]);
             department.setIsActive(true);
             department.setCreatedAt(LocalDateTime.now());
-            
+
             defaultDepartments.add(department);
         }
 
@@ -91,11 +91,20 @@ public class DepartmentService {
         return departmentRepository.existsByIdAndOrganizationUuid(departmentId, organizationUuid);
     }
 
+    public List<Department> getAll() {
+        return departmentRepository.findAll();
+    }
+
+    /**
+     * Create a new department for an organization
+     */
     @Transactional
     public Department createDepartment(String organizationUuid, CreateDepartmentRequest request) {
-        Optional<Department> existingDept = departmentRepository
-                .findByOrganizationUuidAndName(organizationUuid, request.getName());
-        if(existingDept.isPresent()) {
+
+        Optional<Department> existingDept =
+                departmentRepository.findByOrganizationUuidAndName(organizationUuid, request.getName());
+
+        if (existingDept.isPresent()) {
             throw new RuntimeException("Department with the same name already exists");
         }
 
@@ -109,6 +118,5 @@ public class DepartmentService {
 
         return departmentRepository.save(department);
     }
-
 
 }

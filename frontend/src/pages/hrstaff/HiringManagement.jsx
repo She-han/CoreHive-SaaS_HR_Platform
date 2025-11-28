@@ -1,7 +1,7 @@
 import { useState , useEffect } from "react";
-import JobCard from "../components/JobCard";
+import JobCard from "../../components/hrstaff/hiringmanagement/JobCard";
 import { FaPlus } from "react-icons/fa";
-import FilterBar from "../components/FilterBar";
+import FilterBar from "../../components/hrstaff/FilterBar";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -78,11 +78,15 @@ export default function HiringManagement() {
     }
   };
 
-  const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(filter.role.toLowerCase()) &&
-      (filter.status ? job.status === filter.status : true)
-  );
+  const filteredJobs = jobs.filter((job) => {
+  const roleMatch = job.title.toLowerCase().includes(filter.role.toLowerCase());
+  const statusMatch = filter.status
+    ? job.status?.toLowerCase() === filter.status.toLowerCase()
+    : true;
+
+  return roleMatch && statusMatch;
+});
+
 
   const handleFilterChange = (key, value) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
@@ -105,7 +109,7 @@ export default function HiringManagement() {
         <div className="flex gap-3 mt-4 md:mt-0">
           <input
             type="text"
-            placeholder="Search by role..."
+            placeholder="Search by status..."
             value={filter.role}
             onChange={(e) => handleFilterChange("role", e.target.value)}
             className="border border-[#9B9B9B] rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#02C39A]"
@@ -122,7 +126,7 @@ export default function HiringManagement() {
           </select>
 
           <Link
-            to="/add-job"
+            to="/hr_staff/addjobform"
             className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]"
           >
             <FaPlus /> Add Job

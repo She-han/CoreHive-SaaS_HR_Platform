@@ -1,10 +1,10 @@
 import React from 'react'
-import StatsCard from '../components/StatCard.jsx';
-import EmployeeTable from '../components/EmployeeTable.jsx';
+import StatsCard from '../../components/hrstaff/StatCard.jsx';
+import EmployeeTable from '../../components/hrstaff/employeemanagement/EmployeeTable.jsx';
 import { NavLink } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
-function Dashboard() {
+function HRDashboard() {
   return (
      <div className="space-y-6 m-6">
       <div className="flex justify-between items-center">
@@ -20,4 +20,4 @@ function Dashboard() {
   )
 }
 
-export default Dashboard
+export default HRDashboard

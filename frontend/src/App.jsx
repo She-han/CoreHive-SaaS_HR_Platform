@@ -29,14 +29,23 @@ import Organizations from './pages/admin/Organizations';
 
 
 import OrgDashboard from './pages/org_admin/OrgDashboard';
-import HRDashboard from './pages/Dashboard';
+import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
-import EmployeeManagement from './pages/EmployeeManagement';
-import LeaveManagement from './pages/LeaveManagement';
-import HiringManagement from './pages/HiringManagement';
-import HRReportingManagement from './pages/HRReportingManagement';
-import FeedBackManagement from './pages/FeedBackManagement';
-import AttendanceManagement from './pages/AttendanceManagement';
+import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
+import LeaveManagement from './pages/hrstaff/LeaveManagement';
+import HiringManagement from './pages/hrstaff/HiringManagement';
+import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
+import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
+import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
+import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
+import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
+import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
+import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
+import PayrollDashboard from './pages/hrstaff/payroll/PayrollDashboard';
+import SalaryStructure from './pages/hrstaff/payroll/SalaryStructure';
+import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
+import PayslipList from './pages/hrstaff/payroll/PayslipList';
+import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -284,6 +293,15 @@ const HRStaffRoutes = () => {
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
+        <Route path="addemployee" element={<AddEmployee />} />
+        <Route path="editemployee/:id" element={<EditeEmployee />} />
+        <Route path="addjobform" element={<AddJobForm />} />
+        <Route path="editejobposting/:id" element={<EditeJobPosting />} />
+        <Route path="PayrollDashboard" element={<PayrollDashboard />} />
+        <Route path="payroll/salary-structure" element={<SalaryStructure />} />
+        <Route path="payroll/payroll-run" element={<PayrollRun />} />
+        <Route path="payroll/payslips" element={<PayslipList />} />
+        <Route path="payroll/reports" element={<PayrollReports />} />
       </Route>
     </Routes>
   );

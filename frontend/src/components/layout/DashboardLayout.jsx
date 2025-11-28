@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Sidebar from './Sidebar';
+import { Bell, LogOut } from "lucide-react";
 
 /**
  * Dashboard Layout with Sidebar
@@ -22,7 +23,7 @@ const DashboardLayout = ({ children, title }) => {
     <div className="flex h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={toggleMobileMenu}
         />
@@ -34,9 +35,8 @@ const DashboardLayout = ({ children, title }) => {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden ${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           <div className="flex items-center">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -84,8 +84,28 @@ const DashboardLayout = ({ children, title }) => {
           </div>
 
           {/* Right side items can be added here */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-6 p-4 space-x-4">
             {/* Notification, profile dropdown, etc. can be added here */}
+            {/* Notification Icon */}
+            <div className="relative">
+              <Bell className="w-6 h-6 text-gray-600" />
+              <span className="absolute top-0 right-0 block w-3 h-3 bg-red-500 rounded-full"></span>
+            </div>
+            {/*profile*/}
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
+                SA
+              </div>
+
+              {/* Name + Email */}
+              <div className="leading-tight">
+                <p className="text-[13px] text-gray-900">System Admin</p>
+                <p className="text-xs text-gray-500">admin@corehive.com</p>
+              </div>
+            </div>
+            {/* Logout Icon */  }
+            <LogOut className="w-4 h-4 text-gray-600 cursor-pointer hover:text-black" />
           </div>
         </div>
 

@@ -14,6 +14,13 @@ import {
   UserIcon,
   EyeIcon
 } from '@heroicons/react/24/outline';
+import { FiUsers, FiHeadphones } from "react-icons/fi";
+import { TbDeviceAirpodsCase } from "react-icons/tb";
+import { AiOutlineAudit } from "react-icons/ai";
+import { MdQueryStats } from "react-icons/md";
+
+
+
 
 const Sidebar = ({ isCollapsed = false }) => {
   const location = useLocation();
@@ -42,10 +49,16 @@ const Sidebar = ({ isCollapsed = false }) => {
             ]
           },
           {
-            name: 'System Requests',
-            icon: DocumentTextIcon,
-            path: '/sys_admin/requests',
-            current: location.pathname.startsWith('/sys_admin/requests'),
+            name: 'Admin Approvals',
+            icon: Cog6ToothIcon,
+            path: '/sys_admin/approvals',
+            current: location.pathname.startsWith('/sys_admin/approvals')
+          },
+          {
+            name: 'Users',
+            icon: FiUsers,
+            path: '/sys_admin/users',
+            current: location.pathname.startsWith('/sys_admin/users'),
             submenu: [
               { name: 'Registration Requests', path: '/sys_admin/requests/registration' },
               { name: 'Module Requests', path: '/sys_admin/requests/modules' },
@@ -53,10 +66,10 @@ const Sidebar = ({ isCollapsed = false }) => {
             ]
           },
           {
-            name: 'System Reports',
-            icon: ChartBarIcon,
-            path: '/sys_admin/reports',
-            current: location.pathname.startsWith('/sys_admin/reports'),
+            name: 'Billing & Plans',
+            icon: TbDeviceAirpodsCase,
+            path: '/sys_admin/billing',
+            current: location.pathname.startsWith('/sys_admin/billing'),
             submenu: [
               { name: 'Usage Analytics', path: '/sys_admin/reports/usage' },
               { name: 'Performance', path: '/sys_admin/reports/performance' },
@@ -64,7 +77,25 @@ const Sidebar = ({ isCollapsed = false }) => {
             ]
           },
           {
-            name: 'System Settings',
+            name: 'Audit Logs',
+            icon: AiOutlineAudit,
+            path: '/sys_admin/audits',
+            current: location.pathname.startsWith('/sys_admin/audits')
+          },
+          {
+            name: 'Support',
+            icon: FiHeadphones,
+            path: '/sys_admin/support',
+            current: location.pathname.startsWith('/sys_admin/support')
+          },
+          {
+            name: 'System Analytics',
+            icon: MdQueryStats,
+            path: '/sys_admin/analytics',
+            current: location.pathname.startsWith('/sys_admin/analytics')
+          },
+          {
+            name: 'Settings',
             icon: Cog6ToothIcon,
             path: '/sys_admin/settings',
             current: location.pathname.startsWith('/sys_admin/settings')
@@ -203,11 +234,10 @@ const Sidebar = ({ isCollapsed = false }) => {
       <div key={item.name} className="mb-1">
         <Link
           to={item.path}
-          className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-            item.current
+          className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${item.current
               ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-700'
               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-          }`}
+            }`}
         >
           <item.icon
             className={`${isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'} shrink-0`}
@@ -220,9 +250,8 @@ const Sidebar = ({ isCollapsed = false }) => {
   };
 
   return (
-    <div className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    <div className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'
+      }`}>
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">

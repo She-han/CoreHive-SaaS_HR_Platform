@@ -64,7 +64,8 @@ public class AuthService {
                     .businessRegistrationNumber(request.getBusinessRegistrationNumber())
                     .employeeCountRange(request.getEmployeeCountRange())
                     .status(OrganizationStatus.PENDING_APPROVAL) // Initial status
-                    .modulePerformanceTracking(request.getModulePerformanceTracking())
+                    .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
                     .moduleHiringManagement(request.getModuleHiringManagement())
                     .modulesConfigured(false) // Will be configured during first time login
@@ -276,7 +277,8 @@ public class AuthService {
             }
 
             // 3. Update module selections
-            organization.setModulePerformanceTracking(request.getModulePerformanceTracking());
+            organization.setModuleQrAttendanceMarking(request.getModuleQrAttendanceMarking());
+            organization.setModuleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking());
             organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
             organization.setModuleHiringManagement(request.getModuleHiringManagement());
             organization.setModulesConfigured(true);
@@ -335,9 +337,11 @@ public class AuthService {
         moduleConfig.put("basicDashboard", true);
 
         // Extended modules (based on organization selection)
-        moduleConfig.put("performanceTracking", organization.getModulePerformanceTracking());
+
         moduleConfig.put("employeeFeedback", organization.getModuleEmployeeFeedback());
         moduleConfig.put("hiringManagement", organization.getModuleHiringManagement());
+        moduleConfig.put("qrAttendance", organization.getModuleQrAttendanceMarking());
+        moduleConfig.put("faceRecognitionAttendance",organization.getModuleFaceRecognitionAttendanceMarking());
 
         return moduleConfig;
     }

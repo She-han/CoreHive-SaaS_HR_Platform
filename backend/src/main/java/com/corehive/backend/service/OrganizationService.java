@@ -1,5 +1,7 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
+import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
 import com.corehive.backend.model.AppUser;
@@ -304,10 +306,101 @@ public class OrganizationService {
                 .status(org.getStatus().name()) // FIXED: Use .name() instead of .toString()
                 .employeeCountRange(org.getEmployeeCountRange())
                 .createdAt(org.getCreatedAt())
-                .modulePerformanceTracking(org.getModulePerformanceTracking())
+                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
+                .moduleFaceRecognitionAttendanceMarking((org.getModuleFaceRecognitionAttendanceMarking()))
                 .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
                 .moduleHiringManagement(org.getModuleHiringManagement())
                 .modulesConfigured(org.getModulesConfigured())
                 .build();
     }
-}
+
+    /**
+     * Get current module configuration for an organization
+     */
+    public ApiResponse<ModuleConfigResponse> getModuleConfiguration(String organizationUuid) {
+        try {
+            log.info("Fetching module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(organization.getOrganizationUuid())
+                    .organizationName(organization.getName())
+                    .moduleQrAttendanceMarking(organization.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(organization.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(organization.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(organization.getModuleHiringManagement())
+                    .modulesConfigured(organization.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration retrieved for: {}", organization.getName());
+            return ApiResponse.success("Module configuration retrieved successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error fetching module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to retrieve module configuration");
+        }
+    }
+
+    /**
+     * Update module configuration for an organization
+     */
+    @Transactional
+    public ApiResponse<ModuleConfigResponse> updateModuleConfiguration(
+            String organizationUuid,
+            UpdateModuleConfigRequest request) {
+        try {
+            log.info("Updating module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            // Update only the fields that are provided (not null)
+            if (request.getModuleQrAttendanceMarking() != null) {
+                organization.setModuleQrAttendanceMarking(request.getModuleQrAttendanceMarking());
+            }
+            if (request.getModuleFaceRecognitionAttendanceMarking() != null) {
+                organization.setModuleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking());
+            }
+            if (request.getModuleEmployeeFeedback() != null) {
+                organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
+            }
+            if (request.getModuleHiringManagement() != null) {
+                organization.setModuleHiringManagement(request.getModuleHiringManagement());
+            }
+
+            // Mark as configured if not already
+            if (!Boolean.TRUE.equals(organization.getModulesConfigured())) {
+                organization.setModulesConfigured(true);
+            }
+
+            Organization savedOrg = organizationRepository.save(organization);
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(savedOrg.getOrganizationUuid())
+                    .organizationName(savedOrg.getName())
+                    .moduleQrAttendanceMarking(savedOrg.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(savedOrg.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(savedOrg.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(savedOrg.getModuleHiringManagement())
+                    .modulesConfigured(savedOrg.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration updated successfully for: {}", organization.getName());
+            return ApiResponse.success("Module configuration updated successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error updating module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to update module configuration");
+        }
+    }
+ }

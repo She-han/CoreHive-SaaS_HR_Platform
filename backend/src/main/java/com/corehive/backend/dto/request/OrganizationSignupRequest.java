@@ -34,7 +34,9 @@ public class OrganizationSignupRequest {
     private String employeeCountRange;
 
     // Extended modules (Optional)
-    private Boolean modulePerformanceTracking = false;
+
+    private Boolean moduleQrAttendanceMarking = false;
+    private Boolean moduleFaceRecognitionAttendanceMarking = false;
     private Boolean moduleEmployeeFeedback = false;
     private Boolean moduleHiringManagement = false;
 }

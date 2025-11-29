@@ -61,9 +61,14 @@ const SignupPage = () => {
   // Module options
   const moduleOptions = [
     {
-      key: 'modulePerformanceTracking',
-      name: 'Performance Tracking',
-      description: 'Employee KPIs, reviews, and goal management'
+      key: 'moduleQrAttendance',
+      name: 'QR Attendance Marking',
+      description: 'QR code based attendance tracking for employees'
+    },
+    {
+      key: 'moduleFaceRecognitionAttendance',
+      name: 'Face Recognition Attendance Marking',
+      description: 'Face recognition technology for accurate attendance tracking'
     },
     {
       key: 'moduleEmployeeFeedback',

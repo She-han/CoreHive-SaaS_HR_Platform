@@ -27,8 +27,12 @@ import Billing from './pages/admin/BillingAndPlans';
 import Users from './pages/admin/Users';
 import Organizations from './pages/admin/Organizations';
 
-
+// Organization admin Pages
 import OrgDashboard from './pages/org_admin/OrgDashboard';
+import HRStaffManagement from './pages/org_admin/HRStaffManagement';
+import DepartmentManagement from './pages/org_admin/DepartmentManagement';
+
+// HR Staff pages
 import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
@@ -46,34 +50,13 @@ import SalaryStructure from './pages/hrstaff/payroll/SalaryStructure';
 import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
 import PayslipList from './pages/hrstaff/payroll/PayslipList';
 import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
+import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
 
-/* // Admin Pages
- import AdminApprovals from './pages/admin/AdminApprovals';
-import AdminOrganizations from './pages/admin/AdminOrganizations'; */
-
-// Organization Pages
-import HRStaffManagement from './pages/org_admin/HRStaffManagement';
-import DepartmentManagement from './pages/org_admin/DepartmentManagement';
-/* import PayrollPage from './pages/org/PayrollPage';
-import LeavesPage from './pages/org/LeavesPage';
-import AttendancePage from './pages/org/AttendancePage';
-import ReportsPage from './pages/org/ReportsPage';
-import SettingsPage from './pages/org/SettingsPage'; */ 
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
 import UnauthorizedPage from './pages/common/UnauthorizedPage'; */
 
-/**
- * Main App Component
- * Application routing and role-based access control
- * 
- * user type path structure:
- * - System Admin: /sys_admin/* 
- * - Org Admin: /org_admin/*
- * - HR Staff: /hr_staff/* 
- * - Employee: /employee/*
- */
 function App() {
   return (
     <Provider store={store}>
@@ -258,16 +241,8 @@ const OrgAdminRoutes = () => {
       <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
-     {/*   <Route path="employeemanagement" element={<EmployeeManagement />} />
-      <Route path="employeemanagement/add" element={<AddEmployee />} />
-      <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
-      <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />
-      <Route path="payrollmanagement" element={<PayrollManagement />} />
-      <Route path="payrollmanagement/process" element={<ProcessPayroll />} />
-      <Route path="payrollmanagement/payslips" element={<PayslipManagement />} />
-      <Route path="leavemanagement" element={<LeaveManagement />} />
-      <Route path="leavemanagement/approvals" element={<LeaveApprovals />} />
-      <Route path="attendancemanagement" element={<AttendanceManagement />} />
+     <Route path="modules" element={<ModuleConfiguration />} />
+     {/*   
       <Route path="reports" element={<OrgReports />} />
       <Route path="" element={<Navigate to="dashboard" replace />} /> */}
     </Routes>

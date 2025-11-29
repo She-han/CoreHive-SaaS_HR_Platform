@@ -97,7 +97,8 @@ const DepartmentManagement = () => {
   };
 
   return (
-    <DashboardLayout className="p-6 space-y-6">
+    <DashboardLayout>
+      <div className='lg:p-10'>
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Departments</h1>
@@ -183,6 +184,7 @@ const DepartmentManagement = () => {
           <Button variant="danger" onClick={handleDelete} disabled={loading}>{loading ? 'Deleting...' : 'Delete'}</Button>
         </div>
       </Modal>
+      </div>
     </DashboardLayout>
   );
 };

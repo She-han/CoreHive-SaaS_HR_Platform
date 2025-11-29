@@ -333,7 +333,8 @@ const HRStaffManagement = () => {
   const displayedStaff = filteredStaff;
 
   return (
-    <DashboardLayout className="p-6 space-y-6">
+    <DashboardLayout >
+      <div className='p-4'>
       {/* Header */}
       <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
         <div>
@@ -909,6 +910,7 @@ const HRStaffManagement = () => {
           </div>
         )}
       </Modal>
+      </div>
     </DashboardLayout>
   );
 };

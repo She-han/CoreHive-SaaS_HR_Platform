@@ -452,17 +452,9 @@ public class HRStaffService {
     }
 
     /**
-     * Get department name by ID
-     * TODO: Implement proper department service lookup
+     * Get department name by ID using DepartmentService
      */
     private String getDepartmentName(Long departmentId) {
-        // Mock department names for now
-        switch (departmentId != null ? departmentId.intValue() : 0) {
-            case 1: return "Human Resources";
-            case 2: return "Information Technology";
-            case 3: return "Finance";
-            case 4: return "Operations";
-            default: return "Unknown Department";
-        }
+        return departmentService.getDepartmentNameById(departmentId);
     }
 }

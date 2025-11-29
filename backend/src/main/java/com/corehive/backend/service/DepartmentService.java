@@ -119,4 +119,27 @@ public class DepartmentService {
         return departmentRepository.save(department);
     }
 
+    /**
+     * Get department by ID
+     */
+    public Optional<Department> getDepartmentById(Long departmentId) {
+        if (departmentId == null) {
+            return Optional.empty();
+        }
+        return departmentRepository.findById(departmentId);
+    }
+
+    /**
+     * Get department name by ID
+     * Returns "Unknown Department" if not found
+     */
+    public String getDepartmentNameById(Long departmentId) {
+        if (departmentId == null) {
+            return "No Department";
+        }
+        return departmentRepository.findById(departmentId)
+                .map(Department::getName)
+                .orElse("Unknown Department");
+    }
+
 }

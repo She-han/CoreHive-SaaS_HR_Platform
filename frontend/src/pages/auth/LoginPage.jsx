@@ -109,7 +109,7 @@ const LoginPage = () => {
       const resultAction = await dispatch(loginUser(formData));
       
       if (loginUser.fulfilled.match(resultAction)) {
-        console.log('✅ Login successful');
+        console.log('Login successful');
         
         // Get user data from result
         const userData = resultAction.payload;
@@ -127,32 +127,32 @@ const LoginPage = () => {
           if (userData.role === 'ORG_ADMIN') {
             if (!userData.modulesConfigured) {
               // First-time ORG_ADMIN - module configuration first
-              console.log('🔄 First-time ORG_ADMIN - redirecting to module configuration...');
+              console.log('First-time ORG_ADMIN - redirecting to module configuration...');
               navigate('/configure-modules', { replace: true });
               return;
             } else {
               // Existing ORG_ADMIN - organization management dashboard
-              console.log('✅ ORG_ADMIN - redirecting to org_admin dashboard...');
+              console.log('ORG_ADMIN - redirecting to org_admin dashboard...');
               navigate('/org_admin/dashboard', { replace: true });
               return;
             }
           } 
           else if (userData.role === 'HR_STAFF') {
             // HR Staff - HR management dashboard
-            console.log('� HR_STAFF - redirecting to hr_staff dashboard...');
+            console.log('HR_STAFF - redirecting to hr_staff dashboard...');
             navigate('/hr_staff/dashboard', { replace: true });
             return;
           } 
           else if (userData.role === 'EMPLOYEE') {
             // Employee - self-service profile
-            console.log('👤 EMPLOYEE - redirecting to employee profile...');
+            console.log('EMPLOYEE - redirecting to employee profile...');
             navigate('/employee/profile', { replace: true });
             return;
           }
         }
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
     }
   };
   

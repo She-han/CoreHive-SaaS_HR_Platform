@@ -144,54 +144,6 @@ const HRStaffManagement = () => {
       console.error('Error fetching HR staff:', error);
       showAlert('error', error.response?.data?.message || 'Failed to fetch HR staff data');
       
-      // Fallback to mock data for development
-      const mockData = [
-        {
-          id: 1,
-          appUserId: 101,
-          employeeCode: 'EMP001',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          phone: '+1234567890',
-          designation: 'HR Specialist',
-          departmentId: 1,
-          departmentName: 'Human Resources',
-          basicSalary: 50000,
-          dateOfJoining: '2024-01-15',
-          salaryType: 'MONTHLY',
-          isActive: true,
-          createdAt: '2024-01-15T00:00:00',
-          updatedAt: '2024-01-15T00:00:00',
-          fullName: 'John Doe',
-          formattedSalary: '$50,000.00',
-          formattedDateOfJoining: '1/15/2024',
-          statusDisplay: 'Active'
-        },
-        {
-          id: 2,
-          appUserId: 102,
-          employeeCode: 'EMP002',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@example.com',
-          phone: '+1234567891',
-          designation: 'HR Manager',
-          departmentId: 1,
-          departmentName: 'Human Resources',
-          basicSalary: 75000,
-          dateOfJoining: '2023-06-01',
-          salaryType: 'MONTHLY',
-          isActive: true,
-          createdAt: '2023-06-01T00:00:00',
-          updatedAt: '2023-06-01T00:00:00',
-          fullName: 'Jane Smith',
-          formattedSalary: '$75,000.00',
-          formattedDateOfJoining: '6/1/2023',
-          statusDisplay: 'Active'
-        }
-      ];
-      
       setHrStaffList(mockData);
       setTotalPages(1);
       setTotalElements(mockData.length);

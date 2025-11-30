@@ -7,9 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "http://localhost:3001")
 @RestController
 @RequestMapping("/api/employees")
 public class EmployeeController {
@@ -55,6 +56,60 @@ public class EmployeeController {
         }
 
         return ResponseEntity.ok(updated);
+    }
+
+    // === PATCH — Salary Only (basic, allowances, deductions) ===
+    @PatchMapping("/{id}/salary")
+    public ResponseEntity<?> updateSalary(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> fields) {
+
+        try {
+            Employee updated = employeeService.updateSalaryFields(id, fields);
+            return ResponseEntity.ok(updated);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Update failed: " + e.getMessage());
+        }
+    }
+
+//    @PatchMapping("/{id}/salary-breakdown")
+//    public ResponseEntity<?> updateSalaryBreakdown(
+//            @PathVariable Long id,
+//            @RequestBody Map<String, Object> fields) {
+//
+//        try {
+//            employeeService.updateSalaryBreakdown(id, fields);
+//            return ResponseEntity.ok("Updated successfully");
+//
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
+
+
+    @GetMapping("/{id}/salary-breakdown")
+    public ResponseEntity<?> getSalaryBreakdown(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(employeeService.getSalaryBreakdown(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
+    @PatchMapping("/{id}/salary-breakdown")
+    public ResponseEntity<?> updateSalaryBreakdown(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> fields) {
+
+        try {
+            employeeService.updateSalaryBreakdown(id, fields);
+            return ResponseEntity.ok("Updated successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
 

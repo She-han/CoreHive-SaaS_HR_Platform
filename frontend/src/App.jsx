@@ -280,9 +280,9 @@ const HRStaffRoutes = () => {
         <Route path="editemployee/:id" element={<EditeEmployee />} />
         <Route path="addjobform" element={<AddJobForm />} />
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
-        <Route path="PayrollDashboard" element={<PayrollDashboard />} />
+        <Route path="Payroll" element={<PayrollDashboard />} />
         <Route path="payroll/salary-structure" element={<SalaryStructure />} />
-        <Route path="payroll/payroll-run" element={<PayrollRun />} />
+        <Route path="payroll/run" element={<PayrollRun />} />
         <Route path="payroll/payslips" element={<PayslipList />} />
         <Route path="payroll/reports" element={<PayrollReports />} />
       </Route>

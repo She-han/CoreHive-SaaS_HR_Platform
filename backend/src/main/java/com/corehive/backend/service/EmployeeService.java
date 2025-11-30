@@ -1,22 +1,33 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.model.AllowanceItem;
+import com.corehive.backend.model.DeductionItem;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.repository.AllowanceItemRepository;
+import com.corehive.backend.repository.DeductionItemRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
+    private final AllowanceItemRepository allowanceItemRepository;
+    private final DeductionItemRepository deductionItemRepository;
 
 
-    public EmployeeService(EmployeeRepository employeeRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, AllowanceItemRepository allowanceItemRepository, DeductionItemRepository deductionItemRepository) {
         this.employeeRepository = employeeRepository;
+        this.allowanceItemRepository = allowanceItemRepository;
+        this.deductionItemRepository = deductionItemRepository;
     }
 
     public List<Employee> getAllEmployees() {
@@ -103,5 +114,134 @@ public class EmployeeService {
 
         return employeeRepository.save(emp);
     }
+
+    // === PATCH: Update only salary fields ===
+    public Employee updateSalaryFields(Long id, Map<String, Object> fields) {
+
+        Employee emp = employeeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        if (fields.containsKey("basicSalary")) {
+            emp.setBasicSalary(new BigDecimal(fields.get("basicSalary").toString()));
+        }
+
+        if (fields.containsKey("allowances")) {
+            emp.setAllowances(new BigDecimal(fields.get("allowances").toString()));
+        }
+
+        if (fields.containsKey("deductions")) {
+            emp.setDeductions(new BigDecimal(fields.get("deductions").toString()));
+        }
+
+        return employeeRepository.save(emp);
+    }
+
+//    @Transactional
+//    public void updateSalaryBreakdown(Long empId, Map<String, Object> fields) {
+//        // Save basic salary
+//        if (fields.containsKey("basicSalary")) {
+//            Employee emp = employeeRepository.findById(empId)
+//                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+//            emp.setBasicSalary(new BigDecimal(fields.get("basicSalary").toString()));
+//            employeeRepository.save(emp);
+//        }
+//
+//        // Allowances list
+//        if (fields.containsKey("allowances")) {
+//
+//            List<Map<String, Object>> allowances =
+//                    (List<Map<String, Object>>) fields.get("allowances");
+//
+//            allowanceItemRepository.deleteByEmployeeId(empId); // Clear old values
+//
+//            allowances.forEach(a -> {
+//                AllowanceItem item = new AllowanceItem();
+//                item.setEmployeeId(empId);
+//                item.setType(a.get("type").toString());
+//                item.setAmount(new BigDecimal(a.get("amount").toString()));
+//                allowanceItemRepository.save(item);
+//            });
+//        }
+//
+//        // Deductions list
+//        if (fields.containsKey("deductions")) {
+//
+//            List<Map<String, Object>> deductions =
+//                    (List<Map<String, Object>>) fields.get("deductions");
+//
+//            deductionItemRepository.deleteByEmployeeId(empId);
+//
+//            deductions.forEach(d -> {
+//                DeductionItem item = new DeductionItem();
+//                item.setEmployeeId(empId);
+//                item.setType(d.get("type").toString());
+//                item.setAmount(new BigDecimal(d.get("amount").toString()));
+//                deductionItemRepository.save(item);
+//            });
+//        }
+//    }
+
+    public Map<String, Object> getSalaryBreakdown(Long empId) {
+
+        Employee emp = employeeRepository.findById(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        List<AllowanceItem> allowances = allowanceItemRepository.findByEmployeeId(empId);
+        List<DeductionItem> deductions = deductionItemRepository.findByEmployeeId(empId);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("basicSalary", emp.getBasicSalary());
+        map.put("allowances", allowances);
+        map.put("deductions", deductions);
+
+        return map;
+    }
+
+
+    @Transactional
+    public void updateSalaryBreakdown(Long empId, Map<String, Object> fields) {
+
+        Employee emp = employeeRepository.findById(empId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        // Update basic salary
+        if (fields.containsKey("basicSalary")) {
+            emp.setBasicSalary(new BigDecimal(fields.get("basicSalary").toString()));
+            employeeRepository.save(emp);
+        }
+
+        // Allowances
+        if (fields.containsKey("allowances")) {
+            allowanceItemRepository.deleteByEmployeeId(empId);
+
+            List<Map<String, Object>> allowances =
+                    (List<Map<String, Object>>) fields.get("allowances");
+
+            for (Map<String, Object> a : allowances) {
+                AllowanceItem item = new AllowanceItem();
+                item.setEmployeeId(empId);
+                item.setType(a.get("type").toString());
+                item.setAmount(new BigDecimal(a.get("amount").toString()));
+                allowanceItemRepository.save(item);
+            }
+        }
+
+        // Deductions
+        if (fields.containsKey("deductions")) {
+            deductionItemRepository.deleteByEmployeeId(empId);
+
+            List<Map<String, Object>> deductions =
+                    (List<Map<String, Object>>) fields.get("deductions");
+
+            for (Map<String, Object> d : deductions) {
+                DeductionItem item = new DeductionItem();
+                item.setEmployeeId(empId);
+                item.setType(d.get("type").toString());
+                item.setAmount(new BigDecimal(d.get("amount").toString()));
+                deductionItemRepository.save(item);
+            }
+        }
+    }
+
 
 }

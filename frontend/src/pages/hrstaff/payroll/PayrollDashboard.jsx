@@ -1,76 +1,96 @@
+// src/pages/hrstaff/payroll/PayrollDashboard.jsx
 import { Link } from "react-router-dom";
-import { FaMoneyBill, FaCogs, FaFileInvoice, FaChartBar } from "react-icons/fa";
+import { FaMoneyCheckAlt, FaListAlt, FaPlayCircle, FaChartBar } from "react-icons/fa";
 
 export default function PayrollDashboard() {
   return (
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[#333333]">Payroll Management</h1>
-        <p className="text-[#9B9B9B] font-medium">
-          Manage salary structures, monthly payroll, payslips & reports
+    <div className="p-6 md:p-10 bg-gradient-to-br from-[#F1FDF9] to-white min-h-screen">
+      <div className="max-w-6xl mx-auto">
+
+        {/* Header */}
+        <h1 className="text-3xl font-extrabold text-[#05668D]">
+          Payroll Management
+        </h1>
+        <p className="text-[#556] mt-1">
+          Manage salaries, run payroll, and view reports simply.
         </p>
-      </div>
 
-      {/* NAV GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
-        {/* 1. Salary Structure */}
-        <Link
-          to="/hr_staff/payroll/salary-structure"
-          className="p-6 bg-[#F1FDF9] rounded-xl border border-[#02C39A] shadow hover:shadow-lg transition-all"
-        >
-          <div className="flex items-center gap-4">
-            <FaCogs className="text-4xl text-[#05668D]" />
-            <div>
-              <h2 className="text-xl font-semibold text-[#333333]">Salary Structure</h2>
-              <p className="text-sm text-[#9B9B9B]">Define basic pay, allowances, deductions</p>
+        {/* Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
+
+          {/* Salary Structure */}
+          <Link
+            to="/hr_staff/payroll/salary-structure"
+            className="group bg-white rounded-2xl shadow-md p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-4 rounded-xl bg-[#02C39A] text-white text-3xl group-hover:bg-[#1ED292] transition-all duration-300">
+                <FaMoneyCheckAlt />
+              </div>
+              <h2 className="text-xl font-semibold text-[#333333] group-hover:text-[#02C39A]">
+                Salary Structure
+              </h2>
+              <p className="text-sm text-gray-500">
+                View and configure salary breakdowns.
+              </p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        {/* 2. Payroll Run */}
-        <Link
-          to="/hr_staff/payroll/payroll-run"
-          className="p-6 bg-[#F1FDF9] rounded-xl border border-[#02C39A] shadow hover:shadow-lg transition-all"
-        >
-          <div className="flex items-center gap-4">
-            <FaMoneyBill className="text-4xl text-[#1ED292]" />
-            <div>
-              <h2 className="text-xl font-semibold text-[#333333]">Payroll Run</h2>
-              <p className="text-sm text-[#9B9B9B]">Process monthly salary calculations</p>
+          {/* Run Payroll */}
+          <Link
+            to="/hr_staff/payroll/run"
+            className="group bg-white rounded-2xl shadow-md p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-4 rounded-xl bg-[#05668D] text-white text-3xl group-hover:bg-[#0C397A] transition-all duration-300">
+                <FaPlayCircle />
+              </div>
+              <h2 className="text-xl font-semibold text-[#333333] group-hover:text-[#05668D]">
+                Run Payroll
+              </h2>
+              <p className="text-sm text-gray-500">
+                Calculate employee salaries for a selected period.
+              </p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        {/* 3. Payslips */}
-        <Link
-          to="/hr_staff/payroll/payslips"
-          className="p-6 bg-[#F1FDF9] rounded-xl border border-[#02C39A] shadow hover:shadow-lg transition-all"
-        >
-          <div className="flex items-center gap-4">
-            <FaFileInvoice className="text-4xl text-[#0C397A]" />
-            <div>
-              <h2 className="text-xl font-semibold text-[#333333]">Payslip List</h2>
-              <p className="text-sm text-[#9B9B9B]">View & download employee payslips</p>
+          {/* Payslip List */}
+          <Link
+            to="/hr_staff/payroll/payslips"
+            className="group bg-white rounded-2xl shadow-md p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-4 rounded-xl bg-[#0C397A] text-white text-3xl group-hover:bg-[#05668D] transition-all duration-300">
+                <FaListAlt />
+              </div>
+              <h2 className="text-xl font-semibold text-[#333333] group-hover:text-[#0C397A]">
+                Payslip List
+              </h2>
+              <p className="text-sm text-gray-500">
+                Browse monthly payslips for employees.
+              </p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
-        {/* 4. Reports */}
-        <Link
-          to="/hr_staff/payroll/reports"
-          className="p-6 bg-[#F1FDF9] rounded-xl border border-[#02C39A] shadow hover:shadow-lg transition-all"
-        >
-          <div className="flex items-center gap-4">
-            <FaChartBar className="text-4xl text-[#02C39A]" />
-            <div>
-              <h2 className="text-xl font-semibold text-[#333333]">Payroll Reports</h2>
-              <p className="text-sm text-[#9B9B9B]">Salary summaries & tax reports</p>
+          {/* Payroll Reports */}
+          <Link
+            to="/hr_staff/payroll/reports"
+            className="group bg-white rounded-2xl shadow-md p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-4 rounded-xl bg-[#333333] text-white text-3xl group-hover:bg-black transition-all duration-300">
+                <FaChartBar />
+              </div>
+              <h2 className="text-xl font-semibold text-[#333333] group-hover:text-black">
+                Payroll Reports
+              </h2>
+              <p className="text-sm text-gray-500">
+                View analytics & month-wise payroll summaries.
+              </p>
             </div>
-          </div>
-        </Link>
+          </Link>
 
+        </div>
       </div>
     </div>
   );

@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/employees").permitAll()
+                        .requestMatchers("/api/employees/**").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers( "/api/attendance" ,"/api/attendance/**").permitAll()
                         .requestMatchers( "/api/payroll" ,"/api/payroll/**").permitAll()
@@ -77,11 +78,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
                         .requestMatchers("/api/employee/").hasRole("EMPLOYEE")
                         .requestMatchers("/api/hr/").hasAnyRole("ORG_ADMIN", "HR_STAFF")
-                        .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
+//                        .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/dashboard").authenticated() // Dashboard requires authentication
 
                         // Any other request needs authentication
-                        .anyRequest().authenticated()
+                                .anyRequest().permitAll()
+
                 )
 
                 // JWT authentication entry point

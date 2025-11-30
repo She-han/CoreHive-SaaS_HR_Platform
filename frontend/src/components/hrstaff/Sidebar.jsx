@@ -1,3 +1,4 @@
+// src/components/Sidebar.jsx
 import { Link, NavLink } from "react-router-dom";
 import {
   Users,
@@ -6,34 +7,17 @@ import {
   BarChart3,
   MessageSquare,
   Briefcase,
-  Wallet // ✅ Add an icon for Payroll (Lucide icon)
 } from "lucide-react";
-
-import EmployeeManagement from "../../pages/hrstaff/EmployeeManagement.jsx";
-import LeaveManagement from "../../pages/hrstaff/LeaveManagement.jsx";
-import HiringManagement from "../../pages/hrstaff/HiringManagement.jsx";
-import HRReportingManagement from "../../pages/hrstaff/HRReportingManagement.jsx";
-import FeedBackManagement from "../../pages/hrstaff/FeedBackManagement.jsx";
-import AttendanceManagement from "../../pages/AttendaceManagement/AttendanceManagement.jsx";
-import Dashboard from "../../pages/hrstaff/HRDashboard.jsx";
-import PayrollDashboard from "../../pages/hrstaff/payroll/PayrollDashboard.jsx";
 
 export default function Sidebar() {
   return (
     <div className="bg-[#0C397A] text-white w-64 p-5 hidden md:block">
-      
-      {/* Header */}
       <div className="flex flex-col items-center mb-10">
-        <div className="w-16 h-16 bg-blue-300 rounded-full mb-3"></div>
-        <Link to="/hr_staff/Dashboard">
-          <h2 className="text-xl font-semibold">HR Panel</h2>
-        </Link>
+        <div className="w-16 h-16 bg-blue-300 rounded-full mb-3" />
+        <Link to="/hr_staff/Dashboard"><h2 className="text-xl font-semibold">HR Panel</h2></Link>
       </div>
 
-      {/* Navigation */}
       <nav className="space-y-2">
-        
-        {/* Employee Management */}
         <NavLink
           to="/hr_staff/EmployeeManagement"
           className={({ isActive }) =>
@@ -46,7 +30,6 @@ export default function Sidebar() {
           Employee Management
         </NavLink>
 
-        {/* Leave Management */}
         <NavLink
           to="/hr_staff/LeaveManagement"
           className={({ isActive }) =>
@@ -59,7 +42,6 @@ export default function Sidebar() {
           Leave Management
         </NavLink>
 
-        {/* Attendance Management */}
         <NavLink
           to="/hr_staff/AttendanceManagement"
           className={({ isActive }) =>
@@ -72,7 +54,19 @@ export default function Sidebar() {
           Attendance Management
         </NavLink>
 
-        {/* HR Reporting */}
+         {/* Payroll */}
+        <NavLink
+          to="/hr_staff/payroll"
+          className={({ isActive }) =>
+            `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+              isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
+            }`
+          }
+        >
+          <Briefcase className="w-5 h-5" />
+          Payroll Management
+        </NavLink>
+
         <NavLink
           to="/hr_staff/HRReportingManagement"
           className={({ isActive }) =>
@@ -85,20 +79,6 @@ export default function Sidebar() {
           HR Reporting
         </NavLink>
 
-        {/* ✅ Payroll Management (NEW) */}
-        <NavLink
-          to="/hr_staff/PayrollDashboard"
-          className={({ isActive }) =>
-            `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
-              isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
-            }`
-          }
-        >
-          <Wallet className="w-5 h-5" />
-          Payroll Management
-        </NavLink>
-
-        {/* Employee Feedback */}
         <NavLink
           to="/hr_staff/FeedBackManagement"
           className={({ isActive }) =>
@@ -111,7 +91,6 @@ export default function Sidebar() {
           Employee Feedback
         </NavLink>
 
-        {/* Hiring Management */}
         <NavLink
           to="/hr_staff/HiringManagement"
           className={({ isActive }) =>
@@ -123,6 +102,7 @@ export default function Sidebar() {
           <Briefcase className="w-5 h-5" />
           Hiring Management
         </NavLink>
+
       </nav>
     </div>
   );

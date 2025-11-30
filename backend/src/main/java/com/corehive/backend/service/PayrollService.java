@@ -28,10 +28,9 @@ public class PayrollService {
     @Transactional
     public void runMonthlyPayroll(int year, int month) {
 
-        // Get existing payrolls for this month to avoid duplicates
+        // Load existing payrolls for the month
         List<PayrollRecord> existing = payrollRepo.findByPeriodYearAndPeriodMonth(year, month);
 
-        // Convert existing records to map for quick lookup
         Map<Long, PayrollRecord> existingMap = existing.stream()
                 .collect(Collectors.toMap(PayrollRecord::getEmployeeId, r -> r));
 
@@ -39,33 +38,33 @@ public class PayrollService {
 
         for (Employee emp : employees) {
 
-            // Skip if payroll already exists
-            if (existingMap.containsKey(emp.getId()))
-                continue;
+            PayrollRecord record = existingMap.get(emp.getId());
 
-            // Clean values to avoid nulls
+            // If no payroll → create one
+            if (record == null) {
+                record = new PayrollRecord();
+                record.setPaymentStatus(PaymentStatus.PENDING);
+            }
+
             BigDecimal basic = emp.getBasicSalary() != null ? emp.getBasicSalary() : BigDecimal.ZERO;
             BigDecimal allowance = emp.getAllowances() != null ? emp.getAllowances() : BigDecimal.ZERO;
             BigDecimal deduction = emp.getDeductions() != null ? emp.getDeductions() : BigDecimal.ZERO;
 
-            //Calculate net salary
             BigDecimal net = basic.add(allowance).subtract(deduction);
 
-            //Fill payroll record
-            PayrollRecord pr = new PayrollRecord();
-            pr.setOrganizationUuid(emp.getOrganizationUuid());
-            pr.setEmployeeId(emp.getId());
-            pr.setPeriodYear(year);
-            pr.setPeriodMonth(month);
-            pr.setBasicSalary(basic);
-            pr.setAllowances(allowance);
-            pr.setDeductions(deduction);
-            pr.setNetSalary(net);
-            pr.setPaymentStatus(PaymentStatus.PENDING);
+            record.setOrganizationUuid(emp.getOrganizationUuid());
+            record.setEmployeeId(emp.getId());
+            record.setPeriodYear(year);
+            record.setPeriodMonth(month);
+            record.setBasicSalary(basic);
+            record.setAllowances(allowance);
+            record.setDeductions(deduction);
+            record.setNetSalary(net);
 
-            payrollRepo.save(pr);
+            payrollRepo.save(record);
         }
     }
+
 
     // -------------------------------------------------------
     //  GET PAYSLIPS FOR A MONTH

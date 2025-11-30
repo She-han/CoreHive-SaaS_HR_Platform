@@ -1,12 +1,11 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
-import com.corehive.backend.model.AllowanceItem;
-import com.corehive.backend.model.DeductionItem;
-import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.*;
 import com.corehive.backend.repository.AllowanceItemRepository;
 import com.corehive.backend.repository.DeductionItemRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.repository.PayrollRecordRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,13 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final AllowanceItemRepository allowanceItemRepository;
     private final DeductionItemRepository deductionItemRepository;
-
+    private PayrollRecordRepository payrollRecordRepository;
 
     public EmployeeService(EmployeeRepository employeeRepository, AllowanceItemRepository allowanceItemRepository, DeductionItemRepository deductionItemRepository) {
         this.employeeRepository = employeeRepository;
@@ -198,6 +198,7 @@ public class EmployeeService {
     }
 
 
+
     @Transactional
     public void updateSalaryBreakdown(Long empId, Map<String, Object> fields) {
 
@@ -207,10 +208,12 @@ public class EmployeeService {
         // Update basic salary
         if (fields.containsKey("basicSalary")) {
             emp.setBasicSalary(new BigDecimal(fields.get("basicSalary").toString()));
-            employeeRepository.save(emp);
         }
 
-        // Allowances
+        BigDecimal totalAllowances = BigDecimal.ZERO;
+        BigDecimal totalDeductions = BigDecimal.ZERO;
+
+        // ======== ALLOWANCES ========
         if (fields.containsKey("allowances")) {
             allowanceItemRepository.deleteByEmployeeId(empId);
 
@@ -218,15 +221,20 @@ public class EmployeeService {
                     (List<Map<String, Object>>) fields.get("allowances");
 
             for (Map<String, Object> a : allowances) {
+                BigDecimal amount = new BigDecimal(a.get("amount").toString());
+
                 AllowanceItem item = new AllowanceItem();
                 item.setEmployeeId(empId);
                 item.setType(a.get("type").toString());
-                item.setAmount(new BigDecimal(a.get("amount").toString()));
+                item.setAmount(amount);
+
                 allowanceItemRepository.save(item);
+
+                totalAllowances = totalAllowances.add(amount);
             }
         }
 
-        // Deductions
+        // ======== DEDUCTIONS ========
         if (fields.containsKey("deductions")) {
             deductionItemRepository.deleteByEmployeeId(empId);
 
@@ -234,14 +242,27 @@ public class EmployeeService {
                     (List<Map<String, Object>>) fields.get("deductions");
 
             for (Map<String, Object> d : deductions) {
+                BigDecimal amount = new BigDecimal(d.get("amount").toString());
+
                 DeductionItem item = new DeductionItem();
                 item.setEmployeeId(empId);
                 item.setType(d.get("type").toString());
-                item.setAmount(new BigDecimal(d.get("amount").toString()));
+                item.setAmount(amount);
+
                 deductionItemRepository.save(item);
+
+                totalDeductions = totalDeductions.add(amount);
             }
         }
+
+        // === CRITICAL: UPDATE EMPLOYEE TOTALS ===
+        emp.setAllowances(totalAllowances);
+        emp.setDeductions(totalDeductions);
+
+        // Save employee
+        employeeRepository.save(emp);
     }
+
 
 
 }

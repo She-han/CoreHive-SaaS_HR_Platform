@@ -17,67 +17,77 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Employee {
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
 
-        @Column(name = "organization_uuid", nullable = false, length = 36)
-        private String organizationUuid;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-        @Column(name = "app_user_id", unique = true)
-        private Long appUserId;
+    @Column(name = "organization_uuid", nullable = false, length = 36)
+    private String organizationUuid;
 
-        @Column(name = "employee_code", length = 50)
-        private String employeeCode;
+    @Column(name = "app_user_id", unique = true)
+    private Long appUserId;
 
-        @Column(name = "first_name", nullable = false, length = 100)
-        private String firstName;
+    @Column(name = "employee_code", length = 50)
+    private String employeeCode;
 
-        @Column(name = "last_name", nullable = false, length = 100)
-        private String lastName;
+    @Column(name = "first_name", nullable = false, length = 100)
+    private String firstName;
 
-        @Column(name = "email", length = 200)
-        private String email;
+    @Column(name = "last_name", nullable = false, length = 100)
+    private String lastName;
 
-        @Column(name = "phone", length = 50)
-        private String phone;
+    @Column(name = "email", length = 200)
+    private String email;
 
-        @Column(name = "designation", length = 100)
-        private String designation;
+    @Column(name = "phone", length = 50)
+    private String phone;
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name = "department_id", referencedColumnName = "id", insertable = false, updatable = false)
-        private Department department;
+    @Column(name = "designation", length = 100)
+    private String designation;
 
-        @Column(name = "department_id")
-        private Long departmentId; // Note: This is currently a loose reference, not a foreign key
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private Department department;
 
-        @Column(name = "basic_salary", precision = 12, scale = 2)
-        private BigDecimal basicSalary;
+    @Column(name = "department_id")
+    private Long departmentId;
 
-        @Column(name = "date_of_joining")
-        private LocalDate dateOfJoining;
+    @Column(name = "basic_salary", precision = 12, scale = 2)
+    private BigDecimal basicSalary;
 
-        @Column(name = "is_active")
-        private Boolean isActive = true;
+    @Column(name = "date_of_joining")
+    private LocalDate dateOfJoining;
 
-        @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
-        private LocalDateTime createdAt;
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 
-        @Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-        private LocalDateTime updatedAt;
+    @Column(name = "created_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime createdAt;
 
-        @Enumerated(EnumType.STRING)
-        @Column(name = "salary_type", columnDefinition = "ENUM('MONTHLY','DAILY') DEFAULT 'MONTHLY'")
-        private SalaryType salaryType = SalaryType.MONTHLY;
+    @Column(name = "updated_at", columnDefinition = "DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
+    private LocalDateTime updatedAt;
 
-        @Column(name = "leave_count")
-        private Integer leaveCount = 0;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "salary_type", columnDefinition = "ENUM('MONTHLY','DAILY') DEFAULT 'MONTHLY'")
+    private SalaryType salaryType = SalaryType.MONTHLY;
 
-        // ===== Enum for Salary Type =====
-        public enum SalaryType {
-            MONTHLY,
-            DAILY
-        }
+    @Column(name = "leave_count")
+    private Integer leaveCount = 0;
 
+
+    @Column(name = "allowances", precision = 15, scale = 2)
+    private BigDecimal allowances = BigDecimal.ZERO;
+
+    @Column(name = "deductions", precision = 15, scale = 2)
+    private BigDecimal deductions = BigDecimal.ZERO;
+
+    @Column(name = "bank_account", length = 100)
+    private String bankAccount;
+
+    // ===== Enum for Salary Type =====
+    public enum SalaryType {
+        MONTHLY,
+        DAILY
     }
+}

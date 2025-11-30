@@ -1,5 +1,6 @@
 package com.corehive.backend.repository;
 
+import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    List<Employee> findByDepartment(Department department);
 
     /**
      * Find employees by organization UUID

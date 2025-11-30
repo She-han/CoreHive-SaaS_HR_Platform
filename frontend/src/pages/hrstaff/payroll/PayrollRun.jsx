@@ -94,7 +94,7 @@ export default function PayrollRun() {
           <FiClock className="text-[#02C39A] mt-1" size={20} />
           <p className="text-sm text-[#333]">
             The payroll process will calculate employee salary, allowances,
-            deductions & generate payslips for the selected period.
+            deductions & generate payslips for the selected period as you provided salary structure.
           </p>
         </div>
 

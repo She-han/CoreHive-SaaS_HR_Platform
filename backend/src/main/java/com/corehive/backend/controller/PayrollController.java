@@ -35,8 +35,8 @@ public class PayrollController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<PayrollRecord>> all() {
-        return ResponseEntity.ok(payrollRepo.findAll());
+    public List<PayrollRecord> getAllPayroll() {
+        return payrollRepo.findAllSorted();
     }
 
     //Marks a payslip as PAID for one employee

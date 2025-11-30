@@ -1,6 +1,9 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
+import com.corehive.backend.dto.request.UpdateDepartmentRequest;
+import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -81,7 +84,7 @@ public class DepartmentService {
      * Get all departments for an organization
      */
     public List<Department> getDepartmentsByOrganization(String organizationUuid) {
-        return departmentRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+        return departmentRepository.findByOrganizationUuid(organizationUuid);
     }
 
     /**
@@ -117,6 +120,55 @@ public class DepartmentService {
         department.setCreatedAt(LocalDateTime.now());
 
         return departmentRepository.save(department);
+    }
+
+    @Transactional
+    public ApiResponse<UpdateDepartmentResponse> updateDepartment(String organizationUuid, UpdateDepartmentRequest request){
+        try{
+            Optional<Department> departmentOpt = departmentRepository.findById(request.getId());
+
+            if (departmentOpt.isEmpty() || !departmentOpt.get().getOrganizationUuid().equals(organizationUuid)) {
+                return ApiResponse.error("Department not found in the organization");
+            }
+
+            Department department = departmentOpt.get();
+
+            if(request.getName()!=null && !request.getName().isEmpty()){
+                department.setName(request.getName());
+            }
+            if(request.getCode()!=null && !request.getCode().isEmpty()){
+                department.setCode(request.getCode());
+            }
+            if(request.getManagerId()!=null){
+                department.setManagerId(request.getManagerId());
+            }
+            if(request.getIsActive()!=null){
+                department.setIsActive(request.getIsActive());
+            }
+
+            department.setCreatedAt(LocalDateTime.now());
+
+            Department savedDepartment = departmentRepository.save(department);
+
+            UpdateDepartmentResponse responseDto = UpdateDepartmentResponse.builder()
+                    .id(savedDepartment.getId())
+                    .name(savedDepartment.getName())
+                    .code(savedDepartment.getCode())
+                    .managerId(savedDepartment.getManagerId())
+                    .isActive(savedDepartment.getIsActive())
+                    .build();
+
+            return ApiResponse.<UpdateDepartmentResponse>builder()
+                    .success(true)
+                    .message("Department updated successfully")
+                    .data(responseDto)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update department",e);
+        }
+
+
     }
 
     /**

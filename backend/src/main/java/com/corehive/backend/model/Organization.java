@@ -46,8 +46,11 @@ public class Organization {
     private String employeeCountRange;
 
     // Module flags
-    @Column(name = "module_performance_tracking")
-    private Boolean modulePerformanceTracking = false;
+    @Column(name = "module_qr_attendance_marking")
+    private Boolean moduleQrAttendanceMarking = false;
+
+    @Column(name = "module_face_recognition_attendance_marking")
+    private Boolean moduleFaceRecognitionAttendanceMarking = false;
 
     @Column(name = "module_employee_feedback")
     private Boolean moduleEmployeeFeedback = false;
@@ -74,12 +77,14 @@ public class Organization {
     // Business methods
     public boolean hasModule(String moduleName) {
         switch (moduleName.toLowerCase()) {
-            case "performance":
-                return Boolean.TRUE.equals(modulePerformanceTracking);
             case "feedback":
                 return Boolean.TRUE.equals(moduleEmployeeFeedback);
             case "hiring":
                 return Boolean.TRUE.equals(moduleHiringManagement);
+            case "qr_attendance":
+                return Boolean.TRUE.equals(moduleQrAttendanceMarking);
+            case "face_recognition_attendance":
+                return Boolean.TRUE.equals(moduleFaceRecognitionAttendanceMarking);
             default:
                 return false;
         }

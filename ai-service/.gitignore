@@ -1,0 +1,111 @@
+# ============================================================
+# CoreHive AI Service - Git Ignore File
+# ============================================================
+
+# ----- Environment Variables (NEVER commit these!) -----
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+*.env
+
+# ----- Python Virtual Environment -----
+venv/
+env/
+ENV/
+.venv/
+.ENV/
+
+# ----- Python Bytecode -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# ----- Python Distribution/Packaging -----
+dist/
+build/
+eggs/
+*.egg
+*.egg-info/
+.eggs/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ----- Testing -----
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+*.cover
+*.py,cover
+.hypothesis/
+
+# ----- IDE/Editor Settings -----
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ----- OS Generated Files -----
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ----- Logs -----
+*.log
+logs/
+log/
+
+# ----- Temporary Files -----
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# ----- Jupyter Notebooks (if used) -----
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ----- mypy/Type Checking -----
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ----- Local Development -----
+*.local
+*.sqlite3
+*.db
+
+# ----- Docker (local overrides) -----
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ----- Secrets/Keys (CRITICAL - Never commit!) -----
+*.pem
+*.key
+*.crt
+*.p12
+secrets/
+credentials/
+api_keys.txt

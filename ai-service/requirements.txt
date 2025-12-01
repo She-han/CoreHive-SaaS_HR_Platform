@@ -1,0 +1,56 @@
+# ============================================================
+# CoreHive AI Service - Dependencies
+# All FREE libraries!
+# ============================================================
+
+# ----- Web Framework -----
+# FastAPI - Modern, fast web framework for building APIs
+fastapi==0.109.0
+
+# Uvicorn - ASGI server to run FastAPI
+uvicorn[standard]==0.27.0
+
+# For handling file uploads (if needed)
+python-multipart==0.0.6
+
+# ----- AI/ML Libraries (FREE) -----
+# Google Gemini - FREE AI model (up to 1500 requests/day)
+google-generativeai==0.8.3
+
+# Scikit-learn - For pattern detection and predictions
+scikit-learn==1.5.2
+
+# Pandas - Data analysis and manipulation
+pandas==2.2.0
+
+# Numpy - Numerical computing
+numpy==1.26.3
+
+# ----- Database -----
+# SQLAlchemy - Database toolkit
+sqlalchemy==2.0.25
+
+# MySQL connector
+mysql-connector-python==8.3.0
+pymysql==1.1.0
+
+# ----- Utilities -----
+# Environment variables management
+python-dotenv==1.0.1
+
+# Data validation
+pydantic==2.6.0
+pydantic-settings==2.1.0
+
+# HTTP client for external API calls
+httpx==0.26.0
+
+# Caching to reduce API calls
+cachetools==5.3.2
+
+# ----- Testing -----
+pytest==7.4.4
+pytest-asyncio==0.23.4
+
+# ----- Production Server -----
+gunicorn==21.2.0

@@ -1,20 +1,19 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import SalaryEditModal from "../../../components/payroll/SalaryEditModal";
+import formatAmount from "../../../components/FormatAmount";  
 
 const BASE = "http://localhost:8080/api";
 
 export default function SalaryStructure() {
   const [employees, setEmployees] = useState([]);
-  const [selected, setSelected] = useState(null); // selected employee
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     loadEmployees();
   }, []);
 
-  // -----------------------------------------------------
-  // LOAD EMPLOYEES + SALARY BREAKDOWN
-  // -----------------------------------------------------
+  // Load employees with salary breakdown
   const loadEmployees = async () => {
     try {
       const res = await axios.get(`${BASE}/employees`);
@@ -75,9 +74,7 @@ export default function SalaryStructure() {
     }
   };
 
-  // -----------------------------------------------------
-  // UPDATE LOCAL FIELDS FOR THE SELECTED EMPLOYEE
-  // -----------------------------------------------------
+  // Update model fields
   const updateField = (field, value) => {
     setSelected((prev) => ({
       ...prev,
@@ -85,9 +82,7 @@ export default function SalaryStructure() {
     }));
   };
 
-  // -----------------------------------------------------
-  // SAVE CHANGES
-  // -----------------------------------------------------
+  // Save updated fields
   const saveChanges = async () => {
     try {
       await axios.patch(`${BASE}/employees/${selected.id}/salary-breakdown`, {
@@ -116,26 +111,26 @@ export default function SalaryStructure() {
   };
 
   return (
-    <div className="p-10 bg-[#F1FDF9] h-screen flex flex-col relative">
+    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
 
-      {/* PAGE TITLE */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#333333]">Salary Structure</h1>
-        <p className="text-[#9B9B9B] text-sm">Overview of employee salaries</p>
+      {/* Page Header */}
+      <div className="mb-6 shrink-0">
+        <h1 className="text-2xl font-bold text-[#333333]">Salary Structure</h1>
+        <p className="text-[#9B9B9B] font-medium">Employee salary overview</p>
       </div>
 
-      {/* TABLE VIEW */}
-      <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg p-6 border border-[#E9F7F3]">
+      {/* Table Container */}
+      <div className="flex-1 overflow-auto border border-[#9B9B9B] rounded-lg shadow-sm bg-white">
         <table className="w-full text-left">
-          <thead className="bg-[#0C397A] text-white">
+          <thead className="bg-[#0C397A] text-white sticky top-0">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">Name</th>
               <th className="p-3">Designation</th>
-              <th className="p-3">Basic</th>
-              <th className="p-3">Allowances</th>
-              <th className="p-3">Deductions</th>
-              <th className="p-3">Net Salary</th>
+              <th className="p-3">Basic (Rs.)</th>
+              <th className="p-3">Allowances (Rs.)</th>
+              <th className="p-3">Deductions (Rs.)</th>
+              <th className="p-3">Net Salary (Rs.)</th>
             </tr>
           </thead>
 
@@ -143,25 +138,34 @@ export default function SalaryStructure() {
             {employees.map((e) => (
               <tr
                 key={e.id}
-                className="border-b hover:bg-[#F1FDF9] cursor-pointer"
+                className="border-b hover:bg-[#F1FDF9] cursor-pointer transition"
                 onClick={() => setSelected(e)}
               >
-                <td className="p-3">{e.employeeCode}</td>
-                <td className="p-3">
+                <td className="p-3 text-[#333333]">{e.employeeCode}</td>
+                <td className="p-3 text-[#333333]">
                   {e.firstName} {e.lastName}
                 </td>
-                <td className="p-3">{e.designation}</td>
-                <td className="p-3">{e.basicSalary}</td>
-                <td className="p-3 text-[#02C39A]">{e.totalAllowances}</td>
-                <td className="p-3 text-red-500">{e.totalDeductions}</td>
-                <td className="p-3 font-bold">{e.netSalary}</td>
+                <td className="p-3 text-[#333333]">{e.designation}</td>
+                <td className="p-3 text-[#333333]">{formatAmount(e.basicSalary)}</td>
+
+                <td className="p-3 font-semibold text-[#02C39A]">
+                  {formatAmount(e.totalAllowances)}
+                </td>
+
+                <td className="p-3 font-semibold text-[#333333]">
+                  {formatAmount(e.totalDeductions)}
+                </td>
+
+                <td className="p-3 font-bold text-[#05668D]">
+                  {formatAmount(e.netSalary)}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* POPUP MODAL COMPONENT */}
+      {/* Salary Edit Modal */}
       <SalaryEditModal
         selected={selected}
         onClose={() => setSelected(null)}

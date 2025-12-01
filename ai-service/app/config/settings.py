@@ -1,66 +1,67 @@
 """
-CoreHive AI Service - Configuration Settings
-=============================================
-මේ file එකේ environment variables manage කරනවා.
-Production එකේදී Azure App Service settings වලින් values ගන්නවා.
+Configuration Settings for CoreHive AI Service
+
+This file loads environment variables and provides them to the application.
+Using Pydantic for validation ensures type safety and proper error handling.
 """
 
 from pydantic_settings import BaseSettings
 from typing import Optional
-
+import os
 
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables.
     
-    Pydantic settings automatically load values from:
-    1. Environment variables
-    2. .env file (if exists)
+    Pydantic automatically:
+    - Reads from .env file
+    - Validates types
+    - Provides helpful error messages if required vars are missing
     """
     
-    # ===========================================
-    # Application Settings
-    # ===========================================
+    # ----- Application Settings -----
     APP_NAME: str = "CoreHive AI Service"
-    DEBUG: bool = False
+    DEBUG: bool = True
     
-    # ===========================================
-    # Database Connection
-    # ඔයාගේ existing MySQL database එකේම connect වෙනවා
-    # ===========================================
+    # ----- Database Configuration -----
+    # These MUST match your Spring Boot backend's database
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_NAME: str = "corehive_db"
     DB_USER: str = "root"
-    DB_PASSWORD: str = "1234"
+    DB_PASSWORD: str = ""
     
-    # ===========================================
-    # Google Gemini API (FREE!)
-    # Google AI Studio එකෙන් ගත්ත key එක
-    # ===========================================
-    GEMINI_API_KEY: str = "AIzaSyDS3UI3-AfaD-kd6kBjnvHtFq9D6umHsew"
+    # ----- Google Gemini API -----
+    GEMINI_API_KEY: str = ""
     
-    # ===========================================
-    # Other Services URLs
-    # ===========================================
+    # ----- Service URLs -----
     BACKEND_URL: str = "http://localhost:8080"
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:5173"
     
-    # ===========================================
-    # Computed Properties
-    # ===========================================
     @property
     def DATABASE_URL(self) -> str:
-        """Generate SQLAlchemy database connection URL"""
+        """
+        Constructs the database connection URL.
+        Format: mysql+pymysql://user:password@host:port/database
+        """
         return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
     
     class Config:
-        # .env file එකෙන් values load කරන්න
+        # Tell Pydantic to read from .env file
         env_file = ".env"
-        env_file_encoding = "utf-8"
+        # Environment variables are case-sensitive
         case_sensitive = True
+        # Allow extra fields (won't cause errors)
+        extra = "ignore"
 
 
-# Global settings instance
-# අනිත් files වලින් මේක import කරන්න පුළුවන්
+# Create a global settings instance
+# This is used throughout the application
 settings = Settings()
+
+# Print debug info on startup (only in debug mode)
+if settings.DEBUG:
+    print(f"🔧 Settings loaded:")
+    print(f"   - App Name: {settings.APP_NAME}")
+    print(f"   - Database: {settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
+    print(f"   - Gemini API Key: {'✅ Set' if settings.GEMINI_API_KEY else '❌ Not Set'}")

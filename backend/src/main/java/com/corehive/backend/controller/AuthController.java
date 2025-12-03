@@ -1,6 +1,7 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.request.ChangePasswordRequest;
+import com.corehive.backend.dto.request.ForgotPasswordRequest;
 import com.corehive.backend.dto.request.LoginRequest;
 import com.corehive.backend.dto.request.ModuleConfigurationRequest;
 import com.corehive.backend.dto.request.OrganizationSignupRequest;
@@ -104,6 +105,11 @@ public class AuthController {
         // For simplicity assuming request has userId or logic handles it.
 
         return ResponseEntity.ok(authService.changePassword(request.getUserId(), request.getNewPassword()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
     /**

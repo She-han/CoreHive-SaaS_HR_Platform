@@ -14,7 +14,10 @@ import ProtectedRoute from './pages/auth/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+
+// Middle auth pages
 import ModuleConfigPage from './pages/auth/ModuleConfigPage';
+import {ChangePasswordPage} from './pages/auth/ChangePasswordPage';
 
 // System admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -73,6 +76,16 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+
+                {/* Change Password (First-time any ORG_USER) */}
+                <Route 
+                  path="/change-password" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <ChangePasswordPage />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route 

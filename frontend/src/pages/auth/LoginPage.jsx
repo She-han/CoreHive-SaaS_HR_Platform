@@ -113,7 +113,18 @@ const LoginPage = () => {
         
         // Get user data from result
         const userData = resultAction.payload;
-        
+
+        console.log('🔍 SERVER RESPONSE KEYS:', Object.keys(userData));
+        console.log('🔍 Password Flag Value:', userData.isPasswordChangeRequired, userData.passwordChangeRequired);
+
+        const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
+
+        if (needsPasswordChange) {
+          console.log('Password change required - redirecting...');
+          navigate('/change-password', { replace: true });
+          return;
+        }
+
         // Handle redirect based on user role and configuration status
         // Redirect to proper path based on role
         if (userData.userType === 'SYSTEM_ADMIN' && userData.role === 'SYS_ADMIN') {

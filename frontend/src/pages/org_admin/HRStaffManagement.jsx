@@ -215,7 +215,7 @@ const HRStaffManagement = () => {
       
       if (response.success) {
         showAlert('success', 
-          `HR staff member added successfully! Temporary password: ${response.data.temporaryPassword || 'TempPass123!'}`
+          'HR staff member added successfully!'
         );
         setIsAddModalOpen(false);
         resetForm();

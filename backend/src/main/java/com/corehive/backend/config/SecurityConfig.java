@@ -58,7 +58,7 @@ public class SecurityConfig {
                 // Request authorization rules
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints (can access without authentication)
-                        .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/forgot-password").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint

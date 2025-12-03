@@ -1,5 +1,6 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.ForgotPasswordRequest;
 import com.corehive.backend.dto.request.LoginRequest;
 import com.corehive.backend.dto.request.ModuleConfigurationRequest;
 import com.corehive.backend.dto.request.OrganizationSignupRequest;
@@ -36,6 +37,7 @@ public class AuthService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder; // For password hashing 
     private final JwtUtil jwtUtil; // For JWT operations
+    private final EmailService emailService;
 
     /**
      * Organization Registration (Company Signup)
@@ -85,6 +87,8 @@ public class AuthService {
                     .role(AppUserRole.ORG_ADMIN)
                     .isActive(false) // Inactive until organization is approved
                     .build();
+
+            adminUser.setIsPasswordChangeRequired(true);
 
             appUserRepository.save(adminUser);
             log.info("Admin user created for organization: {}", savedOrganization.getName());
@@ -138,6 +142,44 @@ public class AuthService {
         }
     }
 
+    @Transactional
+    public ApiResponse<String> forgotPassword(ForgotPasswordRequest request) {
+        try {
+            String email = request.getEmail();
+            log.info("Processing forgot password request for: {}", email);
+
+            // 1. Find the user (Checking AppUser table)
+            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+
+            if (userOpt.isEmpty()) {
+                // Security Note: Usually we shouldn't reveal if email exists, 
+                // but for internal HR apps, explicit error is often preferred.
+                return ApiResponse.error("User with this email does not exist");
+            }
+
+            AppUser user = userOpt.get();
+
+            // 2. Generate new temporary password
+            String tempPassword = generateTemporaryPassword(); // Reusing your existing helper method
+
+            // 3. Update User Record
+            user.setPasswordHash(passwordEncoder.encode(tempPassword));
+            user.setIsPasswordChangeRequired(true); // IMPORTANT: Force password change
+            
+            appUserRepository.save(user);
+
+            // 4. Send Email
+            emailService.sendForgotPasswordEmail(email, tempPassword);
+
+            log.info("Password reset successfully for: {}", email);
+            return ApiResponse.success("A temporary password has been sent to your email.", null);
+
+        } catch (Exception e) {
+            log.error("Error during password reset", e);
+            return ApiResponse.error("Failed to reset password. Please try again.");
+        }
+    }
+
     /**
      * Handle System User Login
      */
@@ -172,6 +214,7 @@ public class AuthService {
                 .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
                 .modulesConfigured(true) // System admin -> no modules
+
                 .moduleConfig(null)
                 .build();
 
@@ -244,10 +287,34 @@ public class AuthService {
                 .organizationName(organization.getName())
                 .modulesConfigured(Boolean.TRUE.equals(organization.getModulesConfigured())) // FIXED: Proper boolean check
                 .moduleConfig(moduleConfig)
+                .isPasswordChangeRequired(Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired()))
                 .build();
 
         log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
         return ApiResponse.success("Login successful", response);
+    }
+
+    @Transactional
+    public ApiResponse<String> changePassword(Long userId, String newPassword) {
+        try {
+            Optional<AppUser> userOpt = appUserRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ApiResponse.error("User not found");
+            }
+
+            AppUser user = userOpt.get();
+
+            // Update password
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            user.setIsPasswordChangeRequired(false); // Flag එක false කරනවා
+
+            appUserRepository.save(user);
+
+            return ApiResponse.success("Password changed successfully", null);
+        } catch (Exception e) {
+            log.error("Error changing password", e);
+            return ApiResponse.error("Failed to change password");
+        }
     }
 
     /**
@@ -350,9 +417,8 @@ public class AuthService {
      * Helper method - Temporary password generate (Development only)
      */
     private String generateTemporaryPassword() {
-        // Generate strong random password in production 
-        // Currently using simple password
-        return "TempPass123!";
+        String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+        return tempPassword;
     }
 
     /**

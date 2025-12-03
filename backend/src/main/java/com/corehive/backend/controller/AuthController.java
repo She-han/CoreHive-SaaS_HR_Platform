@@ -1,5 +1,7 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.request.ChangePasswordRequest;
+import com.corehive.backend.dto.request.ForgotPasswordRequest;
 import com.corehive.backend.dto.request.LoginRequest;
 import com.corehive.backend.dto.request.ModuleConfigurationRequest;
 import com.corehive.backend.dto.request.OrganizationSignupRequest;
@@ -12,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -90,6 +94,22 @@ public class AuthController {
             ApiResponse<LoginResponse> errorResponse = ApiResponse.error("Internal server error occurred");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // Note: You need to extract userId from token or pass it in request
+        // For simplicity assuming request has userId or logic handles it.
+
+        return ResponseEntity.ok(authService.changePassword(request.getUserId(), request.getNewPassword()));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
     }
 
     /**

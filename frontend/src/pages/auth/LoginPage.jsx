@@ -114,6 +114,9 @@ const LoginPage = () => {
         // Get user data from result
         const userData = resultAction.payload;
 
+        console.log('🔍 SERVER RESPONSE KEYS:', Object.keys(userData));
+        console.log('🔍 Password Flag Value:', userData.isPasswordChangeRequired, userData.passwordChangeRequired);
+
         const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
 
         if (needsPasswordChange) {

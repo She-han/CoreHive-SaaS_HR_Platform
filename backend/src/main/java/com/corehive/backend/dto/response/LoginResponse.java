@@ -23,6 +23,7 @@ public class LoginResponse {
     private String role;     // Specific role (SYS_ADMIN, ORG_ADMIN, HR_STAFF, EMPLOYEE)
     private String organizationUuid; // null for system admin
     private String organizationName;
+    private boolean isPasswordChangeRequired;
     private Boolean modulesConfigured; // First-time login check
     private Map<String, Boolean> moduleConfig; // Available modules
 }

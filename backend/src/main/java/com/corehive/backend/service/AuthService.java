@@ -86,6 +86,8 @@ public class AuthService {
                     .isActive(false) // Inactive until organization is approved
                     .build();
 
+            adminUser.setIsPasswordChangeRequired(true);
+
             appUserRepository.save(adminUser);
             log.info("Admin user created for organization: {}", savedOrganization.getName());
 
@@ -172,6 +174,7 @@ public class AuthService {
                 .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
                 .modulesConfigured(true) // System admin -> no modules
+
                 .moduleConfig(null)
                 .build();
 
@@ -244,10 +247,34 @@ public class AuthService {
                 .organizationName(organization.getName())
                 .modulesConfigured(Boolean.TRUE.equals(organization.getModulesConfigured())) // FIXED: Proper boolean check
                 .moduleConfig(moduleConfig)
+                .isPasswordChangeRequired(Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired()))
                 .build();
 
         log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
         return ApiResponse.success("Login successful", response);
+    }
+
+    @Transactional
+    public ApiResponse<String> changePassword(Long userId, String newPassword) {
+        try {
+            Optional<AppUser> userOpt = appUserRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ApiResponse.error("User not found");
+            }
+
+            AppUser user = userOpt.get();
+
+            // Update password
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            user.setIsPasswordChangeRequired(false); // Flag එක false කරනවා
+
+            appUserRepository.save(user);
+
+            return ApiResponse.success("Password changed successfully", null);
+        } catch (Exception e) {
+            log.error("Error changing password", e);
+            return ApiResponse.error("Failed to change password");
+        }
     }
 
     /**

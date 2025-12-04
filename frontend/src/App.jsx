@@ -25,12 +25,14 @@ import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
 import LeaveManagement from './pages/hrstaff/LeaveManagement';
 import HiringManagement from './pages/hrstaff/HiringManagement';
 import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
-import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
 import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
 import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
 import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
 import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
+import FeedBackManagement from './pages/hrstaff/feedBackManagement/FeedBackManagement';
+import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
+import SurveyDetails from './pages/hrstaff/feedBackManagement/SurveyDetails';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -275,6 +277,9 @@ const HRStaffRoutes = () => {
         <Route path="editemployee/:id" element={<EditeEmployee />} />
         <Route path="addjobform" element={<AddJobForm />} />
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
+        <Route path="FeedBackManagement" element={<FeedBackManagement />} />
+        <Route path="feedback/create" element={<CreateSurvey />} />
+        <Route path="feedback/:id" element={<SurveyDetails />} />
       </Route>
     </Routes>
   );

@@ -40,15 +40,15 @@ public class EmployeeService {
     }
 
     public Employee createEmployee(EmployeeRequestDTO req) {
-        Employee emp = new Employee();
-        emp.setOrganizationUuid("ORG-0001"); // TEMP FIX
-        emp.setEmployeeCode(req.getEmployeeCode());
-        emp.setDepartmentId(req.getDepartment());  // your entity field is departmentId
-        emp.setEmail(req.getEmail());
-        emp.setPhone(req.getPhone());
-        emp.setFirstName(req.getFirstName());
-        emp.setLastName(req.getLastName());
-        emp.setDesignation(req.getDesignation());
+            Employee emp = new Employee();
+            emp.setOrganizationUuid(req.getOrganizationUuid()); // Use from request
+            emp.setEmployeeCode(req.getEmployeeCode());
+            emp.setDepartmentId(req.getDepartment());
+            emp.setEmail(req.getEmail());
+            emp.setPhone(req.getPhone());
+            emp.setFirstName(req.getFirstName());
+            emp.setLastName(req.getLastName());
+            emp.setDesignation(req.getDesignation());
 
 
         // ENUM - convert string to enum

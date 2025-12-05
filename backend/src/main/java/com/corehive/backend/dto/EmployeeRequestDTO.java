@@ -5,7 +5,10 @@ import lombok.Data;
 @Data
 public class EmployeeRequestDTO {
 
+    private String organizationUuid;  // ADD THIS
+
     private String employeeCode;
+
     private Long department;
     private String email;
     private String phone;

@@ -1,150 +1,240 @@
-// src/pages/hrstaff/CreateSurvey.jsx
 import React, { useState } from "react";
+import { createSurvey } from "../../../api/feedbackService";
 import { useNavigate } from "react-router-dom";
-import QuestionEditor from "../../../components/hrstaff/feedBackManagement/QuestionEditor.jsx";
-import { createSurvey } from "../../../api/feedbackService.js";
+import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 export default function CreateSurvey() {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(true);
-  const [questions, setQuestions] = useState([]);
   const navigate = useNavigate();
   const orgUuid = "org-uuid-001";
 
-  const addQuestion = (q) => setQuestions((prev) => [...prev, q]);
-  const removeQuestion = (i) => setQuestions((prev) => prev.filter((_, idx) => idx !== i));
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    is_anonymous: false,
+    questions: [],
+  });
 
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!title) return alert("Title required");
+  // ➕ Add Question
+  const addQuestion = () => {
+    setForm({
+      ...form,
+      questions: [
+        ...form.questions,
+        {
+          question_text: "",
+          question_type: "TEXT",
+          options: [],
+          position: form.questions.length + 1,
+        },
+      ],
+    });
+  };
 
-    const payload = {
-      title,
-      description,
-      start_date: startDate,
-      end_date: endDate,
-      is_anonymous: isAnonymous ? 1 : 0,
-      target_type: "ALL",
-      questions: questions.map((q, idx) => ({ ...q, position: idx + 1 })),
-    };
+  // ❌ Remove Question
+  const removeQuestion = (index) => {
+    let updated = [...form.questions];
+    updated.splice(index, 1);
+    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));
+    setForm({ ...form, questions: updated });
+  };
+
+  // 🔄 Update Question
+  const updateQuestion = (index, key, value) => {
+    const updated = [...form.questions];
+    updated[index][key] = value;
+
+    if (key === "question_type") {
+      if (value === "TEXT") updated[index].options = [];
+      if (value === "MCQ") updated[index].options = [];
+      if (value === "RATING") updated[index].options = ["1", "2", "3", "4", "5"];
+    }
+
+    setForm({ ...form, questions: updated });
+  };
+
+  // 📝 Update MCQ Options
+  const updateOptions = (index, value) => {
+    const updated = [...form.questions];
+    updated[index].options = value.split(",").map((o) => o.trim());
+    setForm({ ...form, questions: updated });
+  };
+
+  // 🚀 Submit
+  const handleSubmit = async () => {
+    if (!form.title.trim()) return alert("Survey title is required");
+    if (form.questions.length === 0)
+      return alert("Please add at least one question.");
 
     try {
-      await createSurvey(orgUuid, payload);
+      await createSurvey(orgUuid, form);
+      alert("Survey created successfully!");
       navigate("/hr_staff/FeedBackManagement");
     } catch (err) {
-      alert("Create failed: " + err.message);
+      alert("Failed to create survey: " + err.message);
     }
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto p-6">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Create New Survey</h2>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-[#F3F8FA] to-[#E8EEF3]">
 
-      {/* Card Container */}
-      <div className="bg-white shadow-md rounded-lg p-6 border border-gray-100">
-        <form onSubmit={submit} className="space-y-6">
+      {/* HEADER */}
+      <div className="p-6 bg-white/90 backdrop-blur-md border-b shadow-sm sticky top-0 z-20 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-[#333333]">Create New Survey</h1>
+          <p className="text-[#9B9B9B]">Build a customized survey with multiple question types.</p>
+        </div>
 
-          {/* Survey Title */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Survey Title
-            </label>
+        <button
+          onClick={() => navigate("/hr_staff/FeedBackManagement")}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 
+                     rounded-lg shadow-sm transition-all"
+        >
+          <FiArrowLeft /> Back
+        </button>
+      </div>
+
+      {/* SCROLLABLE AREA */}
+      <div className="flex-1 overflow-y-auto p-8 space-y-8">
+
+        {/* SURVEY DETAILS */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+          <h2 className="text-xl font-bold text-[#0D2847] mb-4">Survey Details</h2>
+
+          <div className="space-y-4">
+
             <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#02C39A] outline-none"
-              placeholder="Enter survey title"
+              type="text"
+              placeholder="Enter survey title..."
+              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-          </div>
 
-          {/* Survey Description */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
             <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#02C39A] outline-none"
-              placeholder="Enter a short description"
-              rows={3}
+              placeholder="Enter survey description..."
+              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
-          </div>
 
-          {/* Date Inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date
-              </label>
+            <div className="grid grid-cols-2 gap-4">
               <input
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#02C39A] outline-none"
+                className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                value={form.start_date}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+              />
+
+              <input
+                type="date"
+                className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                value={form.end_date}
+                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date
-              </label>
+            <label className="flex items-center gap-3 text-[#0D2847]">
               <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#02C39A] outline-none"
+                type="checkbox"
+                checked={form.is_anonymous}
+                onChange={(e) =>
+                  setForm({ ...form, is_anonymous: e.target.checked })
+                }
+                className="h-5 w-5"
               />
-            </div>
-          </div>
-
-          {/* Anonymous Toggle */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isAnonymous}
-              onChange={(e) => setIsAnonymous(e.target.checked)}
-              className="h-4 w-4"
-            />
-            <label className="text-sm text-gray-700">
               Allow Anonymous Responses
             </label>
           </div>
+        </div>
 
-          {/* Question Editor */}
-          <div className="pt-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Survey Questions
-            </h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Add multiple questions with different types.
-            </p>
+        {/* QUESTIONS SECTION */}
+        <div>
+          <h2 className="text-2xl font-bold text-[#0D2847] mb-4">Questions</h2>
 
-            <QuestionEditor questions={questions} onAdd={addQuestion} onRemove={removeQuestion} />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              className="bg-[#02C39A] text-white px-6 py-3 rounded-lg hover:bg-[#1ED292] transition"
+          {form.questions.map((q, index) => (
+            <div
+              key={index}
+              className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-6 hover:shadow-2xl transition-all"
             >
-              Create Survey
-            </button>
+              {/* Header Row */}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-[#0D2847]">
+                  Question {index + 1}
+                </h3>
 
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+                <button
+                  className="text-red-600 hover:text-red-800 transition"
+                  onClick={() => removeQuestion(index)}
+                >
+                  <FiTrash2 size={22} />
+                </button>
+              </div>
+
+              {/* Question Input */}
+              <input
+                type="text"
+                placeholder="Type your question here..."
+                className="w-full p-3 border rounded-lg shadow-sm mb-3"
+                value={q.question_text}
+                onChange={(e) =>
+                  updateQuestion(index, "question_text", e.target.value)
+                }
+              />
+
+              {/* Question Type */}
+              <select
+                className="w-full p-3 border rounded-lg shadow-sm mb-3"
+                value={q.question_type}
+                onChange={(e) =>
+                  updateQuestion(index, "question_type", e.target.value)
+                }
+              >
+                <option value="TEXT">Text Answer</option>
+                <option value="MCQ">Multiple Choice</option>
+                <option value="RATING">Rating (1–5)</option>
+              </select>
+
+              {/* MCQ INPUT */}
+              {q.question_type === "MCQ" && (
+                <input
+                  type="text"
+                  placeholder="Enter options (comma separated)"
+                  className="w-full p-3 border rounded-lg shadow-sm"
+                  value={q.options.join(", ")}
+                  onChange={(e) => updateOptions(index, e.target.value)}
+                />
+              )}
+
+              {/* RATING INFO */}
+              {q.question_type === "RATING" && (
+                <div className="mt-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                  ⭐ Rating scale automatically set to: <b>1 → 5</b>
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* ADD QUESTION BUTTON */}
+          <button
+            onClick={addQuestion}
+            className="mt-4 px-6 py-3 bg-[#02C39A] text-white rounded-xl 
+                       shadow-lg flex items-center gap-2 hover:bg-[#029575] transition-all"
+          >
+            <FiPlus /> Add Question
+          </button>
+
+          {/* SUBMIT BUTTON */}
+          <button
+            onClick={handleSubmit}
+            className="mt-6 w-full bg-[#05668D] text-white p-4 rounded-xl text-lg font-semibold
+                       shadow-lg hover:bg-[#044d6a] transition-all"
+          >
+            Create Survey
+          </button>
+        </div>
       </div>
-      </div>
+    </div>
   );
 }

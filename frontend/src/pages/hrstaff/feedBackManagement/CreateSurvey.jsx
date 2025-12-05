@@ -5,7 +5,7 @@ import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 export default function CreateSurvey() {
   const navigate = useNavigate();
-  const orgUuid = "org-uuid-001";
+  const orgUuid = "org-uuid-001";//For testing purpose. Replace with real org from session/auth
 
   const [form, setForm] = useState({
     title: "",
@@ -16,10 +16,10 @@ export default function CreateSurvey() {
     questions: [],
   });
 
-  // ➕ Add Question
+  // Add Question (use destructuring)
   const addQuestion = () => {
     setForm({
-      ...form,
+      ...form, 
       questions: [
         ...form.questions,
         {
@@ -32,22 +32,25 @@ export default function CreateSurvey() {
     });
   };
 
-  // ❌ Remove Question
+  // Remove Question
   const removeQuestion = (index) => {
-    let updated = [...form.questions];
-    updated.splice(index, 1);
-    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));
+    let updated = [...form.questions];//copy the existing questions into a new array called updated.
+    updated.splice(index, 1);//This removes 1 item from the array at position index.
+    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));//Reassign question positions
     setForm({ ...form, questions: updated });
   };
 
-  // 🔄 Update Question
+  // Update Question
+  //Index = Which question you are editing(0=first,1=second)
+  //key = Which property of the question to update(question_text, question_type, options)
+  //value = new value the user entered
   const updateQuestion = (index, key, value) => {
-    const updated = [...form.questions];
+    const updated = [...form.questions]; // Copy the questions array
     updated[index][key] = value;
 
     if (key === "question_type") {
-      if (value === "TEXT") updated[index].options = [];
-      if (value === "MCQ") updated[index].options = [];
+      if (value === "TEXT") updated[index].options = []; //Remove all options
+      if (value === "MCQ") updated[index].options = []; //Remove all options because user must type options manually
       if (value === "RATING") updated[index].options = ["1", "2", "3", "4", "5"];
     }
 
@@ -57,7 +60,7 @@ export default function CreateSurvey() {
   // 📝 Update MCQ Options
   const updateOptions = (index, value) => {
     const updated = [...form.questions];
-    updated[index].options = value.split(",").map((o) => o.trim());
+    updated[index].options = value.split(",").map((o) => o.trim()); //Split text into array by commas -> trim = Remove extra spaces
     setForm({ ...form, questions: updated });
   };
 
@@ -119,21 +122,36 @@ export default function CreateSurvey() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="date"
-                className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
-                value={form.start_date}
-                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              />
+           <div className="grid grid-cols-2 gap-4">
 
-              <input
-                type="date"
-                className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
-                value={form.end_date}
-                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              />
-            </div>
+  {/* Start Date */}
+  <div className="flex flex-col">
+    <label className="mb-1 text-sm font-medium text-gray-600">
+      Start Date
+    </label>
+    <input
+      type="date"
+      className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+      value={form.start_date}
+      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+    />
+  </div>
+
+  {/* End Date */}
+  <div className="flex flex-col">
+    <label className="mb-1 text-sm font-medium text-gray-600">
+      End Date
+    </label>
+    <input
+      type="date"
+      className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+      value={form.end_date}
+      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+    />
+  </div>
+
+</div>
+
 
             <label className="flex items-center gap-3 text-[#0D2847]">
               <input

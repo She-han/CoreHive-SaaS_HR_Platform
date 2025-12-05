@@ -55,6 +55,7 @@ import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
 import PayslipList from './pages/hrstaff/payroll/PayslipList';
 import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
 import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
+import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
 
 
 /* // Error Pages
@@ -292,6 +293,7 @@ const HRStaffRoutes = () => {
         <Route path="payroll/payroll-run" element={<PayrollRun />} />
         <Route path="payroll/payslips" element={<PayslipList />} />
         <Route path="payroll/reports" element={<PayrollReports />} />
+        <Route path="attendance/face" element={<FaceAttendancePage />} />
       </Route>
     </Routes>
   );

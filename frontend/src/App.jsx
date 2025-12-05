@@ -34,6 +34,7 @@ import AttendanceManagement from './pages/AttendaceManagement/AttendanceManageme
 import FeedBackManagement from './pages/hrstaff/feedBackManagement/FeedBackManagement';
 import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
 import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
+import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -280,7 +281,9 @@ const HRStaffRoutes = () => {
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
         <Route path="FeedBackManagement" element={<FeedBackManagement />} />
         <Route path="feedback/create" element={<CreateSurvey />} />
-        <Route path="feedback/:id/questions"element={<ViewSurveyQuestions />}/>
+        <Route path="feedback/:id/questions" element={<ViewSurveyQuestions />} />
+        <Route path="feedback/:id/responses" element={<ViewResponsesWithQuestions />} />
+
 
       </Route>
     </Routes>

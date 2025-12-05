@@ -38,7 +38,7 @@ export default function SurveyList({ surveys = [], onDelete }) {
 
             {/* VIEW RESPONSES */}
             <Link
-              to={`/hr_staff/feedback/${s.id}`}
+              to={`/hr_staff/feedback/${s.id}/responses`}
               className="flex items-center justify-center gap-2 px-4 py-2 
                          rounded-lg border border-[#05668D] text-[#05668D] 
                          hover:bg-[#F1FDF9] transition"

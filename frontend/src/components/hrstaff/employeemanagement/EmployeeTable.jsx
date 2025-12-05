@@ -5,6 +5,7 @@ import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
+import apiClient from "../../../api/axios";
 
 const MySwal = withReactContent(Swal);
 
@@ -14,8 +15,8 @@ export default function EmployeeTable({ search, filterBy }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/employees")
+    apiClient
+      .get("/employees")  // Use apiClient with relative path
       .then((res) => setEmployees(res.data))
       .catch(console.error);
   }, []);
@@ -73,7 +74,7 @@ export default function EmployeeTable({ search, filterBy }) {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/employees/${id}`);
+        await apiClient.delete(`/employees/${id}`); 
         setEmployees((prev) => prev.filter((emp) => emp.id !== id));
 
         await MySwal.fire({

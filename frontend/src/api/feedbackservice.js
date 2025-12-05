@@ -55,7 +55,7 @@ export async function deleteSurvey(orgUuid, id) {
 //6)Get responses for each survey
 export const getResponseDetails = async (orgUuid, surveyId) => {
   return axios
-    .get(`${BASE}/orgs/${orgUuid}/surveys/${surveyId}/responses`)
+    .get(`${BASE}/orgs/${orgUuid}/surveys/${surveyId}/responses/details`)
     .then((res) => res.data)
     .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);

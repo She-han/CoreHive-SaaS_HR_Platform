@@ -1,37 +1,70 @@
 """
 CoreHive AI Service - Main Application
 
-This is the entry point for the AI service.
-It sets up FastAPI, configures middleware, and registers routers.
-
-Run locally with: uvicorn app.main:app --reload --port 8001
+Features:
+- AI Dashboard Insights (Gemini AI)
+- Face Recognition with Embeddings (DeepFace + Facenet)
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import sys
+from pathlib import Path
+import logging
 
 from app.config.settings import settings
 from app.routers import health, insights
+from app.routers import face_recognition
 from app.repositories.database import test_database_connection
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Create directories
+UPLOAD_DIR = Path("uploads/employee_photos")
+TEMP_DIR = Path("uploads/temp")
+DATA_DIR = Path("data/embeddings")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def check_face_recognition_dependencies() -> bool:
+    """Check if face recognition dependencies are installed."""
+    try:
+        from deepface import DeepFace
+        import cv2
+        import numpy as np
+        return True
+    except ImportError as e:
+        print(f"   ⚠️ Face Recognition dependency missing: {e}")
+        return False
+
+
+def preload_face_model():
+    """Pre-load face recognition model to avoid first-request delay."""
+    try:
+        from deepface import DeepFace
+        print("   📥 Pre-loading Facenet model...")
+        # This triggers model download if not present
+        DeepFace.build_model("Facenet")
+        print("   ✅ Facenet model loaded!")
+        return True
+    except Exception as e:
+        print(f"   ⚠️ Model pre-load failed: {e}")
+        return False
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifecycle manager.
+    """Application lifecycle manager."""
     
-    This runs code on startup and shutdown of the application.
-    - Startup: Test database connection, verify Gemini API
-    - Shutdown: Cleanup resources
-    """
     # ===== STARTUP =====
     print("\n" + "=" * 60)
     print("🚀 CoreHive AI Service Starting...")
     print("=" * 60)
     
-    # Print configuration info
     print(f"\n📋 Configuration:")
     print(f"   App Name: {settings.APP_NAME}")
     print(f"   Debug Mode: {settings.DEBUG}")
@@ -43,122 +76,108 @@ async def lifespan(app: FastAPI):
     if db_connected:
         print("   ✅ Database connection successful!")
     else:
-        print("   ⚠️ Database connection failed - some features may not work")
+        print("   ⚠️ Database connection failed!")
     
-    # Check Gemini API key
+    # Check Gemini API
     print(f"\n🤖 Checking Gemini API...")
     if settings.GEMINI_API_KEY:
         print("   ✅ Gemini API key is configured")
     else:
-        print("   ⚠️ Gemini API key not set - AI insights will use fallback mode")
+        print("   ⚠️ Gemini API key is not set")
+    
+    # Check Face Recognition
+    print(f"\n👤 Checking Face Recognition...")
+    face_available = check_face_recognition_dependencies()
+    if face_available:
+        print("   ✅ Face Recognition dependencies installed!")
+        print(f"   📁 Photos Directory: {UPLOAD_DIR.absolute()}")
+        print(f"   📁 Embeddings Directory: {DATA_DIR.absolute()}")
+        
+        # Pre-load model
+        preload_face_model()
+        
+        # Initialize embedding service
+        from app.services.embedding_service import get_embedding_service
+        embedding_service = get_embedding_service()
+        print(f"   ✅ Embedding service initialized!")
+        print(f"   📊 Model: {embedding_service.model_name}")
+        print(f"   📊 Similarity Threshold: {embedding_service.similarity_threshold}")
+    else:
+        print("   ⚠️ Face Recognition not available")
     
     print("\n" + "=" * 60)
     print("✅ CoreHive AI Service is ready!")
     print(f"📍 API Docs: http://localhost:8001/docs")
+    print("=" * 60)
+    
+    print("\n📌 Available Endpoints:")
+    print("   • Health Check:      /health")
+    print("   • AI Insights:       /api/insights/dashboard")
+    print("   • Face Register:     /api/face/register")
+    print("   • Face Identify:     /api/face/identify (Kiosk)")
+    print("   • Face Verify:       /api/face/verify")
+    print("   • Face Status:       /api/face/status/{org}/{emp}")
     print("=" * 60 + "\n")
     
-    # Yield control to the application
     yield
     
     # ===== SHUTDOWN =====
-    print("\n" + "=" * 60)
-    print("👋 CoreHive AI Service shutting down...")
-    print("=" * 60 + "\n")
+    print("\n👋 CoreHive AI Service shutting down...")
 
 
-# Create FastAPI application instance
+# Create FastAPI app
 app = FastAPI(
     title="CoreHive AI Service",
     description="""
-    🧠 AI-powered insights for CoreHive HR Platform
+    🧠 AI-powered features for CoreHive HR Platform
     
-    This service provides:
-    - **Dashboard Insights**: AI-generated insights from HR data
-    - **Attendance Analytics**: Pattern detection and anomaly alerts
-    - **Leave Analytics**: Leave trend analysis and predictions
+    ## Features
     
-    Powered by Google Gemini AI (FREE tier)
+    ### 📊 Dashboard Insights (Gemini AI)
+    - AI-generated insights from HR data
+    
+    ### 👤 Face Recognition (Embedding-based)
+    - Fast employee identification using pre-computed embeddings
+    - Employee face registration
+    - Attendance kiosk support
+    
+    ---
+    Powered by Google Gemini AI & DeepFace (Facenet)
     """,
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-
-# Configure CORS (Cross-Origin Resource Sharing)
-# This allows the frontend to call our API
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        settings.FRONTEND_URL,          # React frontend
-        settings.BACKEND_URL,           # Spring Boot backend
-        "http://localhost:5173",        # Vite dev server
-        "http://localhost:3000",        # Alternative React port
-        "http://127.0.0.1:5173",        # localhost alternative
-        "http://127.0.0.1:8001",        # AI service itself
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8001",
     ],
     allow_credentials=True,
-    allow_methods=["*"],                # Allow all HTTP methods
-    allow_headers=["*"],                # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 # Register routers
-# Health check endpoints (no prefix - accessible at /health)
-app.include_router(
-    health.router,
-    tags=["Health Check"]
-)
-
-# AI Insights endpoints (prefix: /api/insights)
-app.include_router(
-    insights.router,
-    prefix="/api/insights",
-    tags=["AI Insights"]
-)
+app.include_router(health.router, tags=["Health Check"])
+app.include_router(insights.router, prefix="/api/insights", tags=["AI Insights"])
+app.include_router(face_recognition.router, tags=["Face Recognition"])
 
 
-# Root endpoint
 @app.get("/", tags=["Root"])
 async def root():
-    """
-    Root endpoint - basic service information.
-    
-    Useful for quick health checks and service discovery.
-    """
+    """Root endpoint"""
     return {
         "service": "CoreHive AI Service",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "status": "running",
-        "docs": "/docs",
-        "health": "/health",
-        "insights": "/api/insights/dashboard"
+        "features": ["AI Insights", "Face Recognition (Embeddings)"],
+        "docs": "/docs"
     }
-
-
-# Debug endpoint (only in debug mode)
-if settings.DEBUG:
-    @app.get("/debug/config", tags=["Debug"])
-    async def debug_config():
-        """
-        Debug endpoint to check configuration.
-        Only available when DEBUG=true
-        """
-        return {
-            "app_name": settings.APP_NAME,
-            "debug": settings.DEBUG,
-            "database": {
-                "host": settings.DB_HOST,
-                "port": settings.DB_PORT,
-                "name": settings.DB_NAME,
-                "user": settings.DB_USER,
-                # Never expose password!
-                "password": "***hidden***"
-            },
-            "gemini_api_key": "***configured***" if settings.GEMINI_API_KEY else "NOT SET",
-            "urls": {
-                "backend": settings.BACKEND_URL,
-                "frontend": settings.FRONTEND_URL
-            }
-        }

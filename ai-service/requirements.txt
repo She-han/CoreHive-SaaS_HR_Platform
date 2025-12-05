@@ -10,7 +10,7 @@ fastapi==0.109.0
 # Uvicorn - ASGI server to run FastAPI
 uvicorn[standard]==0.27.0
 
-# For handling file uploads (if needed)
+# For handling file uploads (required for face recognition)
 python-multipart==0.0.6
 
 # ----- AI/ML Libraries (FREE) -----
@@ -25,6 +25,19 @@ pandas==2.2.0
 
 # Numpy - Numerical computing
 numpy==1.26.3
+
+# ----- Face Recognition (NEW) -----
+# DeepFace - Face recognition and verification
+deepface
+
+# OpenCV - Image processing (headless for servers)
+opencv-python-headless
+
+# TensorFlow Keras - Required by DeepFace
+tf-keras
+
+# Pillow - Image handling
+pillow
 
 # ----- Database -----
 # SQLAlchemy - Database toolkit
@@ -54,3 +67,6 @@ pytest-asyncio==0.23.4
 
 # ----- Production Server -----
 gunicorn==21.2.0
+
+numpy>=1.24.0
+scipy>=1.11.0

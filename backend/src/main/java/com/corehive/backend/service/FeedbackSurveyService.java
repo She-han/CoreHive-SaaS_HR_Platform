@@ -2,6 +2,7 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.CreateQuestionRequest;
 import com.corehive.backend.dto.CreateSurveyRequest;
+import com.corehive.backend.dto.FeedbackSurveyResponseDTO;
 import com.corehive.backend.model.*;
 import com.corehive.backend.repository.FeedbackSurveyQuestionRepository;
 import com.corehive.backend.repository.FeedbackSurveyRepository;
@@ -15,9 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -137,6 +136,64 @@ public class FeedbackSurveyService {
             throw new RuntimeException("Unexpected error occurred while fetching responses.");
         }
     }
+
+    //get responses with questions
+    public List<FeedbackSurveyResponseDTO> getResponseDetails(Long surveyId) {
+
+        try {
+            // 1️⃣ Validate survey existence
+            surveyRepo.findById(surveyId)
+                    .orElseThrow(() -> new RuntimeException("Survey not found with ID: " + surveyId));
+
+            // 2️⃣ Fetch joined rows
+            List<Object[]> rows = responseRepo.fetchSurveyResponsesWithQuestions(surveyId);
+
+            if (rows == null || rows.isEmpty()) {
+                throw new RuntimeException("No responses found for survey ID: " + surveyId);
+            }
+
+            Map<Long, FeedbackSurveyResponseDTO> grouped = new LinkedHashMap<>();
+
+            for (Object[] row : rows) {
+
+                Long responseId = (Long) row[0];
+
+                // 3️⃣ Create a new DTO group if not present
+                FeedbackSurveyResponseDTO dto = grouped.computeIfAbsent(responseId, id -> {
+                    FeedbackSurveyResponseDTO r = new FeedbackSurveyResponseDTO();
+                    r.setResponseId(responseId);
+                    r.setEmployeeId((Long) row[1]);
+                    r.setSubmittedAt((LocalDateTime) row[2]);
+                    r.setAnswers(new ArrayList<>());
+                    return r;
+                });
+
+                // 4️⃣ Add answer details
+                FeedbackSurveyResponseDTO.AnswerDTO ans = new FeedbackSurveyResponseDTO.AnswerDTO();
+                ans.setQuestionId((Long) row[3]);
+                ans.setQuestionText((String) row[4]);
+                ans.setQuestionType(row[5] != null ? row[5].toString() : "UNKNOWN");
+                ans.setAnswerText((String) row[6]);
+                ans.setSelectedOption((String) row[7]);
+
+                dto.getAnswers().add(ans);
+            }
+
+            return new ArrayList<>(grouped.values());
+
+        } catch (RuntimeException e) {
+            // Known / expected errors
+            throw new RuntimeException("Error retrieving survey responses: " + e.getMessage(), e);
+
+        } catch (Exception e) {
+            // Unexpected system-level issues
+            throw new RuntimeException(
+                    "Unexpected error occurred while fetching responses for survey ID: " + surveyId,
+                    e
+            );
+        }
+    }
+
 
 
 }

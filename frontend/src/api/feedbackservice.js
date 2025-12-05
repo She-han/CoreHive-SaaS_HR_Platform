@@ -51,3 +51,5 @@ export async function deleteSurvey(orgUuid, id) {
       throw new Error(err.response?.data?.message || err.message);
     });
 }
+
+//6)Get responses for each survey

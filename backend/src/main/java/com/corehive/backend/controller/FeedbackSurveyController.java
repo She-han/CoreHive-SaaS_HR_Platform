@@ -74,5 +74,15 @@ public class FeedbackSurveyController {
         }
     }
 
+    @GetMapping("/{id}/responses/details")
+    public ResponseEntity<?> getDetailedResponses(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(service.getResponseDetails(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
 }
 

@@ -11,7 +11,7 @@ import EmployeeManagement from "../../pages/hrstaff/EmployeeManagement.jsx";
 import LeaveManagement from "../../pages/hrstaff/LeaveManagement.jsx";
 import HiringManagement from "../../pages/hrstaff/HiringManagement.jsx";
 import HRReportingManagement from "../../pages/hrstaff/HRReportingManagement.jsx";
-import FeedBackManagement from "../../pages/hrstaff/FeedBackManagement.jsx";
+import FeedBackManagement from "../../pages/hrstaff/feedBackManagement/FeedBackManagement.jsx";
 import AttendanceManagement from "../../pages/AttendaceManagement/AttendanceManagement.jsx";
 import Dashboard from "../../pages/hrstaff/HRDashboard.jsx";
 

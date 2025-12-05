@@ -64,8 +64,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/employees").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
+                        .requestMatchers("/api/orgs/{orgUuid}/surveys").permitAll()
+                        .requestMatchers("/api/orgs/{orgUuid}/surveys/**").permitAll()
                         .requestMatchers( "/api/attendance" ,"/api/attendance/**").permitAll()
-
+                        .requestMatchers( "/api/orgs/*/surveys").permitAll()
+                        .requestMatchers("GET", "/api/orgs/*/surveys/*").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+                        .requestMatchers("DELETE", "/api/orgs/*/surveys/*").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+                        .requestMatchers("GET", "/api/orgs/*/surveys/*/responses").hasAnyRole("HR_STAFF", "ORG_ADMIN")
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 

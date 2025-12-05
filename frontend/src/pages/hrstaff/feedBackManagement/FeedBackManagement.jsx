@@ -1,4 +1,3 @@
-// src/pages/hrstaff/FeedBackManagement.jsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listSurveys, deleteSurvey } from "../../../api/feedbackService.js";
@@ -8,7 +7,7 @@ import { FaPlus } from "react-icons/fa";
 export default function FeedBackManagement() {
   const [surveys, setSurveys] = useState([]);
   const [loading, setLoading] = useState(false);
-  const orgUuid = "ORG-ABC-123"; // replace with real org from session/auth
+  const orgUuid = "org-uuid-001"; // replace with real org from session/auth
 
   useEffect(() => {
     setLoading(true);

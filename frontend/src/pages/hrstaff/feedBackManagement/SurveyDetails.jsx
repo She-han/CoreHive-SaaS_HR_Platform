@@ -1,11 +1,10 @@
-// src/pages/hrstaff/SurveyDetails.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getSurvey, getResponses } from "../../../api/feedbackService.js";
 
 export default function SurveyDetails() {
   const { id } = useParams();
-  const orgUuid = "ORG-ABC-123";
+  const orgUuid = "org-uuid-001";
   const [survey, setSurvey] = useState(null);
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);

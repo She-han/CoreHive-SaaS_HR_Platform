@@ -10,6 +10,7 @@ export default function SurveyList({ surveys = [], onDelete }) {
       </div>
     );
 
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {surveys.map((s) => (

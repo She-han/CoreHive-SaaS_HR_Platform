@@ -5,6 +5,7 @@ import com.corehive.backend.model.FeedbackSurvey;
 import com.corehive.backend.model.FeedbackSurveyResponse;
 import com.corehive.backend.service.FeedbackSurveyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,5 +55,24 @@ public class FeedbackSurveyController {
     public void deleteSurvey(@PathVariable String orgUuid, @PathVariable Long id) {
         service.deleteSurvey(id);
     }
+
+
+    //Get all the response for relevant survey
+    @GetMapping("/{surveyId}/responses/all")
+    public ResponseEntity<?> getAllResponses(
+            @PathVariable String orgUuid,
+            @PathVariable Long surveyId
+    ) {
+        try {
+            List<FeedbackSurveyResponse> responses = service.getAllResponsesForSurvey(surveyId);
+            return ResponseEntity.ok(responses);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Unexpected server error: " + e.getMessage());
+        }
+    }
+
 }
 

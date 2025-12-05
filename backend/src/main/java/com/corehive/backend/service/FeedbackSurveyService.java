@@ -8,6 +8,8 @@ import com.corehive.backend.repository.FeedbackSurveyRepository;
 import com.corehive.backend.repository.FeedbackSurveyResponseRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -92,7 +95,48 @@ public class FeedbackSurveyService {
         return responseRepo.findBySurveyId(surveyId);
     }
 
+
+    //delete a survey
     public void deleteSurvey(Long id) {
-        surveyRepo.deleteById(id);
+        try {
+            if (!surveyRepo.existsById(id)) {
+                throw new RuntimeException("Survey with ID " + id + " does not exist.");
+            }
+
+            surveyRepo.deleteById(id);
+
+        } catch (EmptyResultDataAccessException e) {
+            throw new RuntimeException("Survey not found: " + id, e);
+
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("Survey cannot be deleted because it is linked to responses.", e);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete survey. Please try again.", e);
+        }
     }
+
+    //get all responses
+    public List<FeedbackSurveyResponse> getAllResponsesForSurvey(Long surveyId) {
+        try {
+            // Validate survey
+            FeedbackSurvey survey = surveyRepo.findById(surveyId)
+                    .orElseThrow(() -> new RuntimeException("Survey not found with ID: " + surveyId));
+
+            List<FeedbackSurveyResponse> responses = responseRepo.findResponsesWithAnswers(surveyId);
+
+            if (responses.isEmpty()) {
+                throw new RuntimeException("No responses submitted for survey ID: " + surveyId);
+            }
+
+            return responses;
+
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error retrieving responses: " + e.getMessage());
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error occurred while fetching responses.");
+        }
+    }
+
+
 }

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Provider, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 
+
 import store from './store/store';
 import { selectUser } from './store/slices/authSlice';
 
@@ -32,7 +33,7 @@ import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosti
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
 import FeedBackManagement from './pages/hrstaff/feedBackManagement/FeedBackManagement';
 import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
-import SurveyDetails from './pages/hrstaff/feedBackManagement/SurveyDetails';
+import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -279,7 +280,8 @@ const HRStaffRoutes = () => {
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
         <Route path="FeedBackManagement" element={<FeedBackManagement />} />
         <Route path="feedback/create" element={<CreateSurvey />} />
-        <Route path="feedback/:id" element={<SurveyDetails />} />
+        <Route path="feedback/:id/questions"element={<ViewSurveyQuestions />}/>
+
       </Route>
     </Routes>
   );

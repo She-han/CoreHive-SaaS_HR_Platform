@@ -23,7 +23,7 @@ export async function createSurvey(orgUuid, payload) {
 }
 
 // 3) GET SINGLE SURVEY DETAILS
-export async function getSurvey(orgUuid, id) {
+export const getSurveyDetails = async (orgUuid, id) => {
   return axios
     .get(`${BASE}/orgs/${orgUuid}/surveys/${id}`)
     .then((res) => res.data)

@@ -15,95 +15,85 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     // ===== Single Employee Queries =====
 
-    /**
-     * Find attendance for specific employee on specific date
-     */
     Optional<Attendance> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);
 
-    /**
-     * Check if employee already checked in today
-     */
     @Query("SELECT a FROM Attendance a WHERE a.employeeId = :employeeId " +
-           "AND a.attendanceDate = :date AND a.checkInTime IS NOT NULL")
-    Optional<Attendance> findTodayCheckIn(@Param("employeeId") Long employeeId, 
+            "AND a.attendanceDate = :date AND a.checkInTime IS NOT NULL")
+    Optional<Attendance> findTodayCheckIn(@Param("employeeId") Long employeeId,
                                           @Param("date") LocalDate date);
 
-    /**
-     * Get attendance history for employee (descending order)
-     */
     List<Attendance> findByEmployeeIdOrderByAttendanceDateDesc(Long employeeId);
 
-    /**
-     * Get attendance by date range for employee
-     */
     @Query("SELECT a FROM Attendance a WHERE a.employeeId = :employeeId " +
-           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
-           "ORDER BY a.attendanceDate DESC")
+            "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+            "ORDER BY a.attendanceDate DESC")
     List<Attendance> findByEmployeeAndDateRange(@Param("employeeId") Long employeeId,
-                                                 @Param("startDate") LocalDate startDate,
-                                                 @Param("endDate") LocalDate endDate);
+                                                @Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
 
     // ===== Organization Queries =====
 
-    /**
-     * Get all attendance for organization on specific date
-     */
     List<Attendance> findByOrganizationUuidAndAttendanceDate(String organizationUuid, LocalDate date);
 
     /**
-     * Get all attendance for organization in date range
+     * Get all attendance for organization on specific date, ordered by check-in time (newest first)
      */
-    @Query("SELECT a FROM Attendance a WHERE a.organizationUuid = :orgUuid " +
-           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
-           "ORDER BY a.attendanceDate DESC, a.checkInTime DESC")
-    List<Attendance> findByOrganizationAndDateRange(@Param("orgUuid") String orgUuid,
-                                                     @Param("startDate") LocalDate startDate,
-                                                     @Param("endDate") LocalDate endDate);
+    @Query("SELECT a FROM Attendance a LEFT JOIN FETCH a.employee " +
+            "WHERE a.organizationUuid = :orgUuid AND a.attendanceDate = :date " +
+            "ORDER BY a.checkInTime DESC")
+    List<Attendance> findByOrganizationUuidAndAttendanceDateOrderByCheckInTimeDesc(
+            @Param("orgUuid") String orgUuid,
+            @Param("date") LocalDate date
+    );
 
     /**
-     * Count present employees for organization on date
+     * Get employees who have checked in but NOT checked out (pending checkouts)
      */
+    @Query("SELECT a FROM Attendance a LEFT JOIN FETCH a.employee " +
+            "WHERE a.organizationUuid = :orgUuid " +
+            "AND a.attendanceDate = :date " +
+            "AND a.checkInTime IS NOT NULL " +
+            "AND a.checkOutTime IS NULL " +
+            "ORDER BY a.checkInTime ASC")
+    List<Attendance> findPendingCheckouts(@Param("orgUuid") String orgUuid,
+                                          @Param("date") LocalDate date);
+
+    @Query("SELECT a FROM Attendance a WHERE a.organizationUuid = :orgUuid " +
+            "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+            "ORDER BY a.attendanceDate DESC, a.checkInTime DESC")
+    List<Attendance> findByOrganizationAndDateRange(@Param("orgUuid") String orgUuid,
+                                                    @Param("startDate") LocalDate startDate,
+                                                    @Param("endDate") LocalDate endDate);
+
     @Query("SELECT COUNT(a) FROM Attendance a WHERE a.organizationUuid = :orgUuid " +
-           "AND a.attendanceDate = :date AND a.status = 'PRESENT'")
-    Long countPresentByOrganizationAndDate(@Param("orgUuid") String orgUuid, 
+            "AND a.attendanceDate = :date AND a.status = 'PRESENT'")
+    Long countPresentByOrganizationAndDate(@Param("orgUuid") String orgUuid,
                                            @Param("date") LocalDate date);
 
-    /**
-     * Count late employees for organization on date
-     */
     @Query("SELECT COUNT(a) FROM Attendance a WHERE a.organizationUuid = :orgUuid " +
-           "AND a.attendanceDate = :date AND a.status = 'LATE'")
-    Long countLateByOrganizationAndDate(@Param("orgUuid") String orgUuid, 
+            "AND a.attendanceDate = :date AND a.status = 'LATE'")
+    Long countLateByOrganizationAndDate(@Param("orgUuid") String orgUuid,
                                         @Param("date") LocalDate date);
 
-    // ===== Statistics Queries =====
-
-    /**
-     * Get attendance statistics by status for organization in date range
-     */
     @Query("SELECT a.status, COUNT(a) FROM Attendance a " +
-           "WHERE a.organizationUuid = :orgUuid " +
-           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY a.status")
+            "WHERE a.organizationUuid = :orgUuid " +
+            "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+            "GROUP BY a.status")
     List<Object[]> getAttendanceStatsByStatus(@Param("orgUuid") String orgUuid,
-                                               @Param("startDate") LocalDate startDate,
-                                               @Param("endDate") LocalDate endDate);
+                                              @Param("startDate") LocalDate startDate,
+                                              @Param("endDate") LocalDate endDate);
 
-    /**
-     * Get attendance by verification type for organization
-     */
     @Query("SELECT a.verificationType, COUNT(a) FROM Attendance a " +
-           "WHERE a.organizationUuid = :orgUuid " +
-           "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
-           "GROUP BY a.verificationType")
+            "WHERE a.organizationUuid = :orgUuid " +
+            "AND a.attendanceDate BETWEEN :startDate AND :endDate " +
+            "GROUP BY a.verificationType")
     List<Object[]> getAttendanceStatsByVerificationType(@Param("orgUuid") String orgUuid,
-                                                         @Param("startDate") LocalDate startDate,
-                                                         @Param("endDate") LocalDate endDate);
+                                                        @Param("startDate") LocalDate startDate,
+                                                        @Param("endDate") LocalDate endDate);
 
     List<Attendance> findByEmployeeIdAndAttendanceDateBetweenOrderByAttendanceDateDesc(
             Long employeeId,
             LocalDate startDate,
             LocalDate endDate
     );
-
 }

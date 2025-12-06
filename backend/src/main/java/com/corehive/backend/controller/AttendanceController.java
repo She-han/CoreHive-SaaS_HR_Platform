@@ -3,6 +3,7 @@ package com.corehive.backend.controller;
 import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
+import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Employee;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -34,15 +36,260 @@ public class AttendanceController {
     private final AttendanceRepository attendanceRepository;
 
     /**
-     * Mark attendance using face recognition - KIOSK MODE
-     * HR Staff can mark attendance for any employee
+     * Mark CHECK-IN using face recognition - KIOSK MODE
+     * Only creates new check-in records, won't mark checkout
+     */
+    @PostMapping("/check-in")
+    public ResponseEntity<FaceAttendanceResponse> markCheckIn(
+            @RequestBody FaceAttendanceRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+
+        if (userEmail == null) {
+            return ResponseEntity.status(401).body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message("Authentication required. Please login again.")
+                            .build()
+            );
+        }
+
+        log.info("Check-in request from: {}", userEmail);
+
+        try {
+            AppUser appUser = appUserRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Long employeeId = request.getEmployeeId();
+            String organizationUuid = request.getOrganizationUuid() != null
+                    ? request.getOrganizationUuid()
+                    : appUser.getOrganizationUuid();
+
+            if (employeeId == null) {
+                return ResponseEntity.badRequest().body(
+                        FaceAttendanceResponse.builder()
+                                .success(false)
+                                .message("Employee ID is required")
+                                .build()
+                );
+            }
+
+            // Verify employee exists
+            Employee employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+            if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+                throw new RuntimeException("Employee does not belong to this organization");
+            }
+
+            request.setIpAddress(getClientIpAddress(httpRequest));
+
+            // Mark check-in only
+            FaceAttendanceResponse response = attendanceService.markCheckIn(
+                    employeeId, organizationUuid, request
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error marking check-in: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build()
+            );
+        }
+    }
+
+    /**
+     * Mark CHECK-OUT using face recognition - KIOSK MODE
+     * Only updates existing check-in records with checkout time
+     */
+    @PostMapping("/check-out")
+    public ResponseEntity<FaceAttendanceResponse> markCheckOut(
+            @RequestBody FaceAttendanceRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+
+        if (userEmail == null) {
+            return ResponseEntity.status(401).body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message("Authentication required. Please login again.")
+                            .build()
+            );
+        }
+
+        log.info("Check-out request from: {}", userEmail);
+
+        try {
+            AppUser appUser = appUserRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            Long employeeId = request.getEmployeeId();
+            String organizationUuid = request.getOrganizationUuid() != null
+                    ? request.getOrganizationUuid()
+                    : appUser.getOrganizationUuid();
+
+            if (employeeId == null) {
+                return ResponseEntity.badRequest().body(
+                        FaceAttendanceResponse.builder()
+                                .success(false)
+                                .message("Employee ID is required")
+                                .build()
+                );
+            }
+
+            // Verify employee exists
+            Employee employee = employeeRepository.findById(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+            if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+                throw new RuntimeException("Employee does not belong to this organization");
+            }
+
+            request.setIpAddress(getClientIpAddress(httpRequest));
+
+            // Mark check-out only
+            FaceAttendanceResponse response = attendanceService.markCheckOut(
+                    employeeId, organizationUuid, request
+            );
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error marking check-out: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build()
+            );
+        }
+    }
+
+    /**
+     * Get today's attendance with employee details for kiosk sidebar
+     */
+    @GetMapping("/today-all")
+    public ResponseEntity<?> getTodayAllAttendance(
+            HttpServletRequest httpRequest
+    ) {
+        try {
+            String userEmail = (String) httpRequest.getAttribute("userEmail");
+            if (userEmail == null) {
+                return ResponseEntity.status(401).body(
+                        FaceAttendanceResponse.builder()
+                                .success(false)
+                                .message("Authentication required")
+                                .build()
+                );
+            }
+
+            AppUser appUser = appUserRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            List<Attendance> attendanceList = attendanceRepository
+                    .findByOrganizationUuidAndAttendanceDateOrderByCheckInTimeDesc(
+                            appUser.getOrganizationUuid(),
+                            LocalDate.now()
+                    );
+
+            // Map to DTO with employee details
+            List<TodayAttendanceDTO> result = attendanceList.stream()
+                    .map(att -> {
+                        Employee emp = att.getEmployee();
+                        return TodayAttendanceDTO.builder()
+                                .id(att.getId())
+                                .employeeId(att.getEmployeeId())
+                                .employeeName(emp != null ? emp.getFirstName() + " " + emp.getLastName() : "Unknown")
+                                .employeeCode(emp != null ? emp.getEmployeeCode() : null)
+                                .checkInTime(att.getCheckInTime())
+                                .checkOutTime(att.getCheckOutTime())
+                                .status(att.getStatus() != null ? att.getStatus().name() : null)
+                                .isComplete(att.isComplete())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            log.error("Error getting today's attendance: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build()
+            );
+        }
+    }
+
+    /**
+     * Get employees who have checked in but not checked out (for checkout mode)
+     */
+    @GetMapping("/pending-checkout")
+    public ResponseEntity<?> getPendingCheckouts(
+            HttpServletRequest httpRequest
+    ) {
+        try {
+            String userEmail = (String) httpRequest.getAttribute("userEmail");
+            if (userEmail == null) {
+                return ResponseEntity.status(401).body(
+                        FaceAttendanceResponse.builder()
+                                .success(false)
+                                .message("Authentication required")
+                                .build()
+                );
+            }
+
+            AppUser appUser = appUserRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            List<Attendance> pendingList = attendanceRepository
+                    .findPendingCheckouts(appUser.getOrganizationUuid(), LocalDate.now());
+
+            List<TodayAttendanceDTO> result = pendingList.stream()
+                    .map(att -> {
+                        Employee emp = att.getEmployee();
+                        return TodayAttendanceDTO.builder()
+                                .id(att.getId())
+                                .employeeId(att.getEmployeeId())
+                                .employeeName(emp != null ? emp.getFirstName() + " " + emp.getLastName() : "Unknown")
+                                .employeeCode(emp != null ? emp.getEmployeeCode() : null)
+                                .checkInTime(att.getCheckInTime())
+                                .checkOutTime(null)
+                                .status(att.getStatus() != null ? att.getStatus().name() : null)
+                                .isComplete(false)
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                    FaceAttendanceResponse.builder()
+                            .success(false)
+                            .message(e.getMessage())
+                            .build()
+            );
+        }
+    }
+
+    // ... keep existing endpoints (mark-face, today/{employeeId}, today, history) ...
+
+    /**
+     * Mark attendance using face recognition - KIOSK MODE (legacy - auto check-in/out)
      */
     @PostMapping("/mark-face")
     public ResponseEntity<FaceAttendanceResponse> markFaceAttendance(
             @RequestBody FaceAttendanceRequest request,
             HttpServletRequest httpRequest
     ) {
-        // Get user email from request attribute (set by JwtRequestFilter)
         String userEmail = (String) httpRequest.getAttribute("userEmail");
 
         if (userEmail == null) {
@@ -58,16 +305,13 @@ public class AttendanceController {
         log.info("Face attendance request from: {}", userEmail);
 
         try {
-            // Get logged-in user
             AppUser appUser = appUserRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             Long employeeId;
             String organizationUuid;
 
-            // Check if request contains employeeId (Kiosk mode - HR marking for employee)
             if (request.getEmployeeId() != null) {
-                // KIOSK MODE: HR Staff marking attendance for identified employee
                 log.info("Kiosk mode: Marking attendance for employee {}", request.getEmployeeId());
 
                 employeeId = request.getEmployeeId();
@@ -75,7 +319,6 @@ public class AttendanceController {
                         ? request.getOrganizationUuid()
                         : appUser.getOrganizationUuid();
 
-                // Verify employee exists and belongs to same organization
                 Employee employee = employeeRepository.findById(employeeId)
                         .orElseThrow(() -> new RuntimeException("Employee not found"));
 
@@ -84,7 +327,6 @@ public class AttendanceController {
                 }
 
             } else {
-                // SELF MODE: User marking their own attendance
                 if (appUser.getLinkedEmployeeId() == null) {
                     return ResponseEntity.badRequest().body(
                             FaceAttendanceResponse.builder()
@@ -98,14 +340,10 @@ public class AttendanceController {
                 organizationUuid = appUser.getOrganizationUuid();
             }
 
-            // Set IP address
             request.setIpAddress(getClientIpAddress(httpRequest));
 
-            // Mark attendance
             FaceAttendanceResponse response = attendanceService.markFaceAttendance(
-                    employeeId,
-                    organizationUuid,
-                    request
+                    employeeId, organizationUuid, request
             );
 
             return ResponseEntity.ok(response);
@@ -121,9 +359,6 @@ public class AttendanceController {
         }
     }
 
-    /**
-     * Get today's attendance for a specific employee (for kiosk display)
-     */
     @GetMapping("/today/{employeeId}")
     public ResponseEntity<?> getTodayAttendanceForEmployee(
             @PathVariable Long employeeId,
@@ -159,9 +394,6 @@ public class AttendanceController {
         }
     }
 
-    /**
-     * Get today's attendance for current user
-     */
     @GetMapping("/today")
     public ResponseEntity<FaceAttendanceResponse> getTodayAttendance(
             HttpServletRequest httpRequest
@@ -215,48 +447,6 @@ public class AttendanceController {
         }
     }
 
-    /**
-     * Get all today's attendance for organization (for kiosk stats)
-     */
-    @GetMapping("/today-all")
-    public ResponseEntity<?> getTodayAllAttendance(
-            HttpServletRequest httpRequest
-    ) {
-        try {
-            String userEmail = (String) httpRequest.getAttribute("userEmail");
-            if (userEmail == null) {
-                return ResponseEntity.status(401).body(
-                        FaceAttendanceResponse.builder()
-                                .success(false)
-                                .message("Authentication required")
-                                .build()
-                );
-            }
-
-            AppUser appUser = appUserRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-
-            List<Attendance> attendanceList = attendanceRepository
-                    .findByOrganizationUuidAndAttendanceDate(
-                            appUser.getOrganizationUuid(),
-                            LocalDate.now()
-                    );
-
-            return ResponseEntity.ok(attendanceList);
-
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    FaceAttendanceResponse.builder()
-                            .success(false)
-                            .message(e.getMessage())
-                            .build()
-            );
-        }
-    }
-
-    /**
-     * Get attendance history
-     */
     @GetMapping("/history")
     public ResponseEntity<List<AttendanceHistoryResponse>> getAttendanceHistory(
             HttpServletRequest httpRequest,
@@ -276,7 +466,6 @@ public class AttendanceController {
                 return ResponseEntity.ok(List.of());
             }
 
-            // Default to last 30 days
             if (startDate == null) startDate = LocalDate.now().minusDays(30);
             if (endDate == null) endDate = LocalDate.now();
 

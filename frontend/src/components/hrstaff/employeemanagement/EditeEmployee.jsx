@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
 import Webcam from "react-webcam";
-import { Camera, RefreshCw, Check, User, X, AlertCircle } from "lucide-react";
+import apiClient from "../../../api/axios";
+import { Camera, RefreshCw, Check, User, X, AlertCircle, Loader2 } from "lucide-react";
 
 // ===== Face API =====
 const AI_SERVICE_URL = 'http://localhost:8001';
@@ -14,12 +14,16 @@ const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   formData.append('organization_uuid', organizationUuid);
   formData.append('image', imageBlob, 'face.jpg');
 
+  console.log("Calling face register API:", { employeeId, organizationUuid });
+
   const response = await fetch(`${AI_SERVICE_URL}/api/face/register`, {
     method: 'POST',
     body: formData,
   });
 
   const data = await response.json();
+  console.log("Face register response:", data);
+  
   if (!response.ok) throw new Error(data.detail || 'Face registration failed');
   return data;
 };
@@ -27,6 +31,7 @@ const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
 const checkFaceStatus = async (employeeId, organizationUuid) => {
   try {
     const response = await fetch(`${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`);
+    if (!response.ok) return { registered: false };
     return await response.json();
   } catch {
     return { registered: false };
@@ -52,13 +57,16 @@ export default function EditEmployee() {
   const [employee, setEmployee] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [organizationUuid, setOrganizationUuid] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Face states
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
+  const [checkingFaceStatus, setCheckingFaceStatus] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Form data - match backend DTO field names exactly
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -76,44 +84,58 @@ export default function EditEmployee() {
 
   // Load data
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    setOrganizationUuid(user.organizationUuid);
+    const loadData = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('corehive_user') || '{}');
+        const orgUuid = user.organizationUuid;
+        setOrganizationUuid(orgUuid);
 
-    // Load employee
-    axios.get(`http://localhost:8080/api/employees/${id}`)
-      .then((res) => {
-        setEmployee(res.data);
+        // Load employee
+        const employeeRes = await apiClient.get(`/employees/${id}`);
+        const empData = employeeRes.data;
+        setEmployee(empData);
+        
         setFormData({
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
-          designation: res.data.designation,
-          employeeCode: res.data.employeeCode,
-          department: res.data.departmentId,
-          email: res.data.email,
-          phone: res.data.phone,
-          salaryType: res.data.salaryType,
-          basicSalary: res.data.basicSalary,
-          leaveCount: res.data.leaveCount,
-          dateJoined: res.data.dateOfJoining,
-          status: res.data.isActive ? "Active" : "NonActive",
+          firstName: empData.firstName || "",
+          lastName: empData.lastName || "",
+          designation: empData.designation || "",
+          employeeCode: empData.employeeCode || "",
+          department: empData.departmentId || "",
+          email: empData.email || "",
+          phone: empData.phone || "",
+          salaryType: empData.salaryType || "MONTHLY",
+          basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
+          leaveCount: empData.leaveCount || "",
+          dateJoined: empData.dateOfJoining || "",
+          status: empData.isActive !== false ? "Active" : "NonActive",
         });
 
-        // Check face registration status
-        if (user.organizationUuid) {
-          checkFaceStatus(res.data.id, user.organizationUuid)
-            .then(status => setFaceRegistered(status.registered));
+        // Check face status
+        if (orgUuid) {
+          const status = await checkFaceStatus(empData.id, orgUuid);
+          setFaceRegistered(status.registered);
         }
-      })
-      .catch(console.error);
+        setCheckingFaceStatus(false);
 
-    // Load departments
-    axios.get("http://localhost:8080/api/departments")
-      .then((res) => setDepartments(res.data))
-      .catch(console.error);
+        // Load departments
+        const deptRes = await apiClient.get("/org-admin/departments");
+        setDepartments(deptRes.data.data || deptRes.data || []);
+
+      } catch (error) {
+        console.error("Error loading data:", error);
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load employee data' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [id]);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const capturePhoto = () => {
     const imageSrc = webcamRef.current?.getScreenshot();
@@ -127,7 +149,7 @@ export default function EditEmployee() {
     Swal.fire({
       icon: 'success',
       title: 'Photo Captured!',
-      text: 'Face will be updated after saving.',
+      text: 'Face will be registered after saving.',
       timer: 2000,
       showConfirmButton: false
     });
@@ -138,21 +160,41 @@ export default function EditEmployee() {
     setIsSubmitting(true);
 
     try {
-      // Update employee
-      await axios.put(`http://localhost:8080/api/employees/${id}`, formData);
+      // Prepare data matching backend DTO
+      const updateData = {
+        organizationUuid: organizationUuid,
+        employeeCode: formData.employeeCode,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        designation: formData.designation,
+        department: formData.department ? Number(formData.department) : null,
+        email: formData.email,
+        phone: formData.phone,
+        salaryType: formData.salaryType,
+        basicSalary: formData.basicSalary || "0",
+        leaveCount: formData.leaveCount ? Number(formData.leaveCount) : 0,
+        dateJoined: formData.dateJoined,
+        status: formData.status,
+      };
 
-      // Update face if new photo captured
+      console.log("Updating employee with:", updateData);
+
+      await apiClient.put(`/employees/${id}`, updateData);
+
+      // Register face if photo captured
       if (capturedFace && organizationUuid) {
         try {
+          console.log("Registering face...");
           const imageBlob = base64ToBlob(capturedFace);
           await registerFaceWithAI(id, organizationUuid, imageBlob);
           setFaceRegistered(true);
+          console.log("Face registered!");
         } catch (faceError) {
-          console.error("Face update failed:", faceError);
+          console.error("Face error:", faceError);
           Swal.fire({
             icon: 'warning',
             title: 'Employee Updated',
-            text: 'Employee saved but face update failed.',
+            text: 'Employee saved but face registration failed: ' + faceError.message,
             confirmButtonColor: "#02C39A",
           });
           navigate("/hr_staff/employeemanagement");
@@ -162,16 +204,17 @@ export default function EditEmployee() {
 
       Swal.fire({
         title: "Updated!",
-        text: capturedFace ? "Employee and face updated successfully!" : "Employee updated successfully",
+        text: capturedFace ? "Employee and face updated!" : "Employee updated!",
         icon: "success",
         confirmButtonColor: "#02C39A",
       }).then(() => navigate("/hr_staff/employeemanagement"));
+
     } catch (error) {
+      console.error("Error:", error);
       Swal.fire({
         title: "Error",
-        text: "Failed to update employee",
+        text: error.response?.data?.message || "Failed to update",
         icon: "error",
-        confirmButtonColor: "#d33",
       });
     } finally {
       setIsSubmitting(false);
@@ -180,13 +223,23 @@ export default function EditEmployee() {
 
   const videoConstraints = { width: 480, height: 360, facingMode: "user" };
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center">
+        <Loader2 className="w-10 h-10 animate-spin text-[#02C39A]" />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
 
         <div className="p-6">
           <h1 className="text-3xl font-bold text-[#0C397A] text-center">Edit Employee</h1>
-          <p className="text-gray-500 text-center mt-1">Update employee details</p>
+          <p className="text-gray-500 text-center mt-1">
+            {employee?.firstName} {employee?.lastName}
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -197,16 +250,16 @@ export default function EditEmployee() {
                 <input name="employeeCode" value={formData.employeeCode} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="First Name">
-                <input name="firstName" value={formData.firstName} onChange={handleChange} className="input-box" />
+                <input name="firstName" value={formData.firstName} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Last Name">
-                <input name="lastName" value={formData.lastName} onChange={handleChange} className="input-box" />
+                <input name="lastName" value={formData.lastName} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Designation">
-                <input name="designation" value={formData.designation} onChange={handleChange} className="input-box" />
+                <input name="designation" value={formData.designation} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Department">
-                <select name="department" value={formData.department} onChange={handleChange} className="input-box">
+                <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
                   <option value="">Select Department</option>
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
@@ -214,10 +267,10 @@ export default function EditEmployee() {
                 </select>
               </Field>
               <Field label="Email">
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className="input-box" />
+                <input type="email" name="email" value={formData.email} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Phone">
-                <input name="phone" value={formData.phone} onChange={handleChange} className="input-box" />
+                <input name="phone" value={formData.phone} onChange={handleChange} className="input-box" required />
               </Field>
             </div>
           </Box>
@@ -232,13 +285,13 @@ export default function EditEmployee() {
                 </select>
               </Field>
               <Field label="Basic Salary">
-                <input type="number" name="basicSalary" value={formData.basicSalary} onChange={handleChange} className="input-box" />
+                <input type="number" name="basicSalary" value={formData.basicSalary} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Leave Count">
-                <input name="leaveCount" value={formData.leaveCount} onChange={handleChange} className="input-box" />
+                <input type="number" name="leaveCount" value={formData.leaveCount} onChange={handleChange} className="input-box" required />
               </Field>
               <Field label="Date Joined">
-                <input type="date" name="dateJoined" value={formData.dateJoined} onChange={handleChange} className="input-box" />
+                <input type="date" name="dateJoined" value={formData.dateJoined} onChange={handleChange} className="input-box" required />
               </Field>
             </div>
           </Box>
@@ -248,39 +301,43 @@ export default function EditEmployee() {
             <Field label="Status">
               <select name="status" value={formData.status} onChange={handleChange} className="input-box">
                 <option value="Active">Active</option>
-                <option value="NonActive">NonActive</option>
+                <option value="NonActive">Inactive</option>
               </select>
             </Field>
           </Box>
 
           {/* FACE REGISTRATION */}
-          <Box title="Face Registration">
+          <Box title="Face Registration (For Attendance)">
             <div className="space-y-4">
-              {/* Current Status */}
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg w-fit ${
-                faceRegistered ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
-              }`}>
-                {faceRegistered ? (
-                  <>
-                    <Check className="w-5 h-5" />
-                    <span className="font-medium">Face Registered</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-5 h-5" />
-                    <span className="font-medium">Face Not Registered</span>
-                  </>
-                )}
-              </div>
+              <p className="text-gray-600 text-sm">
+                Register or update face for attendance system.
+              </p>
+
+              {checkingFaceStatus ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Checking status...</span>
+                </div>
+              ) : (
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg w-fit ${
+                  faceRegistered ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
+                }`}>
+                  {faceRegistered ? (
+                    <><Check className="w-5 h-5" /><span className="font-medium">Face Registered ✓</span></>
+                  ) : (
+                    <><AlertCircle className="w-5 h-5" /><span className="font-medium">Face Not Registered</span></>
+                  )}
+                </div>
+              )}
 
               {!showFaceCapture && !capturedFace && (
                 <button
                   type="button"
                   onClick={() => setShowFaceCapture(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700"
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
                 >
                   <Camera className="w-5 h-5" />
-                  {faceRegistered ? 'Update Face Photo' : 'Register Face'}
+                  {faceRegistered ? 'Update Face' : 'Register Face'}
                 </button>
               )}
 
@@ -313,7 +370,7 @@ export default function EditEmployee() {
                 <div className="space-y-4">
                   <div className="relative max-w-md">
                     <img src={capturedFace} alt="Captured" className="rounded-xl w-full" />
-                    <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    <div className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                       <Check className="w-4 h-4" /> New Photo
                     </div>
                   </div>
@@ -327,17 +384,24 @@ export default function EditEmployee() {
                   </div>
                 </div>
               )}
+
+              {capturedFace && !showFaceCapture && (
+                <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg w-fit">
+                  <User className="w-5 h-5" />
+                  <span className="font-medium">New photo ready - save to register</span>
+                </div>
+              )}
             </div>
           </Box>
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-white flex justify-end gap-4">
-          <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 rounded-xl border border-gray-400" disabled={isSubmitting}>
+        <div className="p-6 bg-white rounded-b-2xl flex justify-end gap-4 border-t">
+          <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 rounded-xl border border-gray-400 text-gray-700 hover:bg-gray-100" disabled={isSubmitting}>
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-3 rounded-xl bg-[#02C39A] text-white flex items-center gap-2 disabled:opacity-50">
-            {isSubmitting ? <><RefreshCw className="w-5 h-5 animate-spin" /> Saving...</> : 'Save Employee'}
+          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-3 rounded-xl bg-[#02C39A] hover:bg-[#029e7d] text-white font-semibold flex items-center gap-2 disabled:opacity-50">
+            {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : 'Save Changes'}
           </button>
         </div>
       </div>

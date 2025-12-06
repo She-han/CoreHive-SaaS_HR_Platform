@@ -208,25 +208,47 @@ async def verify_employee_face(
             temp_path.unlink()
 
 
+# Add this endpoint (put it before the last line of the file)
+
 @router.get("/status/{organization_uuid}/{employee_id}")
-async def check_registration_status(organization_uuid: str, employee_id: str):
+async def check_face_status(organization_uuid: str, employee_id: str):
     """
-    Check if an employee's face is registered.
-    """
-    embedding_service = get_embedding_service()
-    is_registered = embedding_service.is_registered(organization_uuid, employee_id)
+    Check if an employee has registered their face.
     
-    # Also check if photo exists
-    photo_path = UPLOAD_DIR / organization_uuid / f"{employee_id}.jpg"
+    Returns registration status for specific employee.
+    """
+    check_dependencies()
+    
+    embedding_service = get_embedding_service()
+    
+    # Check if employee exists in cache
+    org_embeddings = embedding_service._cache.get(organization_uuid, {})
+    is_registered = employee_id in org_embeddings or str(employee_id) in org_embeddings
     
     return {
-        "registered": is_registered,
         "employee_id": employee_id,
         "organization_uuid": organization_uuid,
-        "photo_exists": photo_path.exists(),
-        "message": "Employee is registered" if is_registered else "Employee is not registered"
+        "registered": is_registered
     }
 
+
+@router.get("/stats/{organization_uuid}")
+async def get_organization_stats(organization_uuid: str):
+    """
+    Get face registration statistics for an organization.
+    """
+    check_dependencies()
+    
+    embedding_service = get_embedding_service()
+    
+    org_embeddings = embedding_service._cache.get(organization_uuid, {})
+    registered_employees = list(org_embeddings.keys())
+    
+    return {
+        "organization_uuid": organization_uuid,
+        "total_registered": len(registered_employees),
+        "registered_employees": registered_employees
+    }
 
 @router.delete("/deregister/{organization_uuid}/{employee_id}")
 async def deregister_employee_face(organization_uuid: str, employee_id: str):
@@ -250,11 +272,3 @@ async def deregister_employee_face(organization_uuid: str, employee_id: str):
         raise HTTPException(status_code=404, detail="Employee not found or not registered")
 
 
-@router.get("/stats/{organization_uuid}")
-async def get_organization_stats(organization_uuid: str):
-    """
-    Get face registration statistics for an organization.
-    """
-    embedding_service = get_embedding_service()
-    stats = embedding_service.get_org_stats(organization_uuid)
-    return stats

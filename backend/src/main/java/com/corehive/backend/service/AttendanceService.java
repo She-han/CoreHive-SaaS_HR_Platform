@@ -30,21 +30,18 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
 
-    // Office timing configuration (can be moved to organization settings later)
-    private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);   // 9:00 AM
-    private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);      // 9:30 AM
-    private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);  // 1:00 PM
+    private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
+    private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
+    private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
 
     /**
-     * Mark attendance using face recognition
-     * Called after Python AI Service verifies the face
+     * Mark CHECK-IN only - won't allow if already checked in today
      */
     @Transactional
-    public FaceAttendanceResponse markFaceAttendance(Long employeeId, String organizationUuid, 
-                                                      FaceAttendanceRequest request) {
-        log.info("Marking face attendance for employee ID: {} in org: {}", employeeId, organizationUuid);
+    public FaceAttendanceResponse markCheckIn(Long employeeId, String organizationUuid,
+                                              FaceAttendanceRequest request) {
+        log.info("Marking CHECK-IN for employee ID: {} in org: {}", employeeId, organizationUuid);
 
-        // 1. Validate employee exists and belongs to organization
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
 
@@ -55,42 +52,29 @@ public class AttendanceService {
         LocalDate today = LocalDate.now();
         LocalDateTime now = LocalDateTime.now();
 
-        // 2. Check existing attendance for today
+        // Check if already checked in today
         Optional<Attendance> existingAttendance = attendanceRepository
                 .findByEmployeeIdAndAttendanceDate(employeeId, today);
 
         if (existingAttendance.isPresent()) {
             Attendance attendance = existingAttendance.get();
 
-            // Case: Already checked in, not checked out - This is CHECK OUT
-            if (attendance.isCheckedIn() && !attendance.isCheckedOut()) {
-                attendance.setCheckOutTime(now);
-                attendanceRepository.save(attendance);
-
-                log.info("Check-out recorded for employee: {} at {}", 
-                        employee.getFirstName(), now);
-
-                return buildResponse(attendance, employee, false);
-            }
-
-            // Case: Already completed attendance for today
-            if (attendance.isComplete()) {
-                return FaceAttendanceResponse.builder()
-                        .success(false)
-                        .message("You have already completed attendance for today (Check-in: " + 
-                                 formatTime(attendance.getCheckInTime()) + ", Check-out: " + 
-                                 formatTime(attendance.getCheckOutTime()) + ")")
-                        .employeeId(employeeId)
-                        .employeeName(employee.getFirstName() + " " + employee.getLastName())
-                        .attendanceDate(today)
-                        .checkInTime(attendance.getCheckInTime())
-                        .checkOutTime(attendance.getCheckOutTime())
-                        .status(attendance.getStatus().name())
-                        .build();
-            }
+            // Already has check-in record
+            return FaceAttendanceResponse.builder()
+                    .success(false)
+                    .message(employee.getFirstName() + " has already checked in today at " +
+                            formatTime(attendance.getCheckInTime()))
+                    .employeeId(employeeId)
+                    .employeeName(employee.getFirstName() + " " + employee.getLastName())
+                    .attendanceDate(today)
+                    .checkInTime(attendance.getCheckInTime())
+                    .checkOutTime(attendance.getCheckOutTime())
+                    .status(attendance.getStatus().name())
+                    .isCheckIn(true)
+                    .build();
         }
 
-        // 3. Create new attendance record - This is CHECK IN
+        // Create new check-in record
         AttendanceStatus status = determineAttendanceStatus(now.toLocalTime());
 
         Attendance newAttendance = Attendance.builder()
@@ -108,15 +92,144 @@ public class AttendanceService {
 
         Attendance savedAttendance = attendanceRepository.save(newAttendance);
 
-        log.info("Check-in recorded for employee: {} at {} with status: {}", 
+        log.info("Check-in recorded for employee: {} at {} with status: {}",
                 employee.getFirstName(), now, status);
 
         return buildResponse(savedAttendance, employee, true);
     }
 
     /**
-     * Get today's attendance status for employee
+     * Mark CHECK-OUT only - requires existing check-in record
      */
+    @Transactional
+    public FaceAttendanceResponse markCheckOut(Long employeeId, String organizationUuid,
+                                               FaceAttendanceRequest request) {
+        log.info("Marking CHECK-OUT for employee ID: {} in org: {}", employeeId, organizationUuid);
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
+
+        if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+            throw new RuntimeException("Employee does not belong to this organization");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+
+        // Check for existing check-in
+        Optional<Attendance> existingAttendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today);
+
+        if (existingAttendance.isEmpty()) {
+            return FaceAttendanceResponse.builder()
+                    .success(false)
+                    .message(employee.getFirstName() + " has not checked in today. Please check-in first.")
+                    .employeeId(employeeId)
+                    .employeeName(employee.getFirstName() + " " + employee.getLastName())
+                    .isCheckIn(false)
+                    .build();
+        }
+
+        Attendance attendance = existingAttendance.get();
+
+        // Already checked out
+        if (attendance.isCheckedOut()) {
+            return FaceAttendanceResponse.builder()
+                    .success(false)
+                    .message(employee.getFirstName() + " has already checked out at " +
+                            formatTime(attendance.getCheckOutTime()))
+                    .employeeId(employeeId)
+                    .employeeName(employee.getFirstName() + " " + employee.getLastName())
+                    .attendanceDate(today)
+                    .checkInTime(attendance.getCheckInTime())
+                    .checkOutTime(attendance.getCheckOutTime())
+                    .status(attendance.getStatus().name())
+                    .isCheckIn(false)
+                    .build();
+        }
+
+        // Mark checkout
+        attendance.setCheckOutTime(now);
+        attendanceRepository.save(attendance);
+
+        log.info("Check-out recorded for employee: {} at {}", employee.getFirstName(), now);
+
+        return buildResponse(attendance, employee, false);
+    }
+
+    /**
+     * Mark attendance using face recognition (auto check-in/out - legacy method)
+     */
+    @Transactional
+    public FaceAttendanceResponse markFaceAttendance(Long employeeId, String organizationUuid,
+                                                     FaceAttendanceRequest request) {
+        log.info("Marking face attendance for employee ID: {} in org: {}", employeeId, organizationUuid);
+
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
+
+        if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+            throw new RuntimeException("Employee does not belong to this organization");
+        }
+
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+
+        Optional<Attendance> existingAttendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today);
+
+        if (existingAttendance.isPresent()) {
+            Attendance attendance = existingAttendance.get();
+
+            if (attendance.isCheckedIn() && !attendance.isCheckedOut()) {
+                attendance.setCheckOutTime(now);
+                attendanceRepository.save(attendance);
+
+                log.info("Check-out recorded for employee: {} at {}",
+                        employee.getFirstName(), now);
+
+                return buildResponse(attendance, employee, false);
+            }
+
+            if (attendance.isComplete()) {
+                return FaceAttendanceResponse.builder()
+                        .success(false)
+                        .message("You have already completed attendance for today (Check-in: " +
+                                formatTime(attendance.getCheckInTime()) + ", Check-out: " +
+                                formatTime(attendance.getCheckOutTime()) + ")")
+                        .employeeId(employeeId)
+                        .employeeName(employee.getFirstName() + " " + employee.getLastName())
+                        .attendanceDate(today)
+                        .checkInTime(attendance.getCheckInTime())
+                        .checkOutTime(attendance.getCheckOutTime())
+                        .status(attendance.getStatus().name())
+                        .build();
+            }
+        }
+
+        AttendanceStatus status = determineAttendanceStatus(now.toLocalTime());
+
+        Attendance newAttendance = Attendance.builder()
+                .organizationUuid(organizationUuid)
+                .employeeId(employeeId)
+                .attendanceDate(today)
+                .checkInTime(now)
+                .status(status)
+                .verificationType(VerificationType.FACE_RECOGNITION)
+                .verificationConfidence(request.getVerificationConfidence())
+                .ipAddress(request.getIpAddress())
+                .deviceInfo(request.getDeviceInfo())
+                .notes(request.getNotes())
+                .build();
+
+        Attendance savedAttendance = attendanceRepository.save(newAttendance);
+
+        log.info("Check-in recorded for employee: {} at {} with status: {}",
+                employee.getFirstName(), now, status);
+
+        return buildResponse(savedAttendance, employee, true);
+    }
+
     public FaceAttendanceResponse getTodayAttendance(Long employeeId, String organizationUuid) {
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
@@ -136,7 +249,7 @@ public class AttendanceService {
         }
 
         Attendance attendance = todayAttendance.get();
-        
+
         String message;
         if (attendance.isComplete()) {
             message = "Attendance complete for today";
@@ -157,18 +270,15 @@ public class AttendanceService {
                 .checkInTime(attendance.getCheckInTime())
                 .checkOutTime(attendance.getCheckOutTime())
                 .status(attendance.getStatus().name())
-                .verificationType(attendance.getVerificationType() != null ? 
+                .verificationType(attendance.getVerificationType() != null ?
                         attendance.getVerificationType().name() : null)
                 .verificationConfidence(attendance.getVerificationConfidence())
                 .build();
     }
 
-    /**
-     * Get attendance history for employee
-     */
-    public List<AttendanceHistoryResponse> getAttendanceHistory(Long employeeId, 
-                                                                 LocalDate startDate, 
-                                                                 LocalDate endDate) {
+    public List<AttendanceHistoryResponse> getAttendanceHistory(Long employeeId,
+                                                                LocalDate startDate,
+                                                                LocalDate endDate) {
         List<Attendance> attendances = attendanceRepository
                 .findByEmployeeAndDateRange(employeeId, startDate, endDate);
 
@@ -177,9 +287,6 @@ public class AttendanceService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Get all attendance for organization on a specific date (Admin view)
-     */
     public List<FaceAttendanceResponse> getOrganizationAttendance(String organizationUuid, LocalDate date) {
         List<Attendance> attendances = attendanceRepository
                 .findByOrganizationUuidAndAttendanceDate(organizationUuid, date);
@@ -196,8 +303,9 @@ public class AttendanceService {
                             .checkInTime(a.getCheckInTime())
                             .checkOutTime(a.getCheckOutTime())
                             .status(a.getStatus().name())
-                            .verificationType(a.getVerificationType() != null ? 
+                            .verificationType(a.getVerificationType() != null ?
                                     a.getVerificationType().name() : null)
+                            .verificationConfidence(a.getVerificationConfidence())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -218,15 +326,13 @@ public class AttendanceService {
     private FaceAttendanceResponse buildResponse(Attendance attendance, Employee employee, boolean isCheckIn) {
         String message;
         if (isCheckIn) {
-            if (attendance.getStatus() == AttendanceStatus.LATE) {
-                message = "Check-in successful (Late arrival)";
-            } else if (attendance.getStatus() == AttendanceStatus.HALF_DAY) {
-                message = "Check-in successful (Half day)";
-            } else {
-                message = "Check-in successful! Have a great day!";
-            }
+            String statusText = attendance.getStatus() == AttendanceStatus.LATE ? " (Late)" :
+                    attendance.getStatus() == AttendanceStatus.HALF_DAY ? " (Half Day)" : "";
+            message = "Good " + getGreeting() + ", " + employee.getFirstName() + "! " +
+                    "Check-in successful at " + formatTime(attendance.getCheckInTime()) + statusText;
         } else {
-            message = "Check-out successful! See you tomorrow!";
+            message = "Goodbye, " + employee.getFirstName() + "! " +
+                    "Check-out recorded at " + formatTime(attendance.getCheckOutTime());
         }
 
         return FaceAttendanceResponse.builder()
@@ -260,15 +366,21 @@ public class AttendanceService {
                 .date(attendance.getAttendanceDate())
                 .checkInTime(attendance.getCheckInTime())
                 .checkOutTime(attendance.getCheckOutTime())
-                .status(attendance.getStatus().name())
-                .verificationType(attendance.getVerificationType() != null ? 
+                .status(attendance.getStatus() != null ? attendance.getStatus().name() : null)
+                .verificationType(attendance.getVerificationType() != null ?
                         attendance.getVerificationType().name() : null)
                 .workingHours(workingHours)
                 .build();
     }
 
     private String formatTime(LocalDateTime dateTime) {
-        if (dateTime == null) return "N/A";
-        return dateTime.toLocalTime().toString();
+        return dateTime.toLocalTime().toString().substring(0, 5);
+    }
+
+    private String getGreeting() {
+        int hour = LocalTime.now().getHour();
+        if (hour < 12) return "morning";
+        if (hour < 17) return "afternoon";
+        return "evening";
     }
 }

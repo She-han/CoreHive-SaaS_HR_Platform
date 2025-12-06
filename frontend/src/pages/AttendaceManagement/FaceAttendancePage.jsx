@@ -1,14 +1,15 @@
 /**
  * Face Attendance Kiosk Page
  * HR Staff opens camera, employees come and show face to mark attendance
- * Auto-detects any employee from the organization
+ * Supports both Check-in and Check-out modes
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Webcam from 'react-webcam';
 import { 
   Camera, Check, X, Clock, AlertCircle, RefreshCw, 
-  User, LogIn, LogOut, Loader2, Users, Play, Square
+  User, LogIn, LogOut, Loader2, Users, Play, Square,
+  UserCheck, UserMinus
 } from 'lucide-react';
 
 // ===== Configuration =====
@@ -17,15 +18,10 @@ const JAVA_BACKEND_URL = 'http://localhost:8080/api';
 
 // ===== Helper Functions =====
 const getAuthToken = () => {
-  // Check both localStorage and sessionStorage
   const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
-  
   if (!token) {
     console.warn('⚠️ No auth token found in storage');
-  } else {
-    console.log('✅ Token found:', token.substring(0, 20) + '...');
   }
-  
   return token;
 };
 
@@ -42,6 +38,31 @@ const base64ToBlob = (base64) => {
   } catch (error) {
     console.error('Error converting base64 to blob:', error);
     throw error;
+  }
+};
+
+const playSound = (type) => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    if (type === 'success') {
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+    } else if (type === 'error') {
+      oscillator.frequency.value = 300;
+      oscillator.type = 'square';
+    }
+    
+    gainNode.gain.value = 0.3;
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+  } catch (e) {
+    console.log('Audio not available');
   }
 };
 
@@ -72,45 +93,51 @@ const identifyEmployee = async (organizationUuid, imageBlob) => {
   return data;
 };
 
-const markAttendanceForEmployee = async (employeeId, organizationUuid, confidence) => {
+const markCheckIn = async (employeeId, organizationUuid, confidence) => {
   const token = getAuthToken();
-  
-  // Check if token exists
-  if (!token) {
-    throw new Error('Unauthorized access. Please login first.');
-  }
+  if (!token) throw new Error('Please login first');
 
-  console.log('📤 Marking attendance with token:', token.substring(0, 20) + '...');
-  console.log('📤 Request body:', { employeeId, organizationUuid, confidence });
-
-  const response = await fetch(`${JAVA_BACKEND_URL}/attendance/mark-face`, {
+  const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-in`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
-      employeeId: Number(employeeId), // Ensure it's a number
-      organizationUuid: organizationUuid,
+      employeeId: Number(employeeId),
+      organizationUuid,
       verificationConfidence: String(confidence),
       deviceInfo: 'Face Attendance Kiosk'
     })
   });
 
-  console.log('📥 Response status:', response.status);
+  const data = await response.json();
+  if (response.status === 401) throw new Error('Session expired. Please login again.');
+  if (!response.ok) throw new Error(data.message || 'Failed to mark check-in');
+  return data;
+};
 
-  // Handle unauthorized
-  if (response.status === 401) {
-    throw new Error('Session expired. Please login again.');
-  }
+const markCheckOut = async (employeeId, organizationUuid, confidence) => {
+  const token = getAuthToken();
+  if (!token) throw new Error('Please login first');
+
+  const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-out`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      employeeId: Number(employeeId),
+      organizationUuid,
+      verificationConfidence: String(confidence),
+      deviceInfo: 'Face Attendance Kiosk'
+    })
+  });
 
   const data = await response.json();
-  console.log('📥 Response data:', data);
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to save attendance');
-  }
-  
+  if (response.status === 401) throw new Error('Session expired. Please login again.');
+  if (!response.ok) throw new Error(data.message || 'Failed to mark check-out');
   return data;
 };
 
@@ -154,8 +181,13 @@ const FaceAttendancePage = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState(null);
-  const [recentAttendance, setRecentAttendance] = useState([]);
   const [error, setError] = useState('');
+  
+  // Mode: 'checkin' or 'checkout'
+  const [mode, setMode] = useState('checkin');
+  
+  // Today's attendance from database
+  const [todayAttendance, setTodayAttendance] = useState([]);
   const [todayCount, setTodayCount] = useState({ checkIn: 0, checkOut: 0 });
   
   // Refs
@@ -175,10 +207,19 @@ const FaceAttendancePage = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch today's attendance from database
+  const fetchTodayAttendance = useCallback(async () => {
+    const list = await getTodayAttendanceList();
+    setTodayAttendance(list);
+    
+    const checkIns = list.filter(a => a.checkInTime).length;
+    const checkOuts = list.filter(a => a.checkOutTime).length;
+    setTodayCount({ checkIn: checkIns, checkOut: checkOuts });
+  }, []);
+
   // Initialize
   useEffect(() => {
     const initialize = async () => {
-      // Get organization from logged in user
       const user = JSON.parse(localStorage.getItem('corehive_user') || '{}');
       if (!user.organizationUuid) {
         setError('Please login as HR Staff to use this feature.');
@@ -186,30 +227,31 @@ const FaceAttendancePage = () => {
       }
       setOrganizationUuid(user.organizationUuid);
 
-      // Check AI service
       const health = await checkFaceServiceHealth();
       if (health.status === 'healthy' && health.dependencies_installed) {
         setServiceReady(true);
       } else {
-        setError('Face recognition service is not available. Please contact administrator.');
+        setError('Face recognition service is not available.');
       }
 
-      // Load today's attendance
-      const todayList = await getTodayAttendanceList();
-      const checkIns = todayList.filter(a => a.checkInTime).length;
-      const checkOuts = todayList.filter(a => a.checkOutTime).length;
-      setTodayCount({ checkIn: checkIns, checkOut: checkOuts });
+      await fetchTodayAttendance();
     };
 
     initialize();
-  }, []);
+  }, [fetchTodayAttendance]);
+
+  // Refresh attendance list every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchTodayAttendance, 30000);
+    return () => clearInterval(interval);
+  }, [fetchTodayAttendance]);
 
   // Auto capture when kiosk is active
   useEffect(() => {
     if (isKioskActive && serviceReady && !isProcessing) {
       captureIntervalRef.current = setInterval(() => {
-        captureAndIdentify();
-      }, 3000); // Capture every 3 seconds
+        captureAndProcess();
+      }, 3000);
     }
 
     return () => {
@@ -217,10 +259,24 @@ const FaceAttendancePage = () => {
         clearInterval(captureIntervalRef.current);
       }
     };
-  }, [isKioskActive, serviceReady, isProcessing]);
+  }, [isKioskActive, serviceReady, isProcessing, mode]);
 
-  // Capture and identify employee
-  const captureAndIdentify = async () => {
+  // Check if employee already checked in today
+  const hasCheckedInToday = (employeeId) => {
+    return todayAttendance.some(a => 
+      a.employeeId === Number(employeeId) && a.checkInTime
+    );
+  };
+
+  // Check if employee already checked out today
+  const hasCheckedOutToday = (employeeId) => {
+    return todayAttendance.some(a => 
+      a.employeeId === Number(employeeId) && a.checkOutTime
+    );
+  };
+
+  // Capture and process based on mode
+  const captureAndProcess = async () => {
     if (isProcessing || !webcamRef.current || !organizationUuid) return;
 
     const imageSrc = webcamRef.current.getScreenshot();
@@ -230,68 +286,119 @@ const FaceAttendancePage = () => {
     setError('');
 
     try {
-      // Step 1: Identify employee from face
+      // Step 1: Identify employee
       const imageBlob = base64ToBlob(imageSrc);
       const identifyResult = await identifyEmployee(organizationUuid, imageBlob);
       
-      console.log('🔍 Identify result:', identifyResult);
+      console.log('Identify result:', identifyResult);
 
       if (!identifyResult.identified || !identifyResult.employee_id) {
-        // No face detected or not recognized - just continue
         setIsProcessing(false);
         return;
       }
 
+      const employeeId = identifyResult.employee_id;
+      
       // Step 2: Get employee details
-      const employee = await getEmployeeDetails(identifyResult.employee_id);
+      const employee = await getEmployeeDetails(employeeId);
       const employeeName = employee 
         ? `${employee.firstName} ${employee.lastName}` 
-        : `Employee #${identifyResult.employee_id}`;
+        : `Employee #${employeeId}`;
 
-      // Step 3: Mark attendance
-      const attendanceResult = await markAttendanceForEmployee(
-        identifyResult.employee_id,
-        organizationUuid,
-        identifyResult.confidence || 0.85
-      );
-
-      console.log('✅ Attendance marked:', attendanceResult);
-
-      // Update UI
-      const resultData = {
-        success: true,
-        employeeId: identifyResult.employee_id,
-        employeeName: employeeName,
-        confidence: identifyResult.confidence,
-        isCheckIn: attendanceResult.data?.isCheckIn ?? !attendanceResult.data?.checkOutTime,
-        time: new Date().toLocaleTimeString('en-US', { 
-          hour: '2-digit', minute: '2-digit', hour12: true 
-        }),
-        photo: imageSrc
-      };
-
-      setLastResult(resultData);
+      // Step 3: Process based on mode
+      let result;
       
-      // Add to recent list
-      setRecentAttendance(prev => [resultData, ...prev.slice(0, 9)]);
+      if (mode === 'checkin') {
+        // Check if already checked in
+        if (hasCheckedInToday(employeeId)) {
+          setLastResult({
+            success: false,
+            employeeName,
+            message: 'Already checked in today!',
+            isCheckIn: true,
+            photo: imageSrc
+          });
+          playSound('error');
+          setTimeout(() => setLastResult(null), 3000);
+          setIsProcessing(false);
+          return;
+        }
+        
+        result = await markCheckIn(employeeId, organizationUuid, identifyResult.confidence);
+        
+      } else {
+        // Check-out mode
+        if (!hasCheckedInToday(employeeId)) {
+          setLastResult({
+            success: false,
+            employeeName,
+            message: 'No check-in record found!',
+            isCheckIn: false,
+            photo: imageSrc
+          });
+          playSound('error');
+          setTimeout(() => setLastResult(null), 3000);
+          setIsProcessing(false);
+          return;
+        }
+        
+        if (hasCheckedOutToday(employeeId)) {
+          setLastResult({
+            success: false,
+            employeeName,
+            message: 'Already checked out today!',
+            isCheckIn: false,
+            photo: imageSrc
+          });
+          playSound('error');
+          setTimeout(() => setLastResult(null), 3000);
+          setIsProcessing(false);
+          return;
+        }
+        
+        result = await markCheckOut(employeeId, organizationUuid, identifyResult.confidence);
+      }
 
-      // Update counts
-      setTodayCount(prev => ({
-        checkIn: resultData.isCheckIn ? prev.checkIn + 1 : prev.checkIn,
-        checkOut: !resultData.isCheckIn ? prev.checkOut + 1 : prev.checkOut
-      }));
+      console.log('✅ Attendance result:', result);
 
-      // Clear result after 5 seconds
-      setTimeout(() => {
-        setLastResult(null);
-      }, 5000);
+      if (result.success) {
+        const resultData = {
+          success: true,
+          employeeId,
+          employeeName: result.employeeName || employeeName,
+          confidence: identifyResult.confidence,
+          isCheckIn: mode === 'checkin',
+          time: new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', minute: '2-digit', hour12: true 
+          }),
+          photo: imageSrc,
+          message: result.message
+        };
+
+        setLastResult(resultData);
+        playSound('success');
+        
+        // Refresh attendance list
+        await fetchTodayAttendance();
+
+        setTimeout(() => setLastResult(null), 4000);
+      } else {
+        setLastResult({
+          success: false,
+          employeeName,
+          message: result.message || 'Failed to mark attendance',
+          isCheckIn: mode === 'checkin',
+          photo: imageSrc
+        });
+        playSound('error');
+        setTimeout(() => setLastResult(null), 3000);
+      }
 
     } catch (err) {
       console.error('❌ Error:', err);
-      // Don't show error for "no face" - just continue scanning
       if (!err.message.includes('No face') && !err.message.includes('not recognized')) {
         setError(err.message);
-        setTimeout(() => setError(''), 3000);
+        setTimeout(() => setError(''), 5000);
       }
     } finally {
       setIsProcessing(false);
@@ -300,12 +407,22 @@ const FaceAttendancePage = () => {
 
   // Manual capture
   const handleManualCapture = () => {
-    captureAndIdentify();
+    captureAndProcess();
   };
 
   // Toggle kiosk mode
   const toggleKiosk = () => {
     setIsKioskActive(!isKioskActive);
+    setLastResult(null);
+    setError('');
+  };
+
+  // Switch mode
+  const switchMode = (newMode) => {
+    if (isKioskActive) {
+      setIsKioskActive(false);
+    }
+    setMode(newMode);
     setLastResult(null);
     setError('');
   };
@@ -318,6 +435,30 @@ const FaceAttendancePage = () => {
       second: '2-digit',
       hour12: true,
     });
+  };
+
+  const formatDateTime = (dateTimeStr) => {
+    if (!dateTimeStr) return '-';
+    const date = new Date(dateTimeStr);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const getDisplayName = (attendance) => {
+    const employee = attendance?.employee;
+    if (employee) {
+      const fullName = [employee.firstName, employee.lastName].filter(Boolean).join(' ').trim();
+      if (fullName) return fullName;
+      if (employee.fullName) return employee.fullName;
+    }
+
+    if (attendance?.employeeName) return attendance.employeeName;
+    if (attendance?.fullName) return attendance.fullName;
+    if (attendance?.employeeId) return `Employee #${attendance.employeeId}`;
+    return 'Unknown Employee';
   };
 
   // Loading / Error states
@@ -334,36 +475,68 @@ const FaceAttendancePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-gray-100 min-h-screen py-6 px-4 overflow-y-auto">
+      <div className="max-w-7xl mx-auto space-y-6 pb-8">
         
         {/* Header */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-4">
-              <div className="bg-blue-500 p-3 rounded-xl">
-                <Users className="w-8 h-8 text-white" />
+              <div className={`p-3 rounded-xl ${mode === 'checkin' ? 'bg-green-500' : 'bg-orange-500'}`}>
+                {mode === 'checkin' ? (
+                  <LogIn className="w-8 h-8 text-white" />
+                ) : (
+                  <LogOut className="w-8 h-8 text-white" />
+                )}
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Face Attendance Kiosk</h1>
-                <p className="text-blue-200 flex items-center">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Face Attendance - {mode === 'checkin' ? 'Check In' : 'Check Out'}
+                </h1>
+                <p className="text-gray-600 flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
                   {formatTime(currentTime)}
                 </p>
               </div>
             </div>
 
+            {/* Mode Switch Buttons */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => switchMode('checkin')}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all ${
+                  mode === 'checkin'
+                    ? 'bg-green-500 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <LogIn className="w-5 h-5" />
+                <span>Check In</span>
+              </button>
+              <button
+                onClick={() => switchMode('checkout')}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all ${
+                  mode === 'checkout'
+                    ? 'bg-orange-500 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Check Out</span>
+              </button>
+            </div>
+
             {/* Stats */}
-            <div className="flex items-center space-x-4">
-              <div className="bg-green-500/20 px-4 py-2 rounded-xl flex items-center">
-                <LogIn className="w-5 h-5 text-green-400 mr-2" />
-                <span className="text-white font-bold">{todayCount.checkIn}</span>
-                <span className="text-green-200 ml-1 text-sm">Check-ins</span>
+            <div className="flex items-center space-x-3">
+              <div className="bg-green-100 px-4 py-2 rounded-lg flex items-center border border-green-200">
+                <LogIn className="w-5 h-5 text-green-600 mr-2" />
+                <span className="text-gray-900 font-bold">{todayCount.checkIn}</span>
+                <span className="text-green-700 ml-1 text-sm">In</span>
               </div>
-              <div className="bg-orange-500/20 px-4 py-2 rounded-xl flex items-center">
-                <LogOut className="w-5 h-5 text-orange-400 mr-2" />
-                <span className="text-white font-bold">{todayCount.checkOut}</span>
-                <span className="text-orange-200 ml-1 text-sm">Check-outs</span>
+              <div className="bg-orange-100 px-4 py-2 rounded-lg flex items-center border border-orange-200">
+                <LogOut className="w-5 h-5 text-orange-600 mr-2" />
+                <span className="text-gray-900 font-bold">{todayCount.checkOut}</span>
+                <span className="text-orange-700 ml-1 text-sm">Out</span>
               </div>
             </div>
 
@@ -371,21 +544,23 @@ const FaceAttendancePage = () => {
             <button
               onClick={toggleKiosk}
               disabled={!serviceReady}
-              className={`px-6 py-3 rounded-xl font-bold flex items-center space-x-2 transition-all ${
+              className={`px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-all shadow-md ${
                 isKioskActive
                   ? 'bg-red-500 hover:bg-red-600 text-white'
-                  : 'bg-green-500 hover:bg-green-600 text-white'
+                  : mode === 'checkin' 
+                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                    : 'bg-orange-500 hover:bg-orange-600 text-white'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isKioskActive ? (
                 <>
                   <Square className="w-5 h-5" />
-                  <span>Stop Kiosk</span>
+                  <span>Stop</span>
                 </>
               ) : (
                 <>
                   <Play className="w-5 h-5" />
-                  <span>Start Kiosk</span>
+                  <span>Start</span>
                 </>
               )}
             </button>
@@ -396,29 +571,35 @@ const FaceAttendancePage = () => {
           
           {/* Main Camera Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
               {/* Camera Header */}
               <div className={`px-6 py-4 ${
                 isKioskActive 
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                  ? mode === 'checkin'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                    : 'bg-gradient-to-r from-orange-500 to-amber-600'
                   : 'bg-gradient-to-r from-gray-600 to-gray-700'
               }`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-bold text-white flex items-center">
                       <Camera className="w-6 h-6 mr-2" />
-                      {isKioskActive ? '🔴 LIVE - Scanning for Employees' : 'Camera Ready'}
+                      {isKioskActive ? (
+                        <>🔴 LIVE - {mode === 'checkin' ? 'Check-In Mode' : 'Check-Out Mode'}</>
+                      ) : (
+                        'Camera Ready'
+                      )}
                     </h2>
                     <p className="text-white/80 text-sm">
                       {isKioskActive 
-                        ? 'Employees can show their face to mark attendance'
-                        : 'Click "Start Kiosk" to begin scanning'}
+                        ? `Employees can show face to ${mode === 'checkin' ? 'check in' : 'check out'}`
+                        : 'Click "Start" to begin scanning'}
                     </p>
                   </div>
                   {isKioskActive && (
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-white text-sm font-medium">Recording</span>
+                      <span className="text-white text-sm font-medium">Scanning</span>
                     </div>
                   )}
                 </div>
@@ -442,9 +623,9 @@ const FaceAttendancePage = () => {
                         isProcessing 
                           ? 'border-yellow-400 animate-pulse' 
                           : isKioskActive 
-                            ? 'border-green-400 animate-pulse' 
+                            ? mode === 'checkin' ? 'border-green-400' : 'border-orange-400'
                             : 'border-gray-400'
-                      }`} />
+                      } ${isKioskActive ? 'animate-pulse' : ''}`} />
                     </div>
 
                     {/* Processing Indicator */}
@@ -457,20 +638,38 @@ const FaceAttendancePage = () => {
                       </div>
                     )}
 
-                    {/* Success Result Overlay */}
-                    {lastResult && lastResult.success && (
-                      <div className="absolute inset-0 bg-green-500/90 flex items-center justify-center animate-fade-in">
+                    {/* Result Overlay */}
+                    {lastResult && (
+                      <div className={`absolute inset-0 ${
+                        lastResult.success 
+                          ? 'bg-green-500/90' 
+                          : 'bg-red-500/90'
+                      } flex items-center justify-center animate-fade-in`}>
                         <div className="text-center text-white">
-                          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Check className="w-14 h-14 text-green-500" />
+                          <div className={`w-24 h-24 ${
+                            lastResult.success ? 'bg-white' : 'bg-white'
+                          } rounded-full flex items-center justify-center mx-auto mb-4`}>
+                            {lastResult.success ? (
+                              <Check className={`w-14 h-14 ${
+                                lastResult.isCheckIn ? 'text-green-500' : 'text-orange-500'
+                              }`} />
+                            ) : (
+                              <X className="w-14 h-14 text-red-500" />
+                            )}
                           </div>
                           <h3 className="text-3xl font-bold mb-2">{lastResult.employeeName}</h3>
-                          <p className="text-2xl">
-                            {lastResult.isCheckIn ? '✅ Check-in' : '👋 Check-out'} at {lastResult.time}
-                          </p>
-                          <p className="text-lg mt-2 opacity-80">
-                            Confidence: {Math.round((lastResult.confidence || 0.85) * 100)}%
-                          </p>
+                          {lastResult.success ? (
+                            <>
+                              <p className="text-2xl">
+                                {lastResult.isCheckIn ? '✅ Check-in' : '👋 Check-out'} at {lastResult.time}
+                              </p>
+                              <p className="text-lg mt-2 opacity-80">
+                                Confidence: {Math.round((lastResult.confidence || 0.85) * 100)}%
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xl">{lastResult.message}</p>
+                          )}
                         </div>
                       </div>
                     )}
@@ -496,14 +695,25 @@ const FaceAttendancePage = () => {
               </div>
 
               {/* Manual Controls */}
-              <div className="p-4 bg-gray-50 flex justify-center space-x-4">
+              <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-center space-x-4">
                 <button
                   onClick={handleManualCapture}
                   disabled={!serviceReady || isProcessing}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    mode === 'checkin'
+                      ? 'bg-green-500 hover:bg-green-600 text-white'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white'
+                  }`}
                 >
                   <Camera className="w-5 h-5" />
                   <span>Manual Capture</span>
+                </button>
+                <button
+                  onClick={fetchTodayAttendance}
+                  className="px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg font-semibold flex items-center space-x-2 shadow-sm transition-all"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  <span>Refresh</span>
                 </button>
               </div>
 
@@ -516,18 +726,22 @@ const FaceAttendancePage = () => {
             </div>
           </div>
 
-          {/* Recent Attendance Sidebar */}
+          {/* Today's Attendance Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-2xl overflow-hidden h-full">
-              <div className="px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col max-h-[600px]">
+              <div className={`px-6 py-4 ${
+                mode === 'checkin' 
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600'
+                  : 'bg-gradient-to-r from-orange-600 to-amber-600'
+              }`}>
                 <h3 className="text-lg font-bold text-white flex items-center">
-                  <Clock className="w-5 h-5 mr-2" />
-                  Recent Attendance
+                  <Users className="w-5 h-5 mr-2" />
+                  Today's Attendance ({todayAttendance.length})
                 </h3>
               </div>
 
-              <div className="p-4 max-h-[600px] overflow-y-auto">
-                {recentAttendance.length === 0 ? (
+              <div className="p-4 flex-1 overflow-y-auto">
+                {todayAttendance.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
                     <p>No attendance recorded yet</p>
@@ -535,36 +749,56 @@ const FaceAttendancePage = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {recentAttendance.map((item, index) => (
+                    {todayAttendance
+                      .sort((a, b) => {
+                        const timeA = a.checkOutTime || a.checkInTime;
+                        const timeB = b.checkOutTime || b.checkInTime;
+                        return new Date(timeB) - new Date(timeA);
+                      })
+                      .map((attendance, index) => (
                       <div 
-                        key={index} 
+                        key={attendance.id || index} 
                         className={`p-3 rounded-xl border-2 ${
-                          item.isCheckIn 
-                            ? 'bg-green-50 border-green-200' 
-                            : 'bg-orange-50 border-orange-200'
-                        } ${index === 0 ? 'animate-slide-in' : ''}`}
+                          attendance.checkOutTime 
+                            ? 'bg-gray-50 border-gray-200' 
+                            : 'bg-green-50 border-green-200'
+                        }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          {item.photo ? (
-                            <img 
-                              src={item.photo} 
-                              alt="" 
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                              <User className="w-6 h-6 text-gray-500" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 truncate">
-                              {item.employeeName}
-                            </p>
-                            <p className={`text-sm ${
-                              item.isCheckIn ? 'text-green-600' : 'text-orange-600'
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              attendance.checkOutTime 
+                                ? 'bg-gray-200' 
+                                : 'bg-green-200'
                             }`}>
-                              {item.isCheckIn ? '✅ Check-in' : '👋 Check-out'} • {item.time}
-                            </p>
+                              {attendance.checkOutTime ? (
+                                <UserCheck className="w-5 h-5 text-gray-600" />
+                              ) : (
+                                <User className="w-5 h-5 text-green-600" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 text-sm">
+                                {getDisplayName(attendance)}
+                              </p>
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <span className="text-green-600">
+                                  In: {formatDateTime(attendance.checkInTime)}
+                                </span>
+                                {attendance.checkOutTime && (
+                                  <span className="text-orange-600">
+                                    Out: {formatDateTime(attendance.checkOutTime)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            attendance.checkOutTime 
+                              ? 'bg-gray-200 text-gray-600' 
+                              : 'bg-green-200 text-green-700'
+                          }`}>
+                            {attendance.checkOutTime ? 'Done' : 'Active'}
                           </div>
                         </div>
                       </div>
@@ -583,12 +817,7 @@ const FaceAttendancePage = () => {
           from { opacity: 0; transform: scale(0.9); }
           to { opacity: 1; transform: scale(1); }
         }
-        @keyframes slide-in {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
         .animate-fade-in { animation: fade-in 0.3s ease-out; }
-        .animate-slide-in { animation: slide-in 0.3s ease-out; }
       `}</style>
     </div>
   );

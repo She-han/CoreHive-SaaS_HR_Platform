@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/orgs/{orgUuid}/surveys/**").permitAll()
                         .requestMatchers( "/api/attendance" ,"/api/attendance/**").permitAll()
                         .requestMatchers( "/api/orgs/*/surveys").permitAll()
+                        .requestMatchers("/api/orgs/*/surveys/*/questions").permitAll()
                         .requestMatchers("/api/orgs/*/surveys/*/responses/details").permitAll()
                         .requestMatchers("GET", "http://localhost:3000/*").hasAnyRole("HR_STAFF", "ORG_ADMIN")
                         .requestMatchers("DELETE", "/api/orgs/*/surveys/*").hasAnyRole("HR_STAFF", "ORG_ADMIN")

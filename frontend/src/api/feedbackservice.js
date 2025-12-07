@@ -62,4 +62,17 @@ export const getResponseDetails = async (orgUuid, surveyId) => {
     });
 };
 
+//7)get survey question for one survey
+export const getSurveyQuestions = async (orgUuid, surveyId) => {
+  return axios.get(`${BASE}/orgs/${orgUuid}/surveys/${surveyId}/questions`)
+    .then(res => res.data);
+}
+
+//8)update survey
+export const updateSurveyQuestions = async (orgUuid, surveyId, payload)=> {
+  return axios.put(`${BASE}/orgs/${orgUuid}/surveys/${surveyId}/questions`, payload)
+    .then(res => res.data);
+}
+
+
 

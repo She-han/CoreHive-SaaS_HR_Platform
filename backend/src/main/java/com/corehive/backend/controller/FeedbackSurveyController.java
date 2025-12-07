@@ -1,6 +1,7 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.CreateSurveyRequest;
+import com.corehive.backend.dto.UpdateSurveyDTO;
 import com.corehive.backend.model.FeedbackSurvey;
 import com.corehive.backend.model.FeedbackSurveyResponse;
 import com.corehive.backend.service.FeedbackSurveyService;
@@ -82,6 +83,31 @@ public class FeedbackSurveyController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    //get question for relevant survey
+    @GetMapping("/{surveyId}/questions")
+    public ResponseEntity<?> getSurveyQuestions(@PathVariable Long surveyId) {
+        try {
+            return ResponseEntity.ok(service.getSurveyQuestions(surveyId));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //update survey question
+    @PutMapping("/{surveyId}/questions")
+    public ResponseEntity<?> updateSurveyQuestions(
+            @PathVariable Long surveyId,
+            @RequestBody UpdateSurveyDTO dto
+    ) {
+        try {
+            return ResponseEntity.ok(service.updateSurveyQuestions(surveyId, dto));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
 
 
 }

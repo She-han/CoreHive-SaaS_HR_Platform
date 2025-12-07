@@ -1,12 +1,11 @@
 package com.corehive.backend.service;
 
-import com.corehive.backend.dto.CreateQuestionRequest;
-import com.corehive.backend.dto.CreateSurveyRequest;
-import com.corehive.backend.dto.FeedbackSurveyResponseDTO;
+import com.corehive.backend.dto.*;
 import com.corehive.backend.model.*;
 import com.corehive.backend.repository.FeedbackSurveyQuestionRepository;
 import com.corehive.backend.repository.FeedbackSurveyRepository;
 import com.corehive.backend.repository.FeedbackSurveyResponseRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -14,7 +13,6 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -193,6 +191,52 @@ public class FeedbackSurveyService {
             );
         }
     }
+
+    //get question for one survey
+    public List<FeedbackSurveyQuestion> getSurveyQuestions(Long surveyId) {
+        FeedbackSurvey survey = surveyRepo.findById(surveyId)
+                .orElseThrow(() -> new RuntimeException("Survey not found"));
+        return survey.getQuestions();
+    }
+
+    //Update the question list
+    @Transactional
+    public FeedbackSurvey updateSurveyQuestions(Long surveyId, UpdateSurveyDTO dto)
+            throws JsonProcessingException {
+
+        FeedbackSurvey survey = surveyRepo.findById(surveyId)
+                .orElseThrow(() -> new RuntimeException("Survey not found"));
+
+        List<FeedbackSurveyQuestion> existingQuestions = survey.getQuestions();
+
+        // REMOVE ALL OLD QUESTIONS (orphanRemoval will delete them)
+        existingQuestions.clear();
+
+        int pos = 1;
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (UpdateQuestionDTO q : dto.getQuestions()) {
+
+            String optionsJson = (q.getOptions() != null)
+                    ? mapper.writeValueAsString(q.getOptions())
+                    : null;
+
+            FeedbackSurveyQuestion question = FeedbackSurveyQuestion.builder()
+                    .id(q.getId())   // JPA updates if ID exists, creates new if null
+                    .survey(survey)
+                    .questionText(q.getQuestionText())
+                    .questionType(QuestionType.valueOf(q.getQuestionType()))
+                    .options(optionsJson)
+                    .position(pos++)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            existingQuestions.add(question); // IMPORTANT: modify original list
+        }
+
+        return surveyRepo.save(survey);
+    }
+
 
 
 

@@ -35,6 +35,7 @@ import FeedBackManagement from './pages/hrstaff/feedBackManagement/FeedBackManag
 import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
 import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
 import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
+import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSurveyQuestions';
 
 /* // Admin Pages
  import AdminApprovals from './pages/admin/AdminApprovals';
@@ -283,8 +284,7 @@ const HRStaffRoutes = () => {
         <Route path="feedback/create" element={<CreateSurvey />} />
         <Route path="feedback/:id/questions" element={<ViewSurveyQuestions />} />
         <Route path="feedback/:id/responses" element={<ViewResponsesWithQuestions />} />
-
-
+        <Route path="feedback/:id/edit" element={<EditSurveyQuestions/>} />
       </Route>
     </Routes>
   );

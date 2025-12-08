@@ -461,7 +461,7 @@ const HomePage = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-8 ">
             {pricingPlans.map((plan, index) => (
               <Card 
                 key={index} 

@@ -3,7 +3,8 @@ import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
-import { Camera, RefreshCw, Check, User, X, AlertCircle, Loader2 } from "lucide-react";
+import * as designationApi from "../../../api/designationApi";
+import { Camera, RefreshCw, Check, User, X, AlertCircle, Loader2, Plus, ChevronDown } from "lucide-react";
 
 // ===== Face API =====
 const AI_SERVICE_URL = 'http://localhost:8001';
@@ -53,11 +54,17 @@ export default function EditEmployee() {
   const { id } = useParams();
   const navigate = useNavigate();
   const webcamRef = useRef(null);
+  const designationInputRef = useRef(null);
 
   const [employee, setEmployee] = useState(null);
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [organizationUuid, setOrganizationUuid] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Designation dropdown states
+  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
+  const [filteredDesignations, setFilteredDesignations] = useState([]);
   
   // Face states
   const [showFaceCapture, setShowFaceCapture] = useState(false);
@@ -121,6 +128,11 @@ export default function EditEmployee() {
         const deptRes = await apiClient.get("/org-admin/departments");
         setDepartments(deptRes.data.data || deptRes.data || []);
 
+        // Load designations
+        const designationRes = await designationApi.getAllDesignations();
+        setDesignations(designationRes.data || designationRes.data.data || []);
+        setFilteredDesignations(designationRes.data || designationRes.data.data || []);
+
       } catch (error) {
         console.error("Error loading data:", error);
         Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load employee data' });
@@ -132,9 +144,73 @@ export default function EditEmployee() {
     loadData();
   }, [id]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (designationInputRef.current && !designationInputRef.current.contains(event.target)) {
+        setShowDesignationDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle designation input change
+  const handleDesignationChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, designation: value });
+    
+    // Filter designations based on input
+    if (value.trim()) {
+      const filtered = designations.filter(d => 
+        d.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredDesignations(filtered);
+      setShowDesignationDropdown(true);
+    } else {
+      setFilteredDesignations(designations);
+      setShowDesignationDropdown(false);
+    }
+  };
+
+  // Select designation from dropdown
+  const selectDesignation = (designationName) => {
+    setFormData({ ...formData, designation: designationName });
+    setShowDesignationDropdown(false);
+  };
+
+  // Create new designation
+  const createNewDesignation = async (name) => {
+    try {
+      const response = await designationApi.createDesignation({ name: name.trim() });
+      if (response.success) {
+        const newDesignation = response.data;
+        setDesignations([...designations, newDesignation]);
+        setFormData({ ...formData, designation: newDesignation.name });
+        setShowDesignationDropdown(false);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Designation Added!',
+          text: `"${newDesignation.name}" designation added successfully.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error("Error creating designation:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Failed to add designation',
+      });
+    }
   };
 
   const capturePhoto = () => {
@@ -160,6 +236,15 @@ export default function EditEmployee() {
     setIsSubmitting(true);
 
     try {
+      // Check if designation exists, if not create it first
+      const designationExists = designations.some(
+        d => d.name.toLowerCase() === formData.designation.toLowerCase()
+      );
+
+      if (!designationExists && formData.designation.trim()) {
+        await createNewDesignation(formData.designation);
+      }
+
       // Prepare data matching backend DTO
       const updateData = {
         organizationUuid: organizationUuid,
@@ -255,9 +340,57 @@ export default function EditEmployee() {
               <Field label="Last Name">
                 <input name="lastName" value={formData.lastName} onChange={handleChange} className="input-box" required />
               </Field>
+              
+              {/* DESIGNATION FIELD WITH AUTOCOMPLETE */}
               <Field label="Designation">
-                <input name="designation" value={formData.designation} onChange={handleChange} className="input-box" required />
+                <div className="relative" ref={designationInputRef}>
+                  <input
+                    name="designation"
+                    placeholder="Type or select designation"
+                    value={formData.designation}
+                    onChange={handleDesignationChange}
+                    onFocus={() => setShowDesignationDropdown(true)}
+                    className="input-box pr-10"
+                    required
+                    autoComplete="off"
+                  />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  
+                  {/* Dropdown */}
+                  {showDesignationDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredDesignations.length > 0 ? (
+                        filteredDesignations.map((d) => (
+                          <div
+                            key={d.id}
+                            onClick={() => selectDesignation(d.name)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700 flex items-center gap-2"
+                          >
+                            <User className="w-4 h-4 text-gray-400" />
+                            {d.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 text-sm">
+                          No designations found
+                        </div>
+                      )}
+                      
+                      {/* Add new option */}
+                      {formData.designation.trim() && !designations.some(d => d.name.toLowerCase() === formData.designation.toLowerCase()) && (
+                        <div
+                          onClick={() => createNewDesignation(formData.designation)}
+                          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add "{formData.designation}" as new designation
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </Field>
+              
               <Field label="Department">
                 <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
                   <option value="">Select Department</option>

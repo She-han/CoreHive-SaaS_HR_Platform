@@ -4,7 +4,8 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
-import { Camera, RefreshCw, Check, User, X } from "lucide-react";
+import * as designationApi from "../../../api/designationApi";  // ADD THIS
+import { Camera, RefreshCw, Check, User, X, Plus, ChevronDown } from "lucide-react";  // ADD Plus, ChevronDown
 
 // ===== Face Registration API =====
 const AI_SERVICE_URL = 'http://localhost:8001';
@@ -56,6 +57,10 @@ export default function AddEmployee() {
   });
 
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);  // ADD THIS
+  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);  // ADD THIS
+  const [filteredDesignations, setFilteredDesignations] = useState([]);  // ADD THIS
+  
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
@@ -63,6 +68,7 @@ export default function AddEmployee() {
 
   // Get organization UUID from logged-in user
   const [organizationUuid, setOrganizationUuid] = useState(null);
+  const designationInputRef = useRef(null);  // ADD THIS
  
   useEffect(() => {
     // Load organization UUID
@@ -73,14 +79,74 @@ export default function AddEmployee() {
     apiClient.get("/org-admin/departments")
       .then(res => {
         console.log("Departments loaded:", res.data);
-        // Extract from ApiResponse wrapper
         setDepartments(res.data.data || res.data);
       })
       .catch(err => console.error("Error loading departments", err));
+    
+    // Load designations - ADD THIS
+    designationApi.getAllDesignations()
+      .then(res => {
+        console.log("Designations loaded:", res.data);
+        setDesignations(res.data.data || res.data);
+        setFilteredDesignations(res.data.data || res.data);
+      })
+      .catch(err => console.error("Error loading designations", err));
   }, []);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  // ADD THIS - Handle designation input change
+  const handleDesignationChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, designation: value });
+    
+    // Filter designations based on input
+    if (value.trim()) {
+      const filtered = designations.filter(d => 
+        d.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredDesignations(filtered);
+      setShowDesignationDropdown(true);
+    } else {
+      setFilteredDesignations(designations);
+      setShowDesignationDropdown(false);
+    }
+  };
+
+  // ADD THIS - Select designation from dropdown
+  const selectDesignation = (designationName) => {
+    setFormData({ ...formData, designation: designationName });
+    setShowDesignationDropdown(false);
+  };
+
+  // ADD THIS - Create new designation
+  const createNewDesignation = async (name) => {
+    try {
+      const response = await designationApi.createDesignation({ name: name.trim() });
+      if (response.success) {
+        const newDesignation = response.data;
+        setDesignations([...designations, newDesignation]);
+        setFormData({ ...formData, designation: newDesignation.name });
+        setShowDesignationDropdown(false);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Designation added!',
+          text: `"${newDesignation.name}" designation added successfully.`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error("Error creating designation:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: 'Designation adding failed. Please try again.',
+      });
+    }
+  };
 
   // Capture face photo
   const capturePhoto = () => {
@@ -113,10 +179,19 @@ export default function AddEmployee() {
     setIsSubmitting(true);
 
     try {
+      // Check if designation exists, if not create it first
+      const designationExists = designations.some(
+        d => d.name.toLowerCase() === formData.designation.toLowerCase()
+      );
+
+      if (!designationExists && formData.designation.trim()) {
+        await createNewDesignation(formData.designation);
+      }
+
       // Step 1: Create employee - use apiClient (adds auth token) and include organizationUuid
       const employeeData = {
         ...formData,
-        organizationUuid: organizationUuid  // Add organization UUID
+        organizationUuid: organizationUuid
       };
       
       const response = await apiClient.post("/employees", employeeData);
@@ -133,7 +208,6 @@ export default function AddEmployee() {
           console.log("Face registered successfully!");
         } catch (faceError) {
           console.error("Face registration failed:", faceError);
-          // Don't fail the whole process, just warn
           Swal.fire({
             icon: 'warning',
             title: 'Employee Added',
@@ -201,9 +275,58 @@ export default function AddEmployee() {
               <Field label="Last Name">
                 <input name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} className="input-box" required />
               </Field>
+              
+              {/* UPDATED DESIGNATION FIELD - REPLACE THE OLD ONE */}
               <Field label="Designation">
-                <input name="designation" placeholder="Software Engineer" value={formData.designation} onChange={handleChange} className="input-box" required />
+                <div className="relative">
+                  <input
+                    ref={designationInputRef}
+                    name="designation"
+                    placeholder="Type or select designation"
+                    value={formData.designation}
+                    onChange={handleDesignationChange}
+                    onFocus={() => setShowDesignationDropdown(true)}
+                    className="input-box pr-10"
+                    required
+                    autoComplete="off"
+                  />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  
+                  {/* Dropdown */}
+                  {showDesignationDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredDesignations.length > 0 ? (
+                        filteredDesignations.map((d) => (
+                          <div
+                            key={d.id}
+                            onClick={() => selectDesignation(d.name)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700 flex items-center gap-2"
+                          >
+                            <User className="w-4 h-4 text-gray-400" />
+                            {d.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 text-sm">
+                          No designations found
+                        </div>
+                      )}
+                      
+                      {/* Add new option */}
+                      {formData.designation.trim() && !designations.some(d => d.name.toLowerCase() === formData.designation.toLowerCase()) && (
+                        <div
+                          onClick={() => createNewDesignation(formData.designation)}
+                          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add "{formData.designation}" as new designation
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </Field>
+              
               <Field label="Department">
                 <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
                   <option value="">Select Department</option>

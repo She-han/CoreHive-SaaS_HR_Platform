@@ -30,3 +30,4 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
      */
     List<Department> findByOrganizationUuidAndIsActiveTrue(String organizationUuid);
 }
+

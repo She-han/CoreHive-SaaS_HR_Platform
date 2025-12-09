@@ -35,6 +35,7 @@ import Organizations from './pages/admin/Organizations';
 import OrgDashboard from './pages/org_admin/OrgDashboard';
 import HRStaffManagement from './pages/org_admin/HRStaffManagement';
 import DepartmentManagement from './pages/org_admin/DepartmentManagement';
+import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 
 // HR Staff pages
 import HRDashboard from './pages/hrstaff/HRDashboard';
@@ -56,6 +57,7 @@ import PayslipList from './pages/hrstaff/payroll/PayslipList';
 import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
 import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
 import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
+
 
 
 /* // Error Pages
@@ -257,6 +259,7 @@ const OrgAdminRoutes = () => {
       <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
+     <Route path="designationmanagement" element={<DesignationManagement />} />
      <Route path="modules" element={<ModuleConfiguration />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />

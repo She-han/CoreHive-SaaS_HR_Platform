@@ -78,6 +78,9 @@ public class SecurityConfig {
                         // Departments - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/org-admin/departments", "/api/org-admin/departments/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
 
+                        // Designations - allow both ORG_ADMIN and HR_STAFF
+                        .requestMatchers("/api/org-admin/designations", "/api/org-admin/designations/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+
                         // ORG_ADMIN endpoints - ADD THIS SECTION
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
                         

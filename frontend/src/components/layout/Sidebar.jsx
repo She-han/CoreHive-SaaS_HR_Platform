@@ -154,6 +154,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/org_admin/departmentmanagement')
           },
           {
+            name: 'Designation Management',
+            icon: UsersIcon,
+            path: '/org_admin/designationmanagement',
+            current: location.pathname.startsWith('/org_admin/designationmanagement')
+          },
+          {
             name: 'Module Configuration',
             icon: UsersIcon,
             path: '/org_admin/modules',

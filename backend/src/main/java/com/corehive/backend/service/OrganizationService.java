@@ -130,7 +130,7 @@ public class OrganizationService {
                     AppUser savedUser = appUserRepository.save(adminUser);
                     activatedCount++;
                     try {
-                        emailService.sendPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
+                        emailService.sendOrgPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
                     } catch (Exception e) {
                         System.err.println("Failed to send email: " + e.getMessage());
                     }

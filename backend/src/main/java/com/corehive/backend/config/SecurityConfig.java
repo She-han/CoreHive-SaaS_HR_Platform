@@ -83,7 +83,9 @@ public class SecurityConfig {
 
                         // ORG_ADMIN endpoints - ADD THIS SECTION
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
-                        
+
+                        .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+
                         // Organization-level endpoints
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
                         .requestMatchers("/api/employee/").hasRole("EMPLOYEE")

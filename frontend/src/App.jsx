@@ -34,6 +34,7 @@ import Organizations from './pages/admin/Organizations';
 // Organization admin Pages
 import OrgDashboard from './pages/org_admin/OrgDashboard';
 import HRStaffManagement from './pages/org_admin/HRStaffManagement';
+import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
 import DepartmentManagement from './pages/org_admin/DepartmentManagement';
 import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 
@@ -42,21 +43,18 @@ import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
 import LeaveManagement from './pages/hrstaff/LeaveManagement';
-import HiringManagement from './pages/hrstaff/HiringManagement';
 import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
-import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
-import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
-import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
-import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
-import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
 import PayrollDashboard from './pages/hrstaff/payroll/PayrollDashboard';
 import SalaryStructure from './pages/hrstaff/payroll/SalaryStructure';
 import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
 import PayslipList from './pages/hrstaff/payroll/PayslipList';
 import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
-import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
+
+import HiringManagement from './pages/hrstaff/HiringManagement';
+import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
 import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
+import QRAttendancePage from './pages/AttendaceManagement/QRAttendancePage';
 
 
 
@@ -239,11 +237,11 @@ const SystemAdminRoutes = () => {
       <Route path='billing' element={<Billing />} />
       <Route path='users' element={<Users />} />
       <Route path='organizations' element={<Organizations />} />
- {/*      <Route path="organizations" element={<AdminOrganizations />} />
-      <Route path="organizations/:id" element={<AdminOrganizationDetail />} />
+      <Route path="" element={<Navigate to="dashboard" replace />} />
+ {/*  
       <Route path="reports" element={<AdminReports />} />
       <Route path="settings" element={<AdminSettings />} /> 
-      <Route path="" element={<Navigate to="dashboard" replace />} /> */}
+       */}
     </Routes>
   );
 };
@@ -261,9 +259,10 @@ const OrgAdminRoutes = () => {
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
      <Route path="designationmanagement" element={<DesignationManagement />} />
      <Route path="modules" element={<ModuleConfiguration />} />
+     <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />
-      <Route path="" element={<Navigate to="dashboard" replace />} /> */}
+       */}
     </Routes>
   );
 };
@@ -282,21 +281,22 @@ const HRStaffRoutes = () => {
         <Route path="dashboard" element={<HRDashboard />} />
         {/* Add more HR pages here later */}
         <Route path="EmployeeManagement" element={<EmployeeManagement />} /> 
-        <Route path="HiringManagement" element={<HiringManagement />} /> 
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
-        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
-        <Route path="addemployee" element={<AddEmployee />} />
-        <Route path="editemployee/:id" element={<EditeEmployee />} />
-        <Route path="addjobform" element={<AddJobForm />} />
-        <Route path="editejobposting/:id" element={<EditeJobPosting />} />
+   
         <Route path="PayrollDashboard" element={<PayrollDashboard />} />
         <Route path="payroll/salary-structure" element={<SalaryStructure />} />
         <Route path="payroll/payroll-run" element={<PayrollRun />} />
         <Route path="payroll/payslips" element={<PayslipList />} />
         <Route path="payroll/reports" element={<PayrollReports />} />
-        <Route path="attendance/face" element={<FaceAttendancePage />} />
+
+        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
+        <Route path="HiringManagement" element={<HiringManagement />} /> 
+        <Route path="faceattendance" element={<FaceAttendancePage />} />
+        <Route path="qrattendance" element={<QRAttendancePage />} />
+        
+        <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
   );

@@ -465,3 +465,4 @@ const ModuleConfiguration = () => {
 };
 
 export default ModuleConfiguration;
+

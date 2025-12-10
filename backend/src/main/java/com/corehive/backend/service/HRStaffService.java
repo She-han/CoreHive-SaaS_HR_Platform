@@ -199,7 +199,7 @@ public class HRStaffService {
             log.info("AppUser created with ID: {}", savedUser.getId());
 
             try {
-                emailService.sendUserPasswordEmail(request.getEmail(), tempPassword, organization.getName());
+                emailService.sendHRPasswordEmail(request.getEmail(), tempPassword, organization.getName());
             } catch (Exception e) {
                 System.err.println("Failed to send email: " + e.getMessage());
             }

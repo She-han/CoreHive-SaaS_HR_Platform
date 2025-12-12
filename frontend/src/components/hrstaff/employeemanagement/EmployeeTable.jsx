@@ -5,7 +5,7 @@ import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
-import getAllEmployees from "../../../api/employeeService"
+ import getAllEmployees from "../../../api/employeeService"
 
 const MySwal = withReactContent(Swal);
 
@@ -140,57 +140,69 @@ export default function EmployeeTable({ search, filterBy }) {
           </thead>
 
           <tbody>
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp) => (
-                <tr
-                  key={emp.id}
-                  className="border-b hover:bg-[#F1FDF9] transition cursor-pointer"
-                  onClick={() => handleRowClick(emp)}
-                >
-                  <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
-                  <td className="p-3">{emp.firstName} {emp.lastName}</td>
-                  <td className="p-3">{emp.designation}</td>
-                  <td className="p-3">{emp.department?.name}</td>
-                  <td className="p-3">{emp.phone}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        emp.isActive
-                          ? "bg-[#1ED292]/10 text-[#1ED292]"
-                          : "bg-red-100 text-red-500"
-                      }`}
-                    >
-                      {emp.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td
-                    className="p-3 flex justify-center gap-4"
-                  >
-                    <Link to={`/hr_staff/editemployee/${emp.id}`} className="text-[#05668D] hover:text-[#02C39A]"
-                     onClick={(e) => e.stopPropagation()}
-                    >
-                      <FaEdit />
-                    </Link>
-                   <button
-                className="text-red-500 hover:text-red-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(emp.id);
-                }}
-              >
-                <FaTrash />
-              </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="text-center p-5 text-gray-500">
-                  No employees found.
-                </td>
-              </tr>
-            )}
-          </tbody>
+  {loading ? (
+    <tr>
+      <td colSpan="7" className="text-center p-5">
+        <div className="flex justify-center">
+          <div className="animate-spin h-8 w-8 border-4 border-[#02C39A] border-t-transparent rounded-full"></div>
+        </div>
+        <p className="text-gray-500 mt-2">Loading employees...</p>
+      </td>
+    </tr>
+  ) : filteredEmployees.length > 0 ? (
+    filteredEmployees.map((emp) => (
+      <tr
+        key={emp.id}
+        className="border-b hover:bg-[#F1FDF9] transition cursor-pointer"
+        onClick={() => handleRowClick(emp)}
+      >
+        <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
+        <td className="p-3">{emp.firstName} {emp.lastName}</td>
+        <td className="p-3">{emp.designation}</td>
+        <td className="p-3">{emp.department?.name}</td>
+        <td className="p-3">{emp.phone}</td>
+        <td className="p-3">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              emp.isActive
+                ? "bg-[#1ED292]/10 text-[#1ED292]"
+                : "bg-red-100 text-red-500"
+            }`}
+          >
+            {emp.isActive ? "Active" : "Inactive"}
+          </span>
+        </td>
+
+        <td className="p-3 flex justify-center gap-4">
+          <Link
+            to={`/hr_staff/editemployee/${emp.id}`}
+            className="text-[#05668D] hover:text-[#02C39A]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <FaEdit />
+          </Link>
+
+          <button
+            className="text-red-500 hover:text-red-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(emp.id);
+            }}
+          >
+            <FaTrash />
+          </button>
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="7" className="text-center p-5 text-gray-500">
+        No employees found.
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
 

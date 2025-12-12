@@ -62,7 +62,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
-                        .requestMatchers("/api/employees").permitAll()
+                        .requestMatchers("/api/orgs/{orgUuid}/employees").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys/**").permitAll()

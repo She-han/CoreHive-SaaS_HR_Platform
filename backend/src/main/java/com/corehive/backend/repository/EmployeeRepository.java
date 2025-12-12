@@ -1,5 +1,6 @@
 package com.corehive.backend.repository;
 
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

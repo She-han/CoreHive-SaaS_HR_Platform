@@ -1,8 +1,11 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
+import com.corehive.backend.util.StandardResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,8 +27,11 @@ public class EmployeeController {
     //GET ALL EMPLOYEES//
     //************************************************//
     @GetMapping
-    public List<Employee> getAll(@PathVariable String orgUuid) {
-        return employeeService.getAllEmployees(orgUuid);
+    public ResponseEntity<StandardResponse> getAll(@PathVariable String orgUuid) {
+        List<EmployeeResponseDTO> allEmployees = employeeService.getAllEmployees(orgUuid);
+        return new ResponseEntity<StandardResponse>(
+                new StandardResponse(200 , "Success" , allEmployees) , HttpStatus.OK
+        );
     }
 
     @GetMapping("/{id}")

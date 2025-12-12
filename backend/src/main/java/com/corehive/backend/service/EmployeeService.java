@@ -1,12 +1,14 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,8 +21,9 @@ public class EmployeeService {
         this.employeeRepository = employeeRepository;
     }
 
-    public List<Employee> getAllEmployees(String orgUuid) {
-        return employeeRepository.findAllByorganizationUuidEquals(orgUuid);
+    public List<EmployeeResponseDTO> getAllEmployees(String orgUuid) {
+        List<Employee> getAllEmployees = employeeRepository.findAllByorganizationUuidEquals(orgUuid);
+        List<EmployeeResponseDTO> employeeList = new ArrayList<>();
     }
 
     public Optional<Employee> getEmployeeById(Long id) {

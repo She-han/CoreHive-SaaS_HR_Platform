@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +22,7 @@ public class ModuleConfigController {
      * Get current module configuration - ORG_ADMIN only
      * Endpoint: GET /api/org-admin/modules
      */
+
     @GetMapping("/api/org-admin/modules")
     @PreAuthorize("hasRole('ORG_ADMIN')")
     public ResponseEntity<ApiResponse<ModuleConfigResponse>> getModuleConfig(

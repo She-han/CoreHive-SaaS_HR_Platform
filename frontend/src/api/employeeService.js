@@ -6,7 +6,7 @@ const BASE =  "http://localhost:8080/api";
 export default async function getAllEmployees(orgUuid) {
   return axios
     .get(`${BASE}/orgs/${orgUuid}/employees`)
-    .then((res) => res.data)
+    .then((res) => res.data.data)
     .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });

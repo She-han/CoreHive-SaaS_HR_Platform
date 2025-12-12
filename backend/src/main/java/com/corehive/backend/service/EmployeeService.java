@@ -4,6 +4,8 @@ import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.util.mappers.EmployeeMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,15 +17,22 @@ import java.util.Optional;
 @Service
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
+    private EmployeeMapper employeeMapper;
 
-
-    public EmployeeService(EmployeeRepository employeeRepository) {
+    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper) {
         this.employeeRepository = employeeRepository;
+        this.employeeMapper = employeeMapper;
     }
 
     public List<EmployeeResponseDTO> getAllEmployees(String orgUuid) {
         List<Employee> getAllEmployees = employeeRepository.findAllByorganizationUuidEquals(orgUuid);
-        List<EmployeeResponseDTO> employeeList = new ArrayList<>();
+        if(getAllEmployees.size()>0){
+            List<EmployeeResponseDTO> employeeResponseDTOS = employeeMapper.EntityToDtos(getAllEmployees);
+            return employeeResponseDTOS;
+        }else{
+            throw new RuntimeException("Employees are not found");
+        }
+
     }
 
     public Optional<Employee> getEmployeeById(Long id) {

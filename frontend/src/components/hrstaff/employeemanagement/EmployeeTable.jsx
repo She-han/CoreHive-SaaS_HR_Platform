@@ -5,6 +5,7 @@ import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
+import getAllEmployees from "../../../api/employeeService"
 
 const MySwal = withReactContent(Swal);
 
@@ -12,12 +13,16 @@ export default function EmployeeTable({ search, filterBy }) {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading , setLoading] = useState(false);
+   const orgUuid = "org-uuid-001";
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/employees")
-      .then((res) => setEmployees(res.data))
-      .catch(console.error);
+  
+   useEffect(() => {
+    setLoading(true);
+    getAllEmployees(orgUuid)
+      .then((data) => setEmployees(data || []))
+      .catch((err) => console.error("Error for getting employees", err))
+      .finally(() => setLoading(false));
   }, []);
 
   //Filtering Logic

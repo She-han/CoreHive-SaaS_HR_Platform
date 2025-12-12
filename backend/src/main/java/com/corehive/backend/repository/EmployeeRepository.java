@@ -114,4 +114,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
            "AND e.employeeCode LIKE 'EMP%' " +
            "AND LENGTH(e.employeeCode) > 3")
     Integer findNextEmployeeNumber(@Param("organizationUuid") String organizationUuid);
+
+    List<Employee> findAllByorganizationUuidEquals(String orgUuid);
 }

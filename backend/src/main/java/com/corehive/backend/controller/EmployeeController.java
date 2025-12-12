@@ -11,7 +11,7 @@ import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/api/employees")
+@RequestMapping("/api/orgs/{orgUuid}/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -20,9 +20,12 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
+    //************************************************//
+    //GET ALL EMPLOYEES//
+    //************************************************//
     @GetMapping
-    public List<Employee> getAll() {
-        return employeeService.getAllEmployees();
+    public List<Employee> getAll(@PathVariable String orgUuid) {
+        return employeeService.getAllEmployees(orgUuid);
     }
 
     @GetMapping("/{id}")

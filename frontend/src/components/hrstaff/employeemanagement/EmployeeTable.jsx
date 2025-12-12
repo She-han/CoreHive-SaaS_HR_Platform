@@ -1,4 +1,4 @@
-import { FaEdit, FaTrash } from "react-icons/fa";
+import { FaEdit, FaBan } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import EmployeeModal from "./EmployeeModal";
@@ -59,14 +59,15 @@ export default function EmployeeTable({ search, filterBy }) {
   });
 
 
-// Inside your React component
 const handleDeactivate = async (id) => {
-   console.log("orgUuid:", orgUuid, "employeeId:", id);
-  try {
-    // Call the service function to deactivate the employee
-    await deactivateEmployee(orgUuid, id);
+  // Show confirmation dialog
+  const confirmed = window.confirm("Are you sure you want to deactivate this employee?");
+  if (!confirmed) return; // exit if user cancels
 
-    // Show a success message
+  console.log("orgUuid:", orgUuid, "employeeId:", id);
+
+  try {
+    await deactivateEmployee(orgUuid, id);
     alert("Employee deactivated successfully!");
 
     // Update your state so the UI reflects the change
@@ -81,6 +82,7 @@ const handleDeactivate = async (id) => {
     alert("Failed to deactivate employee");
   }
 };
+
 
 
   const handleRowClick = (employee) => {
@@ -155,14 +157,15 @@ const handleDeactivate = async (id) => {
           </Link>
 
           <button
-            className="text-red-500 hover:text-red-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeactivate(emp.id);
-            }}
-          >
-            <FaTrash />
-          </button>
+  className="text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded"
+  onClick={(e) => {
+    e.stopPropagation();
+    handleDeactivate(emp.id);
+  }}
+>
+  <FaBan /> Deactivate
+</button>
+
         </td>
       </tr>
     ))

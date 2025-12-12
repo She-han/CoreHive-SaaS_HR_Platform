@@ -13,19 +13,25 @@ export default function EmployeeTable({ search, filterBy }) {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading , setLoading] = useState(false);
-   const orgUuid = "org-uuid-001";
+  const orgUuid = "org-uuid-001";
+
+  //For pagenated
+  const [page, setPage] = useState(0);       // current page
+  const [size, setSize] = useState(9);      // items per page
+  const [totalPages, setTotalPages] = useState(0);  
 
   
    useEffect(() => {
     setLoading(true);
-    getAllEmployees(orgUuid , 0 , 8)
+    getAllEmployees(orgUuid , page , size)
       .then((data) => {
         console.log("API returned:", data); // 👈 ADD THIS
       setEmployees(data?.items || []);
+      setTotalPages(data?.totalPages || 0);
       })
       .catch((err) => console.error("Error for getting employees", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, size]);//refetch whenever page or size changes
 
   //Filtering Logic
   const filteredEmployees = employees.filter((emp) => {
@@ -95,12 +101,11 @@ const handleDeactivate = async (id) => {
   };
 
   return (
-    <div className="flex flex-col w-full h-[80vh] border rounded-lg overflow-hidden bg-white shadow-sm">
-      {/* Scrollable Table Body */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#02C39A]/50 scrollbar-track-gray-100">
-        <table className="w-full text-left border-collapse">
+    <div className="p-4 bg-white shadow-lg rounded-lg border border-gray-200">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
           {/* Sticky Header */}
-          <thead className="bg-[#F1FDF9] text-[#0C397A] sticky top-0 z-10 shadow-sm">
+          <thead className="bg-[#F1FDF9] text-[#0C397A] font-semibold">
             <tr>
               <th className="p-3">Emp Code</th>
               <th className="p-3">Name</th>
@@ -112,7 +117,7 @@ const handleDeactivate = async (id) => {
             </tr>
           </thead>
 
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
   {loading ? (
     <tr>
       <td colSpan="7" className="text-center p-5">
@@ -126,7 +131,7 @@ const handleDeactivate = async (id) => {
     filteredEmployees.map((emp) => (
       <tr
         key={emp.id}
-        className="border-b hover:bg-[#F1FDF9] transition cursor-pointer"
+        className="hover:bg-[#E6FFFA] transition cursor-pointer"
         onClick={() => handleRowClick(emp)}
       >
         <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
@@ -134,7 +139,7 @@ const handleDeactivate = async (id) => {
         <td className="p-3">{emp.designation}</td>
         <td className="p-3">{emp.department?.name}</td>
         <td className="p-3">{emp.phone}</td>
-        <td className="p-3">
+        <td className="px-4 py-2">
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold ${
               emp.isActive
@@ -146,17 +151,17 @@ const handleDeactivate = async (id) => {
           </span>
         </td>
 
-        <td className="p-3 flex justify-center gap-4">
+        <td className="px-4 py-2 flex justify-center gap-2">
           <Link
             to={`/hr_staff/editemployee/${emp.id}`}
-            className="text-[#05668D] hover:text-[#02C39A]"
+            className="text-[#05668D] hover:text-[#02C39A] transition"
             onClick={(e) => e.stopPropagation()}
           >
             <FaEdit />
           </Link>
 
           <button
-  className="text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded"
+  className="text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded border border-red-200 hover:border-red-400 transition"
   onClick={(e) => {
     e.stopPropagation();
     handleDeactivate(emp.id);
@@ -186,6 +191,43 @@ const handleDeactivate = async (id) => {
         isOpen={isModalOpen}
         onClose={closeModal}
       />
+      {/* Pagination Controls */}
+<div className="flex justify-between items-center mt-4">
+  <div>
+    <button
+      className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+      onClick={() => setPage(page - 1)}
+      disabled={page === 0}
+    >
+      Previous
+    </button>
+  </div>
+
+   <div className="flex gap-2">
+    {Array.from({ length: totalPages }).map((_, idx) => (
+      <button
+        key={idx}
+        className={`px-3 py-1 rounded ${
+          idx === page ? "bg-[#02C39A] text-white" : "bg-gray-100 hover:bg-gray-200"
+        }`}
+        onClick={() => setPage(idx)}
+      >
+        {idx + 1}
+      </button>
+    ))}
+  </div>
+
+  <div>
+    <button
+      className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+      onClick={() => setPage(page + 1)}
+      disabled={page + 1 === totalPages}
+    >
+      Next
+    </button>
+  </div>
+</div>
+
     </div>
   );
 }

@@ -34,25 +34,6 @@ public class EmployeeController {
         );
     }
 
-    @GetMapping("/{id}")
-    public Employee getById(@PathVariable Long id) {
-        return employeeService.getEmployeeById(id).orElse(null);
-    }
-
-    //************************************************//
-    //DELETE ONE EMPLOYEE//
-    //************************************************//
-    @DeleteMapping("/{id}")
-    public ResponseEntity<StandardResponse> deleteEmployee(
-            @PathVariable String orgUuid,
-            @PathVariable Long id) {
-        employeeService.deleteEmployee(orgUuid, id);
-        return new ResponseEntity<>(
-                new StandardResponse(200, "Employee deleted successfully", null),
-                HttpStatus.OK
-        );
-    }
-
     //************************************************//
     //MAKE DEACTIVATE EMPLOYEE//
     //************************************************//
@@ -65,6 +46,25 @@ public class EmployeeController {
                 HttpStatus.OK
         );
     }
+
+    @GetMapping("/{id}")
+    public Employee getById(@PathVariable Long id) {
+        return employeeService.getEmployeeById(id).orElse(null);
+    }
+
+//    //************************************************//
+//    //DELETE ONE EMPLOYEE//
+//    //************************************************//
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<StandardResponse> deleteEmployee(
+//            @PathVariable String orgUuid,
+//            @PathVariable Long id) {
+//        employeeService.deleteEmployee(orgUuid, id);
+//        return new ResponseEntity<>(
+//                new StandardResponse(200, "Employee deleted successfully", null),
+//                HttpStatus.OK
+//        );
+//    }
 
     @PostMapping
     public Employee createEmployee(@RequestBody EmployeeRequestDTO req) {

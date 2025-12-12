@@ -1,6 +1,5 @@
 import { FaEdit, FaBan } from "react-icons/fa";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";

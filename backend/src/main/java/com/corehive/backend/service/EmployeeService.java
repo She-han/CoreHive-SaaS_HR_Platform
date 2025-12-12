@@ -2,8 +2,9 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
-import com.corehive.backend.exception.EmployeeNotFoundException;
-import com.corehive.backend.exception.OrganizationNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
+import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
@@ -46,6 +47,38 @@ public class EmployeeService {
 
 
     }
+
+    //************************************************//
+    //MAKE DEACTIVATE EMPLOYEE//
+    //************************************************//
+    public void deactivateEmployee(String orgUuid, Long id) {
+        // Step 1: Find the employee
+        Optional<Employee> optionalEmployee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid);
+
+        // Step 2: Check if employee exists
+        if (optionalEmployee.isPresent()) {
+            Employee employee = optionalEmployee.get();
+
+            // Throw exception if already inactive
+            if (!employee.getIsActive()) {
+                throw new EmployeeAlreadyInactiveException(
+                        "Employee with id " + id + " is already inactive."
+                );
+            }
+
+            // Deactivate employee
+            employee.setIsActive(false);
+            employeeRepository.save(employee);
+
+        } else {
+            // Throw exception if employee not found
+            throw new EmployeeNotFoundException(
+                    "Employee with id " + id + " not found in organization " + orgUuid
+            );
+        }
+    }
+
+
 
     //************************************************//
     //DELETE ONE EMPLOYEE//
@@ -132,17 +165,5 @@ public class EmployeeService {
         return employeeRepository.save(emp);
     }
 
-    //************************************************//
-    //MAKE DEACTIVATE EMPLOYEE//
-    //************************************************//
-    public void deactivateEmployee(String orgUuid, Long id) {
-        Employee employee = employeeRepository
-                .findByIdAndOrganizationUuid(id, orgUuid)
-                .orElseThrow(() -> new EmployeeNotFoundException(
-                        "Employee with id " + id + " not found in organization " + orgUuid));
-
-        employee.setIsActive(false);
-        employeeRepository.save(employee);
-    }
 
 }

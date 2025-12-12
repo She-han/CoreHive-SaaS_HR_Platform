@@ -1,4 +1,4 @@
-package com.corehive.backend.exception;
+package com.corehive.backend.exception.employeeCustomException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;

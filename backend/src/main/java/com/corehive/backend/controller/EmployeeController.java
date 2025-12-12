@@ -1,6 +1,7 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
@@ -27,10 +28,14 @@ public class EmployeeController {
     //GET ALL EMPLOYEES//
     //************************************************//
     @GetMapping
-    public ResponseEntity<StandardResponse> getAll(@PathVariable String orgUuid) {
-        List<EmployeeResponseDTO> allEmployees = employeeService.getAllEmployees(orgUuid);
+    public ResponseEntity<StandardResponse> getAll(
+            @PathVariable String orgUuid ,
+            @RequestParam(value = "page") int page ,
+            @RequestParam(value = "size") int size) {
+//        List<EmployeeResponseDTO> allEmployees = employeeService.getAllEmployees(orgUuid);
+        PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(orgUuid , page , size);
         return new ResponseEntity<StandardResponse>(
-                new StandardResponse(200, "Success", allEmployees), HttpStatus.OK
+                new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
         );
     }
 

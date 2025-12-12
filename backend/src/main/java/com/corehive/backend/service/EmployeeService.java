@@ -1,6 +1,7 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
@@ -8,6 +9,9 @@ import com.corehive.backend.exception.employeeCustomException.OrganizationNotFou
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,22 +32,30 @@ public class EmployeeService {
     //************************************************//
     //GET ALL EMPLOYEES//
     //************************************************//
-    public List<EmployeeResponseDTO> getAllEmployees(String orgUuid) {
+    public PaginatedResponseItemDTO getAllEmployeesWithPaginated(String orgUuid ,  int page, int size) {
         // 1. Validate the orgUuid first
         if (orgUuid == null || orgUuid.isBlank()) {
             throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
         }
 
-        // 2. Fetch employees
-        List<Employee> employees = employeeRepository.findAllByorganizationUuidEquals(orgUuid);
+        // 2. Create Pageable object
+        Pageable pageable = PageRequest.of(page, size);
 
-        // 3. Check if employees exist
-        if (employees.isEmpty()) {
-            throw new EmployeeNotFoundException("No employees found for organization: " + orgUuid);
-        }
+        // 3. Fetch employees
+        Page<Employee> employeePage = employeeRepository.findByOrganizationUuid(orgUuid, pageable);
 
-        // 4. Map entities to DTOs and return
-        return employeeMapper.EntityToDtos(employees);
+        // 5. Map entities to DTOs
+        List<EmployeeResponseDTO> employeeDTOs = employeeMapper.EntityToDtos(employeePage.getContent());
+
+        // 6. Build paginated response
+        PaginatedResponseItemDTO paginatedResponse = new PaginatedResponseItemDTO();
+        paginatedResponse.setItems(employeeDTOs);
+        paginatedResponse.setPage(page);
+        paginatedResponse.setSize(size);
+        paginatedResponse.setTotalItems(employeePage.getTotalElements());
+        paginatedResponse.setTotalPages(employeePage.getTotalPages());
+
+        return paginatedResponse;
 
 
     }

@@ -58,12 +58,13 @@ public class SecurityConfig {
                 // Request authorization rules
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints (can access without authentication)
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
-                        .requestMatchers("/api/orgs/{orgUuid}/employees").permitAll()
-                        .requestMatchers("/api/orgs/{orgUuid}/employees/{id}/deactivate").permitAll()
+                        .requestMatchers("/api/orgs/*/employees").permitAll()
+                        .requestMatchers("/api/orgs/*/employees/**").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys/**").permitAll()

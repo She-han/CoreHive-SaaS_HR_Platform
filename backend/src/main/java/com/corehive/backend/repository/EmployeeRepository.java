@@ -119,4 +119,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     List<Employee> findAllByorganizationUuidEquals(String orgUuid);
 
     Optional<Employee> findByIdAndOrganizationUuid(Long id, String orgUuid);
+
 }

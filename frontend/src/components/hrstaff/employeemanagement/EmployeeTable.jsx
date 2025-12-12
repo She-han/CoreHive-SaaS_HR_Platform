@@ -5,7 +5,7 @@ import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
- import getAllEmployees from "../../../api/employeeService"
+ import {getAllEmployees , deactivateEmployee} from "../../../api/employeeService"
 
 const MySwal = withReactContent(Swal);
 
@@ -58,61 +58,30 @@ export default function EmployeeTable({ search, filterBy }) {
     }
   });
 
-  const handleDelete = async (id) => {
-    const result = await MySwal.fire({
-      title: "Delete Employee?",
-      text: "This action cannot be undone!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it",
-      cancelButtonText: "Cancel",
-      background: "#FFFFFF",
-      color: "#333333",
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#02C39A",
-      iconColor: "#05668D",
-      customClass: {
-        popup: "rounded-2xl shadow-lg",
-        title: "font-semibold text-[#333333]",
-        confirmButton: "px-5 py-2 font-semibold rounded-lg",
-        cancelButton: "px-5 py-2 font-semibold rounded-lg",
-      },
-    });
 
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(`http://localhost:8080/api/employees/${id}`);
-        setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+// Inside your React component
+const handleDeactivate = async (id) => {
+   console.log("orgUuid:", orgUuid, "employeeId:", id);
+  try {
+    // Call the service function to deactivate the employee
+    await deactivateEmployee(orgUuid, id);
 
-        await MySwal.fire({
-          title: "Deleted!",
-          text: "The employee record has been removed.",
-          icon: "success",
-          confirmButtonColor: "#1ED292",
-          background: "#F1FDF9",
-          color: "#0C397A",
-          iconColor: "#1ED292",
-          customClass: {
-            popup: "rounded-2xl shadow-md",
-            title: "font-semibold",
-          },
-        });
-      } catch (error) {
-        await MySwal.fire({
-          title: "Error",
-          text: "Failed to delete employee. Please try again.",
-          icon: "error",
-          confirmButtonColor: "#d33",
-          background: "#FFFFFF",
-          color: "#333333",
-          iconColor: "#d33",
-          customClass: {
-            popup: "rounded-2xl shadow-md",
-          },
-        });
-      }
-    }
-  };
+    // Show a success message
+    alert("Employee deactivated successfully!");
+
+    // Update your state so the UI reflects the change
+    setEmployees((prevEmployees) =>
+      prevEmployees.map((emp) =>
+        emp.id === id ? { ...emp, isActive: false } : emp
+      )
+    );
+  } catch (error) {
+    // Handle errors
+    console.error("Error deactivating employee:", error);
+    alert("Failed to deactivate employee");
+  }
+};
+
 
   const handleRowClick = (employee) => {
     setSelectedEmployee(employee);
@@ -189,7 +158,7 @@ export default function EmployeeTable({ search, filterBy }) {
             className="text-red-500 hover:text-red-700"
             onClick={(e) => {
               e.stopPropagation();
-              handleDelete(emp.id);
+              handleDeactivate(emp.id);
             }}
           >
             <FaTrash />

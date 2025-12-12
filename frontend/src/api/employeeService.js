@@ -14,11 +14,14 @@ export  async function getAllEmployees(orgUuid) {
 
 
 //2)MARK AS DEACTIVE EMPLOYEE
-export  async function deactivateEmployee(orgUuid ,id) {
-  return axios
+export const deactivateEmployee = async (orgUuid, id) => {
+
+return axios 
     .put(`${BASE}/orgs/${orgUuid}/employees/${id}/deactivate`)
-    .then((res) => res.data.data)
-    .catch((err) => {
-      throw new Error(err.response?.data?.message || err.message);
+    .then((res)=>res.data.data)
+    .catch((err)=>{
+        throw new Error(err.response?.data?.message || err.message);
     });
-}
+
+};
+

@@ -30,7 +30,7 @@ public class EmployeeController {
     public ResponseEntity<StandardResponse> getAll(@PathVariable String orgUuid) {
         List<EmployeeResponseDTO> allEmployees = employeeService.getAllEmployees(orgUuid);
         return new ResponseEntity<StandardResponse>(
-                new StandardResponse(200 , "Success" , allEmployees) , HttpStatus.OK
+                new StandardResponse(200, "Success", allEmployees), HttpStatus.OK
         );
     }
 
@@ -39,14 +39,31 @@ public class EmployeeController {
         return employeeService.getEmployeeById(id).orElse(null);
     }
 
+    //************************************************//
+    //DELETE ONE EMPLOYEE//
+    //************************************************//
     @DeleteMapping("/{id}")
-    public String deleteEmployee(@PathVariable Long id) {
-        boolean deleted = employeeService.deleteEmployee(id);
-        if (deleted) {
-            return "Employee deleted"; // 204 No Content
-        } else {
-            return "Employee can't deleted"; // 404 Not Found
-        }
+    public ResponseEntity<StandardResponse> deleteEmployee(
+            @PathVariable String orgUuid,
+            @PathVariable Long id) {
+        employeeService.deleteEmployee(orgUuid, id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Employee deleted successfully", null),
+                HttpStatus.OK
+        );
+    }
+
+    //************************************************//
+    //MAKE DEACTIVATE EMPLOYEE//
+    //************************************************//
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<StandardResponse> deactivateEmployee(@PathVariable String orgUuid,
+                                                               @PathVariable Long id) {
+        employeeService.deactivateEmployee(orgUuid , id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Employee marked as inactive", null),
+                HttpStatus.OK
+        );
     }
 
     @PostMapping
@@ -65,7 +82,6 @@ public class EmployeeController {
 
         return ResponseEntity.ok(updated);
     }
-
 
 
 }

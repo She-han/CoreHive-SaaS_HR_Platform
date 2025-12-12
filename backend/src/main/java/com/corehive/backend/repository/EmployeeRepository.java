@@ -117,4 +117,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Integer findNextEmployeeNumber(@Param("organizationUuid") String organizationUuid);
 
     List<Employee> findAllByorganizationUuidEquals(String orgUuid);
+
+    Optional<Employee> findByIdAndOrganizationUuid(Long id, String orgUuid);
 }

@@ -7,12 +7,10 @@ import com.corehive.backend.exception.OrganizationNotFoundException;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,17 +47,21 @@ public class EmployeeService {
 
     }
 
+    //************************************************//
+    //DELETE ONE EMPLOYEE//
+    //************************************************//
+    public void deleteEmployee(String orgUuid,Long id) {
+        boolean exists = employeeRepository.existsById(id);
+        if (!exists) {
+            throw new EmployeeNotFoundException("Employee with id " + id + " not found in org " + orgUuid);
+        }
+        employeeRepository.deleteById(id);
+    }
+
     public Optional<Employee> getEmployeeById(Long id) {
         return employeeRepository.findById(id);
     }
 
-    public boolean deleteEmployee(Long id) {
-        if (employeeRepository.existsById(id)) {
-            employeeRepository.deleteById(id);
-            return true;  // deleted successfully
-        }
-        return false;  // not found
-    }
 
     public Employee saveEmployee(Employee employee){
         return employeeRepository.save(employee);
@@ -128,6 +130,19 @@ public class EmployeeService {
         // Organization UUID should remain same for existing employees
 
         return employeeRepository.save(emp);
+    }
+
+    //************************************************//
+    //MAKE DEACTIVATE EMPLOYEE//
+    //************************************************//
+    public void deactivateEmployee(String orgUuid, Long id) {
+        Employee employee = employeeRepository
+                .findByIdAndOrganizationUuid(id, orgUuid)
+                .orElseThrow(() -> new EmployeeNotFoundException(
+                        "Employee with id " + id + " not found in organization " + orgUuid));
+
+        employee.setIsActive(false);
+        employeeRepository.save(employee);
     }
 
 }

@@ -196,21 +196,23 @@ const handleDeactivate = async (id) => {
   <div>
     <button
       className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-      onClick={() => setPage(page - 1)}
-      disabled={page === 0}
+      onClick={() => setPage(page - 1)} //decreases page by 1 when clicked.
+      disabled={page === 0} //disables the button if you’re on the first page, preventing negative page numbers.
     >
       Previous
     </button>
   </div>
 
    <div className="flex gap-2">
-    {Array.from({ length: totalPages }).map((_, idx) => (
+    {/* creates an array of length equal to the total pages returned from the API. */}
+    {Array.from({ length: totalPages }).map((_, idx) => ( //maps each index to a button.
       <button
         key={idx}
         className={`px-3 py-1 rounded ${
           idx === page ? "bg-[#02C39A] text-white" : "bg-gray-100 hover:bg-gray-200"
+           //highlights the current page with a green background; others stay white.
         }`}
-        onClick={() => setPage(idx)}
+        onClick={() => setPage(idx)} //clicking a page number sets the page state to that index
       >
         {idx + 1}
       </button>
@@ -221,7 +223,7 @@ const handleDeactivate = async (id) => {
     <button
       className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
       onClick={() => setPage(page + 1)}
-      disabled={page + 1 === totalPages}
+      disabled={page + 1 === totalPages} //disables button if you’re on the last page.
     >
       Next
     </button>

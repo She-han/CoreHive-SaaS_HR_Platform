@@ -18,10 +18,10 @@ export default function EmployeeTable({ search, filterBy }) {
   
    useEffect(() => {
     setLoading(true);
-    getAllEmployees(orgUuid)
+    getAllEmployees(orgUuid , 0 , 8)
       .then((data) => {
         console.log("API returned:", data); // 👈 ADD THIS
-      setEmployees(Array.isArray(data) ? data : []);
+      setEmployees(data?.items || []);
       })
       .catch((err) => console.error("Error for getting employees", err))
       .finally(() => setLoading(false));

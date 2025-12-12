@@ -2,6 +2,8 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
+import com.corehive.backend.exception.EmployeeNotFoundException;
+import com.corehive.backend.exception.OrganizationNotFoundException;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
@@ -24,14 +26,26 @@ public class EmployeeService {
         this.employeeMapper = employeeMapper;
     }
 
+    //************************************************//
+    //GET ALL EMPLOYEES//
+    //************************************************//
     public List<EmployeeResponseDTO> getAllEmployees(String orgUuid) {
-        List<Employee> getAllEmployees = employeeRepository.findAllByorganizationUuidEquals(orgUuid);
-        if(getAllEmployees.size()>0){
-            List<EmployeeResponseDTO> employeeResponseDTOS = employeeMapper.EntityToDtos(getAllEmployees);
-            return employeeResponseDTOS;
-        }else{
-            throw new RuntimeException("Employees are not found");
+        // 1. Validate the orgUuid first
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
         }
+
+        // 2. Fetch employees
+        List<Employee> employees = employeeRepository.findAllByorganizationUuidEquals(orgUuid);
+
+        // 3. Check if employees exist
+        if (employees.isEmpty()) {
+            throw new EmployeeNotFoundException("No employees found for organization: " + orgUuid);
+        }
+
+        // 4. Map entities to DTOs and return
+        return employeeMapper.EntityToDtos(employees);
+
 
     }
 

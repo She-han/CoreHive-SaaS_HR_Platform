@@ -13,16 +13,22 @@ const MySwal = withReactContent(Swal);//allowing you to use React elements insid
 
 export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
-
-   const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
+  const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
   const [loading, setLoading] = useState(true);
+  const orgUuid = "org-uuid-001";
+
+  //For pagenated
+  const [page, setPage] = useState(0);       // current page
+  const [size, setSize] = useState(6);      // items per page
+  const [totalPages, setTotalPages] = useState(0);  
 
   // Fetch job postings from backend
  useEffect(() => {
   const fetchJobs = async () => {
     try {
-      const data = await getAllJobPostings();
-      setJobs(data);
+      const data = await getAllJobPostings(orgUuid , page , size);
+      setJobs(data.items || []);
+        setTotalPages(data.totalPages || 0);
     } catch (error) {
       console.error("Error fetching job postings:", error);
     } finally {
@@ -31,7 +37,7 @@ export default function HiringManagement() {
   };
 
   fetchJobs();
-}, []);
+}, [orgUuid, page, size]);
 
 
    //Delete job posting with confirmation popup
@@ -164,11 +170,48 @@ export default function HiringManagement() {
         />
       ))}
     </div>
+
+    
   ) : (
     <div className="text-center text-[#9B9B9B] mt-10">
       No job postings found.
     </div>
   )}
+
+  {/* Pagination Controls */}
+<div className="flex justify-between items-center mt-4">
+  <button
+    className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+    onClick={() => setPage(page - 1)}
+    disabled={page === 0}
+  >
+    Previous
+  </button>
+
+  <div className="flex gap-2">
+    {Array.from({ length: totalPages }).map((_, idx) => (
+      <button
+        key={idx}
+        className={`px-3 py-1 rounded ${
+          idx === page ? "bg-[#02C39A] text-white" : "bg-gray-100 hover:bg-gray-200"
+        }`}
+        onClick={() => setPage(idx)}
+      >
+        {idx + 1}
+      </button>
+    ))}
+  </div>
+
+  <button
+    className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+    onClick={() => setPage(page + 1)}
+    disabled={page + 1 === totalPages}
+  >
+    Next
+  </button>
+</div>
+
+
 </div>
 
     </div>

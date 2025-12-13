@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE =  "http://localhost:8080/api";
 
 // 1) GET ALL EMPLOYEES
-export async function getAllEmployees(orgUuid, page = 0, size = 15) {
+export async function getAllEmployees(orgUuid, page = 0, size = 9) {
   return axios
     .get(`${BASE}/orgs/${orgUuid}/employees?page=${page}&size=${size}`)
     .then((res) => res.data.data)

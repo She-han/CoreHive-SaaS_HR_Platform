@@ -2,9 +2,17 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.JobPostingRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
+import com.corehive.backend.dto.response.JobPostingResponseDTO;
+import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
+import com.corehive.backend.util.mappers.JobPostingMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,9 +24,11 @@ import java.util.Optional;
 @Service
 public class JobPostingService {
     private final JobPostingRepository jobPostingRepository;
+    private final JobPostingMapper jobPostingMapper;
 
-    public JobPostingService(JobPostingRepository jobPostingRepository) {
+    public JobPostingService(JobPostingRepository jobPostingRepository, JobPostingMapper jobPostingMapper) {
         this.jobPostingRepository = jobPostingRepository;
+        this.jobPostingMapper = jobPostingMapper;
     }
 
     //CREATE
@@ -54,9 +64,50 @@ public class JobPostingService {
     }
 
 
-    //READ-All
-    public List<JobPosting> getAllJobPostings(){
-        return jobPostingRepository.findAll();
+    //************************************************//
+    //GET ALL JOB-POSTINGS//
+    //************************************************//
+    public PaginatedResponseItemDTO getAllJobPostingsWithPaginated(String orgUuid, int page, int size) {
+        // 1. Validate the orgUuid first
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
+        }
+
+        // 2️. Validate pagination parameters
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number must be 0 or greater");
+        }
+
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be greater than 0");
+        }
+
+        // 3. Create Pageable object
+        Pageable pageable = PageRequest.of(page, size);
+
+
+        // 4. Map entities to DTOs
+        Page<JobPosting> jobPostingPage;
+        try {
+            jobPostingPage = jobPostingRepository.findByOrganizationUuid(orgUuid, pageable);
+        } catch (Exception ex) {
+            // Covers database or repository errors
+            throw new RuntimeException("Failed to fetch job postings", ex);
+        }
+
+        // 5️ Map entities to DTOs 
+        List<JobPostingResponseDTO> jobPostingDTOs =
+                jobPostingMapper.EntityToDtos(jobPostingPage.getContent());
+
+        // 6. Build paginated response
+        PaginatedResponseItemDTO paginatedResponse = new PaginatedResponseItemDTO();
+        paginatedResponse.setItems(jobPostingDTOs);
+        paginatedResponse.setPage(page);
+        paginatedResponse.setSize(size);
+        paginatedResponse.setTotalItems(jobPostingPage.getTotalElements());
+        paginatedResponse.setTotalPages(jobPostingPage.getTotalPages());
+
+        return paginatedResponse;
     }
 
     //READ-by ID
@@ -99,4 +150,6 @@ public class JobPostingService {
         }
         jobPostingRepository.deleteById(id);
     }
+
+
 }

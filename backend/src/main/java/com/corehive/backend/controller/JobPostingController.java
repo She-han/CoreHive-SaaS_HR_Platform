@@ -2,17 +2,20 @@ package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.JobPostingRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.service.JobPostingService;
+import com.corehive.backend.util.StandardResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/job-postings")
+@RequestMapping("/api/orgs/{orgUuid}/job-postings")
 //@CrossOrigin(origins = "*")
 public class JobPostingController {
     private final JobPostingService jobPostingService;
@@ -29,11 +32,27 @@ public class JobPostingController {
     }
 
 
-    //READ ALL
+    //************************************************//
+    //GET ALL JOB-POSTINGS//
+    //************************************************//
     @GetMapping
-    public ResponseEntity<List<JobPosting>> getAllJobPostings(){
-        return ResponseEntity.ok(jobPostingService.getAllJobPostings());
+    public ResponseEntity<StandardResponse>  getAllJobPostings(
+            @PathVariable String orgUuid ,
+            @RequestParam(value = "page") int page ,
+            @RequestParam(value = "size") int size)
+    {
+        PaginatedResponseItemDTO paginatedResponseItemDTO = jobPostingService.getAllJobPostingsWithPaginated(orgUuid , page , size);
+
+        return new ResponseEntity<StandardResponse>(
+                new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
+        );
     }
+
+
+//    @GetMapping
+//    public ResponseEntity<List<JobPosting>> getAllJobPostings(){
+//        return ResponseEntity.ok(jobPostingService.getAllJobPostings());
+//    }
 
     //Read BY ID
     @GetMapping("/{id}")

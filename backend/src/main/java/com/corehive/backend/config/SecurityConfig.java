@@ -65,7 +65,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/orgs/*/employees").permitAll()
                         .requestMatchers("/api/orgs/*/employees/**").permitAll()
-                        .requestMatchers("/api/job-postings").permitAll()
+                        .requestMatchers("/api/orgs/*/job-postings").permitAll()
+                        .requestMatchers("/api/orgs/*/job-postings/**").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys").permitAll()
                         .requestMatchers("/api/orgs/{orgUuid}/surveys/**").permitAll()
                         .requestMatchers( "/api/attendance" ,"/api/attendance/**").permitAll()

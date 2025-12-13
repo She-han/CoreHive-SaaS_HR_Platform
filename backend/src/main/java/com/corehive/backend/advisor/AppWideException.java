@@ -2,6 +2,7 @@ package com.corehive.backend.advisor;
 
 import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.util.StandardResponse;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,14 @@ public class AppWideException {
     public ResponseEntity<StandardResponse> handleOrganizationNotFound(EmployeeAlreadyInactiveException e) {
         return new ResponseEntity<>(
                 new StandardResponse(400, "Employee is already Inactive", e.getMessage()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(InvalidEmployeeDataException.class)
+    public ResponseEntity<StandardResponse> handleInvalidEmployeeData(InvalidEmployeeDataException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(400, "Invalid Employee Data", e.getMessage()),
                 HttpStatus.BAD_REQUEST
         );
     }

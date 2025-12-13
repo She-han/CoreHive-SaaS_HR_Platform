@@ -49,11 +49,6 @@ public class JobPostingController {
     }
 
 
-//    @GetMapping
-//    public ResponseEntity<List<JobPosting>> getAllJobPostings(){
-//        return ResponseEntity.ok(jobPostingService.getAllJobPostings());
-//    }
-
     //Read BY ID
     @GetMapping("/{id}")
     public ResponseEntity<JobPosting> getJobPostingById(@PathVariable Long id){

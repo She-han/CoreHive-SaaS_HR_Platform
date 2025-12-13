@@ -9,13 +9,14 @@ import com.corehive.backend.util.StandardResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/api/orgs/{orgUuid}/employees")
+@RequestMapping("/api/orgs/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -28,12 +29,16 @@ public class EmployeeController {
     //GET ALL EMPLOYEES//
     //************************************************//
     @GetMapping
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<StandardResponse> getAll(
-            @PathVariable String orgUuid ,
+            HttpServletRequest httpRequest,
             @RequestParam(value = "page") int page ,
             @RequestParam(value = "size") int size) {
-//        List<EmployeeResponseDTO> allEmployees = employeeService.getAllEmployees(orgUuid);
-        PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(orgUuid , page , size);
+
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+
+        PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(organizationUuid , page , size);
         return new ResponseEntity<StandardResponse>(
                 new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
         );
@@ -43,11 +48,32 @@ public class EmployeeController {
     //MAKE DEACTIVATE EMPLOYEE//
     //************************************************//
     @PutMapping("/{id}/deactivate")
-    public ResponseEntity<StandardResponse> deactivateEmployee(@PathVariable String orgUuid,
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> deactivateEmployee(HttpServletRequest httpRequest,
                                                                @PathVariable Long id) {
-        employeeService.deactivateEmployee(orgUuid , id);
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        employeeService.deactivateEmployee(organizationUuid , id);
         return new ResponseEntity<>(
                 new StandardResponse(200, "Employee marked as inactive", null),
+                HttpStatus.OK
+        );
+    }
+
+    //************************************************//
+    //MAKE AN EMPLOYEE//
+    //************************************************//
+    @PostMapping
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> createEmployee(
+            HttpServletRequest httpRequest,
+            @RequestBody EmployeeRequestDTO req
+    ) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        Employee employee = employeeService.createEmployee(organizationUuid , req);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Employee created Successfully", null),
                 HttpStatus.OK
         );
     }
@@ -57,24 +83,7 @@ public class EmployeeController {
         return employeeService.getEmployeeById(id).orElse(null);
     }
 
-//    //************************************************//
-//    //DELETE ONE EMPLOYEE//
-//    //************************************************//
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<StandardResponse> deleteEmployee(
-//            @PathVariable String orgUuid,
-//            @PathVariable Long id) {
-//        employeeService.deleteEmployee(orgUuid, id);
-//        return new ResponseEntity<>(
-//                new StandardResponse(200, "Employee deleted successfully", null),
-//                HttpStatus.OK
-//        );
-//    }
 
-    @PostMapping
-    public Employee createEmployee(@RequestBody EmployeeRequestDTO req) {
-        return employeeService.createEmployee(req);
-    }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO req) {

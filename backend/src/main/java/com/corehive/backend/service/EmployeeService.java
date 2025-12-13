@@ -5,6 +5,7 @@ import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.EmployeeRepository;
@@ -91,18 +92,6 @@ public class EmployeeService {
     }
 
 
-
-    //************************************************//
-    //DELETE ONE EMPLOYEE//
-    //************************************************//
-    public void deleteEmployee(String orgUuid,Long id) {
-        boolean exists = employeeRepository.existsById(id);
-        if (!exists) {
-            throw new EmployeeNotFoundException("Employee with id " + id + " not found in org " + orgUuid);
-        }
-        employeeRepository.deleteById(id);
-    }
-
     public Optional<Employee> getEmployeeById(Long id) {
         return employeeRepository.findById(id);
     }
@@ -112,33 +101,60 @@ public class EmployeeService {
         return employeeRepository.save(employee);
     }
 
-    public Employee createEmployee(EmployeeRequestDTO req) {
-        Employee emp = new Employee();
-        emp.setOrganizationUuid("ORG-0001"); // TEMP FIX
-        emp.setEmployeeCode(req.getEmployeeCode());
-        emp.setDepartmentId(req.getDepartment());  // your entity field is departmentId
-        emp.setEmail(req.getEmail());
-        emp.setPhone(req.getPhone());
-        emp.setFirstName(req.getFirstName());
-        emp.setLastName(req.getLastName());
-        emp.setDesignation(req.getDesignation());
+    public Employee createEmployee(String organizationUuid, EmployeeRequestDTO req) {
+
+        // 1️) Validate org UUID
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
+        }
+
+        // 2️) Basic request validation
+        if (req.getFirstName() == null || req.getLastName() == null) {
+            throw new InvalidEmployeeDataException("First name and last name are required");
+        }
+
+        try {
+            // 3️) Map DTO → Entity
+            Employee employee = employeeMapper.toEntity(req);
+
+            // 4️) Set fields NOT coming from DTO
+            employee.setOrganizationUuid(organizationUuid);
+
+            // 5️) Save
+            return employeeRepository.save(employee);
+
+        } catch (IllegalArgumentException ex) {
+            // Thrown from MapStruct converters
+            throw new InvalidEmployeeDataException(ex.getMessage());
+        }
 
 
-        // ENUM - convert string to enum
-        emp.setSalaryType(Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase()));
-
-        // Convert string to number
-        emp.setBasicSalary(new BigDecimal(req.getBasicSalary()));
-
-        emp.setLeaveCount(req.getLeaveCount());
-
-        // Convert string to LocalDate
-        emp.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
-
-        // Convert status to boolean
-        emp.setIsActive(req.getStatus().equalsIgnoreCase("Active"));
-
-        return employeeRepository.save(emp);
+//        Employee emp = new Employee();
+//        emp.setOrganizationUuid(organizationUuid);
+//        emp.setEmployeeCode(req.getEmployeeCode());
+//        emp.setDepartmentId(req.getDepartment());  // your entity field is departmentId
+//        emp.setEmail(req.getEmail());
+//        emp.setPhone(req.getPhone());
+//        emp.setFirstName(req.getFirstName());
+//        emp.setLastName(req.getLastName());
+//        emp.setDesignation(req.getDesignation());
+//
+//
+//        // ENUM - convert string to enum
+//        emp.setSalaryType(Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase()));
+//
+//        // Convert string to number
+//        emp.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+//
+//        emp.setLeaveCount(req.getLeaveCount());
+//
+//        // Convert string to LocalDate
+//        emp.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+//
+//        // Convert status to boolean
+//        emp.setIsActive(req.getStatus().equalsIgnoreCase("Active"));
+//
+//        return employeeRepository.save(emp);
     }
 
     public Employee updateEmployee(Long id, EmployeeRequestDTO req) {

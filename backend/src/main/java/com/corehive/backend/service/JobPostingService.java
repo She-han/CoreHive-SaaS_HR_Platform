@@ -95,7 +95,7 @@ public class JobPostingService {
             throw new RuntimeException("Failed to fetch job postings", ex);
         }
 
-        // 5️ Map entities to DTOs 
+        // 5️ Map entities to DTOs
         List<JobPostingResponseDTO> jobPostingDTOs =
                 jobPostingMapper.EntityToDtos(jobPostingPage.getContent());
 

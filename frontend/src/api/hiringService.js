@@ -13,3 +13,27 @@ export const getAllJobPostings = async (orgUuid, page = 0, size = 3) => {
 export const deleteJobPosting = async (id) => {
   return axios.delete(`${BASE}/job-postings/${id}`);
 };
+
+//3)Create a Job posting
+export const createJobPosting = async (formData) => {
+  const res = await axios.post(
+    `${BASE}/job-postings`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+  return res.data;
+};
+
+/* =========================
+   DEPARTMENTS
+========================= */
+
+// 4) GET all departments
+export const getAllDepartments = async () => {
+  const res = await axios.get(`${BASE}/org-admin/departments`);
+  return res.data; // ApiResponse
+};

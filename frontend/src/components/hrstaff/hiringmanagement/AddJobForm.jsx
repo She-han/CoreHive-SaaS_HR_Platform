@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { createJobPosting  , getAllDepartments} from "../../../api/hiringService";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
-
-
-    useEffect(() => {
-  axios.get("http://localhost:8080/api/departments")
-    .then(res => setDepartments(res.data))
-    .catch(err => console.error("Error loading departments", err));
-}, []);
 
   const [form, setForm] = useState({
     title: "",
@@ -30,12 +23,18 @@ export default function AddJobForm() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/departments")
-      .then((res) => setDepartments(res.data || []))
-      .catch((err) => console.error("Failed to fetch departments:", err));
-  }, []);
+ useEffect(() => {
+  async function loadDepartments() {
+    try {
+      const data = await getAllDepartments();
+      setDepartments(data || []);
+    } catch (error) {
+      console.error("Failed to load departments:", error);
+    }
+  }
+
+  loadDepartments();
+}, []);
 
   function handleInput(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -91,11 +90,7 @@ export default function AddJobForm() {
     Object.entries(form).forEach(([key, value]) => payload.append(key, value));
     if (avatarFile) payload.append("avatar", avatarFile);
 
-    const response = await axios.post(
-      "http://localhost:8080/api/job-postings",
-      payload,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+    await createJobPosting(payload);
 
     Swal.fire({
       title: "Success!",
@@ -106,7 +101,6 @@ export default function AddJobForm() {
       navigate("/hr_staff/HiringManagement");
     });
 
-    console.log("Saved:", response.data);
 
   } catch (error) {
     console.error("Error creating job posting:", error);

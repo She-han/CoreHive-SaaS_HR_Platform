@@ -5,6 +5,8 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
  import {getAllEmployees , deactivateEmployee} from "../../../api/employeeService"
+ import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
 
 const MySwal = withReactContent(Swal);
 
@@ -13,17 +15,21 @@ export default function EmployeeTable({ search, filterBy }) {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading , setLoading] = useState(false);
-  const orgUuid = "org-uuid-001";
+
 
   //For pagenated
   const [page, setPage] = useState(0);       // current page
   const [size, setSize] = useState(9);      // items per page
   const [totalPages, setTotalPages] = useState(0);  
 
+  const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
+
   
    useEffect(() => {
+    if (!token) return; // exit if not logged in
     setLoading(true);
-    getAllEmployees(orgUuid , page , size)
+    getAllEmployees( page , size , token)
       .then((data) => {
         console.log("API returned:", data); // 👈 ADD THIS
       setEmployees(data?.items || []);
@@ -69,10 +75,8 @@ const handleDeactivate = async (id) => {
   const confirmed = window.confirm("Are you sure you want to deactivate this employee?");
   if (!confirmed) return; // exit if user cancels
 
-  console.log("orgUuid:", orgUuid, "employeeId:", id);
-
   try {
-    await deactivateEmployee(orgUuid, id);
+    await deactivateEmployee(id, token);
     alert("Employee deactivated successfully!");
 
     // Update your state so the UI reflects the change

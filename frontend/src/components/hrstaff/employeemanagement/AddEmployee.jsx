@@ -3,6 +3,10 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { useNavigate } from "react-router-dom";
+import { getAllDepartments   } from "../../../api/departmentApi";
+import { createEmployee } from "../../../api/employeeService" 
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
 
 
 export default function AddEmployee() {
@@ -25,8 +29,13 @@ export default function AddEmployee() {
 
     const [departments, setDepartments] = useState([]);
 
+     const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
+
+
+
     useEffect(() => {
-  axios.get("http://localhost:8080/api/departments")
+      getAllDepartments()
     .then(res => setDepartments(res.data))
     .catch(err => console.error("Error loading departments", err));
 }, []);
@@ -37,7 +46,7 @@ export default function AddEmployee() {
     e.preventDefault();
 
     try{
-        const response = await axios.post("http://localhost:8080/api/employees", formData);
+        await createEmployee(formData, token);
 
         Swal.fire({
       title: "Success!",
@@ -48,7 +57,7 @@ export default function AddEmployee() {
         navigate("/hr_staff/employeemanagement");
     });
 
-    console.log("Saved:", response.data);
+   
 
     }catch(error){
       console.error("Error adding employee:", error);

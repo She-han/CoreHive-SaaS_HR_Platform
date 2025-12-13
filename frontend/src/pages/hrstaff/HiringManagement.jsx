@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { getAllJobPostings , deleteJobPosting} from "../../api/hiringService";
 
 
 const MySwal = withReactContent(Swal);//allowing you to use React elements inside popups.
@@ -17,21 +18,21 @@ export default function HiringManagement() {
   const [loading, setLoading] = useState(true);
 
   // Fetch job postings from backend
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await axios.get("http://localhost:8080/api/job-postings");
-        setJobs(res.data);
-      } catch (error) {
-        console.error("Error fetching job postings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+ useEffect(() => {
+  const fetchJobs = async () => {
+    try {
+      const data = await getAllJobPostings();
+      setJobs(data);
+    } catch (error) {
+      console.error("Error fetching job postings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchJobs();
-  }, []);
-  //[] means this effect runs only once (on initial load).
+  fetchJobs();
+}, []);
+
 
    //Delete job posting with confirmation popup
   const handleDeleteJob = async (id) => {
@@ -51,7 +52,7 @@ export default function HiringManagement() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/job-postings/${id}`);
+        await deleteJobPosting(id);
         setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
 
         MySwal.fire({

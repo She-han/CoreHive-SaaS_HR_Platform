@@ -202,13 +202,13 @@ export default function EmployeeTable({ search, filterBy }) {
                     </span>
                   </td>
                   <td className="p-3 flex justify-center gap-4">
-                    <Link 
-                      to={`/hr_staff/editemployee/${emp.id}`} 
-                      className="text-[#05668D] hover:text-[#02C39A]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <FaEdit />
-                    </Link>
+                  <Link 
+                    to={`/hr_staff/EmployeeManagement/editemployee/${emp.id}`}  // Match the route path
+                    className="text-[#05668D] hover:text-[#02C39A]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FaEdit />
+                  </Link>
                     <button
                       className="text-red-500 hover:text-red-700"
                       onClick={(e) => {

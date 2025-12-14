@@ -38,6 +38,12 @@ public class EmployeeRequestDTO {
     @JsonProperty("phone")
     private String phone;
 
+
+    @NotBlank(message = "National ID is required")
+    @Size(max = 50, message = "National ID must not exceed 50 characters")
+    @JsonProperty("nationalId")
+    private String nationalId;
+
     @NotBlank(message = "Designation is required")
     @Size(max = 100, message = "Designation must not exceed 100 characters")
     @JsonProperty("designation")
@@ -71,5 +77,4 @@ public class EmployeeRequestDTO {
     @Pattern(regexp = "Active|NonActive", message = "Status must be Active or NonActive")
     @JsonProperty("status")
     private String status;
-
 }

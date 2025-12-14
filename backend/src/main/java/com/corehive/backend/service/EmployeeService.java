@@ -164,6 +164,7 @@ public class EmployeeService {
             employee.setLastName(request.getLastName());
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
+            employee.setNationalId(request.getNationalId());
             employee.setDesignation(request.getDesignation());
             employee.setDepartmentId(request.getDepartment());
             employee.setBasicSalary(request.getBasicSalary());
@@ -233,6 +234,7 @@ public class EmployeeService {
             employee.setDesignation(request.getDesignation());
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
+            employee.setNationalId(request.getNationalId());
             employee.setDepartmentId(request.getDepartment());
             employee.setLeaveCount(request.getLeaveCount());
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));

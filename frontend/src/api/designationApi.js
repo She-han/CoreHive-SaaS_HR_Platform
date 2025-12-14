@@ -1,4 +1,4 @@
-import axios from './axios';
+import apiClient from './axios';
 
 /**
  * Designation API Service
@@ -10,7 +10,7 @@ import axios from './axios';
  */
 export const getAllDesignations = async () => {
   try {
-    const response = await axios.get('/org-admin/designations');
+    const response = await apiClient.get('/org-admin/designations');
     return response.data;
   } catch (error) {
     console.error('Error fetching designations:', error);
@@ -18,9 +18,25 @@ export const getAllDesignations = async () => {
   }
 };
 
+/**
+ * Get designation by ID
+ */
+export const getDesignationById = async (id) => {
+  try {
+    const response = await apiClient.get(`/org-admin/designations/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching designation:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create new designation
+ */
 export const createDesignation = async (designationData) => {
   try {
-    const response = await axios.post('/org-admin/designations', designationData);
+    const response = await apiClient.post('/org-admin/designations', designationData);
     return response.data;
   } catch (error) {
     console.error('Error creating designation:', error);
@@ -28,9 +44,12 @@ export const createDesignation = async (designationData) => {
   }
 };
 
+/**
+ * Update designation
+ */
 export const updateDesignation = async (id, designationData) => {
   try {
-    const response = await axios.put(`/org-admin/designations/${id}`, designationData);
+    const response = await apiClient.put(`/org-admin/designations/${id}`, designationData);
     return response.data;
   } catch (error) {
     console.error('Error updating designation:', error);
@@ -38,9 +57,12 @@ export const updateDesignation = async (id, designationData) => {
   }
 };
 
+/**
+ * Delete designation
+ */
 export const deleteDesignation = async (id) => {
   try {
-    const response = await axios.delete(`/org-admin/designations/${id}`);
+    const response = await apiClient.delete(`/org-admin/designations/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting designation:', error);
@@ -50,6 +72,7 @@ export const deleteDesignation = async (id) => {
 
 export default {
   getAllDesignations,
+  getDesignationById,
   createDesignation,
   updateDesignation,
   deleteDesignation

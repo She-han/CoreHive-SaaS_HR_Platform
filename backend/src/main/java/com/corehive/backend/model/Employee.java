@@ -42,6 +42,10 @@ public class Employee {
         @Column(name = "phone", length = 50)
         private String phone;
 
+        // ADD THIS - National ID field
+        @Column(name = "national_id", length = 50)
+        private String nationalId;
+
         @Column(name = "designation", length = 100)
         private String designation;
 
@@ -50,7 +54,7 @@ public class Employee {
         private Department department;
 
         @Column(name = "department_id")
-        private Long departmentId; // Note: This is currently a loose reference, not a foreign key
+        private Long departmentId;
 
         @Column(name = "basic_salary", precision = 12, scale = 2)
         private BigDecimal basicSalary;
@@ -74,10 +78,8 @@ public class Employee {
         @Column(name = "leave_count")
         private Integer leaveCount = 0;
 
-        // ===== Enum for Salary Type =====
         public enum SalaryType {
-            MONTHLY,
-            DAILY
+                MONTHLY,
+                DAILY
         }
-
-    }
+}

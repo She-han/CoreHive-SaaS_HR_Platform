@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/job-postings").permitAll()
+                        .requestMatchers("/error").permitAll()
 
 
                         // Protected auth endpoints (requires valid JWT token)

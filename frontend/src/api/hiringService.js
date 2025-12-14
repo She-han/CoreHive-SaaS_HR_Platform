@@ -40,3 +40,20 @@ export async function createJobPosting(data, token) {
   });
 }
 
+// 4) GET ONE JOB-POSTING BY ID
+export async function getSingleJobPosting(id , token) {
+  if (!id) {
+    throw new Error("Job-Posting ID is required");
+  }
+  return axios
+    .get(`${BASE}/orgs/job-postings/${id}` , 
+      {
+      headers: {
+        Authorization: `Bearer ${token}` 
+      }
+    })
+    .then((res) => res.data.data)
+    .catch((err) => {
+      throw new Error(err.response?.data?.message || err.message);
+    });
+}

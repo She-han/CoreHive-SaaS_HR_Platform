@@ -2,10 +2,14 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.JobPostingRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.dto.response.JobPostingResponseDTO;
+import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
+import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
+import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.util.mappers.JobPostingMapper;
@@ -62,7 +66,7 @@ public class JobPostingService {
 
         // 5️ Map entities to DTOs
         List<JobPostingResponseDTO> jobPostingDTOs =
-                jobPostingMapper.EntityToDtos(jobPostingPage.getContent());
+                jobPostingMapper.toDtos(jobPostingPage.getContent());
 
         // 6. Build paginated response
         PaginatedResponseItemDTO paginatedResponse = new PaginatedResponseItemDTO();
@@ -75,7 +79,9 @@ public class JobPostingService {
         return paginatedResponse;
     }
 
-    //CREATE
+    //************************************************//
+    //CREATE A JOB-POSTING//
+    //************************************************//
     public JobPosting createJobPosting(String organizationUuid, JobPostingRequestDTO req , Long userId) {
 
         // 1) Validate organization
@@ -123,34 +129,6 @@ public class JobPostingService {
         }catch(Exception e){
             throw new JobPostingCreationException("Failed to create job posting");
         }
-
-//        JobPosting job = new JobPosting();
-//
-//        job.setOrganizationUuid(
-//                req.getOrganizationUuid() != null ? req.getOrganizationUuid() : "ORG-0001"
-//        );
-//
-//        job.setTitle(req.getTitle());
-//        job.setDescription(req.getDescription());
-//        job.setDepartment(req.getDepartment());
-//
-//        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
-//        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
-//
-//        if (req.getPostedDate() != null) {
-//            job.setPostedDate(LocalDate.parse(req.getPostedDate()));
-//        }
-//
-//        if (req.getClosingDate() != null) {
-//            job.setClosingDate(LocalDate.parse(req.getClosingDate()));
-//        }
-//
-//        job.setAvailableVacancies(req.getAvailableVacancies());
-//        job.setPostedBy(1L); // TEMP FIX - Replace with logged user later
-//
-//        job.setCreatedAt(LocalDateTime.now());
-//
-//        return jobPostingRepository.save(job);
     }
 
 
@@ -198,4 +176,27 @@ public class JobPostingService {
     }
 
 
+    public JobPostingResponseDTO getJobPostingById(String organizationUuid, Long id) {
+        // 1️) Validate organization
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
+        }
+
+        // 2️) Validate ID
+        if (id == null) {
+            throw new InvalidJobPostingException("Job posting ID cannot be null");
+        }
+
+        // 3) Fetch job posting safely
+        JobPosting jobPosting = jobPostingRepository
+                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .orElseThrow(() ->
+                        new JobPostingNotFoundException(
+                                "Job posting with id " + id + " not found in this organization"
+                        )
+                );
+
+        // 4️) Map Entity → DTO
+        return jobPostingMapper.toDto(jobPosting);
+    }
 }

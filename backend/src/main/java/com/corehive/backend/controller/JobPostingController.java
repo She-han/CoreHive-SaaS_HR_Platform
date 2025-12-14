@@ -2,6 +2,8 @@ package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.request.JobPostingRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
+import com.corehive.backend.dto.response.JobPostingResponseDTO;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.service.JobPostingService;
 import com.corehive.backend.util.StandardResponse;
@@ -61,14 +63,20 @@ public class JobPostingController {
         );
     }
 
-
-//    //Read BY ID
-//    @GetMapping("/{id}")
-//    public ResponseEntity<JobPosting> getJobPostingById(@PathVariable Long id){
-//        return jobPostingService.getJobPostingById(id)
-//                .map(ResponseEntity::ok)
-//                .orElse(ResponseEntity.notFound().build());
-//    }
+    //************************************************//
+    //GET ONE JOB-POSTING//
+    //************************************************//
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getById(HttpServletRequest httpRequest, @PathVariable Long id) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        JobPostingResponseDTO jobPosting = jobPostingService.getJobPostingById(organizationUuid, id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "One Job-Posting fetched Successfully", jobPosting),
+                HttpStatus.OK
+        );
+    }
 
 //    //UPDATE
 //    @PutMapping("/{id}")

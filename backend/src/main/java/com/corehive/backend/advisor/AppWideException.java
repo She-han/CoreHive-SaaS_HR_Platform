@@ -6,6 +6,7 @@ import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDat
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
+import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
 import com.corehive.backend.util.StandardResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +67,14 @@ public class AppWideException {
         return new ResponseEntity<>(
                 new StandardResponse(500, "Job Posting Creation Failed", e.getMessage()),
                 HttpStatus.INTERNAL_SERVER_ERROR
+        );
+    }
+
+    @ExceptionHandler(JobPostingNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleJobPostingNotFound(JobPostingNotFoundException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(404, "Job Posting Not Found", e.getMessage()),
+                HttpStatus.NOT_FOUND
         );
     }
 

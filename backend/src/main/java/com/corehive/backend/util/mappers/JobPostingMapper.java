@@ -13,12 +13,14 @@ import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface JobPostingMapper {
-    // Map single entity to DTO
-    JobPostingResponseDTO entityToDto(JobPosting jobPosting);
 
-    //JobPosting entity to jobPostingResponseDTO
-    List<JobPostingResponseDTO> EntityToDtos(List<JobPosting> jobPostings);
+    //  Single entity → DTO
+    JobPostingResponseDTO toDto(JobPosting entity);
 
+    // ✅ List mapping (MapStruct will reuse toDto automatically)
+    List<JobPostingResponseDTO> toDtos(List<JobPosting> jobPostings);
+
+    // ✅ DTO → Entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "organizationUuid", ignore = true)
     @Mapping(target = "postedBy", ignore = true)
@@ -28,8 +30,7 @@ public interface JobPostingMapper {
     @Mapping(target = "department", source = "department")
     JobPosting toEntity(JobPostingRequestDTO dto);
 
-    // Fix for "Long → Department" mapping
-    //MapStruct cannot convert Long → Department automatically, so we need a custom mapper.
+    // ✅ Custom mapper: Long → Department
     default Department map(Long departmentId) {
         if (departmentId == null) return null;
         Department department = new Department();

@@ -33,7 +33,7 @@ public class EmployeeService {
     //************************************************//
     //GET ALL EMPLOYEES//
     //************************************************//
-    public PaginatedResponseItemDTO getAllEmployeesWithPaginated(String orgUuid ,  int page, int size) {
+    public PaginatedResponseItemDTO getAllEmployeesWithPaginated(String orgUuid, int page, int size) {
         // 1. Validate the orgUuid first
         if (orgUuid == null || orgUuid.isBlank()) {
             throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
@@ -115,7 +115,7 @@ public class EmployeeService {
     }
 
 
-    public Employee saveEmployee(Employee employee){
+    public Employee saveEmployee(Employee employee) {
         return employeeRepository.save(employee);
     }
 
@@ -145,34 +145,6 @@ public class EmployeeService {
             // Thrown from MapStruct converters
             throw new InvalidEmployeeDataException(ex.getMessage());
         }
-
-
-//        Employee emp = new Employee();
-//        emp.setOrganizationUuid(organizationUuid);
-//        emp.setEmployeeCode(req.getEmployeeCode());
-//        emp.setDepartmentId(req.getDepartment());  // your entity field is departmentId
-//        emp.setEmail(req.getEmail());
-//        emp.setPhone(req.getPhone());
-//        emp.setFirstName(req.getFirstName());
-//        emp.setLastName(req.getLastName());
-//        emp.setDesignation(req.getDesignation());
-//
-//
-//        // ENUM - convert string to enum
-//        emp.setSalaryType(Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase()));
-//
-//        // Convert string to number
-//        emp.setBasicSalary(new BigDecimal(req.getBasicSalary()));
-//
-//        emp.setLeaveCount(req.getLeaveCount());
-//
-//        // Convert string to LocalDate
-//        emp.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
-//
-//        // Convert status to boolean
-//        emp.setIsActive(req.getStatus().equalsIgnoreCase("Active"));
-//
-//        return employeeRepository.save(emp);
     }
 
     //************************************************//

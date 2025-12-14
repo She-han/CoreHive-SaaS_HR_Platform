@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -33,13 +34,13 @@ public class EmployeeController {
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<StandardResponse> getAll(
             HttpServletRequest httpRequest,
-            @RequestParam(value = "page") int page ,
+            @RequestParam(value = "page") int page,
             @RequestParam(value = "size") int size) {
 
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
 
-        PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(organizationUuid , page , size);
+        PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(organizationUuid, page, size);
         return new ResponseEntity<StandardResponse>(
                 new StandardResponse(200, "All employee fetched Successfully", paginatedResponseItemDTO), HttpStatus.OK
         );
@@ -53,7 +54,7 @@ public class EmployeeController {
     public ResponseEntity<StandardResponse> getById(HttpServletRequest httpRequest, @PathVariable Long id) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
-        EmployeeResponseDTO employee = employeeService.getEmployeeById(organizationUuid ,id);
+        EmployeeResponseDTO employee = employeeService.getEmployeeById(organizationUuid, id);
         return new ResponseEntity<>(
                 new StandardResponse(200, "One employee fetched Successfully", employee),
                 HttpStatus.OK
@@ -69,7 +70,7 @@ public class EmployeeController {
                                                                @PathVariable Long id) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
-        employeeService.deactivateEmployee(organizationUuid , id);
+        employeeService.deactivateEmployee(organizationUuid, id);
         return new ResponseEntity<>(
                 new StandardResponse(200, "Employee marked as inactive", null),
                 HttpStatus.OK
@@ -87,7 +88,7 @@ public class EmployeeController {
     ) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
-        Employee employee = employeeService.createEmployee(organizationUuid , req);
+        Employee employee = employeeService.createEmployee(organizationUuid, req);
         return new ResponseEntity<>(
                 new StandardResponse(200, "Employee created Successfully", employee),
                 HttpStatus.OK
@@ -99,32 +100,20 @@ public class EmployeeController {
     //************************************************//
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public  ResponseEntity<StandardResponse> updateEmployee(
+    public ResponseEntity<StandardResponse> updateEmployee(
             HttpServletRequest httpRequest,
             @PathVariable Long id,
-            @RequestBody EmployeeRequestDTO req)
-    {
+            @RequestBody EmployeeRequestDTO req) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
 
-        EmployeeResponseDTO updatedEmployee = employeeService.updateEmployee(organizationUuid , id , req);
+        EmployeeResponseDTO updatedEmployee = employeeService.updateEmployee(organizationUuid, id, req);
 
         return new ResponseEntity<>(
                 new StandardResponse(200, "Updated employee Successfully", updatedEmployee),
                 HttpStatus.OK
         );
     }
-
-//    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO req) {
-//
-//        Employee updated = employeeService.updateEmployee(id, req);
-//
-//        if (updated == null) {
-//            return ResponseEntity.badRequest().body("Employee not found");
-//        }
-//
-//        return ResponseEntity.ok(updated);
-//    }
 
 
 }

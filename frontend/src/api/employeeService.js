@@ -20,13 +20,16 @@ export async function getAllEmployees(page = 0, size = 9 , token) {
     });
 }
 
-
+// In HTTP (and Spring Boot), every request can have 3 main parts:
+// URL (path & query params)
+// Headers (Authorization, Content-Type, etc.)
+// Body --> In this body is null
 
 //2)MARK AS DEACTIVE EMPLOYEE
 export const deactivateEmployee = async (id , token) => {
 
 return axios 
-    .put(`${BASE}/orgs/employees/${id}/deactivate` , 
+    .put(`${BASE}/orgs/employees/${id}/deactivate` ,  null , 
       {
       headers: {
         Authorization: `Bearer ${token}`

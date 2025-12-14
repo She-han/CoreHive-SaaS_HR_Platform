@@ -175,40 +175,44 @@ public class EmployeeService {
 //        return employeeRepository.save(emp);
     }
 
-    public Employee updateEmployee(Long id, EmployeeRequestDTO req) {
+    //************************************************//
+    //UPDATE AN EMPLOYEE//
+    //************************************************//
+    public EmployeeResponseDTO updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO req) {
 
-        Optional<Employee> optional = employeeRepository.findById(id);
-        if (optional.isEmpty()) {
-            return null;  // Employee not found
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
         }
 
-        Employee emp = optional.get();
+        // Validate required fields
+        if (req.getFirstName() == null || req.getFirstName().isBlank()
+                || req.getLastName() == null || req.getLastName().isBlank()) {
+            throw new InvalidEmployeeDataException("First name and last name are required");
+        }
 
-        // Update fields
-        emp.setEmployeeCode(req.getEmployeeCode());
-        emp.setFirstName(req.getFirstName());
-        emp.setLastName(req.getLastName());
-        emp.setDesignation(req.getDesignation());
-        emp.setEmail(req.getEmail());
-        emp.setPhone(req.getPhone());
-        emp.setDepartmentId(req.getDepartment());
-        emp.setLeaveCount(req.getLeaveCount());
+        Employee employee = employeeRepository
+                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException(
+                                "Employee with id " + id + " not found in this organization"
+                        )
+                );
 
-        // Salary Type ENUM
-        emp.setSalaryType(Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase()));
+        try {
+            //  MapStruct updates entity
+            employeeMapper.updateEmployeeFromDto(req, employee);
 
-        // Salary (BigDecimal)
-        emp.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+            // organizationUuid MUST NOT change
+            employee.setOrganizationUuid(organizationUuid);
 
-        // Date Joined
-        emp.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+            Employee updated = employeeRepository.save(employee);
 
-        // Active / NonActive
-        emp.setIsActive(req.getStatus().equalsIgnoreCase("Active"));
+            return employeeMapper.toDto(updated);
 
-        // Organization UUID should remain same for existing employees
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidEmployeeDataException(ex.getMessage());
+        }
 
-        return employeeRepository.save(emp);
     }
 
 

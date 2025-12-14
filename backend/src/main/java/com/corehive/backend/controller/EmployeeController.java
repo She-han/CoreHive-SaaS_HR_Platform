@@ -60,10 +60,6 @@ public class EmployeeController {
         );
     }
 
-//    public Employee getById(@PathVariable Long id) {
-//        return employeeService.getEmployeeById(id).orElse(null);
-//    }
-
     //************************************************//
     //MAKE DEACTIVATE EMPLOYEE//
     //************************************************//
@@ -93,24 +89,42 @@ public class EmployeeController {
         String userEmail = (String) httpRequest.getAttribute("userEmail");
         Employee employee = employeeService.createEmployee(organizationUuid , req);
         return new ResponseEntity<>(
-                new StandardResponse(200, "Employee created Successfully", null),
+                new StandardResponse(200, "Employee created Successfully", employee),
                 HttpStatus.OK
         );
     }
 
-
-
+    //************************************************//
+    //UPDATE AN EMPLOYEE//
+    //************************************************//
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO req) {
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public  ResponseEntity<StandardResponse> updateEmployee(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id,
+            @RequestBody EmployeeRequestDTO req)
+    {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
 
-        Employee updated = employeeService.updateEmployee(id, req);
+        EmployeeResponseDTO updatedEmployee = employeeService.updateEmployee(organizationUuid , id , req);
 
-        if (updated == null) {
-            return ResponseEntity.badRequest().body("Employee not found");
-        }
-
-        return ResponseEntity.ok(updated);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Updated employee Successfully", updatedEmployee),
+                HttpStatus.OK
+        );
     }
+
+//    public ResponseEntity<?> updateEmployee(@PathVariable Long id, @RequestBody EmployeeRequestDTO req) {
+//
+//        Employee updated = employeeService.updateEmployee(id, req);
+//
+//        if (updated == null) {
+//            return ResponseEntity.badRequest().body("Employee not found");
+//        }
+//
+//        return ResponseEntity.ok(updated);
+//    }
 
 
 }

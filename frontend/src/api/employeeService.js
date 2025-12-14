@@ -60,3 +60,22 @@ export async function createEmployee(data, token) {
     throw new Error(err.response?.data?.message || err.message);
   });
 }
+
+
+// 1) GET ONE  EMPLOYEE BY ID
+export async function getSingleEmployee(id , token) {
+  if (!id) {
+    throw new Error("Employee ID is required");
+  }
+  return axios
+    .get(`${BASE}/orgs/employees/${id}` , 
+      {
+      headers: {
+        Authorization: `Bearer ${token}` 
+      }
+    })
+    .then((res) => res.data.data)
+    .catch((err) => {
+      throw new Error(err.response?.data?.message || err.message);
+    });
+}

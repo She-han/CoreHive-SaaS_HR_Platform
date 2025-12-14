@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
+import { getSingleEmployee } from "../../../api/employeeService"; 
+import { getAllDepartments } from "../../../api/departmentApi";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
+
 
 export default function EditEmployee() {
   const { id } = useParams();
@@ -9,6 +14,9 @@ export default function EditEmployee() {
 
   const [employee, setEmployee] = useState(null);
   const [departments, setDepartments] = useState([]);
+
+   const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -27,33 +35,35 @@ export default function EditEmployee() {
 
   // Load employee data
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/employees/${id}`)
-      .then((res) => {
-        setEmployee(res.data);
+    if (!id || !token) return;
 
-        setFormData({
-          firstName: res.data.firstName,
-          lastName: res.data.lastName,
-          designation: res.data.designation,
-          employeeCode: res.data.employeeCode,
-          department: res.data.departmentId,
-          email: res.data.email,
-          phone: res.data.phone,
-          salaryType: res.data.salaryType,
-          basicSalary: res.data.basicSalary,
-          leaveCount: res.data.leaveCount,
-          dateJoined: res.data.dateOfJoining,
-          status: res.data.isActive ? "Active" : "NonActive",
+      getSingleEmployee(id , token)
+     .then((employee) => {
+      setEmployee(employee);
+
+      setFormData({
+        firstName: employee.firstName || "",
+        lastName: employee.lastName || "",
+        designation: employee.designation || "",
+        employeeCode: employee.employeeCode || "",
+        department: employee.departmentId || "",
+        email: employee.email || "",
+        phone: employee.phone || "",
+        salaryType: employee.salaryType || "MONTHLY",
+        basicSalary: employee.basicSalary || "",
+        leaveCount: employee.leaveCount || "",
+        dateJoined: employee.dateOfJoining || "",
+        status: employee.isActive ? "Active" : "NonActive",
         });
       })
-      .catch(console.error);
-  }, [id]);
+        .catch((err) => {
+      console.error("Failed to load employee", err);
+    });
+}, [id, token]);
 
   // Load departments
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/departments")
+       getAllDepartments()
       .then((res) => setDepartments(res.data))
       .catch(console.error);
   }, []);

@@ -20,6 +20,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
      */
     List<Employee> findByOrganizationUuid(String organizationUuid);
 
+
+
     /**
      * Find employees by organization UUID with pagination
      */

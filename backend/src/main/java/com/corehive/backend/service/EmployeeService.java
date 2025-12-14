@@ -91,9 +91,27 @@ public class EmployeeService {
         }
     }
 
+    //************************************************//
+    //GET ONE EMPLOYEE//
+    //************************************************//
+    public EmployeeResponseDTO getEmployeeById(String organizationUuid, Long id) {
+        // 1️) Validate organization
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
+        }
 
-    public Optional<Employee> getEmployeeById(Long id) {
-        return employeeRepository.findById(id);
+        // 2️) Fetch employee safely
+        Employee employee = employeeRepository
+                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException(
+                                "Employee with id " + id + " not found in this organization"
+                        )
+                );
+
+        // 3) Map entity → DTO
+        return employeeMapper.toDto(employee);
+
     }
 
 

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Optional;
 
 
 @CrossOrigin(origins = "http://localhost:3000")
@@ -40,9 +41,28 @@ public class EmployeeController {
 
         PaginatedResponseItemDTO paginatedResponseItemDTO = employeeService.getAllEmployeesWithPaginated(organizationUuid , page , size);
         return new ResponseEntity<StandardResponse>(
-                new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
+                new StandardResponse(200, "All employee fetched Successfully", paginatedResponseItemDTO), HttpStatus.OK
         );
     }
+
+    //************************************************//
+    //GET ONE EMPLOYEE//
+    //************************************************//
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getById(HttpServletRequest httpRequest, @PathVariable Long id) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        EmployeeResponseDTO employee = employeeService.getEmployeeById(organizationUuid ,id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "One employee fetched Successfully", employee),
+                HttpStatus.OK
+        );
+    }
+
+//    public Employee getById(@PathVariable Long id) {
+//        return employeeService.getEmployeeById(id).orElse(null);
+//    }
 
     //************************************************//
     //MAKE DEACTIVATE EMPLOYEE//
@@ -76,11 +96,6 @@ public class EmployeeController {
                 new StandardResponse(200, "Employee created Successfully", null),
                 HttpStatus.OK
         );
-    }
-
-    @GetMapping("/{id}")
-    public Employee getById(@PathVariable Long id) {
-        return employeeService.getEmployeeById(id).orElse(null);
     }
 
 

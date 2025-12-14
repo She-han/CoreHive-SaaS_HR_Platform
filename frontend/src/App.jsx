@@ -42,6 +42,8 @@ import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
+import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
+import EditEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
 import LeaveManagement from './pages/hrstaff/LeaveManagement';
 import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
@@ -279,8 +281,9 @@ const HRStaffRoutes = () => {
     <Routes>
       <Route element={<MainHRLayout />}>
         <Route path="dashboard" element={<HRDashboard />} />
-        {/* Add more HR pages here later */}
         <Route path="EmployeeManagement" element={<EmployeeManagement />} /> 
+        <Route path="EmployeeManagement/addemployee" element={<AddEmployee />} /> 
+        <Route path="EmployeeManagement/editemployee/:id" element={<EditEmployee />} />  {/* ADD :id parameter */}
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 

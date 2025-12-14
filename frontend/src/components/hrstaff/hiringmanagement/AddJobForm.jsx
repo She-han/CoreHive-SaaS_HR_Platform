@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { createJobPosting  , getAllDepartments} from "../../../api/hiringService";
+import { getAllDepartments   } from "../../../api/departmentApi";
+import { createJobPosting } from "../../../api/hiringService";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
@@ -23,17 +26,13 @@ export default function AddJobForm() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
 
- useEffect(() => {
-  async function loadDepartments() {
-    try {
-      const data = await getAllDepartments();
-      setDepartments(data || []);
-    } catch (error) {
-      console.error("Failed to load departments:", error);
-    }
-  }
+  const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
 
-  loadDepartments();
+ useEffect(() => {
+      getAllDepartments()
+    .then(res => setDepartments(res.data))
+    .catch(err => console.error("Error loading departments", err));
 }, []);
 
   function handleInput(e) {
@@ -90,7 +89,7 @@ export default function AddJobForm() {
     Object.entries(form).forEach(([key, value]) => payload.append(key, value));
     if (avatarFile) payload.append("avatar", avatarFile);
 
-    await createJobPosting(payload);
+    await createJobPosting(payload , token);
 
     Swal.fire({
       title: "Success!",

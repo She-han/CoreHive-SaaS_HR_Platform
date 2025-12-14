@@ -1,12 +1,11 @@
 package com.corehive.backend.service;
 
-import com.corehive.backend.dto.EmployeeRequestDTO;
-import com.corehive.backend.dto.JobPostingRequestDTO;
+import com.corehive.backend.dto.request.JobPostingRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
-import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.dto.response.JobPostingResponseDTO;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
-import com.corehive.backend.model.Employee;
+import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
+import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.util.mappers.JobPostingMapper;
@@ -15,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -78,71 +76,117 @@ public class JobPostingService {
     }
 
     //CREATE
-    public JobPosting createJobPosting(JobPostingRequestDTO req) {
+    public JobPosting createJobPosting(String organizationUuid, JobPostingRequestDTO req , Long userId) {
 
-        JobPosting job = new JobPosting();
-
-        job.setOrganizationUuid(
-                req.getOrganizationUuid() != null ? req.getOrganizationUuid() : "ORG-0001"
-        );
-
-        job.setTitle(req.getTitle());
-        job.setDescription(req.getDescription());
-        job.setDepartment(req.getDepartment());
-
-        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
-        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
-
-        if (req.getPostedDate() != null) {
-            job.setPostedDate(LocalDate.parse(req.getPostedDate()));
+        // 1) Validate organization
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
         }
 
-        if (req.getClosingDate() != null) {
-            job.setClosingDate(LocalDate.parse(req.getClosingDate()));
+        // 2️) Validate request object
+        if (req == null) {
+            throw new InvalidJobPostingException("Job posting request cannot be null");
         }
 
-        job.setAvailableVacancies(req.getAvailableVacancies());
-        job.setPostedBy(1L); // TEMP FIX - Replace with logged user later
+        try{
+            // 3️) Map DTO → Entity
+            JobPosting jobPosting = jobPostingMapper.toEntity(req);
 
-        job.setCreatedAt(LocalDateTime.now());
+            // 4️) Set system-controlled fields
+            jobPosting.setOrganizationUuid(organizationUuid);
+            jobPosting.setCreatedAt(LocalDateTime.now());
+            jobPosting.setPostedBy(userId);
 
-        return jobPostingRepository.save(job);
+            // 5️) Enum conversion (safe)
+            jobPosting.setEmploymentType(
+                    JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase())
+            );
+
+            jobPosting.setStatus(
+                    JobPosting.Status.valueOf(req.getStatus().toUpperCase())
+            );
+
+            // 6) Date conversion
+            if (req.getPostedDate() != null) {
+                jobPosting.setPostedDate(LocalDate.parse(req.getPostedDate()));
+            }
+
+            if (req.getClosingDate() != null) {
+                jobPosting.setClosingDate(LocalDate.parse(req.getClosingDate()));
+            }
+
+            // 7️) Save
+            return jobPostingRepository.save(jobPosting);
+
+        }catch(IllegalArgumentException ex){
+            throw new InvalidJobPostingException("Invalid enum value provided");
+        }catch(Exception e){
+            throw new JobPostingCreationException("Failed to create job posting");
+        }
+
+//        JobPosting job = new JobPosting();
+//
+//        job.setOrganizationUuid(
+//                req.getOrganizationUuid() != null ? req.getOrganizationUuid() : "ORG-0001"
+//        );
+//
+//        job.setTitle(req.getTitle());
+//        job.setDescription(req.getDescription());
+//        job.setDepartment(req.getDepartment());
+//
+//        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
+//        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
+//
+//        if (req.getPostedDate() != null) {
+//            job.setPostedDate(LocalDate.parse(req.getPostedDate()));
+//        }
+//
+//        if (req.getClosingDate() != null) {
+//            job.setClosingDate(LocalDate.parse(req.getClosingDate()));
+//        }
+//
+//        job.setAvailableVacancies(req.getAvailableVacancies());
+//        job.setPostedBy(1L); // TEMP FIX - Replace with logged user later
+//
+//        job.setCreatedAt(LocalDateTime.now());
+//
+//        return jobPostingRepository.save(job);
     }
 
 
 
 
-    //READ-by ID
-    public Optional<JobPosting> getJobPostingById(Long id){
-        return jobPostingRepository.findById(id);
-    }
-
-    //UPDATE
-    public JobPosting updateJobPosting(Long id, JobPostingRequestDTO req) {
-
-        Optional<JobPosting> optional = jobPostingRepository.findById(id);
-        if (optional.isEmpty()) {
-            return null;  // Employee not found
-        }
-
-        JobPosting job = optional.get();
-
-        // Update fields
-        job.setTitle(req.getTitle());
-        job.setDescription(req.getDescription());
-        job.setDepartment(req.getDepartment());
-        job.setPostedDate(LocalDate.parse(req.getPostedDate()));
-        job.setClosingDate(LocalDate.parse(req.getClosingDate()));
-        job.setAvailableVacancies(req.getAvailableVacancies());
-
-        // Employee Type ENUM
-        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
-
-        // Status Type ENUM
-        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
-
-        return jobPostingRepository.save(job);
-  }
+//    //READ-by ID
+//    public Optional<JobPosting> getJobPostingById(Long id){
+//        return jobPostingRepository.findById(id);
+//    }
+//
+//    //UPDATE
+//    public JobPosting updateJobPosting(Long id, JobPostingRequestDTO req) {
+//
+//        Optional<JobPosting> optional = jobPostingRepository.findById(id);
+//        if (optional.isEmpty()) {
+//            return null;  // Employee not found
+//        }
+//
+//        JobPosting job = optional.get();
+//
+//        // Update fields
+//        job.setTitle(req.getTitle());
+//        job.setDescription(req.getDescription());
+//        job.setDepartment(req.getDepartment());
+//        job.setPostedDate(LocalDate.parse(req.getPostedDate()));
+//        job.setClosingDate(LocalDate.parse(req.getClosingDate()));
+//        job.setAvailableVacancies(req.getAvailableVacancies());
+//
+//        // Employee Type ENUM
+//        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
+//
+//        // Status Type ENUM
+//        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
+//
+//        return jobPostingRepository.save(job);
+//  }
 
 
     // DELETE

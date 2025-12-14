@@ -23,25 +23,20 @@ export const deleteJobPosting = async (id) => {
 };
 
 //3)Create a Job posting
-export const createJobPosting = async (formData) => {
-  const res = await axios.post(
-    `${BASE}/job-postings`,
-    formData,
+export async function createJobPosting(data, token) {
+  return axios.post(
+    `${BASE}/orgs/job-postings`,
+    data,
     {
       headers: {
-        "Content-Type": "multipart/form-data",
-      },
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
     }
-  );
-  return res.data;
-};
+  )
+  .then(res => res.data)
+  .catch(err => {
+    throw new Error(err.response?.data?.message || err.message);
+  });
+}
 
-/* =========================
-   DEPARTMENTS
-========================= */
-
-// 4) GET all departments
-export const getAllDepartments = async () => {
-  const res = await axios.get(`${BASE}/org-admin/departments`);
-  return res.data; // ApiResponse
-};

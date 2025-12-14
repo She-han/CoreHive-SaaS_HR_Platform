@@ -31,39 +31,6 @@ public class JobPostingService {
         this.jobPostingMapper = jobPostingMapper;
     }
 
-    //CREATE
-    public JobPosting createJobPosting(JobPostingRequestDTO req) {
-
-        JobPosting job = new JobPosting();
-
-        job.setOrganizationUuid(
-                req.getOrganizationUuid() != null ? req.getOrganizationUuid() : "ORG-0001"
-        );
-
-        job.setTitle(req.getTitle());
-        job.setDescription(req.getDescription());
-        job.setDepartment(req.getDepartment());
-
-        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
-        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
-
-        if (req.getPostedDate() != null) {
-            job.setPostedDate(LocalDate.parse(req.getPostedDate()));
-        }
-
-        if (req.getClosingDate() != null) {
-            job.setClosingDate(LocalDate.parse(req.getClosingDate()));
-        }
-
-        job.setAvailableVacancies(req.getAvailableVacancies());
-        job.setPostedBy(1L); // TEMP FIX - Replace with logged user later
-
-        job.setCreatedAt(LocalDateTime.now());
-
-        return jobPostingRepository.save(job);
-    }
-
-
     //************************************************//
     //GET ALL JOB-POSTINGS//
     //************************************************//
@@ -109,6 +76,41 @@ public class JobPostingService {
 
         return paginatedResponse;
     }
+
+    //CREATE
+    public JobPosting createJobPosting(JobPostingRequestDTO req) {
+
+        JobPosting job = new JobPosting();
+
+        job.setOrganizationUuid(
+                req.getOrganizationUuid() != null ? req.getOrganizationUuid() : "ORG-0001"
+        );
+
+        job.setTitle(req.getTitle());
+        job.setDescription(req.getDescription());
+        job.setDepartment(req.getDepartment());
+
+        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
+        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
+
+        if (req.getPostedDate() != null) {
+            job.setPostedDate(LocalDate.parse(req.getPostedDate()));
+        }
+
+        if (req.getClosingDate() != null) {
+            job.setClosingDate(LocalDate.parse(req.getClosingDate()));
+        }
+
+        job.setAvailableVacancies(req.getAvailableVacancies());
+        job.setPostedBy(1L); // TEMP FIX - Replace with logged user later
+
+        job.setCreatedAt(LocalDateTime.now());
+
+        return jobPostingRepository.save(job);
+    }
+
+
+
 
     //READ-by ID
     public Optional<JobPosting> getJobPostingById(Long id){

@@ -39,10 +39,19 @@ public class EmployeeService {
             throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
         }
 
-        // 2. Create Pageable object
+        // 2️. Validate pagination parameters
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number must be 0 or greater");
+        }
+
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be greater than 0");
+        }
+
+        // 3. Create Pageable object
         Pageable pageable = PageRequest.of(page, size);
 
-        // 3. Fetch employees
+        // 4. Fetch employees
         Page<Employee> employeePage = employeeRepository.findByOrganizationUuid(orgUuid, pageable);
 
         // 5. Map entities to DTOs

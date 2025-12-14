@@ -8,15 +8,17 @@ import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.service.JobPostingService;
 import com.corehive.backend.util.StandardResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/orgs/{orgUuid}/job-postings")
-//@CrossOrigin(origins = "*")
+@RequestMapping("/api/orgs/job-postings")
+@CrossOrigin(origins = "*")
 public class JobPostingController {
     private final JobPostingService jobPostingService;
 
@@ -24,28 +26,33 @@ public class JobPostingController {
         this.jobPostingService = jobPostingService;
     }
 
+    //************************************************//
+    //GET ALL JOB-POSTINGS//
+    //************************************************//
+    @GetMapping
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse>  getAllJobPostings(
+            HttpServletRequest httpRequest,
+            @RequestParam(value = "page") int page ,
+            @RequestParam(value = "size") int size
+    )
+    {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+
+        PaginatedResponseItemDTO paginatedResponseItemDTO = jobPostingService.getAllJobPostingsWithPaginated(organizationUuid , page , size);
+
+        return new ResponseEntity<StandardResponse>(
+                new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
+        );
+    }
+
+
     //CREATE
     @PostMapping
     public ResponseEntity<JobPosting> createJobPosting(@RequestBody JobPostingRequestDTO req) {
         JobPosting created = jobPostingService.createJobPosting(req);
         return ResponseEntity.ok(created);
-    }
-
-
-    //************************************************//
-    //GET ALL JOB-POSTINGS//
-    //************************************************//
-    @GetMapping
-    public ResponseEntity<StandardResponse>  getAllJobPostings(
-            @PathVariable String orgUuid ,
-            @RequestParam(value = "page") int page ,
-            @RequestParam(value = "size") int size)
-    {
-        PaginatedResponseItemDTO paginatedResponseItemDTO = jobPostingService.getAllJobPostingsWithPaginated(orgUuid , page , size);
-
-        return new ResponseEntity<StandardResponse>(
-                new StandardResponse(200, "Success", paginatedResponseItemDTO), HttpStatus.OK
-        );
     }
 
 

@@ -7,6 +7,9 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { getAllJobPostings , deleteJobPosting} from "../../api/hiringService";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../store/slices/authSlice";
+
 
 
 const MySwal = withReactContent(Swal);//allowing you to use React elements inside popups.
@@ -15,20 +18,24 @@ export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
   const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
   const [loading, setLoading] = useState(true);
-  const orgUuid = "org-uuid-001";
 
   //For pagenated
   const [page, setPage] = useState(0);       // current page
   const [size, setSize] = useState(6);      // items per page
-  const [totalPages, setTotalPages] = useState(0);  
+  const [totalPages, setTotalPages] = useState(0); 
+  
+   const user = useSelector(selectUser); // get token from Redux
+    const token = user?.token;
 
   // Fetch job postings from backend
- useEffect(() => {
+useEffect(() => {
+  if (!token) return; // exit if not logged in
+
   const fetchJobs = async () => {
     try {
-      const data = await getAllJobPostings(orgUuid , page , size);
+      const data = await getAllJobPostings(page, size, token);
       setJobs(data.items || []);
-        setTotalPages(data.totalPages || 0);
+      setTotalPages(data.totalPages || 0);
     } catch (error) {
       console.error("Error fetching job postings:", error);
     } finally {
@@ -37,7 +44,7 @@ export default function HiringManagement() {
   };
 
   fetchJobs();
-}, [orgUuid, page, size]);
+}, [token, page, size]); // ✅ token added
 
 
    //Delete job posting with confirmation popup

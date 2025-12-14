@@ -62,7 +62,7 @@ export async function createEmployee(data, token) {
 }
 
 
-// 1) GET ONE  EMPLOYEE BY ID
+// 4) GET ONE  EMPLOYEE BY ID
 export async function getSingleEmployee(id , token) {
   if (!id) {
     throw new Error("Employee ID is required");
@@ -78,4 +78,27 @@ export async function getSingleEmployee(id , token) {
     .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
+}
+
+// 5) UPDATE EMPLOYEE
+export async function updateEmployee(id, payload , token) {
+  if (!id) {
+    throw new Error("Employee ID is required");
+  }
+
+  try {
+    const response = await axios.put(
+      `${BASE}/orgs/employees/${id}`, 
+      payload, // send JSON body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data.data; // assuming your backend returns { data: ... }
+  } catch (err) {
+    throw new Error(err.response?.data?.message || err.message);
+  }
 }

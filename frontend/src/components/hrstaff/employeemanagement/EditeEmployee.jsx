@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate, useParams } from "react-router-dom";
 import { getSingleEmployee } from "../../../api/employeeService"; 
 import { getAllDepartments } from "../../../api/departmentApi";
 import { useSelector } from "react-redux";
  import { selectUser } from "../../../store/slices/authSlice";
+ import { updateEmployee } from "../../../api/employeeService";
 
 
 export default function EditEmployee() {
@@ -68,17 +68,49 @@ export default function EditEmployee() {
       .catch(console.error);
   }, []);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) =>{
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!formData.firstName || !formData.lastName) {
+      return Swal.fire({
+        title: "Error",
+        text: "First name and last name are required",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+    }
+
+    
+
     try {
-      await axios.put(
-        `http://localhost:8080/api/employees/${id}`,
-        formData
-      );
+
+      const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      designation: formData.designation,
+      employeeCode: formData.employeeCode,
+      department: formData.department || null,              // send null if not selected
+      email: formData.email,
+      phone: formData.phone,
+      salaryType: formData.salaryType,
+      basicSalary: formData.basicSalary ? formData.basicSalary : null, // null if empty
+      leaveCount: formData.leaveCount ? Number(formData.leaveCount) : 0, // convert to number
+      dateJoined: formData.dateJoined ? formData.dateJoined : null,      // null if empty
+      status: formData.status,
+    };
+      
+    const updated = await updateEmployee(id, payload, token);
+    console.log("Updated employee:", updated);
+  
 
       Swal.fire({
         title: "Updated!",

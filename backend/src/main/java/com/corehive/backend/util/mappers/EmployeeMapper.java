@@ -34,6 +34,10 @@ public interface EmployeeMapper {
     // UPDATE existing entity
     @Mapping(target = "department", source = "department", qualifiedByName = "toDepartment")
     @Mapping(target = "departmentId", source = "department")
+    @Mapping(target = "isActive", source = "status", qualifiedByName = "toActiveStatus")
+    @Mapping(target = "basicSalary", source = "basicSalary", qualifiedByName = "toBigDecimal")
+    @Mapping(target = "dateOfJoining", source = "dateJoined", qualifiedByName = "toLocalDate")
+    @Mapping(target = "salaryType", source = "salaryType", qualifiedByName = "toSalaryType")
     void updateEmployeeFromDto(EmployeeRequestDTO dto, @MappingTarget Employee employee);
 
     // =========================

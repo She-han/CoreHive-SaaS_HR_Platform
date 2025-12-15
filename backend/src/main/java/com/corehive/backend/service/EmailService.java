@@ -15,6 +15,17 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Async
+    public void sendOrganizationRegistrationEmail(String toEmail, String orgName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("shehangarusinghe@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("CoreHive - " + orgName + " Registration request on review");
+        message.setText("Your "+orgName + "'s organization registration request is under review by our team.\n\n" +
+                "It will be take 6 to 24 hours.\n\n"+
+                "We will notify you once the review process is complete. Thank you for choosing CoreHive for your HR management needs!\n\n" );
+    }
+
+    @Async
     public void sendOrgPasswordEmail(String toEmail, String tempPassword, String orgName) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("shehangarusinghe@gmail.com");

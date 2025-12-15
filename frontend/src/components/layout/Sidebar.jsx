@@ -14,6 +14,8 @@ import {
   BuildingOfficeIcon,
   UserIcon,
   EyeIcon,
+  BellIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 import { FiUsers, FiHeadphones } from 'react-icons/fi';
 import { TbDeviceAirpodsCase } from 'react-icons/tb';
@@ -302,25 +304,37 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'My Profile',
             icon: UserIcon,
             path: '/employee/profile',
-            current: location.pathname === '/employee/profile'
+            current: location.pathname === '/employee/profile' || location.pathname.startsWith('/employee/profile/edit')
           },
           {
-            name: 'My Leaves',
+            name: 'Leave & Attendance',
             icon: CalendarDaysIcon,
-            path: '/employee/viewleaves',
-            current: location.pathname.startsWith('/employee/viewleaves')
+            path: '/employee/viewleaveandattendance',
+            current: location.pathname.startsWith('/employee/viewleaveandattendance')
           },
           {
-            name: 'My Attendance',
+            name: 'Leave Request',
             icon: ClockIcon,
-            path: '/employee/viewattendance',
-            current: location.pathname.startsWith('/employee/viewattendance')
+            path: '/employee/leaverequest',
+            current: location.pathname.startsWith('/employee/leaverequest')
+          },
+          {
+            name: 'Feedback',
+            icon: MessageSquare,
+            path: '/employee/feedback',
+            current: location.pathname.startsWith('/employee/feedback')
+          },
+          {
+            name: 'Notices',
+            icon: BellIcon,
+            path: '/employee/notices',
+            current: location.pathname.startsWith('/employee/notices')
           },
           {
             name: 'My Payslips',
-            icon: EyeIcon,
-            path: '/employee/viewpayslips',
-            current: location.pathname.startsWith('/employee/viewpayslips')
+            icon: DocumentTextIcon,
+            path: '/employee/payslips',
+            current: location.pathname.startsWith('/employee/payslips')
           }
         ];
 

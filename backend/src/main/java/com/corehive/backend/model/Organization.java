@@ -38,12 +38,17 @@ public class Organization {
     @Column(name = "business_registration_number", length = 100)
     private String businessRegistrationNumber;
 
+    @Column(name = "business_registration_document", length = 500)
+    private String businessRegistrationDocument;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrganizationStatus status = OrganizationStatus.PENDING_APPROVAL;
 
     @Column(name = "employee_count_range", nullable = false, length = 50)
     private String employeeCountRange;
+
+
 
     // Module flags
     @Column(name = "module_qr_attendance_marking")

@@ -130,7 +130,7 @@ public class OrganizationService {
                     AppUser savedUser = appUserRepository.save(adminUser);
                     activatedCount++;
                     try {
-                        emailService.sendPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
+                        emailService.sendOrgPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
                     } catch (Exception e) {
                         System.err.println("Failed to send email: " + e.getMessage());
                     }
@@ -303,11 +303,13 @@ public class OrganizationService {
                 .organizationUuid(org.getOrganizationUuid())
                 .name(org.getName())
                 .email(org.getEmail())
-                .status(org.getStatus().name()) // FIXED: Use .name() instead of .toString()
+                .status(org.getStatus().name())
+                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
+                .businessRegistrationDocument(org.getBusinessRegistrationDocument()) // NEW FIELD
                 .employeeCountRange(org.getEmployeeCountRange())
                 .createdAt(org.getCreatedAt())
                 .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
-                .moduleFaceRecognitionAttendanceMarking((org.getModuleFaceRecognitionAttendanceMarking()))
+                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
                 .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
                 .moduleHiringManagement(org.getModuleHiringManagement())
                 .modulesConfigured(org.getModulesConfigured())

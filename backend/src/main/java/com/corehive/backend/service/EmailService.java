@@ -15,7 +15,18 @@ public class EmailService {
     private JavaMailSender mailSender;
 
     @Async
-    public void sendPasswordEmail(String toEmail, String tempPassword, String orgName) {
+    public void sendOrganizationRegistrationEmail(String toEmail, String orgName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("shehangarusinghe@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("CoreHive - " + orgName + " Registration request on review");
+        message.setText("Your "+orgName + "'s organization registration request is under review by our team.\n\n" +
+                "It will be take 6 to 24 hours.\n\n"+
+                "We will notify you once the review process is complete. Thank you for choosing CoreHive for your HR management needs!\n\n" );
+    }
+
+    @Async
+    public void sendOrgPasswordEmail(String toEmail, String tempPassword, String orgName) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("shehangarusinghe@gmail.com");
         message.setTo(toEmail);
@@ -33,12 +44,28 @@ public class EmailService {
     }
 
     @Async
-    public void sendUserPasswordEmail(String toEmail, String tempPassword, String orgName) {
+    public void sendHRPasswordEmail(String toEmail, String tempPassword, String orgName) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("shehangarusinghe@gmail.com");
         message.setTo(toEmail);
         message.setSubject("Congratulations! - You're added as a "+orgName+"'s HR Staff member.");
         message.setText("You are added as a HR management staff member for "+orgName+" via CoreHive HR management platform.\n\n" +
+                "Here are your login credentials:\n" +
+                "Email: " + toEmail + "\n" +
+                "Temporary Password: " + tempPassword + "\n\n" +
+                "Please login and change your password immediately.\n\n" );
+
+        mailSender.send(message);
+        System.out.println("Email sent successfully to " + toEmail);
+    }
+
+    @Async
+    public void sendEmployeePasswordEmail(String toEmail, String tempPassword, String orgName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("shehangarusinghe@gmail.com");
+        message.setTo(toEmail);
+        message.setSubject("Congratulations! - You're taken as a "+orgName+"'s employee.");
+        message.setText("You are taken as a employee for "+orgName+" via CoreHive HR management platform.\n\n" +
                 "Here are your login credentials:\n" +
                 "Email: " + toEmail + "\n" +
                 "Temporary Password: " + tempPassword + "\n\n" +

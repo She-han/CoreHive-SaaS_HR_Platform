@@ -352,6 +352,8 @@ public class AttendanceService {
                 .build();
     }
 
+
+
     private AttendanceHistoryResponse mapToHistoryResponse(Attendance attendance) {
         String workingHours = null;
         if (attendance.getCheckInTime() != null && attendance.getCheckOutTime() != null) {

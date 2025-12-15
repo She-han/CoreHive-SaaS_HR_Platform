@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/job-postings").permitAll()
+                        .requestMatchers("/error").permitAll()
 
 
                         // Protected auth endpoints (requires valid JWT token)
@@ -78,9 +79,14 @@ public class SecurityConfig {
                         // Departments - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/org-admin/departments", "/api/org-admin/departments/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
 
+                        // Designations - allow both ORG_ADMIN and HR_STAFF
+                        .requestMatchers("/api/org-admin/designations", "/api/org-admin/designations/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+
                         // ORG_ADMIN endpoints - ADD THIS SECTION
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
-                        
+
+                        .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+
                         // Organization-level endpoints
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
                         .requestMatchers("/api/employee/").hasRole("EMPLOYEE")

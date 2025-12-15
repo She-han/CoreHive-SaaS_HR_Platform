@@ -85,14 +85,26 @@ async def register_employee_face(
     Register an employee's face.
     
     මේකෙන් කරන්නේ:
-    1. Photo එක save කරනවා
+    1. Photo එක save කරනවා (BOTH original photo AND embedding)
     2. Face detect කරනවා
-    3. Embedding extract කරනවා (512-dim vector)
-    4. Embedding save කරනවා
+    3. Embedding extract කරනවා (128-dim or 512-dim vector)
+    4. Embedding save කරනවා .pkl file එකේ
     
     Future attendance marking වලදී මේ embedding එක use කරනවා compare කරන්න.
     """
     check_dependencies()
+    
+    # Validate inputs
+    if not employee_id or not organization_uuid:
+        raise HTTPException(
+            status_code=400,
+            detail="employee_id and organization_uuid are required"
+        )
+    
+    logger.info(f"🔵 Registration request received:")
+    logger.info(f"   Employee ID: {employee_id}")
+    logger.info(f"   Organization: {organization_uuid}")
+    logger.info(f"   Image filename: {image.filename}")
     
     # Save photo to organization folder
     org_dir = UPLOAD_DIR / organization_uuid
@@ -101,9 +113,24 @@ async def register_employee_face(
     
     try:
         # Save the uploaded file
+        logger.info(f"💾 Saving photo to: {photo_path}")
         save_upload_file(image, photo_path)
         
+        # Verify file was saved
+        if not photo_path.exists():
+            logger.error(f"❌ Photo file not found after save: {photo_path}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to save employee photo"
+            )
+        
+        file_size = photo_path.stat().st_size
+        logger.info(f"✅ Photo saved successfully: {photo_path} ({file_size} bytes)")
+        
         # Register using embedding service
+        # This will:
+        # 1. Extract face embedding from photo
+        # 2. Save embedding to .pkl file
         embedding_service = get_embedding_service()
         success, message = embedding_service.register_employee(
             organization_uuid=organization_uuid,
@@ -112,17 +139,29 @@ async def register_employee_face(
         )
         
         if success:
-            logger.info(f"✅ Registered employee {employee_id} in org {organization_uuid}")
+            pkl_file = embedding_service._get_org_file(organization_uuid)
+            logger.info(f"✅ Registration successful!")
+            logger.info(f"   Employee ID: {employee_id}")
+            logger.info(f"   Organization: {organization_uuid}")
+            logger.info(f"   Photo path: {photo_path}")
+            logger.info(f"   Embedding file: {pkl_file}")
+            
             return {
                 "success": True,
                 "message": message,
                 "employee_id": employee_id,
-                "organization_uuid": organization_uuid
+                "organization_uuid": organization_uuid,
+                "photo_path": str(photo_path),
+                "embedding_file": str(pkl_file),
+                "registered": True
             }
         else:
             # Delete photo if registration failed
             if photo_path.exists():
                 photo_path.unlink()
+                logger.warning(f"🗑️ Deleted photo due to registration failure: {photo_path}")
+            
+            logger.error(f"❌ Registration failed: {message}")
             raise HTTPException(status_code=400, detail=message)
             
     except HTTPException:
@@ -131,8 +170,10 @@ async def register_employee_face(
         # Cleanup on error
         if photo_path.exists():
             photo_path.unlink()
-        logger.error(f"Registration error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+            logger.error(f"🗑️ Deleted photo due to error: {photo_path}")
+        
+        logger.error(f"❌ Registration error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 
 @router.post("/identify")
@@ -153,12 +194,23 @@ async def identify_employee(
     """
     check_dependencies()
     
+    logger.info(f"🔍 Identification request for org: {organization_uuid}")
+    
     # Save live image temporarily
     temp_filename = f"identify_{uuid.uuid4().hex}.jpg"
     temp_path = TEMP_DIR / temp_filename
     
     try:
         save_upload_file(image, temp_path)
+        logger.info(f"💾 Saved temp image: {temp_path}")
+        
+        # Verify temp file exists
+        if not temp_path.exists():
+            logger.error("❌ Failed to save temporary image")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to save temporary image"
+            )
         
         # Identify using embedding service
         embedding_service = get_embedding_service()
@@ -167,12 +219,26 @@ async def identify_employee(
             image_path=str(temp_path)
         )
         
+        if result.get("identified"):
+            logger.info(f"✅ Identified employee: {result.get('employee_id')} ({result.get('similarity_percent')})")
+        else:
+            logger.warning(f"⚠️ Face not identified: {result.get('message')}")
+        
         return result
         
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Identification error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Identification failed: {str(e)}"
+        )
     finally:
         # Always cleanup temp file
         if temp_path.exists():
             temp_path.unlink()
+            logger.debug(f"🗑️ Cleaned up temp file: {temp_path}")
 
 
 @router.post("/verify")
@@ -188,6 +254,8 @@ async def verify_employee_face(
     """
     check_dependencies()
     
+    logger.info(f"✓ Verification request: employee={employee_id}, org={organization_uuid}")
+    
     temp_filename = f"verify_{uuid.uuid4().hex}.jpg"
     temp_path = TEMP_DIR / temp_filename
     
@@ -201,14 +269,17 @@ async def verify_employee_face(
             image_path=str(temp_path)
         )
         
+        if result.get("verified"):
+            logger.info(f"✅ Verification successful: {result.get('similarity_percent')}")
+        else:
+            logger.warning(f"❌ Verification failed: {result.get('message')}")
+        
         return result
         
     finally:
         if temp_path.exists():
             temp_path.unlink()
 
-
-# Add this endpoint (put it before the last line of the file)
 
 @router.get("/status/{organization_uuid}/{employee_id}")
 async def check_face_status(organization_uuid: str, employee_id: str):
@@ -219,16 +290,35 @@ async def check_face_status(organization_uuid: str, employee_id: str):
     """
     check_dependencies()
     
+    logger.info(f"📋 Status check: employee={employee_id}, org={organization_uuid}")
+    
     embedding_service = get_embedding_service()
     
     # Check if employee exists in cache
+    # Convert employee_id to string to match registration
+    employee_id_str = str(employee_id)
     org_embeddings = embedding_service._cache.get(organization_uuid, {})
-    is_registered = employee_id in org_embeddings or str(employee_id) in org_embeddings
+    
+    # Check both string and original employee_id
+    is_registered = (
+        employee_id_str in org_embeddings or 
+        employee_id in org_embeddings
+    )
+    
+    logger.info(f"📊 Status result: registered={is_registered}")
+    logger.info(f"   Organization has {len(org_embeddings)} registered employees")
+    
+    if is_registered:
+        logger.info(f"   ✅ Employee {employee_id} is registered")
+    else:
+        logger.info(f"   ❌ Employee {employee_id} is NOT registered")
+        logger.debug(f"   Registered IDs in org: {list(org_embeddings.keys())}")
     
     return {
         "employee_id": employee_id,
         "organization_uuid": organization_uuid,
-        "registered": is_registered
+        "registered": is_registered,
+        "total_registered": len(org_embeddings)
     }
 
 
@@ -244,17 +334,24 @@ async def get_organization_stats(organization_uuid: str):
     org_embeddings = embedding_service._cache.get(organization_uuid, {})
     registered_employees = list(org_embeddings.keys())
     
+    logger.info(f"📊 Stats for org {organization_uuid}: {len(registered_employees)} employees")
+    
     return {
         "organization_uuid": organization_uuid,
         "total_registered": len(registered_employees),
         "registered_employees": registered_employees
     }
 
+
 @router.delete("/deregister/{organization_uuid}/{employee_id}")
 async def deregister_employee_face(organization_uuid: str, employee_id: str):
     """
     Remove an employee's face registration.
     """
+    check_dependencies()
+    
+    logger.info(f"🗑️ Deregistration request: employee={employee_id}, org={organization_uuid}")
+    
     embedding_service = get_embedding_service()
     success = embedding_service.deregister_employee(organization_uuid, employee_id)
     
@@ -262,13 +359,14 @@ async def deregister_employee_face(organization_uuid: str, employee_id: str):
     photo_path = UPLOAD_DIR / organization_uuid / f"{employee_id}.jpg"
     if photo_path.exists():
         photo_path.unlink()
+        logger.info(f"   Deleted photo: {photo_path}")
     
     if success:
+        logger.info(f"✅ Employee {employee_id} deregistered successfully")
         return {
             "success": True,
             "message": "Employee face deregistered successfully"
         }
     else:
+        logger.warning(f"❌ Employee {employee_id} not found or not registered")
         raise HTTPException(status_code=404, detail="Employee not found or not registered")
-
-

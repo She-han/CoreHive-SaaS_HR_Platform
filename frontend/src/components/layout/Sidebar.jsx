@@ -1,35 +1,50 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import {
-  HomeIcon,
-  BuildingOfficeIcon,
-  UsersIcon,
-  DocumentTextIcon,
-  Cog6ToothIcon,
-  ChartBarIcon,
-  CalendarDaysIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-  UserIcon,
-  EyeIcon
-} from '@heroicons/react/24/outline';
-import { LogOut } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { FiUsers, FiHeadphones } from "react-icons/fi";
-import { TbDeviceAirpodsCase } from "react-icons/tb";
-import { AiOutlineAudit } from "react-icons/ai";
-import { MdQueryStats } from "react-icons/md";
-
-
-
+import { LogOut } from 'lucide-react';
+import {
+  HomeIcon,
+  UsersIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+  BuildingOfficeIcon,
+  UserIcon,
+  EyeIcon,
+  BellIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline';
+import { FiUsers, FiHeadphones } from 'react-icons/fi';
+import { TbDeviceAirpodsCase } from 'react-icons/tb';
+import { AiOutlineAudit } from 'react-icons/ai';
+import { MdQueryStats } from 'react-icons/md';
+import { 
+  ScanFace, 
+  QrCode, 
+  MessageSquare, 
+  UserPlus,
+  Briefcase,
+  DollarSign
+} from 'lucide-react';
+import * as moduleApi from '../../api/moduleApi';
 
 const Sidebar = ({ isCollapsed = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+
+  // Module states
+  const [organizationModules, setOrganizationModules] = useState({
+    moduleFaceRecognitionAttendanceMarking: false,
+    moduleQrAttendanceMarking: false,
+    moduleEmployeeFeedback: false,
+    moduleHiringManagement: false
+  });
+  const [modulesLoading, setModulesLoading] = useState(true);
 
   // User initials for avatar
   const userInitials = useMemo(() => {
@@ -49,6 +64,34 @@ const Sidebar = ({ isCollapsed = false }) => {
     }
     return user?.role?.replace('_', ' ') || 'User';
   }, [user]);
+
+  // Fetch organization modules for HR_STAFF
+  useEffect(() => {
+    const fetchModules = async () => {
+      if (user?.role === 'HR_STAFF' || user?.role === 'ORG_ADMIN') {
+        try {
+          setModulesLoading(true);
+          const response = await moduleApi.getOrganizationModules();
+          if (response.success && response.data) {
+            setOrganizationModules({
+              moduleFaceRecognitionAttendanceMarking: response.data.moduleFaceRecognitionAttendanceMarking || false,
+              moduleQrAttendanceMarking: response.data.moduleQrAttendanceMarking || false,
+              moduleEmployeeFeedback: response.data.moduleEmployeeFeedback || false,
+              moduleHiringManagement: response.data.moduleHiringManagement || false
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching organization modules:', error);
+        } finally {
+          setModulesLoading(false);
+        }
+      } else {
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, [user?.role]);
 
   // Handle logout
   const handleLogout = useCallback(() => {
@@ -72,12 +115,7 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'Organizations',
             icon: BuildingOfficeIcon,
             path: '/sys_admin/organizations',
-            current: location.pathname.startsWith('/sys_admin/organizations'),
-            submenu: [
-              { name: 'All Organizations', path: '/sys_admin/organizations' },
-              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
-              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
-            ]
+            current: location.pathname.startsWith('/sys_admin/organizations')
           },
           {
             name: 'Admin Approvals',
@@ -89,23 +127,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'Users',
             icon: FiUsers,
             path: '/sys_admin/users',
-            current: location.pathname.startsWith('/sys_admin/users'),
-            submenu: [
-              { name: 'Registration Requests', path: '/sys_admin/requests/registration' },
-              { name: 'Module Requests', path: '/sys_admin/requests/modules' },
-              { name: 'Support Tickets', path: '/sys_admin/requests/support' }
-            ]
+            current: location.pathname.startsWith('/sys_admin/users')
           },
           {
             name: 'Billing & Plans',
             icon: TbDeviceAirpodsCase,
             path: '/sys_admin/billing',
-            current: location.pathname.startsWith('/sys_admin/billing'),
-            submenu: [
-              { name: 'Usage Analytics', path: '/sys_admin/reports/usage' },
-              { name: 'Performance', path: '/sys_admin/reports/performance' },
-              { name: 'System Health', path: '/sys_admin/reports/health' }
-            ]
+            current: location.pathname.startsWith('/sys_admin/billing')
           },
           {
             name: 'Audit Logs',
@@ -149,13 +177,19 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: 'Department Management',
-            icon: UsersIcon,
+            icon: BuildingOfficeIcon,
             path: '/org_admin/departmentmanagement',
             current: location.pathname.startsWith('/org_admin/departmentmanagement')
           },
           {
+            name: 'Designation Management',
+            icon: Briefcase,
+            path: '/org_admin/designationmanagement',
+            current: location.pathname.startsWith('/org_admin/designationmanagement')
+          },
+          {
             name: 'Module Configuration',
-            icon: UsersIcon,
+            icon: Cog6ToothIcon,
             path: '/org_admin/modules',
             current: location.pathname.startsWith('/org_admin/modules')
           },
@@ -174,7 +208,8 @@ const Sidebar = ({ isCollapsed = false }) => {
         ];
 
       case 'HR_STAFF':
-        return [
+        // Base navigation items (always visible)
+        const baseNavigation = [
           {
             name: 'Dashboard',
             icon: HomeIcon,
@@ -200,12 +235,68 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/hr_staff/attendancemanagement')
           },
           {
+            name: 'Payroll Management',
+            icon: DollarSign,
+            path: '/hr_staff/payrolldashboard',
+            current: location.pathname.startsWith('/hr_staff/payroll')
+          },
+          {
             name: 'HR Reports',
             icon: ChartBarIcon,
-            path: '/hr_staff/reports',
-            current: location.pathname.startsWith('/hr_staff/reports')
+            path: '/hr_staff/hrreportingmanagement',
+            current: location.pathname.startsWith('/hr_staff/hrreportingmanagement')
           }
         ];
+
+        // Module-based navigation items (conditional)
+        const moduleNavigation = [];
+
+        // Add Face Recognition Attendance if enabled
+        if (organizationModules.moduleFaceRecognitionAttendanceMarking) {
+          moduleNavigation.push({
+            name: 'Face Attendance',
+            icon: ScanFace,
+            path: '/hr_staff/faceattendance',
+            current: location.pathname.startsWith('/hr_staff/faceattendance'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add QR Attendance if enabled
+        if (organizationModules.moduleQrAttendanceMarking) {
+          moduleNavigation.push({
+            name: 'QR Attendance',
+            icon: QrCode,
+            path: '/hr_staff/qrattendance',
+            current: location.pathname.startsWith('/hr_staff/qrattendance'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add Employee Feedback if enabled
+        if (organizationModules.moduleEmployeeFeedback) {
+          moduleNavigation.push({
+            name: 'Feedback Management',
+            icon: MessageSquare,
+            path: '/hr_staff/feedbackmanagement',
+            current: location.pathname.startsWith('/hr_staff/feedbackmanagement'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add Hiring Management if enabled
+        if (organizationModules.moduleHiringManagement) {
+          moduleNavigation.push({
+            name: 'Hiring Management',
+            icon: UserPlus,
+            path: '/hr_staff/hiringmanagement',
+            current: location.pathname.startsWith('/hr_staff/hiringmanagement'),
+            moduleEnabled: true
+          });
+        }
+
+        // Combine base and module navigation
+        return [...baseNavigation, ...moduleNavigation];
 
       case 'EMPLOYEE':
         return [
@@ -213,25 +304,37 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'My Profile',
             icon: UserIcon,
             path: '/employee/profile',
-            current: location.pathname === '/employee/profile'
+            current: location.pathname === '/employee/profile' || location.pathname.startsWith('/employee/profile/edit')
           },
           {
-            name: 'My Leaves',
+            name: 'Leave & Attendance',
             icon: CalendarDaysIcon,
-            path: '/employee/viewleaves',
-            current: location.pathname.startsWith('/employee/viewleaves')
+            path: '/employee/viewleaveandattendance',
+            current: location.pathname.startsWith('/employee/viewleaveandattendance')
           },
           {
-            name: 'My Attendance',
+            name: 'Leave Request',
             icon: ClockIcon,
-            path: '/employee/viewattendance',
-            current: location.pathname.startsWith('/employee/viewattendance')
+            path: '/employee/leaverequest',
+            current: location.pathname.startsWith('/employee/leaverequest')
+          },
+          {
+            name: 'Feedback',
+            icon: MessageSquare,
+            path: '/employee/feedback',
+            current: location.pathname.startsWith('/employee/feedback')
+          },
+          {
+            name: 'Notices',
+            icon: BellIcon,
+            path: '/employee/notices',
+            current: location.pathname.startsWith('/employee/notices')
           },
           {
             name: 'My Payslips',
-            icon: EyeIcon,
-            path: '/employee/viewpayslips',
-            current: location.pathname.startsWith('/employee/viewpayslips')
+            icon: DocumentTextIcon,
+            path: '/employee/payslips',
+            current: location.pathname.startsWith('/employee/payslips')
           }
         ];
 
@@ -247,7 +350,9 @@ const Sidebar = ({ isCollapsed = false }) => {
       <div key={item.name} className="mb-1">
         <Link
           to={item.path}
-          className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200"
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            item.moduleEnabled ? 'relative' : ''
+          }`}
           style={item.current 
             ? { 
                 backgroundColor: '#F1FDF9', 
@@ -276,7 +381,14 @@ const Sidebar = ({ isCollapsed = false }) => {
             style={{ color: item.current ? '#02C39A' : '#05668D' }}
             aria-hidden="true"
           />
-          {!isCollapsed && <span>{item.name}</span>}
+          {!isCollapsed && (
+            <span className="flex-1">{item.name}</span>
+          )}
+          {!isCollapsed && item.moduleEnabled && (
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+              EXT
+            </span>
+          )}
         </Link>
       </div>
     );
@@ -290,7 +402,7 @@ const Sidebar = ({ isCollapsed = false }) => {
       <div className="flex flex-col h-full">
         {/* Header */}
         <div 
-          className="flex  h-16 px-4"
+          className="flex h-16 px-4"
           style={{ borderBottom: '2px solid #02C39A' }}
         >
           {!isCollapsed && (
@@ -323,7 +435,13 @@ const Sidebar = ({ isCollapsed = false }) => {
 
         {/* Navigation */}
         <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigationItems.map(renderMenuItem)}
+          {modulesLoading && user?.role === 'HR_STAFF' ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+            </div>
+          ) : (
+            navigationItems.map(renderMenuItem)
+          )}
         </div>
 
         {/* Footer - Profile & Logout */}

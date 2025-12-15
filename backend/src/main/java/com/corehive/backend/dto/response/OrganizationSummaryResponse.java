@@ -23,6 +23,8 @@ public class OrganizationSummaryResponse {
     private String status;
     private String employeeCountRange;
     private LocalDateTime createdAt;
+    private String businessRegistrationNumber;
+    private String businessRegistrationDocument;
     private Boolean moduleQrAttendanceMarking;
     private Boolean moduleFaceRecognitionAttendanceMarking;
     private Boolean moduleEmployeeFeedback;

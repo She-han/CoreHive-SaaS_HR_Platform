@@ -4,7 +4,8 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
-import { Camera, RefreshCw, Check, User, X } from "lucide-react";
+import * as designationApi from "../../../api/designationApi";
+import { Camera, RefreshCw, Check, User, X, Plus, ChevronDown } from "lucide-react";
 
 // ===== Face Registration API =====
 const AI_SERVICE_URL = 'http://localhost:8001';
@@ -23,6 +24,21 @@ const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   const data = await response.json();
   if (!response.ok) throw new Error(data.detail || 'Face registration failed');
   return data;
+};
+
+const checkFaceStatus = async (employeeId, organizationUuid) => {
+  try {
+    const response = await fetch(`${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`);
+    if (!response.ok) return { registered: false };
+    
+    const data = await response.json();
+    console.log("Face status check result:", data);
+    
+    return data;
+  } catch (error) {
+    console.error("Face status check failed:", error);
+    return { registered: false };
+  }
 };
 
 const base64ToBlob = (base64) => {
@@ -48,6 +64,7 @@ export default function AddEmployee() {
     department: "",
     email: "",
     phone: "",
+    nationalId: "",  // ADD THIS
     salaryType: "MONTHLY",
     basicSalary: "",
     leaveCount: "",
@@ -56,33 +73,88 @@ export default function AddEmployee() {
   });
 
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
+  const [filteredDesignations, setFilteredDesignations] = useState([]);
+  
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get organization UUID from logged-in user
   const [organizationUuid, setOrganizationUuid] = useState(null);
+  const designationInputRef = useRef(null);
  
   useEffect(() => {
-    // Load organization UUID
     const user = JSON.parse(localStorage.getItem('corehive_user') || '{}');
     setOrganizationUuid(user.organizationUuid);
     
-    // Load departments using apiClient (handles auth automatically)
     apiClient.get("/org-admin/departments")
       .then(res => {
         console.log("Departments loaded:", res.data);
-        // Extract from ApiResponse wrapper
         setDepartments(res.data.data || res.data);
       })
       .catch(err => console.error("Error loading departments", err));
+    
+    designationApi.getAllDesignations()
+      .then(res => {
+        console.log("Designations loaded:", res.data);
+        setDesignations(res.data.data || res.data);
+        setFilteredDesignations(res.data.data || res.data);
+      })
+      .catch(err => console.error("Error loading designations", err));
   }, []);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Capture face photo
+  const handleDesignationChange = (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, designation: value });
+    
+    if (value.trim()) {
+      const filtered = designations.filter(d =>
+        d.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredDesignations(filtered);
+      setShowDesignationDropdown(true);
+    } else {
+      setFilteredDesignations(designations);
+      setShowDesignationDropdown(true);
+    }
+  };
+
+  const selectDesignation = (designationName) => {
+    setFormData({ ...formData, designation: designationName });
+    setShowDesignationDropdown(false);
+  };
+
+  const createNewDesignation = async (name) => {
+    try {
+      const response = await designationApi.createDesignation({ name });
+      const newDesignation = response.data.data || response.data;
+      
+      setDesignations([...designations, newDesignation]);
+      setFormData({ ...formData, designation: newDesignation.name });
+      setShowDesignationDropdown(false);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Designation Created!',
+        text: `"${newDesignation.name}" has been added.`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error("Error creating designation:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to create designation. Please try again.',
+      });
+    }
+  };
+
   const capturePhoto = () => {
     const imageSrc = webcamRef.current?.getScreenshot();
     if (imageSrc) {
@@ -90,12 +162,10 @@ export default function AddEmployee() {
     }
   };
 
-  // Retake photo
   const retakePhoto = () => {
     setCapturedFace(null);
   };
 
-  // Confirm face photo
   const confirmFace = () => {
     setShowFaceCapture(false);
     Swal.fire({
@@ -107,20 +177,41 @@ export default function AddEmployee() {
     });
   };
 
-  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Step 1: Create employee - use apiClient (adds auth token) and include organizationUuid
+      // Check if designation exists, if not create it first
+      const designationExists = designations.some(
+        d => d.name.toLowerCase() === formData.designation.toLowerCase()
+      );
+
+      if (!designationExists && formData.designation.trim()) {
+        await createNewDesignation(formData.designation);
+      }
+
+      // Map frontend field names to backend DTO field names
       const employeeData = {
-        ...formData,
-        organizationUuid: organizationUuid  // Add organization UUID
+        employeeCode: formData.employeeCode,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        designation: formData.designation,
+        department: formData.department,
+        email: formData.email,
+        phone: formData.phone,
+        nationalId: formData.nationalId,  // ADD THIS
+        salaryType: formData.salaryType,
+        basicSalary: formData.basicSalary,
+        leaveCount: formData.leaveCount,
+        dateOfJoining: formData.dateJoined,
+        status: formData.status,
       };
       
+      console.log("Sending employee data:", employeeData);
+      
       const response = await apiClient.post("/employees", employeeData);
-      const savedEmployee = response.data;
+      const savedEmployee = response.data.data || response.data;
       console.log("Employee saved:", savedEmployee);
 
       // Step 2: Register face if photo captured
@@ -133,7 +224,6 @@ export default function AddEmployee() {
           console.log("Face registered successfully!");
         } catch (faceError) {
           console.error("Face registration failed:", faceError);
-          // Don't fail the whole process, just warn
           Swal.fire({
             icon: 'warning',
             title: 'Employee Added',
@@ -160,8 +250,8 @@ export default function AddEmployee() {
     } catch (error) {
       console.error("Error adding employee:", error);
       Swal.fire({
-        title: "Error!",
-        text: error.response?.data?.message || "Failed to save employee",
+        title: "Error",
+        text: error.response?.data?.message || "Failed to add employee. Please try again.",
         icon: "error",
         confirmButtonColor: "#d33",
       });
@@ -180,31 +270,80 @@ export default function AddEmployee() {
     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
 
-        {/* Header */}
         <div className="p-6">
           <h1 className="text-3xl font-bold text-[#0C397A] text-center">Add Employee</h1>
           <p className="text-gray-500 text-center mt-1">Fill in the employee details</p>
         </div>
 
-        {/* Scrollable Fields */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
           {/* PERSONAL INFO */}
           <Box title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Field label="Employee Code">
+              <Field label="Employee Code" required>
                 <input name="employeeCode" placeholder="EMP-001" value={formData.employeeCode} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="First Name">
+              <Field label="First Name" required>
                 <input name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Last Name">
+              <Field label="Last Name" required>
                 <input name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Designation">
-                <input name="designation" placeholder="Software Engineer" value={formData.designation} onChange={handleChange} className="input-box" required />
+              
+              {/* National ID Field - ADD THIS */}
+              <Field label="National ID" required>
+                <input name="nationalId" placeholder="199812345678" value={formData.nationalId} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Department">
+              
+              <Field label="Designation" required>
+                <div className="relative">
+                  <input
+                    ref={designationInputRef}
+                    name="designation"
+                    placeholder="Type or select designation"
+                    value={formData.designation}
+                    onChange={handleDesignationChange}
+                    onFocus={() => setShowDesignationDropdown(true)}
+                    className="input-box pr-10"
+                    required
+                    autoComplete="off"
+                  />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  
+                  {showDesignationDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredDesignations.length > 0 ? (
+                        filteredDesignations.map((d) => (
+                          <div
+                            key={d.id}
+                            onClick={() => selectDesignation(d.name)}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700 flex items-center gap-2"
+                          >
+                            <User className="w-4 h-4 text-gray-400" />
+                            {d.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-gray-500 text-sm">
+                          No designations found
+                        </div>
+                      )}
+                      
+                      {formData.designation.trim() && !designations.some(d => d.name.toLowerCase() === formData.designation.toLowerCase()) && (
+                        <div
+                          onClick={() => createNewDesignation(formData.designation)}
+                          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Add "{formData.designation}" as new designation
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Field>
+              
+              <Field label="Department" required>
                 <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
                   <option value="">Select Department</option>
                   {departments.map(dep => (
@@ -212,10 +351,10 @@ export default function AddEmployee() {
                   ))}
                 </select>
               </Field>
-              <Field label="Email">
+              <Field label="Email" required>
                 <input type="email" name="email" placeholder="example@mail.com" value={formData.email} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Phone Number">
+              <Field label="Phone Number" required>
                 <input name="phone" placeholder="0771234567" value={formData.phone} onChange={handleChange} className="input-box" required />
               </Field>
             </div>
@@ -224,19 +363,19 @@ export default function AddEmployee() {
           {/* JOB & SALARY */}
           <Box title="Job & Salary Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Field label="Salary Type">
-                <select name="salaryType" value={formData.salaryType} onChange={handleChange} className="input-box">
+              <Field label="Salary Type" required>
+                <select name="salaryType" value={formData.salaryType} onChange={handleChange} className="input-box" required>
                   <option value="MONTHLY">Monthly</option>
                   <option value="DAILY">Daily</option>
                 </select>
               </Field>
-              <Field label="Basic Salary">
+              <Field label="Basic Salary" required>
                 <input type="number" name="basicSalary" placeholder="50000" value={formData.basicSalary} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Leave Count">
+              <Field label="Leave Count" required>
                 <input type="number" name="leaveCount" placeholder="12" value={formData.leaveCount} onChange={handleChange} className="input-box" required />
               </Field>
-              <Field label="Date Joined">
+              <Field label="Date Joined" required>
                 <input type="date" name="dateJoined" value={formData.dateJoined} onChange={handleChange} className="input-box" required />
               </Field>
             </div>
@@ -244,8 +383,8 @@ export default function AddEmployee() {
 
           {/* STATUS */}
           <Box title="Employment Status">
-            <Field label="Status">
-              <select name="status" value={formData.status} onChange={handleChange} className="input-box">
+            <Field label="Status" required>
+              <select name="status" value={formData.status} onChange={handleChange} className="input-box" required>
                 <option value="Active">Active</option>
                 <option value="NonActive">NonActive</option>
               </select>
@@ -253,7 +392,7 @@ export default function AddEmployee() {
           </Box>
 
           {/* FACE REGISTRATION */}
-          <Box title="Face Registration (For Attendance)">
+          <Box title="Face Registration (Optional - For Attendance)">
             <div className="space-y-4">
               <p className="text-gray-600 text-sm">
                 Capture employee's face photo for face recognition attendance system.
@@ -270,7 +409,6 @@ export default function AddEmployee() {
                 </button>
               )}
 
-              {/* Camera View */}
               {showFaceCapture && !capturedFace && (
                 <div className="space-y-4">
                   <div className="relative rounded-xl overflow-hidden bg-gray-900 max-w-md">
@@ -281,7 +419,6 @@ export default function AddEmployee() {
                       videoConstraints={videoConstraints}
                       className="w-full"
                     />
-                    {/* Face Guide */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-32 h-44 border-3 border-dashed rounded-[80px] border-green-400 animate-pulse" />
                     </div>
@@ -307,7 +444,6 @@ export default function AddEmployee() {
                 </div>
               )}
 
-              {/* Preview Captured Photo */}
               {capturedFace && (
                 <div className="space-y-4">
                   <div className="relative max-w-md">
@@ -338,7 +474,6 @@ export default function AddEmployee() {
                 </div>
               )}
 
-              {/* Face Registered Indicator */}
               {capturedFace && !showFaceCapture && (
                 <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg w-fit">
                   <User className="w-5 h-5" />
@@ -349,7 +484,6 @@ export default function AddEmployee() {
           </Box>
         </div>
 
-        {/* Footer Buttons */}
         <div className="p-6 bg-white rounded-b-2xl flex justify-end gap-4">
           <button
             type="button"
@@ -379,11 +513,13 @@ export default function AddEmployee() {
   );
 }
 
-/* Components */
-function Field({ label, children }) {
+function Field({ label, children, required }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="font-medium text-gray-700">{label}</label>
+      <label className="font-medium text-gray-700">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
       {children}
     </div>
   );

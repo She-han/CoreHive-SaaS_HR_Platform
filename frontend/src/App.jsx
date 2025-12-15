@@ -58,7 +58,14 @@ import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
 import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
 import QRAttendancePage from './pages/AttendaceManagement/QRAttendancePage';
 
-
+// Employee Pages
+import EmployeeProfile from './pages/employee/EmployeeProfile';
+import EditProfile from './pages/employee/EditProfile';
+import ViewLeaveAndAttendance from './pages/employee/ViewLeaveAndAttendance';
+import LeaveRequest from './pages/employee/LeaveRequest';
+import Feedback from './pages/employee/Feedback';
+import Notices from './pages/employee/Notices';
+import Payslips from './pages/employee/Payslips';
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
@@ -315,11 +322,11 @@ const EmployeeRoutes = () => {
     <Routes>
       <Route path="profile" element={<EmployeeProfile />} />
       <Route path="profile/edit" element={<EditProfile />} />
-      <Route path="viewattendance" element={<ViewAttendance />} />
-      <Route path="viewleaves" element={<ViewLeaves />} />
-      <Route path="viewleaves/apply" element={<ApplyLeave />} />
-      <Route path="viewpayslips" element={<ViewPayslips />} />
-      <Route path="viewpayslips/:id" element={<PayslipDetail />} />
+      <Route path="viewleaveandattendance" element={<ViewLeaveAndAttendance />} />
+      <Route path="leaverequest" element={<LeaveRequest />} />
+      <Route path="feedback" element={<Feedback />} />
+      <Route path="notices" element={<Notices />} />
+      <Route path="payslips" element={<Payslips />} />
       <Route path="" element={<Navigate to="profile" replace />} />
     </Routes>
   );

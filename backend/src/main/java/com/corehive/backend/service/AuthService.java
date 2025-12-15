@@ -38,74 +38,85 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder; // For password hashing 
     private final JwtUtil jwtUtil; // For JWT operations
     private final EmailService emailService;
+    private final FileStorageService fileStorageService;
 
     /**
      * Organization Registration (Company Signup)
      * @param request Registration data from frontend
      * @return Success/Error response with message
      */
-    @Transactional // Transaction wrapper for database consistency
+    @Transactional
     public ApiResponse<String> signupOrganization(OrganizationSignupRequest request) {
         try {
-            log.info("Processing organization signup for email: {}", request.getAdminEmail());
+            log.info("Processing organization signup for: {}", request.getAdminEmail());
 
-            // 1. Validation - Does email already exist?
+            // Check if email already exists
             if (organizationRepository.existsByEmail(request.getAdminEmail())) {
-                return ApiResponse.error("Email address already registered");
+                return ApiResponse.error("Email already registered");
             }
 
-            // 2. Is Business Registration Number duplicate?
-            if (organizationRepository.existsByBusinessRegistrationNumber(request.getBusinessRegistrationNumber())) {
-                return ApiResponse.error("Business registration number already exists");
+            // Generate organization UUID
+            String organizationUuid = UUID.randomUUID().toString();
+
+            // Handle business registration document upload
+            String brDocumentPath = null;
+            if (request.getBusinessRegistrationDocument() != null &&
+                    !request.getBusinessRegistrationDocument().isEmpty()) {
+
+                try {
+                    brDocumentPath = fileStorageService.saveBusinessRegistrationDocument(
+                            request.getBusinessRegistrationDocument(),
+                            organizationUuid
+                    );
+                    log.info("Business registration document saved: {}", brDocumentPath);
+                } catch (Exception e) {
+                    log.error("Failed to save business registration document", e);
+                    return ApiResponse.error("Failed to upload document: " + e.getMessage());
+                }
             }
 
-            // 3. Create Organization Entity
+            // Create Organization
             Organization organization = Organization.builder()
+                    .organizationUuid(organizationUuid)
                     .name(request.getOrganizationName())
                     .email(request.getAdminEmail())
                     .businessRegistrationNumber(request.getBusinessRegistrationNumber())
+                    .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
-                    .status(OrganizationStatus.PENDING_APPROVAL) // Initial status
+                    .status(OrganizationStatus.PENDING_APPROVAL)
                     .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
                     .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
                     .moduleHiringManagement(request.getModuleHiringManagement())
-                    .modulesConfigured(false) // Will be configured during first time login
+                    .modulesConfigured(false)
                     .build();
 
-            // 4. Save Organization
-            Organization savedOrganization = organizationRepository.save(organization);
-            log.info("Organization saved with UUID: {}", savedOrganization.getOrganizationUuid());
+            organizationRepository.save(organization);
 
-            // 5. Create Default ORG_ADMIN User
-            String temporaryPassword = generateTemporaryPassword(); // Simple password for development
-
-            AppUser adminUser = AppUser.builder()
-                    .organizationUuid(savedOrganization.getOrganizationUuid())
+            // Create ORG_ADMIN user
+            String tempPassword = generateTemporaryPassword();
+            AppUser orgAdmin = AppUser.builder()
+                    .organizationUuid(organizationUuid)
                     .email(request.getAdminEmail())
-                    .passwordHash(passwordEncoder.encode(temporaryPassword)) // Hash password
+                    .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.ORG_ADMIN)
-                    .isActive(false) // Inactive until organization is approved
+                    .isActive(false) // Inactive until sys_admin approval
                     .build();
 
-            adminUser.setIsPasswordChangeRequired(true);
+            appUserRepository.save(orgAdmin);
 
-            appUserRepository.save(adminUser);
-            log.info("Admin user created for organization: {}", savedOrganization.getName());
-
-            // 6. Return success response with temporary password (development only)
-            String message = String.format(
-                    "Organization registration successful! " +
-                            "Your request is pending approval. " +
-
-                            "(You can login after admin approval)"
+            // Send email
+            emailService.sendOrganizationRegistrationEmail(
+                    request.getAdminEmail(),
+                    request.getOrganizationName()
             );
 
-            return ApiResponse.success(message, savedOrganization.getOrganizationUuid());
+            log.info("Organization signup successful: {} (UUID: {})", request.getOrganizationName(), organizationUuid);
+            return ApiResponse.success("Organization registered successfully. Please wait for admin approval.", null);
 
         } catch (Exception e) {
-            log.error("Error during organization signup", e);
-            return ApiResponse.error("Registration failed. Please try again.");
+            log.error("Organization signup failed", e);
+            return ApiResponse.error("Registration failed: " + e.getMessage());
         }
     }
 

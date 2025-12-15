@@ -1,0 +1,40 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+tests/
+.pytest_cache/
+
+# Environment files (secrets shouldn't be in image)
+.env
+.env.local
+
+# Data directories (will be created at runtime)
+uploads/
+data/embeddings/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

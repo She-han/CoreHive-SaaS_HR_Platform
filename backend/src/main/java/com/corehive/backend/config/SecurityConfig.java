@@ -58,18 +58,34 @@ public class SecurityConfig {
                 // Request authorization rules
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints (can access without authentication)
-                        .requestMatchers("/api/auth/signup", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/forgot-password").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
-                        .requestMatchers("/api/employees").permitAll()
                         .requestMatchers("/api/job-postings").permitAll()
+                        .requestMatchers("/error").permitAll()
+
 
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
+
+                        // Employees - allow both ORG_ADMIN and HR_STAFF
+                        .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+                        .requestMatchers( "/api/attendance" ,"/api/attendance/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+
+                        // Departments - allow both ORG_ADMIN and HR_STAFF
+                        .requestMatchers("/api/org-admin/departments", "/api/org-admin/departments/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+
+                        // Designations - allow both ORG_ADMIN and HR_STAFF
+                        .requestMatchers("/api/org-admin/designations", "/api/org-admin/designations/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+
+                        // ORG_ADMIN endpoints - ADD THIS SECTION
+                        .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
+
+                        .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
 
                         // Organization-level endpoints
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
@@ -94,7 +110,7 @@ public class SecurityConfig {
 
     /**
      * CORS Configuration
-     * Allow API calls from React frontend   
+     * Allow API calls from React frontend
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

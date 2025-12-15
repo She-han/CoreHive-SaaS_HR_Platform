@@ -1,5 +1,6 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.ForgotPasswordRequest;
 import com.corehive.backend.dto.request.LoginRequest;
 import com.corehive.backend.dto.request.ModuleConfigurationRequest;
 import com.corehive.backend.dto.request.OrganizationSignupRequest;
@@ -36,71 +37,86 @@ public class AuthService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder; // For password hashing 
     private final JwtUtil jwtUtil; // For JWT operations
+    private final EmailService emailService;
+    private final FileStorageService fileStorageService;
 
     /**
      * Organization Registration (Company Signup)
      * @param request Registration data from frontend
      * @return Success/Error response with message
      */
-    @Transactional // Transaction wrapper for database consistency
+    @Transactional
     public ApiResponse<String> signupOrganization(OrganizationSignupRequest request) {
         try {
-            log.info("Processing organization signup for email: {}", request.getAdminEmail());
+            log.info("Processing organization signup for: {}", request.getAdminEmail());
 
-            // 1. Validation - Does email already exist?
+            // Check if email already exists
             if (organizationRepository.existsByEmail(request.getAdminEmail())) {
-                return ApiResponse.error("Email address already registered");
+                return ApiResponse.error("Email already registered");
             }
 
-            // 2. Is Business Registration Number duplicate?
-            if (organizationRepository.existsByBusinessRegistrationNumber(request.getBusinessRegistrationNumber())) {
-                return ApiResponse.error("Business registration number already exists");
+            // Generate organization UUID
+            String organizationUuid = UUID.randomUUID().toString();
+
+            // Handle business registration document upload
+            String brDocumentPath = null;
+            if (request.getBusinessRegistrationDocument() != null &&
+                    !request.getBusinessRegistrationDocument().isEmpty()) {
+
+                try {
+                    brDocumentPath = fileStorageService.saveBusinessRegistrationDocument(
+                            request.getBusinessRegistrationDocument(),
+                            organizationUuid
+                    );
+                    log.info("Business registration document saved: {}", brDocumentPath);
+                } catch (Exception e) {
+                    log.error("Failed to save business registration document", e);
+                    return ApiResponse.error("Failed to upload document: " + e.getMessage());
+                }
             }
 
-            // 3. Create Organization Entity
+            // Create Organization
             Organization organization = Organization.builder()
+                    .organizationUuid(organizationUuid)
                     .name(request.getOrganizationName())
                     .email(request.getAdminEmail())
                     .businessRegistrationNumber(request.getBusinessRegistrationNumber())
+                    .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
-                    .status(OrganizationStatus.PENDING_APPROVAL) // Initial status
-                    .modulePerformanceTracking(request.getModulePerformanceTracking())
+                    .status(OrganizationStatus.PENDING_APPROVAL)
+                    .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
                     .moduleHiringManagement(request.getModuleHiringManagement())
-                    .modulesConfigured(false) // Will be configured during first time login
+                    .modulesConfigured(false)
                     .build();
 
-            // 4. Save Organization
-            Organization savedOrganization = organizationRepository.save(organization);
-            log.info("Organization saved with UUID: {}", savedOrganization.getOrganizationUuid());
+            organizationRepository.save(organization);
 
-            // 5. Create Default ORG_ADMIN User
-            String temporaryPassword = generateTemporaryPassword(); // Simple password for development
-
-            AppUser adminUser = AppUser.builder()
-                    .organizationUuid(savedOrganization.getOrganizationUuid())
+            // Create ORG_ADMIN user
+            String tempPassword = generateTemporaryPassword();
+            AppUser orgAdmin = AppUser.builder()
+                    .organizationUuid(organizationUuid)
                     .email(request.getAdminEmail())
-                    .passwordHash(passwordEncoder.encode(temporaryPassword)) // Hash password
+                    .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.ORG_ADMIN)
-                    .isActive(false) // Inactive until organization is approved
+                    .isActive(false) // Inactive until sys_admin approval
                     .build();
 
-            appUserRepository.save(adminUser);
-            log.info("Admin user created for organization: {}", savedOrganization.getName());
+            appUserRepository.save(orgAdmin);
 
-            // 6. Return success response with temporary password (development only)
-            String message = String.format(
-                    "Organization registration successful! " +
-                            "Your request is pending approval. " +
-
-                            "(You can login after admin approval)"
+            // Send email
+            emailService.sendOrganizationRegistrationEmail(
+                    request.getAdminEmail(),
+                    request.getOrganizationName()
             );
 
-            return ApiResponse.success(message, savedOrganization.getOrganizationUuid());
+            log.info("Organization signup successful: {} (UUID: {})", request.getOrganizationName(), organizationUuid);
+            return ApiResponse.success("Organization registered successfully. Please wait for admin approval.", null);
 
         } catch (Exception e) {
-            log.error("Error during organization signup", e);
-            return ApiResponse.error("Registration failed. Please try again.");
+            log.error("Organization signup failed", e);
+            return ApiResponse.error("Registration failed: " + e.getMessage());
         }
     }
 
@@ -134,6 +150,44 @@ public class AuthService {
         } catch (Exception e) {
             log.error("Error during login for email: {}", request.getEmail(), e);
             return ApiResponse.error("Login failed. Please try again.");
+        }
+    }
+
+    @Transactional
+    public ApiResponse<String> forgotPassword(ForgotPasswordRequest request) {
+        try {
+            String email = request.getEmail();
+            log.info("Processing forgot password request for: {}", email);
+
+            // 1. Find the user (Checking AppUser table)
+            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+
+            if (userOpt.isEmpty()) {
+                // Security Note: Usually we shouldn't reveal if email exists, 
+                // but for internal HR apps, explicit error is often preferred.
+                return ApiResponse.error("User with this email does not exist");
+            }
+
+            AppUser user = userOpt.get();
+
+            // 2. Generate new temporary password
+            String tempPassword = generateTemporaryPassword(); // Reusing your existing helper method
+
+            // 3. Update User Record
+            user.setPasswordHash(passwordEncoder.encode(tempPassword));
+            user.setIsPasswordChangeRequired(true); // IMPORTANT: Force password change
+            
+            appUserRepository.save(user);
+
+            // 4. Send Email
+            emailService.sendForgotPasswordEmail(email, tempPassword);
+
+            log.info("Password reset successfully for: {}", email);
+            return ApiResponse.success("A temporary password has been sent to your email.", null);
+
+        } catch (Exception e) {
+            log.error("Error during password reset", e);
+            return ApiResponse.error("Failed to reset password. Please try again.");
         }
     }
 
@@ -171,6 +225,7 @@ public class AuthService {
                 .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
                 .modulesConfigured(true) // System admin -> no modules
+
                 .moduleConfig(null)
                 .build();
 
@@ -243,10 +298,34 @@ public class AuthService {
                 .organizationName(organization.getName())
                 .modulesConfigured(Boolean.TRUE.equals(organization.getModulesConfigured())) // FIXED: Proper boolean check
                 .moduleConfig(moduleConfig)
+                .isPasswordChangeRequired(Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired()))
                 .build();
 
         log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
         return ApiResponse.success("Login successful", response);
+    }
+
+    @Transactional
+    public ApiResponse<String> changePassword(Long userId, String newPassword) {
+        try {
+            Optional<AppUser> userOpt = appUserRepository.findById(userId);
+            if (userOpt.isEmpty()) {
+                return ApiResponse.error("User not found");
+            }
+
+            AppUser user = userOpt.get();
+
+            // Update password
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            user.setIsPasswordChangeRequired(false); // Flag එක false කරනවා
+
+            appUserRepository.save(user);
+
+            return ApiResponse.success("Password changed successfully", null);
+        } catch (Exception e) {
+            log.error("Error changing password", e);
+            return ApiResponse.error("Failed to change password");
+        }
     }
 
     /**
@@ -276,7 +355,8 @@ public class AuthService {
             }
 
             // 3. Update module selections
-            organization.setModulePerformanceTracking(request.getModulePerformanceTracking());
+            organization.setModuleQrAttendanceMarking(request.getModuleQrAttendanceMarking());
+            organization.setModuleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking());
             organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
             organization.setModuleHiringManagement(request.getModuleHiringManagement());
             organization.setModulesConfigured(true);
@@ -335,9 +415,11 @@ public class AuthService {
         moduleConfig.put("basicDashboard", true);
 
         // Extended modules (based on organization selection)
-        moduleConfig.put("performanceTracking", organization.getModulePerformanceTracking());
+
         moduleConfig.put("employeeFeedback", organization.getModuleEmployeeFeedback());
         moduleConfig.put("hiringManagement", organization.getModuleHiringManagement());
+        moduleConfig.put("qrAttendance", organization.getModuleQrAttendanceMarking());
+        moduleConfig.put("faceRecognitionAttendance",organization.getModuleFaceRecognitionAttendanceMarking());
 
         return moduleConfig;
     }
@@ -346,9 +428,8 @@ public class AuthService {
      * Helper method - Temporary password generate (Development only)
      */
     private String generateTemporaryPassword() {
-        // Generate strong random password in production 
-        // Currently using simple password
-        return "TempPass123!";
+        String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+        return tempPassword;
     }
 
     /**

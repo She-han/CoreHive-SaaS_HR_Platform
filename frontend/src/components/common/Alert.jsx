@@ -1,15 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import Button from './Button';
 
 /**
  * Alert Component
- * Display messages with different types
+ * Display messages as centered modal popup with different types
  */
 const Alert = ({
   type = 'info',
   title,
   message,
   onClose,
+  isOpen = true,
+  closeOnOverlayClick = true,
+  autoClose = false,
+  autoCloseDuration = 3000,
   className = ''
 }) => {
   const alertConfig = {
@@ -50,47 +55,108 @@ const Alert = ({
   const config = alertConfig[type];
   const Icon = config.icon;
   
+  // Close alert on Escape key press
+  useEffect(() => {
+    const handleEscape = (event) => {
+      if (event.key === 'Escape' && isOpen && onClose) {
+        onClose();
+      }
+    };
+    
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+  
+  // Prevent body scroll when alert is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+  
+  // Auto close functionality
+  useEffect(() => {
+    if (isOpen && autoClose && onClose) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, autoCloseDuration);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, autoClose, autoCloseDuration, onClose]);
+  
+  if (!isOpen) return null;
+  
   return (
-    <div 
-      className={`
-        ${config.bgColor} ${config.borderColor} border rounded-lg p-4 
-        animate-slide-up ${className}
-      `}
-    >
-      <div className="flex">
-        {/* Icon */}
-        <div className="flex-shrink-0">
-          <Icon className={`h-5 w-5 ${config.iconColor}`} />
-        </div>
-        
-        {/* Content */}
-        <div className="ml-3 flex-1">
-          {title && (
-            <h3 className={`text-sm font-medium ${config.titleColor}`}>
-              {title}
-            </h3>
-          )}
-          {message && (
-            <p className={`text-sm mt-1 ${config.textColor} ${title ? 'mt-1' : ''}`}>
-              {message}
-            </p>
-          )}
-        </div>
-        
-        {/* Close button */}
-        {onClose && (
-          <div className="ml-auto pl-3">
-            <button
-              onClick={onClose}
-              className={`
-                inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 
-                focus:ring-offset-2 ${config.iconColor} hover:bg-opacity-20
-              `}
-            >
-              <X className="h-4 w-4" />
-            </button>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* Backdrop */}
+      <div 
+        className="absolute bg-black/30 inset-0 transition-all duration-100 backdrop-blur-sm"
+        onClick={closeOnOverlayClick && onClose ? onClose : undefined}
+      />
+      
+      {/* Alert Modal */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div 
+          className={`
+            relative w-full max-w-md bg-white
+            rounded-xl shadow-xl transform transition-all animate-slide-up translate-z-80
+            ${className}
+          `}
+        >
+          {/* Header with Icon and Close Button */}
+          <div className={`flex items-start p-6 border-b ${config.borderColor}`}>
+            <div className={`flex-shrink-0 ${config.bgColor} rounded-full p-2`}>
+              <Icon className={`h-6 w-6 ${config.iconColor}`} />
+            </div>
+            
+            <div className="ml-4 flex-1">
+              {title && (
+                <h3 className={`text-lg font-semibold ${config.titleColor}`}>
+                  {title}
+                </h3>
+              )}
+            </div>
+            
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                icon={X}
+                className="ml-auto -mt-1"
+              />
+            )}
           </div>
-        )}
+          
+          {/* Content */}
+          <div className="p-6">
+            {message && (
+              <p className={`text-sm ${config.textColor}`}>
+                {message}
+              </p>
+            )}
+          </div>
+          
+          {/* Footer with action button */}
+          {onClose && (
+            <div className="flex justify-end gap-3 px-6 pb-6">
+              <Button
+                variant="primary"
+                onClick={onClose}
+                className="min-w-[100px]"
+              >
+                OK
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

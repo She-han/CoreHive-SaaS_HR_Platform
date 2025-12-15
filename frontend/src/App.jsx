@@ -14,46 +14,63 @@ import ProtectedRoute from './pages/auth/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import { ForgetPasswordPage } from './pages/auth/ForgetPasswordPage';
+
+// Middle auth pages
 import ModuleConfigPage from './pages/auth/ModuleConfigPage';
+import {ChangePasswordPage} from './pages/auth/ChangePasswordPage';
 
-// Dashboard Pages
+// System admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
-import OrgDashboard from './pages/dashboard/OrgDashboard';
-import HRDashboard from './pages/Dashboard';
-import MainHRLayout from "../src/components/layout/MainHRLayout"; 
-import EmployeeManagement from './pages/EmployeeManagement';
-import LeaveManagement from './pages/LeaveManagement';
-import HiringManagement from './pages/HiringManagement';
-import HRReportingManagement from './pages/HRReportingManagement';
-import FeedBackManagement from './pages/FeedBackManagement';
-import AttendanceManagement from './pages/AttendanceManagement';
+import AdminApprovals from './pages/admin/AdminApprovals';
+import Settings from './pages/admin/Settings';
+import Support from './pages/admin/Support';
+import AuditLogs from './pages/admin/AuditLogs';
+import Analytics from './pages/admin/SystemAnalytics';
+import Billing from './pages/admin/BillingAndPlans';
+import Users from './pages/admin/Users';
+import Organizations from './pages/admin/Organizations';
 
-/* // Admin Pages
- import AdminApprovals from './pages/admin/AdminApprovals';
-import AdminOrganizations from './pages/admin/AdminOrganizations'; */
-
-// Organization Pages
+// Organization admin Pages
+import OrgDashboard from './pages/org_admin/OrgDashboard';
 import HRStaffManagement from './pages/org_admin/HRStaffManagement';
-/* import PayrollPage from './pages/org/PayrollPage';
-import LeavesPage from './pages/org/LeavesPage';
-import AttendancePage from './pages/org/AttendancePage';
-import ReportsPage from './pages/org/ReportsPage';
-import SettingsPage from './pages/org/SettingsPage'; */ 
+import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
+import DepartmentManagement from './pages/org_admin/DepartmentManagement';
+import {DesignationManagement} from './pages/org_admin/DesignationManagement';
+
+// HR Staff pages
+import HRDashboard from './pages/hrstaff/HRDashboard';
+import MainHRLayout from "../src/components/layout/MainHRLayout"; 
+import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
+import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
+import EditEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
+import LeaveManagement from './pages/hrstaff/LeaveManagement';
+import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
+import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
+import PayrollDashboard from './pages/hrstaff/payroll/PayrollDashboard';
+import SalaryStructure from './pages/hrstaff/payroll/SalaryStructure';
+import PayrollRun from './pages/hrstaff/payroll/PayrollRun';
+import PayslipList from './pages/hrstaff/payroll/PayslipList';
+import PayrollReports from './pages/hrstaff/payroll/PayrollReports';
+
+import HiringManagement from './pages/hrstaff/HiringManagement';
+import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
+import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
+import QRAttendancePage from './pages/AttendaceManagement/QRAttendancePage';
+
+// Employee Pages
+import EmployeeProfile from './pages/employee/EmployeeProfile';
+import EditProfile from './pages/employee/EditProfile';
+import ViewLeaveAndAttendance from './pages/employee/ViewLeaveAndAttendance';
+import LeaveRequest from './pages/employee/LeaveRequest';
+import Feedback from './pages/employee/Feedback';
+import Notices from './pages/employee/Notices';
+import Payslips from './pages/employee/Payslips';
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
 import UnauthorizedPage from './pages/common/UnauthorizedPage'; */
 
-/**
- * Main App Component
- * Application routing and role-based access control
- * 
- * user type path structure:
- * - System Admin: /sys_admin/* 
- * - Org Admin: /org_admin/*
- * - HR Staff: /hr_staff/* 
- * - Employee: /employee/*
- */
 function App() {
   return (
     <Provider store={store}>
@@ -70,6 +87,17 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/forgot-password" element={<ForgetPasswordPage />} />
+
+                {/* Change Password (First-time any ORG_USER) */}
+                <Route 
+                  path="/change-password" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <ChangePasswordPage />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route 
@@ -210,12 +238,19 @@ const SystemAdminRoutes = () => {
   return (
     <Routes>
       <Route path="dashboard" element={<AdminDashboard />} />
-     {/*  <Route path="requests" element={<AdminApprovals />} />
-      <Route path="organizations" element={<AdminOrganizations />} />
-      <Route path="organizations/:id" element={<AdminOrganizationDetail />} />
-      <Route path="reports" element={<AdminReports />} />
-      <Route path="settings" element={<AdminSettings />} /> */}
+      <Route path="approvals" element={<AdminApprovals />} />
+      <Route path="settings" element={<Settings />} />
+      <Route path="support" element={<Support />} />
+      <Route path="audits" element={<AuditLogs />} />
+      <Route path='analytics' element={<Analytics />} />
+      <Route path='billing' element={<Billing />} />
+      <Route path='users' element={<Users />} />
+      <Route path='organizations' element={<Organizations />} />
       <Route path="" element={<Navigate to="dashboard" replace />} />
+ {/*  
+      <Route path="reports" element={<AdminReports />} />
+      <Route path="settings" element={<AdminSettings />} /> 
+       */}
     </Routes>
   );
 };
@@ -230,18 +265,13 @@ const OrgAdminRoutes = () => {
     <Routes>
       <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
-     {/*   <Route path="employeemanagement" element={<EmployeeManagement />} />
-      <Route path="employeemanagement/add" element={<AddEmployee />} />
-      <Route path="employeemanagement/:id" element={<EmployeeDetail />} />
-      <Route path="employeemanagement/:id/edit" element={<EditEmployee />} />
-      <Route path="payrollmanagement" element={<PayrollManagement />} />
-      <Route path="payrollmanagement/process" element={<ProcessPayroll />} />
-      <Route path="payrollmanagement/payslips" element={<PayslipManagement />} />
-      <Route path="leavemanagement" element={<LeaveManagement />} />
-      <Route path="leavemanagement/approvals" element={<LeaveApprovals />} />
-      <Route path="attendancemanagement" element={<AttendanceManagement />} />
+     <Route path="departmentmanagement" element={<DepartmentManagement />} />
+     <Route path="designationmanagement" element={<DesignationManagement />} />
+     <Route path="modules" element={<ModuleConfiguration />} />
+     <Route path="" element={<Navigate to="dashboard" replace />} />
+     {/*   
       <Route path="reports" element={<OrgReports />} />
-      <Route path="" element={<Navigate to="dashboard" replace />} /> */}
+       */}
     </Routes>
   );
 };
@@ -258,13 +288,25 @@ const HRStaffRoutes = () => {
     <Routes>
       <Route element={<MainHRLayout />}>
         <Route path="dashboard" element={<HRDashboard />} />
-        {/* Add more HR pages here later */}
         <Route path="EmployeeManagement" element={<EmployeeManagement />} /> 
-        <Route path="HiringManagement" element={<HiringManagement />} /> 
+        <Route path="EmployeeManagement/addemployee" element={<AddEmployee />} /> 
+        <Route path="EmployeeManagement/editemployee/:id" element={<EditEmployee />} />  {/* ADD :id parameter */}
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
-        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
+   
+        <Route path="PayrollDashboard" element={<PayrollDashboard />} />
+        <Route path="payroll/salary-structure" element={<SalaryStructure />} />
+        <Route path="payroll/payroll-run" element={<PayrollRun />} />
+        <Route path="payroll/payslips" element={<PayslipList />} />
+        <Route path="payroll/reports" element={<PayrollReports />} />
+
+        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
+        <Route path="HiringManagement" element={<HiringManagement />} /> 
+        <Route path="faceattendance" element={<FaceAttendancePage />} />
+        <Route path="qrattendance" element={<QRAttendancePage />} />
+        
+        <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
   );
@@ -280,11 +322,11 @@ const EmployeeRoutes = () => {
     <Routes>
       <Route path="profile" element={<EmployeeProfile />} />
       <Route path="profile/edit" element={<EditProfile />} />
-      <Route path="viewattendance" element={<ViewAttendance />} />
-      <Route path="viewleaves" element={<ViewLeaves />} />
-      <Route path="viewleaves/apply" element={<ApplyLeave />} />
-      <Route path="viewpayslips" element={<ViewPayslips />} />
-      <Route path="viewpayslips/:id" element={<PayslipDetail />} />
+      <Route path="viewleaveandattendance" element={<ViewLeaveAndAttendance />} />
+      <Route path="leaverequest" element={<LeaveRequest />} />
+      <Route path="feedback" element={<Feedback />} />
+      <Route path="notices" element={<Notices />} />
+      <Route path="payslips" element={<Payslips />} />
       <Route path="" element={<Navigate to="profile" replace />} />
     </Routes>
   );

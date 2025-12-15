@@ -23,6 +23,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
+import TomatoPriceChart from './components/TomatoPriceChart';
 
 /**
  * System Admin Dashboard Component
@@ -301,6 +302,9 @@ const AdminDashboard = () => {
                 </div>
               )}
             </Card>
+            <div className="mt-8 w-[600px]">
+              <TomatoPriceChart />
+            </div>
           </div>
 
           {/* Quick Actions & Recent Activities */}

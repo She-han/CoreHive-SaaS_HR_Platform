@@ -1,23 +1,104 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
+import toast from 'react-hot-toast';
+import { LogOut } from 'lucide-react';
 import {
   HomeIcon,
-  BuildingOfficeIcon,
   UsersIcon,
-  DocumentTextIcon,
-  Cog6ToothIcon,
-  ChartBarIcon,
   CalendarDaysIcon,
   ClockIcon,
-  CurrencyDollarIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
+  BuildingOfficeIcon,
   UserIcon,
-  EyeIcon
+  EyeIcon,
+  BellIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
+import { FiUsers, FiHeadphones } from 'react-icons/fi';
+import { TbDeviceAirpodsCase } from 'react-icons/tb';
+import { AiOutlineAudit } from 'react-icons/ai';
+import { MdQueryStats } from 'react-icons/md';
+import { 
+  ScanFace, 
+  QrCode, 
+  MessageSquare, 
+  UserPlus,
+  Briefcase,
+  DollarSign
+} from 'lucide-react';
+import * as moduleApi from '../../api/moduleApi';
 
 const Sidebar = ({ isCollapsed = false }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+
+  // Module states
+  const [organizationModules, setOrganizationModules] = useState({
+    moduleFaceRecognitionAttendanceMarking: false,
+    moduleQrAttendanceMarking: false,
+    moduleEmployeeFeedback: false,
+    moduleHiringManagement: false
+  });
+  const [modulesLoading, setModulesLoading] = useState(true);
+
+  // User initials for avatar
+  const userInitials = useMemo(() => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return 'U';
+  }, [user]);
+
+  // User display name
+  const displayName = useMemo(() => {
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user?.role?.replace('_', ' ') || 'User';
+  }, [user]);
+
+  // Fetch organization modules for HR_STAFF
+  useEffect(() => {
+    const fetchModules = async () => {
+      if (user?.role === 'HR_STAFF' || user?.role === 'ORG_ADMIN') {
+        try {
+          setModulesLoading(true);
+          const response = await moduleApi.getOrganizationModules();
+          if (response.success && response.data) {
+            setOrganizationModules({
+              moduleFaceRecognitionAttendanceMarking: response.data.moduleFaceRecognitionAttendanceMarking || false,
+              moduleQrAttendanceMarking: response.data.moduleQrAttendanceMarking || false,
+              moduleEmployeeFeedback: response.data.moduleEmployeeFeedback || false,
+              moduleHiringManagement: response.data.moduleHiringManagement || false
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching organization modules:', error);
+        } finally {
+          setModulesLoading(false);
+        }
+      } else {
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, [user?.role]);
+
+  // Handle logout
+  const handleLogout = useCallback(() => {
+    dispatch(logout());
+    toast.success('Logged out successfully');
+    navigate('/login');
+  }, [dispatch, navigate]);
 
   // Role-based navigation configurations
   const getNavigationConfig = () => {
@@ -34,37 +115,46 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'Organizations',
             icon: BuildingOfficeIcon,
             path: '/sys_admin/organizations',
-            current: location.pathname.startsWith('/sys_admin/organizations'),
-            submenu: [
-              { name: 'All Organizations', path: '/sys_admin/organizations' },
-              { name: 'Add Organization', path: '/sys_admin/organizations/add' },
-              { name: 'Pending Requests', path: '/sys_admin/organizations/pending' }
-            ]
+            current: location.pathname.startsWith('/sys_admin/organizations')
           },
           {
-            name: 'System Requests',
-            icon: DocumentTextIcon,
-            path: '/sys_admin/requests',
-            current: location.pathname.startsWith('/sys_admin/requests'),
-            submenu: [
-              { name: 'Registration Requests', path: '/sys_admin/requests/registration' },
-              { name: 'Module Requests', path: '/sys_admin/requests/modules' },
-              { name: 'Support Tickets', path: '/sys_admin/requests/support' }
-            ]
+            name: 'Admin Approvals',
+            icon: Cog6ToothIcon,
+            path: '/sys_admin/approvals',
+            current: location.pathname.startsWith('/sys_admin/approvals')
           },
           {
-            name: 'System Reports',
-            icon: ChartBarIcon,
-            path: '/sys_admin/reports',
-            current: location.pathname.startsWith('/sys_admin/reports'),
-            submenu: [
-              { name: 'Usage Analytics', path: '/sys_admin/reports/usage' },
-              { name: 'Performance', path: '/sys_admin/reports/performance' },
-              { name: 'System Health', path: '/sys_admin/reports/health' }
-            ]
+            name: 'Users',
+            icon: FiUsers,
+            path: '/sys_admin/users',
+            current: location.pathname.startsWith('/sys_admin/users')
           },
           {
-            name: 'System Settings',
+            name: 'Billing & Plans',
+            icon: TbDeviceAirpodsCase,
+            path: '/sys_admin/billing',
+            current: location.pathname.startsWith('/sys_admin/billing')
+          },
+          {
+            name: 'Audit Logs',
+            icon: AiOutlineAudit,
+            path: '/sys_admin/audits',
+            current: location.pathname.startsWith('/sys_admin/audits')
+          },
+          {
+            name: 'Support',
+            icon: FiHeadphones,
+            path: '/sys_admin/support',
+            current: location.pathname.startsWith('/sys_admin/support')
+          },
+          {
+            name: 'System Analytics',
+            icon: MdQueryStats,
+            path: '/sys_admin/analytics',
+            current: location.pathname.startsWith('/sys_admin/analytics')
+          },
+          {
+            name: 'Settings',
             icon: Cog6ToothIcon,
             path: '/sys_admin/settings',
             current: location.pathname.startsWith('/sys_admin/settings')
@@ -86,28 +176,22 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/org_admin/hrstaffmanagement')
           },
           {
-            name: 'Employee Management',
-            icon: UsersIcon,
-            path: '/org_admin/employeemanagement',
-            current: location.pathname.startsWith('/org_admin/employeemanagement')
+            name: 'Department Management',
+            icon: BuildingOfficeIcon,
+            path: '/org_admin/departmentmanagement',
+            current: location.pathname.startsWith('/org_admin/departmentmanagement')
           },
           {
-            name: 'Leave Management',
-            icon: CalendarDaysIcon,
-            path: '/org_admin/leavemanagement',
-            current: location.pathname.startsWith('/org_admin/leavemanagement')
+            name: 'Designation Management',
+            icon: Briefcase,
+            path: '/org_admin/designationmanagement',
+            current: location.pathname.startsWith('/org_admin/designationmanagement')
           },
           {
-            name: 'Attendance Management',
-            icon: ClockIcon,
-            path: '/org_admin/attendancemanagement',
-            current: location.pathname.startsWith('/org_admin/attendancemanagement')
-          },
-          {
-            name: 'Payroll Management',
-            icon: CurrencyDollarIcon,
-            path: '/org_admin/payroll',
-            current: location.pathname.startsWith('/org_admin/payroll')
+            name: 'Module Configuration',
+            icon: Cog6ToothIcon,
+            path: '/org_admin/modules',
+            current: location.pathname.startsWith('/org_admin/modules')
           },
           {
             name: 'Reports & Analytics',
@@ -124,7 +208,8 @@ const Sidebar = ({ isCollapsed = false }) => {
         ];
 
       case 'HR_STAFF':
-        return [
+        // Base navigation items (always visible)
+        const baseNavigation = [
           {
             name: 'Dashboard',
             icon: HomeIcon,
@@ -150,12 +235,68 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/hr_staff/attendancemanagement')
           },
           {
+            name: 'Payroll Management',
+            icon: DollarSign,
+            path: '/hr_staff/payrolldashboard',
+            current: location.pathname.startsWith('/hr_staff/payroll')
+          },
+          {
             name: 'HR Reports',
             icon: ChartBarIcon,
-            path: '/hr_staff/reports',
-            current: location.pathname.startsWith('/hr_staff/reports')
+            path: '/hr_staff/hrreportingmanagement',
+            current: location.pathname.startsWith('/hr_staff/hrreportingmanagement')
           }
         ];
+
+        // Module-based navigation items (conditional)
+        const moduleNavigation = [];
+
+        // Add Face Recognition Attendance if enabled
+        if (organizationModules.moduleFaceRecognitionAttendanceMarking) {
+          moduleNavigation.push({
+            name: 'Face Attendance',
+            icon: ScanFace,
+            path: '/hr_staff/faceattendance',
+            current: location.pathname.startsWith('/hr_staff/faceattendance'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add QR Attendance if enabled
+        if (organizationModules.moduleQrAttendanceMarking) {
+          moduleNavigation.push({
+            name: 'QR Attendance',
+            icon: QrCode,
+            path: '/hr_staff/qrattendance',
+            current: location.pathname.startsWith('/hr_staff/qrattendance'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add Employee Feedback if enabled
+        if (organizationModules.moduleEmployeeFeedback) {
+          moduleNavigation.push({
+            name: 'Feedback Management',
+            icon: MessageSquare,
+            path: '/hr_staff/feedbackmanagement',
+            current: location.pathname.startsWith('/hr_staff/feedbackmanagement'),
+            moduleEnabled: true
+          });
+        }
+
+        // Add Hiring Management if enabled
+        if (organizationModules.moduleHiringManagement) {
+          moduleNavigation.push({
+            name: 'Hiring Management',
+            icon: UserPlus,
+            path: '/hr_staff/hiringmanagement',
+            current: location.pathname.startsWith('/hr_staff/hiringmanagement'),
+            moduleEnabled: true
+          });
+        }
+
+        // Combine base and module navigation
+        return [...baseNavigation, ...moduleNavigation];
 
       case 'EMPLOYEE':
         return [
@@ -163,25 +304,37 @@ const Sidebar = ({ isCollapsed = false }) => {
             name: 'My Profile',
             icon: UserIcon,
             path: '/employee/profile',
-            current: location.pathname === '/employee/profile'
+            current: location.pathname === '/employee/profile' || location.pathname.startsWith('/employee/profile/edit')
           },
           {
-            name: 'My Leaves',
+            name: 'Leave & Attendance',
             icon: CalendarDaysIcon,
-            path: '/employee/viewleaves',
-            current: location.pathname.startsWith('/employee/viewleaves')
+            path: '/employee/viewleaveandattendance',
+            current: location.pathname.startsWith('/employee/viewleaveandattendance')
           },
           {
-            name: 'My Attendance',
+            name: 'Leave Request',
             icon: ClockIcon,
-            path: '/employee/viewattendance',
-            current: location.pathname.startsWith('/employee/viewattendance')
+            path: '/employee/leaverequest',
+            current: location.pathname.startsWith('/employee/leaverequest')
+          },
+          {
+            name: 'Feedback',
+            icon: MessageSquare,
+            path: '/employee/feedback',
+            current: location.pathname.startsWith('/employee/feedback')
+          },
+          {
+            name: 'Notices',
+            icon: BellIcon,
+            path: '/employee/notices',
+            current: location.pathname.startsWith('/employee/notices')
           },
           {
             name: 'My Payslips',
-            icon: EyeIcon,
-            path: '/employee/viewpayslips',
-            current: location.pathname.startsWith('/employee/viewpayslips')
+            icon: DocumentTextIcon,
+            path: '/employee/payslips',
+            current: location.pathname.startsWith('/employee/payslips')
           }
         ];
 
@@ -197,69 +350,167 @@ const Sidebar = ({ isCollapsed = false }) => {
       <div key={item.name} className="mb-1">
         <Link
           to={item.path}
-          className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
-            item.current
-              ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-700'
-              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+            item.moduleEnabled ? 'relative' : ''
           }`}
+          style={item.current 
+            ? { 
+                backgroundColor: '#F1FDF9', 
+                color: '#02C39A', 
+                borderRight: '3px solid #02C39A'
+              } 
+            : { 
+                color: '#333333'
+              }
+          }
+          onMouseEnter={(e) => {
+            if (!item.current) {
+              e.currentTarget.style.backgroundColor = '#F1FDF9';
+              e.currentTarget.style.color = '#05668D';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!item.current) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#333333';
+            }
+          }}
         >
           <item.icon
             className={`${isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'} shrink-0`}
+            style={{ color: item.current ? '#02C39A' : '#05668D' }}
             aria-hidden="true"
           />
-          {!isCollapsed && <span>{item.name}</span>}
+          {!isCollapsed && (
+            <span className="flex-1">{item.name}</span>
+          )}
+          {!isCollapsed && item.moduleEnabled && (
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+              EXT
+            </span>
+          )}
         </Link>
       </div>
     );
   };
 
   return (
-    <div className={`bg-white shadow-lg border-r border-gray-200 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    <div 
+      className={`shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}
+      style={{ backgroundColor: '#FFFFFF', borderRight: '1px solid #E5E7EB' }}
+    >
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200">
+        <div 
+          className="flex h-16 px-4"
+          style={{ borderBottom: '2px solid #02C39A' }}
+        >
           {!isCollapsed && (
             <div className="flex items-center">
               <div className="shrink-0">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center shadow-md"
+                  style={{ background: 'linear-gradient(135deg, #02C39A 0%, #05668D 100%)' }}
+                >
                   <span className="text-white font-bold text-sm">CH</span>
                 </div>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-semibold text-gray-900">CoreHive</p>
-                <p className="text-xs text-gray-500 capitalize">
+                <p className="text-sm font-semibold" style={{ color: '#0C397A' }}>CoreHive</p>
+                <p className="text-xs capitalize" style={{ color: '#9B9B9B' }}>
                   {user?.role?.replace('_', ' ').toLowerCase()}
                 </p>
               </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center mt-4 shadow-md"
+              style={{ background: 'linear-gradient(135deg, #02C39A 0%, #05668D 100%)' }}
+            >
+              <span className="text-white font-bold text-sm">CH</span>
             </div>
           )}
         </div>
 
         {/* Navigation */}
         <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navigationItems.map(renderMenuItem)}
+          {modulesLoading && user?.role === 'HR_STAFF' ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+            </div>
+          ) : (
+            navigationItems.map(renderMenuItem)
+          )}
         </div>
 
-        {/* Footer */}
-        {!isCollapsed && (
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center">
-              <div className="shrink-0">
-                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <UserIcon className="w-5 h-5 text-gray-600" />
+        {/* Footer - Profile & Logout */}
+        <div 
+          className="p-3" 
+          style={{ borderTop: '1px solid #E5E7EB', backgroundColor: '#FAFFFE' }}
+        >
+          {!isCollapsed ? (
+            <div className="space-y-3">
+              {/* Profile Section */}
+              <div className="flex items-center gap-3 px-2 py-2 rounded-lg" style={{ backgroundColor: '#F1FDF9' }}>
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #02C39A 0%, #05668D 100%)' }}
+                >
+                  {userInitials}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p 
+                    className="text-sm font-medium truncate" 
+                    style={{ color: '#333333' }}
+                  >
+                    {displayName}
+                  </p>
+                  <p 
+                    className="text-xs truncate" 
+                    style={{ color: '#9B9B9B' }}
+                  >
+                    {user?.email || 'user@corehive.com'}
+                  </p>
                 </div>
               </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+              
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                style={{ backgroundColor: '#0C397A', color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#05668D'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0C397A'}
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              {/* Collapsed Avatar */}
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md"
+                style={{ background: 'linear-gradient(135deg, #02C39A 0%, #05668D 100%)' }}
+              >
+                {userInitials}
+              </div>
+              
+              {/* Collapsed Logout */}
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-lg transition-all duration-200"
+                style={{ backgroundColor: '#0C397A', color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#05668D'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0C397A'}
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

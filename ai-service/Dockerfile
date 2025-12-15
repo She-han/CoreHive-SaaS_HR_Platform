@@ -11,14 +11,15 @@ LABEL maintainer="She-han <shehan@corehive.lk>"
 WORKDIR /app
 
 # Install system dependencies required for OpenCV and DeepFace
-# These are needed for image processing
+# Updated for Debian Trixie compatibility
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    libgthread-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first (for layer caching)

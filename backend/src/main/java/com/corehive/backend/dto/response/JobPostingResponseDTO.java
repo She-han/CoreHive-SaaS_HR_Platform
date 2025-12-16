@@ -1,11 +1,14 @@
 package com.corehive.backend.dto.response;
 
+import com.corehive.backend.model.Department;
+import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -15,17 +18,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class JobPostingResponseDTO {
 
+
     private Long id;
+
+    private String organizationUuid;
 
     private String title;
 
     private String description;
 
-    private String department;
+    private Long department;
 
-    private JobPosting.EmploymentType employmentType = JobPosting.EmploymentType.FULL_TIME;
+    private EmploymentType employmentType;
 
-    private JobPosting.Status status = JobPosting.Status.DRAFT;
+    private Status status;
 
     private LocalDate postedDate;
 
@@ -33,9 +39,9 @@ public class JobPostingResponseDTO {
 
     private Long postedBy;
 
-    private Integer availableVacancies = 0;
+    private Integer availableVacancies;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
     public enum EmploymentType {
         FULL_TIME, PART_TIME, CONTRACT, INTERN

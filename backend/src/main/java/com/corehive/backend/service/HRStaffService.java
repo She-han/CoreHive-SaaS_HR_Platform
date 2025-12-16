@@ -7,8 +7,10 @@ import com.corehive.backend.dto.response.CreateHRStaffResponse;
 import com.corehive.backend.dto.response.HRStaffResponse;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.AppUserRole;
+import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.AppUserRepository;
+import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,7 @@ public class HRStaffService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final DepartmentService departmentService;
+    private final DepartmentRepository departmentRepository;
 
     /**
      * Get all HR staff members for an organization with pagination
@@ -135,6 +138,11 @@ public class HRStaffService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<CreateHRStaffResponse> createHRStaff(String organizationUuid, CreateHRStaffRequest request) {
+
+        Department department = departmentRepository
+                .findById(request.getDepartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid department ID"));
+
         log.info("Creating HR staff for organization: {} with email: {}", organizationUuid, request.getEmail());
         
         // Validate organization UUID
@@ -202,7 +210,7 @@ public class HRStaffService {
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
             employee.setDesignation(request.getDesignation());
-            employee.setDepartmentId(request.getDepartmentId());
+            employee.setDepartment(department);
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType()));
@@ -242,6 +250,11 @@ public class HRStaffService {
      */
     @Transactional
     public ApiResponse<HRStaffResponse> updateHRStaff(String organizationUuid, UpdateHRStaffRequest request) {
+
+        Department department = departmentRepository
+                .findById(request.getDepartmentId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid department ID"));
+
         try {
             log.info("Updating HR staff with ID: {} for organization: {}", request.getId(), organizationUuid);
 
@@ -273,7 +286,7 @@ public class HRStaffService {
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
             employee.setDesignation(request.getDesignation());
-            employee.setDepartmentId(request.getDepartmentId());
+            employee.setDepartment(department);
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType()));
@@ -414,8 +427,8 @@ public class HRStaffService {
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .designation(employee.getDesignation())
-                .departmentId(employee.getDepartmentId())
-                .departmentName(getDepartmentName(employee.getDepartmentId())) // TODO: Implement department lookup
+//                .departmentId(employee.getDepartmentId())
+//                .departmentName(getDepartmentName(employee.getDepartmentId())) // TODO: Implement department lookup
                 .basicSalary(employee.getBasicSalary())
                 .dateOfJoining(employee.getDateOfJoining())
                 .salaryType(employee.getSalaryType().toString())

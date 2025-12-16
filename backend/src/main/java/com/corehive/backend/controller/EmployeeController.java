@@ -88,7 +88,7 @@ public class EmployeeController {
     ) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
-        Employee employee = employeeService.createEmployee(organizationUuid, req);
+        EmployeeResponseDTO employee = employeeService.createEmployee(organizationUuid, req);
         return new ResponseEntity<>(
                 new StandardResponse(200, "Employee created Successfully", employee),
                 HttpStatus.OK

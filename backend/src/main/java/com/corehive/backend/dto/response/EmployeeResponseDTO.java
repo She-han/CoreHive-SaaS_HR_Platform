@@ -35,10 +35,9 @@ public class EmployeeResponseDTO {
     private String designation;
 
 
-    private Department department;
-
-
     private Long departmentId;
+
+
 
 
     private BigDecimal basicSalary;

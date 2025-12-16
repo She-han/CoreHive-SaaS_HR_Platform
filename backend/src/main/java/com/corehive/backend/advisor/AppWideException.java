@@ -1,5 +1,6 @@
 package com.corehive.backend.advisor;
 
+import com.corehive.backend.exception.departmentException.DepartmentNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
@@ -74,6 +75,13 @@ public class AppWideException {
     public ResponseEntity<StandardResponse> handleJobPostingNotFound(JobPostingNotFoundException e) {
         return new ResponseEntity<>(
                 new StandardResponse(404, "Job Posting Not Found", e.getMessage()),
+                HttpStatus.NOT_FOUND
+        );
+    }
+    @ExceptionHandler(DepartmentNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleDepartmentNotFound(DepartmentNotFoundException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(404, "Department Not Found", e.getMessage()),
                 HttpStatus.NOT_FOUND
         );
     }

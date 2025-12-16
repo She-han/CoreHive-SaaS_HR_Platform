@@ -7,7 +7,9 @@ import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyIna
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
+import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
 import org.springframework.data.domain.Page;
@@ -24,10 +26,13 @@ import java.util.Optional;
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private EmployeeMapper employeeMapper;
+    private final DepartmentRepository departmentRepository;
 
-    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper) {
+
+    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, DepartmentRepository departmentRepository) {
         this.employeeRepository = employeeRepository;
         this.employeeMapper = employeeMapper;
+        this.departmentRepository = departmentRepository;
     }
 
     //************************************************//
@@ -55,7 +60,7 @@ public class EmployeeService {
         Page<Employee> employeePage = employeeRepository.findByOrganizationUuid(orgUuid, pageable);
 
         // 5. Map entities to DTOs
-        List<EmployeeResponseDTO> employeeDTOs = employeeMapper.EntityToDtos(employeePage.getContent());
+        List<EmployeeResponseDTO> employeeDTOs = employeeMapper.toDtos(employeePage.getContent());
 
         // 6. Build paginated response
         PaginatedResponseItemDTO paginatedResponse = new PaginatedResponseItemDTO();
@@ -109,6 +114,7 @@ public class EmployeeService {
             throw new OrganizationNotFoundException("Organization UUID is missing");
         }
 
+
         // 2️) Fetch employee safely
         Employee employee = employeeRepository
                 .findByIdAndOrganizationUuid(id, organizationUuid)
@@ -123,12 +129,10 @@ public class EmployeeService {
 
     }
 
-
-    public Employee saveEmployee(Employee employee) {
-        return employeeRepository.save(employee);
-    }
-
-    public Employee createEmployee(String organizationUuid, EmployeeRequestDTO req) {
+    //************************************************//
+    //CREATE AN EMPLOYEE//
+    //************************************************//
+    public EmployeeResponseDTO createEmployee(String organizationUuid, EmployeeRequestDTO req) {
 
         // 1️) Validate org UUID
         if (organizationUuid == null || organizationUuid.isBlank()) {
@@ -141,59 +145,117 @@ public class EmployeeService {
         }
 
         try {
-            // 3️) Map DTO → Entity
             Employee employee = employeeMapper.toEntity(req);
 
-            // 4️) Set fields NOT coming from DTO
             employee.setOrganizationUuid(organizationUuid);
 
-            // 5️) Save
-            return employeeRepository.save(employee);
+            // Department
+            if (req.getDepartmentId() != null) {
+                Department department = departmentRepository
+                        .findById(req.getDepartmentId())
+                        .orElseThrow(() ->
+                                new InvalidEmployeeDataException("Invalid department ID"));
+                employee.setDepartment(department);
+            }
+
+        if (req.getDepartmentId() != null) {
+            Department department = departmentRepository
+                    .findById(req.getDepartmentId())
+                    .orElseThrow(() ->
+                            new InvalidEmployeeDataException("Invalid department ID"));
+
+            employee.setDepartment(department);
+        }
+
+            // Salary Type
+            if (req.getSalaryType() != null) {
+                employee.setSalaryType(
+                        Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase())
+                );
+            }
+
+            // Salary
+            if (req.getBasicSalary() != null) {
+                employee.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+            }
+
+            // Date Joined
+            if (req.getDateJoined() != null) {
+                employee.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+            }
+
+            // Status
+            if (req.getStatus() != null) {
+                employee.setIsActive(req.getStatus().equalsIgnoreCase("ACTIVE"));
+            }
+
+            Employee saved = employeeRepository.save(employee);
+            return employeeMapper.toDto(saved);
 
         } catch (IllegalArgumentException ex) {
-            // Thrown from MapStruct converters
-            throw new InvalidEmployeeDataException(ex.getMessage());
+            throw new InvalidEmployeeDataException("Invalid enum or data format");
         }
     }
 
     //************************************************//
-    //UPDATE AN EMPLOYEE//
+    // UPDATE EMPLOYEE
     //************************************************//
-    public EmployeeResponseDTO updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO req) {
+    public EmployeeResponseDTO updateEmployee(String orgUuid, Long id, EmployeeRequestDTO req) {
 
-        if (organizationUuid == null || organizationUuid.isBlank()) {
+        if (orgUuid == null || orgUuid.isBlank()) {
             throw new OrganizationNotFoundException("Organization UUID is missing");
         }
 
-        // Validate required fields
-        if (req.getFirstName() == null || req.getFirstName().isBlank()
-                || req.getLastName() == null || req.getLastName().isBlank()) {
-            throw new InvalidEmployeeDataException("First name and last name are required");
-        }
-
         Employee employee = employeeRepository
-                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .findByIdAndOrganizationUuid(id, orgUuid)
                 .orElseThrow(() ->
                         new EmployeeNotFoundException(
-                                "Employee with id " + id + " not found in this organization"
+                                "Employee with id " + id + " not found"
                         )
                 );
 
         try {
-            //  MapStruct updates entity
             employeeMapper.updateEmployeeFromDto(req, employee);
 
-            // organizationUuid MUST NOT change
-            employee.setOrganizationUuid(organizationUuid);
+            // Department
+            if (req.getDepartmentId() != null) {
+                Department department = departmentRepository
+                        .findById(req.getDepartmentId())
+                        .orElseThrow(() ->
+                                new InvalidEmployeeDataException("Invalid department ID"));
+                employee.setDepartment(department);
+            }
+
+            // Salary Type
+            if (req.getSalaryType() != null) {
+                employee.setSalaryType(
+                        Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase())
+                );
+            }
+
+            // Salary
+            if (req.getBasicSalary() != null) {
+                employee.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+            }
+
+            // Date Joined
+            if (req.getDateJoined() != null) {
+                employee.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+            }
+
+            // Status
+            if (req.getStatus() != null) {
+                employee.setIsActive(req.getStatus().equalsIgnoreCase("ACTIVE"));
+            }
+
+            employee.setOrganizationUuid(orgUuid);
 
             Employee updated = employeeRepository.save(employee);
-
             return employeeMapper.toDto(updated);
 
         } catch (IllegalArgumentException ex) {
-            throw new InvalidEmployeeDataException(ex.getMessage());
+            throw new InvalidEmployeeDataException("Invalid enum or data format");
         }
-
     }
 
 

@@ -1,8 +1,8 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.DepartmentDTO;
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
 import com.corehive.backend.dto.response.ApiResponse;
-import com.corehive.backend.model.Department;
 import com.corehive.backend.service.DepartmentService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST Controller for Department operations
- */
 @RestController
 @RequestMapping("/api/org-admin/departments")
 @RequiredArgsConstructor
@@ -26,58 +23,47 @@ public class DepartmentController {
 
     private final DepartmentService departmentService;
 
-    /**
-     * Get all departments for the organization
-     */
+    // ✅ Get all departments
     @GetMapping
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<ApiResponse<List<Department>>> getAllDepartments(HttpServletRequest httpRequest) {
-        try {
-            log.info("GET /api/org-admin/departments - Getting all departments");
-
-            String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
-            String userEmail = (String) httpRequest.getAttribute("userEmail");
-            
-            log.info("Departments request from user: {} for organization: {}", userEmail, organizationUuid);
-
-            if (organizationUuid == null) {
-                log.warn("Organization UUID not found for user: {}", userEmail);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ApiResponse<List<DepartmentDTO>>> getAllDepartments(HttpServletRequest httpRequest) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        if (organizationUuid == null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.error("Access denied: Organization not found"));
-            }
-
-            // Ensure default departments exist
-            departmentService.ensureDefaultDepartments(organizationUuid);
-            
-            List<Department> departments = departmentService.getDepartmentsByOrganization(organizationUuid);
-            
-            log.info("Found {} departments for organization: {}", departments.size(), organizationUuid);
-            return ResponseEntity.ok(ApiResponse.success("Departments retrieved successfully", departments));
-
-        } catch (Exception e) {
-            log.error("Error getting departments", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error: " + e.getMessage()));
         }
+
+        departmentService.ensureDefaultDepartments(organizationUuid);
+        List<DepartmentDTO> departments = departmentService.getDepartmentsByOrganizationDto(organizationUuid);
+
+        return ResponseEntity.ok(ApiResponse.success("Departments retrieved successfully", departments));
     }
 
+    // ✅ Create department
     @PostMapping
     @PreAuthorize("hasRole('ORG_ADMIN')")
-    public ResponseEntity<ApiResponse<Department>> createDepartment(
+    public ResponseEntity<ApiResponse<DepartmentDTO>> createDepartment(
             HttpServletRequest httpRequest,
             @Valid @RequestBody CreateDepartmentRequest request) {
-        try {
-            String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
 
-            Department createdDept = departmentService.createDepartment(organizationUuid, request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Department created successfully", createdDept)
-            );
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        DepartmentDTO createdDept = departmentService.createDepartmentDto(organizationUuid, request);
 
-        } catch (Exception e) {
-            log.error("Error creating department", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error: " + e.getMessage()));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Department created successfully", createdDept));
+    }
+
+    // ✅ Update department
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<DepartmentDTO>> updateDepartment(
+            HttpServletRequest httpRequest,
+            @PathVariable("id") Long departmentId,
+            @Valid @RequestBody CreateDepartmentRequest request) {
+
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        DepartmentDTO updatedDept = departmentService.updateDepartmentDto(departmentId, request, organizationUuid);
+
+        return ResponseEntity.ok(ApiResponse.success("Department updated successfully", updatedDept));
     }
 }

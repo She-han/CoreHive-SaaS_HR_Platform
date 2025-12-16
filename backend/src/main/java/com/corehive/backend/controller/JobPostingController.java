@@ -57,9 +57,9 @@ public class JobPostingController {
         String userEmail = (String) httpRequest.getAttribute("userEmail");
         Long userId = (Long) httpRequest.getAttribute("userId");
 
-        JobPosting created = jobPostingService.createJobPosting(organizationUuid , req , userId);
+        JobPostingResponseDTO jobPostingResponseDTO = jobPostingService.createJobPosting(organizationUuid , req , userId);
         return new ResponseEntity<StandardResponse>(
-                new StandardResponse(200, "Created Job-Posting Successfully", created), HttpStatus.OK
+                new StandardResponse(200, "Created Job-Posting Successfully", jobPostingResponseDTO), HttpStatus.OK
         );
     }
 
@@ -78,6 +78,22 @@ public class JobPostingController {
         );
     }
 
+    //************************************************//
+    //UPDATE A JOB-POSTING//
+    //************************************************//
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> updateJobPosting(HttpServletRequest httpRequest, @PathVariable Long id , @RequestBody JobPostingRequestDTO req) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        Integer userId = (Integer) httpRequest.getAttribute("userId");
+
+        JobPostingResponseDTO updatedJobPosting = jobPostingService.updateJobPostingById(organizationUuid, id , req , userId);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Job-Posting updated Successfully", updatedJobPosting),
+                HttpStatus.OK
+        );
+    }
 //    //UPDATE
 //    @PutMapping("/{id}")
 //    public ResponseEntity<?> updateJobPosting(@PathVariable Long id, @RequestBody JobPostingRequestDTO req) {

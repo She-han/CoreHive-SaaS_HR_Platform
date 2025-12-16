@@ -37,7 +37,7 @@ export default function EmployeeTable({ search, filterBy }) {
       })
       .catch((err) => console.error("Error for getting employees", err))
       .finally(() => setLoading(false));
-  }, [page, size]);//refetch whenever page or size changes
+  }, [page, size , token]);//refetch whenever page or size changes
 
   //Filtering Logic
   const filteredEmployees = employees.filter((emp) => {

@@ -20,19 +20,20 @@ name: CoreHive CI/CD Pipeline to Azure
 # -----------------
 # Defines when this workflow should be automatically executed.
 on:
-  # Trigger on pushes to the 'main' and 'dev' branches
+  # Trigger on pushes to the 'main' branches
   push:
     branches:
       - main
-      - dev
+      
 
-  # Also trigger when a Pull Request is opened or updated against 'main' or 'dev'
+  # Also trigger when a Pull Request is opened or updated against 'main' branch
   pull_request:
     branches:
       - main
-      - dev
+     
 
   # Allows manual triggering of the workflow from the GitHub Actions UI
+   
   workflow_dispatch:
 
 # -----------------
@@ -68,44 +69,51 @@ jobs:
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
 
-    # Step 4: Build the Backend Docker image and push it to ACR
-    # The image is tagged with the unique commit SHA for versioning
+    # Step 4: Build and Push Backend Image
     - name: 'Step 4: Build and Push Backend Image'
       run: |
         docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }} -f backend/Dockerfile ./backend
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}
 
-    # Step 5: Build the Frontend Docker image and push it to ACR
-    # The VITE_API_BASE_URL is passed as a build argument to connect the frontend to the production backend
+    # Step 5: Build and Push Frontend Image
     - name: 'Step 5: Build and Push Frontend Image'
       run: |
-        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app-sh.azurewebsites.net/api -f frontend/Dockerfile ./frontend
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} --build-arg VITE_API_BASE_URL=https://corehive-backend-app-gtdreadhagd9ggfc.southeastasia-01.azurewebsites.net/api -f frontend/Dockerfile ./frontend
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}
-      # IMPORTANT: Verify that 'corehive-backend-app-sh' matches your actual backend app name in the --build-arg URL.
 
-    # Step 6: Deploy the Backend image to Azure App Service
-    # This step will ONLY run if the event that triggered the workflow was a push to the 'main' branch
-    - name: 'Step 6: Deploy Backend to App Service'
+    # Step 6: Build and Push AI Service Image (NEW)
+    - name: 'Step 6: Build and Push AI Service Image'
+      run: |
+        docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-ai-service:${{ github.sha }} -f ai-service/Dockerfile ./ai-service
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-ai-service:${{ github.sha }}
+
+    # Step 7: Deploy Backend to App Service
+    - name: 'Step 7: Deploy Backend to App Service'
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ secrets.BACKEND_APP_NAME }}
         images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}'
 
-    # Step 7: Deploy the Frontend image to Azure App Service
-    # This step will ALSO only run on a push to the 'main' branch
-    - name: 'Step 7: Deploy Frontend to App Service'
+    # Step 8: Deploy Frontend to App Service
+    - name: 'Step 8: Deploy Frontend to App Service'
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       uses: azure/webapps-deploy@v2
       with:
         app-name: ${{ secrets.FRONTEND_APP_NAME }}
         images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}'
 
-    # Step 8: Log out from Azure and ACR as a security best practice
-    - name: 'Step 8: Logout from Azure and ACR'
-      if: always() # This step runs even if previous steps have failed
+    # Step 9: Deploy AI Service to App Service (NEW)
+    - name: 'Step 9: Deploy AI Service to App Service'
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ secrets.AI_SERVICE_APP_NAME }}
+        images: '${{ secrets.ACR_LOGIN_SERVER }}/corehive-ai-service:${{ github.sha }}'
+
+    # Step 10: Logout from Azure and ACR
+    - name: 'Step 10: Logout from Azure and ACR'
+      if: always()
       run: |
         docker logout ${{ secrets.ACR_LOGIN_SERVER }}
         az logout
-
-

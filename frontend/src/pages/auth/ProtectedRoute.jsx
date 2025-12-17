@@ -47,24 +47,24 @@ const ProtectedRoute = ({
   
   // ENHANCED: Module configuration check for ORG users
   if (user?.userType === 'ORG_USER' && user?.role === 'ORG_ADMIN') {
-    // If ORG_ADMIN hasn't configured modules, go to config page
-    if (!user?.modulesConfigured && location.pathname !== '/configure-modules') {
-      console.log(' ORG_ADMIN needs module configuration...');
-      return <Navigate to="/configure-modules" replace />;
+    
+    // If ORG_ADMIN hasn't configured modules
+    if (!user?.modulesConfigured) {
+        // 👇 FIX: Allow access to BOTH '/configure-modules' AND '/change-password'
+        if (location.pathname !== '/configure-modules' && location.pathname !== '/change-password') {
+            console.log('ORG_ADMIN needs module configuration...');
+            return <Navigate to="/configure-modules" replace />;
+        }
     }
     
     // If on config page but modules already configured, go to dashboard
     if (user?.modulesConfigured && location.pathname === '/configure-modules') {
-      console.log(' Modules already configured, redirecting to org_admin dashboard...');
+      console.log('Modules already configured, redirecting to org_admin dashboard...');
       return <Navigate to="/org_admin/dashboard" replace />;
     }
   }
   
-  // Check if modules are configured for protected routes (except dashboard and config page)
-  if (requireModulesConfigured && user?.role === 'ORG_ADMIN' && !user?.modulesConfigured) {
-    return <Navigate to="/configure-modules" replace />;
-  }
-  
+ 
   return children;
 };
 

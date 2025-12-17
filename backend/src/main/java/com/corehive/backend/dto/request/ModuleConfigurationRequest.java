@@ -16,8 +16,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ModuleConfigurationRequest {
 
-    @NotNull(message = "Performance tracking module selection is required")
-    private Boolean modulePerformanceTracking;
+    @NotNull(message = "QR attendance marking module selection is required")
+    private Boolean moduleQrAttendanceMarking;
+
+    @NotNull(message = "Face recognition attendance marking module selection is required")
+    private Boolean moduleFaceRecognitionAttendanceMarking;
 
     @NotNull(message = "Employee feedback module selection is required")
     private Boolean moduleEmployeeFeedback;

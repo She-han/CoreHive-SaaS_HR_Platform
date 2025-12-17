@@ -7,7 +7,9 @@ import {
   ArrowRight, 
   BarChart3, 
   MessageSquare, 
-  UserPlus 
+  UserPlus,
+  QrCode, 
+  ScanFace
 } from 'lucide-react';
 
 import { 
@@ -37,7 +39,8 @@ const ModuleConfigPage = () => {
   
   // Module configuration state
   const [moduleConfig, setModuleConfig] = useState({
-    modulePerformanceTracking: false,
+    moduleQrAttendanceMarking: false,
+    moduleFaceRecognitionAttendanceMarking: false,
     moduleEmployeeFeedback: false,
     moduleHiringManagement: false
   });
@@ -45,16 +48,29 @@ const ModuleConfigPage = () => {
   // Module information
   const moduleInfo = [
     {
-      key: 'modulePerformanceTracking',
-      name: 'Performance Tracking',
-      description: 'Set goals, track KPIs, and conduct performance reviews for your team',
-      icon: BarChart3,
+      key: 'moduleFaceRecognitionAttendanceMarking',
+      name: 'Face Recognition Attendance',
+      description: 'Automate employee check-ins using biometric facial recognition technology',
+      icon: ScanFace, // Assuming a suitable icon like a user with a checkmark or a camera icon
       features: [
-        'Goal setting and tracking',
-        'Performance review cycles',
-        '360-degree feedback',
-        'KPI dashboards',
-        'Performance analytics'
+        'Touchless check-in/check-out',
+        'Liveness detection',
+        'Real-time attendance tracking',
+        'Integration with payroll systems',
+        'Mobile and kiosk deployment options'
+      ]
+    },
+    {
+      key: 'moduleQrAttendanceMarking',
+      name: 'QR Code Attendance',
+      description: 'Enable quick and secure attendance marking via scannable QR codes',
+      icon: QrCode, // Assuming a suitable icon like a QR code graphic
+      features: [
+        'Secure code generation and rotation',
+        'Geo-fencing for location verification',
+        'Offline marking capabilities',
+        'Scan history and audit logs',
+        'Employee self-service portals'
       ]
     },
     {
@@ -98,7 +114,7 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   
   try {
-    console.log('🔄 Submitting module configuration...');
+    console.log('Submitting module configuration...');
     const resultAction = await dispatch(configureModules(moduleConfig));
     
     if (configureModules.fulfilled.match(resultAction)) {

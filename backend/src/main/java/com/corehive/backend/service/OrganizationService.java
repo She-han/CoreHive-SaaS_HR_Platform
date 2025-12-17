@@ -1,5 +1,7 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
+import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
 import com.corehive.backend.model.AppUser;
@@ -10,14 +12,17 @@ import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +32,8 @@ public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
     private final AppUserRepository appUserRepository;
-
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     /**
      * Get all pending organization approvals
      */
@@ -74,8 +80,16 @@ public class OrganizationService {
                 return ApiResponse.error("Organization is not in pending approval status. Current status: " + organization.getStatus());
             }
 
+
             // Organization status update
             log.info("Updating organization status to ACTIVE for: {}", organization.getName());
+
+
+
+
+            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+            String hashedPassword = passwordEncoder.encode(tempPassword);
+
             organization.setStatus(OrganizationStatus.ACTIVE);
             organizationRepository.save(organization);
             log.info("Organization status updated successfully to ACTIVE: {}", organization.getName());
@@ -112,9 +126,14 @@ public class OrganizationService {
                     log.info("Processing admin user: {} (currently active: {})", adminUser.getEmail(), wasActive);
                     
                     adminUser.setIsActive(true);
+                    adminUser.setPasswordHash(hashedPassword);
                     AppUser savedUser = appUserRepository.save(adminUser);
                     activatedCount++;
-                    
+                    try {
+                        emailService.sendOrgPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
+                    } catch (Exception e) {
+                        System.err.println("Failed to send email: " + e.getMessage());
+                    }
                     log.info("Admin user activated successfully: {} (was active: {}, now active: {})", 
                             savedUser.getEmail(), wasActive, savedUser.getIsActive());
                 } catch (Exception e) {
@@ -284,13 +303,106 @@ public class OrganizationService {
                 .organizationUuid(org.getOrganizationUuid())
                 .name(org.getName())
                 .email(org.getEmail())
-                .status(org.getStatus().name()) // FIXED: Use .name() instead of .toString()
+                .status(org.getStatus().name())
+                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
+                .businessRegistrationDocument(org.getBusinessRegistrationDocument()) // NEW FIELD
                 .employeeCountRange(org.getEmployeeCountRange())
                 .createdAt(org.getCreatedAt())
-                .modulePerformanceTracking(org.getModulePerformanceTracking())
+                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
+                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
                 .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
                 .moduleHiringManagement(org.getModuleHiringManagement())
                 .modulesConfigured(org.getModulesConfigured())
                 .build();
     }
-}
+
+    /**
+     * Get current module configuration for an organization
+     */
+    public ApiResponse<ModuleConfigResponse> getModuleConfiguration(String organizationUuid) {
+        try {
+            log.info("Fetching module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(organization.getOrganizationUuid())
+                    .organizationName(organization.getName())
+                    .moduleQrAttendanceMarking(organization.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(organization.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(organization.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(organization.getModuleHiringManagement())
+                    .modulesConfigured(organization.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration retrieved for: {}", organization.getName());
+            return ApiResponse.success("Module configuration retrieved successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error fetching module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to retrieve module configuration");
+        }
+    }
+
+    /**
+     * Update module configuration for an organization
+     */
+    @Transactional
+    public ApiResponse<ModuleConfigResponse> updateModuleConfiguration(
+            String organizationUuid,
+            UpdateModuleConfigRequest request) {
+        try {
+            log.info("Updating module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            // Update only the fields that are provided (not null)
+            if (request.getModuleQrAttendanceMarking() != null) {
+                organization.setModuleQrAttendanceMarking(request.getModuleQrAttendanceMarking());
+            }
+            if (request.getModuleFaceRecognitionAttendanceMarking() != null) {
+                organization.setModuleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking());
+            }
+            if (request.getModuleEmployeeFeedback() != null) {
+                organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
+            }
+            if (request.getModuleHiringManagement() != null) {
+                organization.setModuleHiringManagement(request.getModuleHiringManagement());
+            }
+
+            // Mark as configured if not already
+            if (!Boolean.TRUE.equals(organization.getModulesConfigured())) {
+                organization.setModulesConfigured(true);
+            }
+
+            Organization savedOrg = organizationRepository.save(organization);
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(savedOrg.getOrganizationUuid())
+                    .organizationName(savedOrg.getName())
+                    .moduleQrAttendanceMarking(savedOrg.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(savedOrg.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(savedOrg.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(savedOrg.getModuleHiringManagement())
+                    .modulesConfigured(savedOrg.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration updated successfully for: {}", organization.getName());
+            return ApiResponse.success("Module configuration updated successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error updating module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to update module configuration");
+        }
+    }
+ }

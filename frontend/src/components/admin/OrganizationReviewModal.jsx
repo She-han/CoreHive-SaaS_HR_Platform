@@ -13,7 +13,8 @@ import {
   Shield,
   TrendingUp,
   MessageSquare,
-  UserPlus
+  UserPlus,
+  FileDown
 } from 'lucide-react';
 
 import Modal from '../common/Modal';
@@ -233,6 +234,90 @@ const OrganizationReviewModal = ({
             </div>
           </div>
         </Card>
+
+        {/* Business Registration Document */}
+        {organization.businessRegistrationDocument && (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-blue-600" />
+              Business Registration Document
+            </h3>
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded">
+                    <FileDown className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">
+                      {organization.businessRegistrationDocument.split('/').pop()}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-1">
+                      Business Registration Certificate
+                    </p>
+                  </div>
+                </div>
+                
+              <div className="flex space-x-2">
+                <a
+                  href={`http://localhost:8080/api/files/business-registration/${organization.businessRegistrationDocument.split('/').pop()}?token=${localStorage.getItem('corehive_token')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Open file in new tab with token
+                    const filename = organization.businessRegistrationDocument.split('/').pop();
+                    const token = localStorage.getItem('corehive_token');
+                    
+                    fetch(`http://localhost:8080/api/files/business-registration/${filename}`, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    })
+                    .then(response => response.blob())
+                    .then(blob => {
+                      const url = window.URL.createObjectURL(blob);
+                      window.open(url, '_blank');
+                    })
+                    .catch(error => console.error('Error viewing document:', error));
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+                >
+                  View Document
+                </a>
+                <button
+                  onClick={() => {
+                    const filename = organization.businessRegistrationDocument.split('/').pop();
+                    const token = localStorage.getItem('corehive_token');
+                    
+                    fetch(`http://localhost:8080/api/files/business-registration/${filename}`, {
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    })
+                    .then(response => response.blob())
+                    .then(blob => {
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = filename;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                    })
+                    .catch(error => console.error('Error downloading document:', error));
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-medium"
+                >
+                  Download
+                </button>
+              </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Module Configuration */}
         <Card title="Selected Modules">

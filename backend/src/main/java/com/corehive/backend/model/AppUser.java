@@ -42,6 +42,9 @@ public class AppUser {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "is_password_change_required")
+    private Boolean isPasswordChangeRequired = true;
+
     @Column(name = "linked_employee_id")
     private Long linkedEmployeeId;
 

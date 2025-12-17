@@ -34,11 +34,18 @@ export default function AddEmployee() {
 
 
 
-    useEffect(() => {
-      getAllDepartments()
-    .then(res => setDepartments(res.data))
-    .catch(err => console.error("Error loading departments", err));
-}, []);
+  useEffect(() => {
+    if (token) {
+      console.log("Fetching departments with token:", token);
+      getAllDepartments(token)
+        .then(res => {
+          console.log("Departments API response:", res);
+          setDepartments(res.data || []);
+        })
+        .catch(err => console.error("Error loading departments", err));
+    }
+  }, [token]);
+  
 
   
 

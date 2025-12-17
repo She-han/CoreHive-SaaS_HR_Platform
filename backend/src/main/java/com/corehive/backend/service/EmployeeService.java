@@ -57,7 +57,9 @@ public class EmployeeService {
         Pageable pageable = PageRequest.of(page, size);
 
         // 4. Fetch employees
-        Page<Employee> employeePage = employeeRepository.findByOrganizationUuid(orgUuid, pageable);
+        Page<Employee> employeePage =
+                employeeRepository.findByOrganizationUuidWithDepartment(orgUuid, pageable);
+
 
         // 5. Map entities to DTOs
         List<EmployeeResponseDTO> employeeDTOs = employeeMapper.toDtos(employeePage.getContent());
@@ -117,12 +119,13 @@ public class EmployeeService {
 
         // 2️) Fetch employee safely
         Employee employee = employeeRepository
-                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .findByIdAndOrganizationUuidWithDepartment(id, organizationUuid)
                 .orElseThrow(() ->
                         new EmployeeNotFoundException(
                                 "Employee with id " + id + " not found in this organization"
                         )
                 );
+
 
         // 3) Map entity → DTO
         return employeeMapper.toDto(employee);

@@ -10,12 +10,17 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE ,
+        uses = { DepartmentMapper.class }
+)
 public interface EmployeeMapper {
 
+
     @Mapping(source = "department.id", target = "departmentId")
-//    @Mapping(source = "department.name", target = "departmentName")
+    @Mapping(source = "department", target = "department")
     EmployeeResponseDTO toDto(Employee employee);
+
 
     List<EmployeeResponseDTO> toDtos(List<Employee> employees);
 

@@ -18,9 +18,19 @@ export const getAllJobPostings = async (page , size  , token) => {
 };
 
 //2) Delete job posting
-export const deleteJobPosting = async (id) => {
-  return axios.delete(`${BASE}/job-postings/${id}`);
+export const deleteJobPosting = async (id, token) => {
+  if (!id) throw new Error("Job-Posting ID is required");
+
+  return axios.delete(
+    `${BASE}/orgs/job-postings/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
 };
+
 
 //3)Create a Job posting
 export async function createJobPosting(data, token) {

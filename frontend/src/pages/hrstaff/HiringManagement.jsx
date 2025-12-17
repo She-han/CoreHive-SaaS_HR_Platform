@@ -65,7 +65,7 @@ useEffect(() => {
 
     if (result.isConfirmed) {
       try {
-        await deleteJobPosting(id);
+        await deleteJobPosting(id , token);
         setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
 
         MySwal.fire({

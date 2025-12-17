@@ -134,51 +134,9 @@ public class JobPostingService {
     }
 
 
-
-
-
-//    //READ-by ID
-//    public Optional<JobPosting> getJobPostingById(Long id){
-//        return jobPostingRepository.findById(id);
-//    }
-//
-//    //UPDATE
-//    public JobPosting updateJobPosting(Long id, JobPostingRequestDTO req) {
-//
-//        Optional<JobPosting> optional = jobPostingRepository.findById(id);
-//        if (optional.isEmpty()) {
-//            return null;  // Employee not found
-//        }
-//
-//        JobPosting job = optional.get();
-//
-//        // Update fields
-//        job.setTitle(req.getTitle());
-//        job.setDescription(req.getDescription());
-//        job.setDepartment(req.getDepartment());
-//        job.setPostedDate(LocalDate.parse(req.getPostedDate()));
-//        job.setClosingDate(LocalDate.parse(req.getClosingDate()));
-//        job.setAvailableVacancies(req.getAvailableVacancies());
-//
-//        // Employee Type ENUM
-//        job.setEmploymentType(JobPosting.EmploymentType.valueOf(req.getEmploymentType().toUpperCase()));
-//
-//        // Status Type ENUM
-//        job.setStatus(JobPosting.Status.valueOf(req.getStatus().toUpperCase()));
-//
-//        return jobPostingRepository.save(job);
-//  }
-
-
-    // DELETE
-    public void deleteJobPosting(Long id) {
-        if (!jobPostingRepository.existsById(id)) {
-            throw new RuntimeException("Job posting not found with id " + id);
-        }
-        jobPostingRepository.deleteById(id);
-    }
-
-
+    //************************************************//
+    //GET ONE JOB-POSTING//
+    //************************************************//
     public JobPostingResponseDTO getJobPostingById(String organizationUuid, Long id) {
         // 1️) Validate organization
         if (organizationUuid == null || organizationUuid.isBlank()) {
@@ -251,4 +209,24 @@ public class JobPostingService {
         return jobPostingMapper.toDto(saved);
     }
 
+    //************************************************//
+    //DELETE A JOB-POSTING//
+    //************************************************//
+    public void deleteJobPostingById(String organizationUuid, Long id) {
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
+        }
+
+        if (id == null) {
+            throw new InvalidJobPostingException("Job posting ID cannot be null");
+        }
+
+        JobPosting jobPosting = jobPostingRepository
+                .findByIdAndOrganizationUuid(id, organizationUuid)
+                .orElseThrow(() -> new JobPostingNotFoundException(
+                        "Job posting with id " + id + " not found in this organization"
+                ));
+
+        jobPostingRepository.delete(jobPosting);
+    }
 }

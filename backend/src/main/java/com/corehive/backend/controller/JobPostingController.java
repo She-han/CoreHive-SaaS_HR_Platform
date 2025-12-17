@@ -94,24 +94,25 @@ public class JobPostingController {
                 HttpStatus.OK
         );
     }
-//    //UPDATE
-//    @PutMapping("/{id}")
-//    public ResponseEntity<?> updateJobPosting(@PathVariable Long id, @RequestBody JobPostingRequestDTO req) {
-//
-//        JobPosting updated = jobPostingService.updateJobPosting(id, req);
-//
-//        if (updated == null) {
-//            return ResponseEntity.badRequest().body("Employee not found");
-//        }
-//
-//        return ResponseEntity.ok(updated);
-//    }
 
-
-    //DELETE
+    //************************************************//
+    //DELETE A JOB-POSTING//
+    //************************************************//
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteJobPosting(@PathVariable Long id){
-        jobPostingService.deleteJobPosting(id);
-        return ResponseEntity.noContent().build();
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> deleteJobPosting(HttpServletRequest httpRequest, @PathVariable Long id ) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+        jobPostingService.deleteJobPostingById(organizationUuid, id);
+
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Job posting deleted successfully", null),
+                HttpStatus.OK
+        );
     }
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<Void> deleteJobPosting(@PathVariable Long id){
+//        jobPostingService.deleteJobPosting(id);
+//        return ResponseEntity.noContent().build();
+//    }
 }

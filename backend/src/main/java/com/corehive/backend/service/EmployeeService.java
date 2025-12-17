@@ -156,19 +156,12 @@ public class EmployeeService {
             if (req.getDepartmentId() != null) {
                 Department department = departmentRepository
                         .findById(req.getDepartmentId())
-                        .orElseThrow(() ->
-                                new InvalidEmployeeDataException("Invalid department ID"));
-                employee.setDepartment(department);
+                        .orElseThrow(() -> new InvalidEmployeeDataException("Invalid department ID"));
+                employee.setDepartment(department); // MUST be before save()
+            } else if (employee.getDepartment() == null) {
+                throw new InvalidEmployeeDataException("Department is required");
             }
 
-        if (req.getDepartmentId() != null) {
-            Department department = departmentRepository
-                    .findById(req.getDepartmentId())
-                    .orElseThrow(() ->
-                            new InvalidEmployeeDataException("Invalid department ID"));
-
-            employee.setDepartment(department);
-        }
 
             // Salary Type
             if (req.getSalaryType() != null) {
@@ -220,13 +213,13 @@ public class EmployeeService {
         try {
             employeeMapper.updateEmployeeFromDto(req, employee);
 
-            // Department
             if (req.getDepartmentId() != null) {
                 Department department = departmentRepository
                         .findById(req.getDepartmentId())
-                        .orElseThrow(() ->
-                                new InvalidEmployeeDataException("Invalid department ID"));
-                employee.setDepartment(department);
+                        .orElseThrow(() -> new InvalidEmployeeDataException("Invalid department ID"));
+                employee.setDepartment(department); // MUST be before save()
+            } else if (employee.getDepartment() == null) {
+                throw new InvalidEmployeeDataException("Department is required");
             }
 
             // Salary Type

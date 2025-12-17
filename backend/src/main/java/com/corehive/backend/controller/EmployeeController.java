@@ -78,7 +78,7 @@ public class EmployeeController {
     }
 
     //************************************************//
-    //MAKE AN EMPLOYEE//
+    //CREATE AN EMPLOYEE//
     //************************************************//
     @PostMapping
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")

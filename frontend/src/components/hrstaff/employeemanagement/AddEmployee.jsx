@@ -52,8 +52,16 @@ export default function AddEmployee() {
   const handleSubmit = async (e)=>{
     e.preventDefault();
 
+    // Convert frontend values to backend expected DTO
+  const payload = {
+    ...formData,
+    departmentId: Number(formData.department) || null, // convert to Long
+    salaryType: formData.salaryType.toUpperCase(),    // MONTHLY or DAILY
+    status: formData.status.toUpperCase(),            // ACTIVE or NONACTIVE
+  };
+
     try{
-        await createEmployee(formData, token);
+        await createEmployee(payload, token);
 
         Swal.fire({
       title: "Success!",
@@ -147,19 +155,19 @@ export default function AddEmployee() {
 
 
               <Field label="Department">
-                <select
-                    name="department"
-                    value={formData.department}
-                    onChange={handleChange}
-                    className="input-box"
-                    required
+               <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
                 >
-                    <option value="">Select Department</option>
-                    {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
+                  <option value="">Select Department</option>
+                  {departments.map(dep => (
+                    <option key={dep.id} value={dep.id}> {/* value = dep.id */}
+                      {dep.name}
                     </option>
-                    ))}
+                  ))}
                 </select>
                 </Field>
 

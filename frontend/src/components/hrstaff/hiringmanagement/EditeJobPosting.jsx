@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { getSingleJobPosting } from "../../../api/hiringService";
 import { getAllDepartments } from "../../../api/departmentApi";
+import { updateJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
  import { selectUser } from "../../../store/slices/authSlice";
 
@@ -111,16 +112,19 @@ export default function EditeJobPosting() {
 
   setLoading(true);
 
-  try {
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (avatarFile) payload.append("avatar", avatarFile);
+   try {
+    // Build FormData if there is a file, otherwise send JSON
+    let payload;
+    if (avatarFile) {
+      payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => payload.append(key, value));
+      payload.append("avatar", avatarFile);
+    } else {
+      payload = form;
+    }
 
-    const response = await axios.put(
-      `http://localhost:8080/api/job-postings/${id}`,
-      payload,
-      { headers: { "Content-Type": "application/json"  } }
-    );
+    const response = await updateJobPosting(id, payload, token);
+
 
     Swal.fire({
       title: "Success!",

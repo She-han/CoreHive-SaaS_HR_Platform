@@ -93,9 +93,11 @@ useEffect(() => {
   setLoading(true);
 
   try {
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (avatarFile) payload.append("avatar", avatarFile);
+   // Transform department field to departmentId if needed
+    const payload = {
+      ...form,
+      departmentId: form.department// map selected department
+    };
 
     await createJobPosting(payload , token);
 
@@ -123,6 +125,33 @@ useEffect(() => {
     setLoading(false);
   }
 }
+
+// async function handleSubmit(e) {
+//   e.preventDefault();
+//   setLoading(true);
+
+//   try {
+//     const payload = {
+//       ...form,
+//       departmentId: form.department // ensure DTO field matches backend
+//     };
+
+//     await createJobPosting(payload, token);
+
+//     Swal.fire({
+//       title: "Success!",
+//       text: "Job posting created successfully",
+//       icon: "success",
+//       confirmButtonColor: "#02C39A"
+//     }).then(() => navigate("/hr_staff/HiringManagement"));
+
+//   } catch (error) {
+//     console.error("Error creating job posting:", error);
+//     Swal.fire("Error", "Failed to create job posting", "error");
+//   } finally {
+//     setLoading(false);
+//   }
+// }
 
 
    

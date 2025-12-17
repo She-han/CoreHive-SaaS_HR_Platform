@@ -63,15 +63,21 @@ export async function getSingleJobPosting(id , token) {
 export async function updateJobPosting(id, data, token) {
   if (!id) throw new Error("Job-Posting ID is required");
 
-  return axios
-    .put(`${BASE}/job-postings/${id}`, data, {
+  const isFormData = data instanceof FormData;
+
+  return axios.put(
+   `${BASE}/orgs/job-postings/${id}`,
+    data,
+    {
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json", // Use "multipart/form-data" if sending files
-      },
-    })
-    .then((res) => res.data)
-    .catch((err) => {
-      throw new Error(err.response?.data?.message || err.message);
-    });
+        ...(isFormData ? {} : { "Content-Type": "application/json" })
+      }
+    }
+  )
+  .then(res => res.data)
+  .catch(err => {
+    throw new Error(err.response?.data?.message || err.message);
+  });
 }
+

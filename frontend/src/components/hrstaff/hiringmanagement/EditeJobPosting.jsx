@@ -117,10 +117,26 @@ export default function EditeJobPosting() {
     let payload;
     if (avatarFile) {
       payload = new FormData();
-      Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-      payload.append("avatar", avatarFile);
+    payload.append("title", form.title);
+payload.append("departmentId", form.department); // ✅ FIX
+payload.append("employmentType", form.employmentType);
+payload.append("status", form.status);
+payload.append("postedDate", form.postedDate);
+payload.append("closingDate", form.closingDate);
+payload.append("availableVacancies", form.availableVacancies);
+payload.append("description", form.description);
+payload.append("avatar", avatarFile);
     } else {
-      payload = form;
+     payload = {
+    title: form.title,
+    departmentId: form.department,  
+    employmentType: form.employmentType,
+    status: form.status,
+    postedDate: form.postedDate,
+    closingDate: form.closingDate,
+    availableVacancies: form.availableVacancies,
+    description: form.description,
+  };
     }
 
     const response = await updateJobPosting(id, payload, token);

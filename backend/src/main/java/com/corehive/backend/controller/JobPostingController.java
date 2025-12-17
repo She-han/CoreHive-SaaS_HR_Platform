@@ -86,7 +86,7 @@ public class JobPostingController {
     public ResponseEntity<StandardResponse> updateJobPosting(HttpServletRequest httpRequest, @PathVariable Long id , @RequestBody JobPostingRequestDTO req) {
         String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
         String userEmail = (String) httpRequest.getAttribute("userEmail");
-        Integer userId = (Integer) httpRequest.getAttribute("userId");
+        Long userId = (Long) httpRequest.getAttribute("userId");
 
         JobPostingResponseDTO updatedJobPosting = jobPostingService.updateJobPostingById(organizationUuid, id , req , userId);
         return new ResponseEntity<>(

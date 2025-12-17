@@ -210,7 +210,7 @@ public class JobPostingService {
             String organizationUuid,
             Long id,
             JobPostingRequestDTO req,
-            Integer userId
+            Long userId
     ) {
 
         // 1) Validate organization
@@ -240,7 +240,9 @@ public class JobPostingService {
         // 5) Map updatable fields
         jobPostingMapper.updateEntityFromDto(req, existing);
 
+
         // 6) Set relationship & system-controlled fields
+        existing.setOrganizationUuid(organizationUuid);
         existing.setDepartment(department);
         existing.setPostedBy(Long.valueOf(userId));
 

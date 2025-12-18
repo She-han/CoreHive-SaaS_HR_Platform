@@ -40,7 +40,10 @@ const [attendance, setAttendance] = useState(null);
     <DashboardLayout>
     <div className="p-6 max-w-5xl mx-auto animate-fade-in">
 
-     
+      {/* PAGE HEADER */}
+        <h1 className="text-2xl font-semibold  text-[var(--color-text-primary)] mb-6">
+           Attendance Dashboard
+        </h1>
 
       {/* TODAY’S ATTENDANCE */}
       <div className="
@@ -51,10 +54,6 @@ const [attendance, setAttendance] = useState(null);
         animate-slide-up
       ">
          {/* HEADER */}
-      <h1 className="text-2xl font-semibold font-serif text-(--color-text-primary) mb-6">
-        Attendance Dashboard
-      </h1>
-      
         <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
           Today’s Attendance
         </h2>

@@ -1,17 +1,18 @@
 import React from "react";
-import Sidebar from "../hrstaff/Sidebar";
+import Sidebar from "./Sidebar"
 import {Outlet} from "react-router-dom";
+import DashboardLayout from "./DashboardLayout";
 
 function MainHRLayout() {
   return (
-   <div className="flex h-screen overflow-hidden">   {/* No scrolling */}
-      <Sidebar />
+    <DashboardLayout className="flex h-screen overflow-hidden">   {/* No scrolling */}
+      
 
       {/* Main content area */}
       <div className="flex-1 bg-gray-50 min-h-screen p-6">
         <Outlet />
       </div>
-    </div>
+    </DashboardLayout>
   )
 }
 

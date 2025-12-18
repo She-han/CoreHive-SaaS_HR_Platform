@@ -23,7 +23,10 @@ public class OrganizationSummaryResponse {
     private String status;
     private String employeeCountRange;
     private LocalDateTime createdAt;
-    private Boolean modulePerformanceTracking;
+    private String businessRegistrationNumber;
+    private String businessRegistrationDocument;
+    private Boolean moduleQrAttendanceMarking;
+    private Boolean moduleFaceRecognitionAttendanceMarking;
     private Boolean moduleEmployeeFeedback;
     private Boolean moduleHiringManagement;
     private Boolean modulesConfigured;

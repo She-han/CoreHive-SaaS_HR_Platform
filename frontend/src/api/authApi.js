@@ -1,3 +1,4 @@
+import apiClient from './axios';
 import { apiPost, apiGet } from './axios';
 
 /**
@@ -20,17 +21,33 @@ const AUTH_ENDPOINTS = {
  */
 export const signupOrganization = async (signupData) => {
   try {
-    console.log('🏢 Submitting organization signup:', signupData.organizationName);
+    console.log('Submitting organization signup');
     
-    const response = await apiPost(AUTH_ENDPOINTS.SIGNUP, signupData);
+    // Check if signupData is FormData (for file uploads)
+    const isFormData = signupData instanceof FormData;
     
-    if (response.success) {
-      console.log('✅ Organization signup successful');
+    if (isFormData) {
+      console.log(' FormData detected - uploading with multipart/form-data');
     }
     
-    return response;
+    // Use apiClient instance (from axios.js) with custom config for FormData
+    const response = await apiClient.post(
+      AUTH_ENDPOINTS.SIGNUP,
+      signupData,
+      {
+        headers: isFormData ? {
+          'Content-Type': 'multipart/form-data',
+        } : undefined, // Let axios set default Content-Type for JSON
+      }
+    );
+    
+    if (response.data.success) {
+      console.log('Organization signup successful');
+    }
+    
+    return response.data;
   } catch (error) {
-    console.error('❌ Organization signup failed:', error);
+    console.error(' Organization signup failed:', error);
     throw error;
   }
 };
@@ -42,22 +59,22 @@ export const signupOrganization = async (signupData) => {
  */
 export const loginUser = async (loginData) => {
   try {
-    console.log('🔑 Attempting login for:', loginData.email);
+    console.log(' Attempting login for:', loginData.email);
     
     const response = await apiPost(AUTH_ENDPOINTS.LOGIN, loginData);
     
     if (response.success) {
-      console.log('✅ Login successful for:', loginData.email);
-      console.log('🔐 Received token:', response.data.token ? 'Yes' : 'No');
+      console.log(' Login successful for:', loginData.email);
+      console.log(' Received token:', response.data.token ? 'Yes' : 'No');
       
       // Token storage will be handled by Redux slice
       return response.data;
     } else {
-      console.error('❌ Login failed:', response.message);
+      console.error(' Login failed:', response.message);
       throw new Error(response.message);
     }
   } catch (error) {
-    console.error('❌ Login failed for:', loginData.email, error);
+    console.error(' Login failed for:', loginData.email, error);
     throw error;
   }
 };
@@ -69,12 +86,12 @@ export const loginUser = async (loginData) => {
  */
 export const configureModules = async (moduleConfig) => {
   try {
-    console.log('⚙️ Configuring modules:', moduleConfig);
+    console.log(' Configuring modules:', moduleConfig);
     
     const response = await apiPost(AUTH_ENDPOINTS.CONFIGURE_MODULES, moduleConfig);
     
     if (response.success) {
-      console.log('✅ Modules configured successfully');
+      console.log(' Modules configured successfully');
       
       // Update user data in localStorage
       const storedUser = JSON.parse(localStorage.getItem('corehive_user') || '{}');
@@ -88,7 +105,7 @@ export const configureModules = async (moduleConfig) => {
     
     return response;
   } catch (error) {
-    console.error('❌ Module configuration failed:', error);
+    console.error(' Module configuration failed:', error);
     throw error;
   }
 };
@@ -99,12 +116,12 @@ export const configureModules = async (moduleConfig) => {
  */
 export const getCurrentUser = async () => {
   try {
-    console.log('👤 Fetching current user details');
+    console.log(' Fetching current user details');
     
     const response = await apiGet(AUTH_ENDPOINTS.GET_CURRENT_USER);
     
     if (response.success) {
-      console.log('✅ Current user details retrieved');
+      console.log(' Current user details retrieved');
       
       // Update localStorage with fresh user data
       const { token, ...userData } = response.data;
@@ -113,7 +130,7 @@ export const getCurrentUser = async () => {
     
     return response;
   } catch (error) {
-    console.error('❌ Failed to get current user:', error);
+    console.error(' Failed to get current user:', error);
     throw error;
   }
 };
@@ -124,19 +141,19 @@ export const getCurrentUser = async () => {
  */
 export const logoutUser = () => {
   try {
-    console.log('👋 Logging out user');
+    console.log(' Logging out user');
     
     // Clear localStorage
     localStorage.removeItem('corehive_token');
     localStorage.removeItem('corehive_user');
     
-    console.log('✅ User logged out successfully');
+    console.log(' User logged out successfully');
     
     // Redirect to home page
     window.location.href = '/';
     
   } catch (error) {
-    console.error('❌ Logout error:', error);
+    console.error(' Logout error:', error);
     throw error;
   }
 };
@@ -161,7 +178,7 @@ export const getStoredUser = () => {
     const userData = localStorage.getItem('corehive_user');
     return userData ? JSON.parse(userData) : null;
   } catch (error) {
-    console.error('❌ Error parsing stored user data:', error);
+    console.error(' Error parsing stored user data:', error);
     return null;
   }
 };

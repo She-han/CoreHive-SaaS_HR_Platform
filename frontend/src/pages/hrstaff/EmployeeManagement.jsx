@@ -36,7 +36,7 @@ export default function EmployeeManagement() {
             <option value="department">Department</option>
             <option value="status">Status</option>
           </select>
-          <Link to="/hr_staff/addemployee" className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]">
+          <Link to="/hr_staff/employeemanagement/addemployee" className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]">
             <FaPlus /> Add Employee
           </Link>
         </div>

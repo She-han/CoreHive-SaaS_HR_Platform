@@ -1,10 +1,11 @@
 package com.corehive.backend.service;
 
-import com.corehive.backend.dto.DepartmentDTO;
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
+import com.corehive.backend.dto.request.UpdateDepartmentRequest;
+import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
-import com.corehive.backend.util.mappers.DepartmentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,34 +16,47 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for managing departments
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
-    private final DepartmentMapper departmentMapper;
 
     /**
      * Ensure default departments exist for an organization
      */
     @Transactional
     public void ensureDefaultDepartments(String organizationUuid) {
-        List<Department> existingDepartments = departmentRepository.findByOrganizationUuid(organizationUuid);
+        try {
+            log.info("Ensuring default departments exist for organization: {}", organizationUuid);
 
-        if (existingDepartments.isEmpty()) {
-            log.info("No departments found. Creating default departments for organization: {}", organizationUuid);
-            createDefaultDepartments(organizationUuid);
-        } else {
-            log.info("Found {} departments for organization: {}", existingDepartments.size(), organizationUuid);
+            List<Department> existingDepts = departmentRepository.findByOrganizationUuid(organizationUuid);
+
+            if (existingDepts.isEmpty()) {
+                log.info("No departments found. Creating default departments for organization: {}", organizationUuid);
+                createDefaultDepartments(organizationUuid);
+            } else {
+                log.info("Found {} existing departments for organization: {}", existingDepts.size(), organizationUuid);
+            }
+
+        } catch (Exception e) {
+            log.error("Error ensuring default departments for organization: {}", organizationUuid, e);
+            throw new RuntimeException("Failed to ensure default departments", e);
         }
     }
 
     /**
-     * Create default departments
+     * Create default departments for an organization
      */
     private void createDefaultDepartments(String organizationUuid) {
-        String[][] defaultDeptData = {
+        List<Department> defaultDepartments = new ArrayList<>();
+
+        // Default departments
+        String[][] deptData = {
                 {"Human Resources", "HR"},
                 {"Information Technology", "IT"},
                 {"Finance", "FIN"},
@@ -51,75 +65,133 @@ public class DepartmentService {
                 {"Marketing", "MKT"}
         };
 
-        List<Department> defaultDepartments = new ArrayList<>();
-        for (String[] dept : defaultDeptData) {
+        for (String[] dept : deptData) {
             Department department = new Department();
             department.setOrganizationUuid(organizationUuid);
             department.setName(dept[0]);
             department.setCode(dept[1]);
             department.setIsActive(true);
             department.setCreatedAt(LocalDateTime.now());
+
             defaultDepartments.add(department);
         }
 
-        departmentRepository.saveAll(defaultDepartments);
-        log.info("Created {} default departments for organization: {}", defaultDepartments.size(), organizationUuid);
+        List<Department> savedDepartments = departmentRepository.saveAll(defaultDepartments);
+        log.info("Created {} default departments for organization: {}", savedDepartments.size(), organizationUuid);
     }
 
     /**
-     * Get all active departments as DTOs
+     * Get all departments for an organization
      */
-    public List<DepartmentDTO> getDepartmentsByOrganizationDto(String organizationUuid) {
-        List<Department> departments = departmentRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
-        return departmentMapper.toDtos(departments);
+    public List<Department> getDepartmentsByOrganization(String organizationUuid) {
+        return departmentRepository.findByOrganizationUuid(organizationUuid);
     }
 
     /**
-     * Create a new department and return as DTO
+     * Validate if department exists for organization
+     */
+    public boolean validateDepartment(Long departmentId, String organizationUuid) {
+        return departmentRepository.existsByIdAndOrganizationUuid(departmentId, organizationUuid);
+    }
+
+    public List<Department> getAll() {
+        return departmentRepository.findAll();
+    }
+
+    /**
+     * Create a new department for an organization
      */
     @Transactional
-    public DepartmentDTO createDepartmentDto(String organizationUuid, CreateDepartmentRequest request) {
-        Optional<Department> existingDept = departmentRepository
-                .findByOrganizationUuidAndName(organizationUuid, request.getName());
+    public Department createDepartment(String organizationUuid, CreateDepartmentRequest request) {
+
+        Optional<Department> existingDept =
+                departmentRepository.findByOrganizationUuidAndName(organizationUuid, request.getName());
 
         if (existingDept.isPresent()) {
             throw new RuntimeException("Department with the same name already exists");
         }
 
-        Department department = departmentMapper.toEntity(request);
+        Department department = new Department();
         department.setOrganizationUuid(organizationUuid);
+        department.setName(request.getName());
+        department.setCode(request.getCode());
+        department.setManagerId(request.getManagerId());
         department.setIsActive(true);
         department.setCreatedAt(LocalDateTime.now());
 
-        Department savedDepartment = departmentRepository.save(department);
-        log.info("Department created with ID: {} for organization: {}", savedDepartment.getId(), organizationUuid);
-        return departmentMapper.toDto(savedDepartment);
+        return departmentRepository.save(department);
     }
 
-    /**
-     * Update an existing department
-     */
     @Transactional
-    public DepartmentDTO updateDepartmentDto(Long departmentId, CreateDepartmentRequest request, String organizationUuid) {
-        Department existingDept = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new RuntimeException("Department not found"));
+    public ApiResponse<UpdateDepartmentResponse> updateDepartment(String organizationUuid, UpdateDepartmentRequest request){
+        try{
+            Optional<Department> departmentOpt = departmentRepository.findById(request.getId());
 
-        if (!existingDept.getOrganizationUuid().equals(organizationUuid)) {
-            throw new RuntimeException("Department does not belong to this organization");
+            if (departmentOpt.isEmpty() || !departmentOpt.get().getOrganizationUuid().equals(organizationUuid)) {
+                return ApiResponse.error("Department not found in the organization");
+            }
+
+            Department department = departmentOpt.get();
+
+            if(request.getName()!=null && !request.getName().isEmpty()){
+                department.setName(request.getName());
+            }
+            if(request.getCode()!=null && !request.getCode().isEmpty()){
+                department.setCode(request.getCode());
+            }
+            if(request.getManagerId()!=null){
+                department.setManagerId(request.getManagerId());
+            }
+            if(request.getIsActive()!=null){
+                department.setIsActive(request.getIsActive());
+            }
+
+            department.setCreatedAt(LocalDateTime.now());
+
+            Department savedDepartment = departmentRepository.save(department);
+
+            UpdateDepartmentResponse responseDto = UpdateDepartmentResponse.builder()
+                    .id(savedDepartment.getId())
+                    .name(savedDepartment.getName())
+                    .code(savedDepartment.getCode())
+                    .managerId(savedDepartment.getManagerId())
+                    .isActive(savedDepartment.getIsActive())
+                    .build();
+
+            return ApiResponse.<UpdateDepartmentResponse>builder()
+                    .success(true)
+                    .message("Department updated successfully")
+                    .data(responseDto)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update department",e);
         }
 
-        // Update fields using mapper
-        departmentMapper.updateDepartmentFromDto(request, existingDept);
-        Department updatedDept = departmentRepository.save(existingDept);
 
-        log.info("Department updated with ID: {} for organization: {}", updatedDept.getId(), organizationUuid);
-        return departmentMapper.toDto(updatedDept);
     }
 
     /**
-     * Validate if a department exists in the organization
+     * Get department by ID
      */
-    public boolean validateDepartment(Long departmentId, String organizationUuid) {
-        return departmentRepository.existsByIdAndOrganizationUuid(departmentId, organizationUuid);
+    public Optional<Department> getDepartmentById(Long departmentId) {
+        if (departmentId == null) {
+            return Optional.empty();
+        }
+        return departmentRepository.findById(departmentId);
     }
+
+    /**
+     * Get department name by ID
+     * Returns "Unknown Department" if not found
+     */
+    public String getDepartmentNameById(Long departmentId) {
+        if (departmentId == null) {
+            return "No Department";
+        }
+        return departmentRepository.findById(departmentId)
+                .map(Department::getName)
+                .orElse("Unknown Department");
+    }
+
 }

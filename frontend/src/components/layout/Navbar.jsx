@@ -58,7 +58,8 @@ const Navbar = () => {
           { name: 'Dashboard', href: '/sys_admin/dashboard', current: location.pathname === '/sys_admin/dashboard' },
           { name: 'Organizations', href: '/sys_admin/organizations', current: location.pathname.startsWith('/sys_admin/organizations') },
           { name: 'Requests', href: '/sys_admin/requests', current: location.pathname.startsWith('/sys_admin/requests') },
-          { name: 'Reports', href: '/sys_admin/reports', current: location.pathname.startsWith('/sys_admin/reports') }
+          { name: 'Reports', href: '/sys_admin/reports', current: location.pathname.startsWith('/sys_admin/reports') },
+          { name: 'Reportss', href: '/sys_admin/reports', current: location.pathname.startsWith('/sys_admin/reports') }
         ];
       
       case 'ORG_ADMIN':

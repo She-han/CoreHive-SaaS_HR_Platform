@@ -38,6 +38,19 @@ export const createDepartment = async (deptData, token) => {
   }
 };
 
+export const updateDepartment = async (id,deptData) => {
+  try{
+    const response = await axios.put(`/org-admin/departments/${id}`, deptData);
+    return response.data;
+  }catch(error){
+    console.error('Error creating department:',error);
+    throw error;
+  }
+};
+
 export default {
-  getAllDepartments
+  getAllDepartments,
+  createDepartment,
+  updateDepartment
+
 };

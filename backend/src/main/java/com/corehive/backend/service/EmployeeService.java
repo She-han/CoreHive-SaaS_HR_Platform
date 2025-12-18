@@ -77,6 +77,19 @@ public class EmployeeService {
 
     }
 
+    /**
+     * Create new employee
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public ApiResponse<Employee> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
+        log.info("Creating employee for organization: {} with email: {}", organizationUuid, request.getEmail());
+
+        // Validate organization UUID
+        if (organizationUuid == null || organizationUuid.trim().isEmpty()) {
+            log.error("Organization UUID is null or empty");
+            return ApiResponse.error("Invalid organization");
+        }
+
     //************************************************//
     //MAKE DEACTIVATE EMPLOYEE//
     //************************************************//
@@ -94,10 +107,19 @@ public class EmployeeService {
                         "Employee with id " + id + " is already inactive."
                 );
             }
+        // Get organization
+        Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+        if (orgOpt.isEmpty()) {
+            log.error("Organization not found with UUID: {}", organizationUuid);
+            return ApiResponse.error("Organization not found");
+        }
+        Organization organization = orgOpt.get();
 
             // Deactivate employee
             employee.setIsActive(false);
             employeeRepository.save(employee);
+        // Validate department ID and ensure departments exist
+        departmentService.ensureDefaultDepartments(organizationUuid);
 
         } else {
             // Throw exception if employee not found
@@ -106,6 +128,10 @@ public class EmployeeService {
             );
         }
     }
+        if (!departmentService.validateDepartment(request.getDepartment(), organizationUuid)) {
+            log.warn("Invalid department ID {} for organization: {}", request.getDepartment(), organizationUuid);
+            return ApiResponse.error("Invalid department ID. Please select a valid department.");
+        }
 
     //************************************************//
     //GET ONE EMPLOYEE//
@@ -115,7 +141,18 @@ public class EmployeeService {
         if (organizationUuid == null || organizationUuid.isBlank()) {
             throw new OrganizationNotFoundException("Organization UUID is missing");
         }
+        // Check if email already exists in organization
+        if (employeeRepository.existsByEmailAndOrganizationUuid(request.getEmail(), organizationUuid)) {
+            log.warn("Email {} already exists in organization: {}", request.getEmail(), organizationUuid);
+            return ApiResponse.error("Email already exists in this organization");
+        }
 
+        // Check if email exists as an app user
+        Optional<AppUser> existingUser = appUserRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent() && existingUser.get().getOrganizationUuid().equals(organizationUuid)) {
+            log.warn("User with email {} already exists in organization: {}", request.getEmail(), organizationUuid);
+            return ApiResponse.error("User with this email already exists");
+        }
 
         // 2️) Fetch employee safely
         Employee employee = employeeRepository
@@ -125,134 +162,149 @@ public class EmployeeService {
                                 "Employee with id " + id + " not found in this organization"
                         )
                 );
+        try {
+            // Generate temporary password
+            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
 
+            // Create AppUser first
+            AppUser appUser = AppUser.builder()
+                    .organizationUuid(organizationUuid)
+                    .email(request.getEmail())
+                    .passwordHash(passwordEncoder.encode(tempPassword))
+                    .role(AppUserRole.EMPLOYEE)
+                    .isActive(true)
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
 
         // 3) Map entity → DTO
         return employeeMapper.toDto(employee);
+            appUser.setIsPasswordChangeRequired(true);
+            AppUser savedUser = appUserRepository.save(appUser);
+            log.info("AppUser created with ID: {}", savedUser.getId());
 
-    }
+            // Send email with credentials
+            try {
+                emailService.sendEmployeePasswordEmail(request.getEmail(), tempPassword, organization.getName());
+                log.info("Employee password email sent successfully to: {}", request.getEmail());
+            } catch (Exception e) {
+                log.error("Failed to send employee password email: {}", e.getMessage());
+            }
 
-    //************************************************//
-    //CREATE AN EMPLOYEE//
-    //************************************************//
-    public EmployeeResponseDTO createEmployee(String organizationUuid, EmployeeRequestDTO req) {
+            // Generate employee code
+            String employeeCode = generateEmployeeCodeSafe(organizationUuid);
+            log.info("Generated employee code: {}", employeeCode);
 
-        // 1️) Validate org UUID
-        if (organizationUuid == null || organizationUuid.isBlank()) {
-            throw new OrganizationNotFoundException("Organization UUID is missing");
-        }
-
-        // 2️) Basic request validation
-        if (req.getFirstName() == null || req.getLastName() == null) {
-            throw new InvalidEmployeeDataException("First name and last name are required");
-        }
-
-        try {
-            Employee employee = employeeMapper.toEntity(req);
-
+            // Create Employee
+            Employee employee = new Employee();
             employee.setOrganizationUuid(organizationUuid);
+            employee.setAppUserId(savedUser.getId());
+            employee.setEmployeeCode(employeeCode);
+            employee.setFirstName(request.getFirstName());
+            employee.setLastName(request.getLastName());
+            employee.setEmail(request.getEmail());
+            employee.setPhone(request.getPhone());
+            employee.setNationalId(request.getNationalId());
+            employee.setDesignation(request.getDesignation());
+            employee.setDepartmentId(request.getDepartment());
+            employee.setBasicSalary(request.getBasicSalary());
+            employee.setLeaveCount(request.getLeaveCount());
+            employee.setDateOfJoining(request.getDateOfJoining());
+            employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
+            employee.setIsActive(request.getStatus().equalsIgnoreCase("Active"));
+            employee.setCreatedAt(LocalDateTime.now());
+            employee.setUpdatedAt(LocalDateTime.now());
 
-            // Department
-            if (req.getDepartmentId() != null) {
-                Department department = departmentRepository
-                        .findById(req.getDepartmentId())
-                        .orElseThrow(() -> new InvalidEmployeeDataException("Invalid department ID"));
-                employee.setDepartment(department); // MUST be before save()
-            } else if (employee.getDepartment() == null) {
-                throw new InvalidEmployeeDataException("Department is required");
-            }
+            Employee savedEmployee = employeeRepository.save(employee);
+            log.info("Employee created with ID: {} and code: {}", savedEmployee.getId(), employeeCode);
 
+            // Update AppUser with linked employee ID
+            savedUser.setLinkedEmployeeId(savedEmployee.getId());
+            appUserRepository.save(savedUser);
+            log.info("AppUser updated with linked employee ID: {}", savedEmployee.getId());
 
-            // Salary Type
-            if (req.getSalaryType() != null) {
-                employee.setSalaryType(
-                        Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase())
-                );
-            }
+            log.info("Employee created successfully with ID: {}", savedEmployee.getId());
+            return ApiResponse.success("Employee created successfully", savedEmployee);
 
-            // Salary
-            if (req.getBasicSalary() != null) {
-                employee.setBasicSalary(new BigDecimal(req.getBasicSalary()));
-            }
-
-            // Date Joined
-            if (req.getDateJoined() != null) {
-                employee.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
-            }
-
-            // Status
-            if (req.getStatus() != null) {
-                employee.setIsActive(req.getStatus().equalsIgnoreCase("ACTIVE"));
-            }
-
-            Employee saved = employeeRepository.save(employee);
-            return employeeMapper.toDto(saved);
-
-        } catch (IllegalArgumentException ex) {
-            throw new InvalidEmployeeDataException("Invalid enum or data format");
+        } catch (Exception e) {
+            log.error("Error creating employee for organization: {} - {}", organizationUuid, e.getMessage(), e);
+            throw new RuntimeException("Failed to create employee: " + e.getMessage(), e);
         }
     }
 
-    //************************************************//
-    // UPDATE EMPLOYEE
-    //************************************************//
-    public EmployeeResponseDTO updateEmployee(String orgUuid, Long id, EmployeeRequestDTO req) {
-
-        if (orgUuid == null || orgUuid.isBlank()) {
-            throw new OrganizationNotFoundException("Organization UUID is missing");
-        }
-
-        Employee employee = employeeRepository
-                .findByIdAndOrganizationUuid(id, orgUuid)
-                .orElseThrow(() ->
-                        new EmployeeNotFoundException(
-                                "Employee with id " + id + " not found"
-                        )
-                );
-
+    /**
+     * Update employee
+     */
+    @Transactional
+    public ApiResponse<Employee> updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO request) {
         try {
-            employeeMapper.updateEmployeeFromDto(req, employee);
+            log.info("Updating employee with ID: {} for organization: {}", id, organizationUuid);
 
-            if (req.getDepartmentId() != null) {
-                Department department = departmentRepository
-                        .findById(req.getDepartmentId())
-                        .orElseThrow(() -> new InvalidEmployeeDataException("Invalid department ID"));
-                employee.setDepartment(department); // MUST be before save()
-            } else if (employee.getDepartment() == null) {
-                throw new InvalidEmployeeDataException("Department is required");
+            Optional<Employee> employeeOpt = employeeRepository.findById(id);
+
+            if (employeeOpt.isEmpty()) {
+                log.warn("Employee not found with ID: {}", id);
+                return ApiResponse.error("Employee not found");
             }
 
-            // Salary Type
-            if (req.getSalaryType() != null) {
-                employee.setSalaryType(
-                        Employee.SalaryType.valueOf(req.getSalaryType().toUpperCase())
-                );
+            Employee employee = employeeOpt.get();
+
+            // Verify it's from the correct organization
+            if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+                log.warn("Employee {} does not belong to organization: {}", id, organizationUuid);
+                return ApiResponse.error("Employee not found");
             }
 
-            // Salary
-            if (req.getBasicSalary() != null) {
-                employee.setBasicSalary(new BigDecimal(req.getBasicSalary()));
+            // Check if email is being changed and if it conflicts
+            if (!employee.getEmail().equals(request.getEmail()) &&
+                    employeeRepository.existsByEmailAndOrganizationUuid(request.getEmail(), organizationUuid)) {
+                log.warn("Email {} already exists in organization: {}", request.getEmail(), organizationUuid);
+                return ApiResponse.error("Email already exists in this organization");
             }
 
-            // Date Joined
-            if (req.getDateJoined() != null) {
-                employee.setDateOfJoining(LocalDate.parse(req.getDateJoined()));
+            // Validate department
+            if (!departmentService.validateDepartment(request.getDepartment(), organizationUuid)) {
+                log.warn("Invalid department ID {} for organization: {}", request.getDepartment(), organizationUuid);
+                return ApiResponse.error("Invalid department ID");
             }
 
-            // Status
-            if (req.getStatus() != null) {
-                employee.setIsActive(req.getStatus().equalsIgnoreCase("ACTIVE"));
+            // Update Employee fields
+            employee.setFirstName(request.getFirstName());
+            employee.setLastName(request.getLastName());
+            employee.setDesignation(request.getDesignation());
+            employee.setEmail(request.getEmail());
+            employee.setPhone(request.getPhone());
+            employee.setNationalId(request.getNationalId());
+            employee.setDepartmentId(request.getDepartment());
+            employee.setLeaveCount(request.getLeaveCount());
+            employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
+            employee.setBasicSalary(request.getBasicSalary());
+            employee.setDateOfJoining(request.getDateOfJoining());
+            employee.setIsActive(request.getStatus().equalsIgnoreCase("Active"));
+            employee.setUpdatedAt(LocalDateTime.now());
+
+            Employee savedEmployee = employeeRepository.save(employee);
+
+            // Update AppUser if linked
+            if (savedEmployee.getAppUserId() != null) {
+                Optional<AppUser> userOpt = appUserRepository.findById(savedEmployee.getAppUserId());
+                if (userOpt.isPresent()) {
+                    AppUser user = userOpt.get();
+                    user.setEmail(request.getEmail());
+                    user.setIsActive(request.getStatus().equalsIgnoreCase("Active"));
+                    user.setUpdatedAt(LocalDateTime.now());
+                    appUserRepository.save(user);
+                    log.info("AppUser updated with ID: {}", user.getId());
+                }
             }
 
-            employee.setOrganizationUuid(orgUuid);
+            log.info("Employee updated successfully with ID: {}", id);
+            return ApiResponse.success("Employee updated successfully", savedEmployee);
 
-            Employee updated = employeeRepository.save(employee);
-            return employeeMapper.toDto(updated);
-
-        } catch (IllegalArgumentException ex) {
-            throw new InvalidEmployeeDataException("Invalid enum or data format");
+        } catch (Exception e) {
+            log.error("Error updating employee with ID: {}", id, e);
+            return ApiResponse.error("Failed to update employee: " + e.getMessage());
         }
     }
-
 
 }

@@ -39,27 +39,55 @@ export default function EmployeeTable({ search, filterBy }) {
       .finally(() => setLoading(false));
   }, [page, size , token]);//refetch whenever page or size changes
 
-  //Filtering Logic
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get("/employees");
+      
+      // Extract data from ApiResponse wrapper
+      if (response.data.success && Array.isArray(response.data.data)) {
+        setEmployees(response.data.data);
+      } else {
+        console.error('Invalid response format:', response.data);
+        setEmployees([]);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      setEmployees([]);
+      MySwal.fire({
+        title: "Error",
+        text: "Failed to load employees. Please try again.",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtering Logic
   const filteredEmployees = employees.filter((emp) => {
     const text = search.toLowerCase();
 
     switch (filterBy) {
       case "name":
         return (
-          emp.firstName.toLowerCase().includes(text) ||
-          emp.lastName.toLowerCase().includes(text)
+          emp.firstName?.toLowerCase().includes(text) ||
+          emp.lastName?.toLowerCase().includes(text)
         );
 
       case "employeeCode":
-        return emp.employeeCode.toLowerCase().includes(text);
+        return emp.employeeCode?.toLowerCase().includes(text);
 
       case "designation":
-        return emp.designation.toLowerCase().includes(text);
+        return emp.designation?.toLowerCase().includes(text);
 
       case "department":
-        return emp.department?.name?.toLowerCase().includes(text);
+        // Note: department is now just an ID, not an object with name
+        // You'll need to map this with department data if needed
+        return emp.departmentId?.toString().includes(text);
 
-      case "status":{
+      case "status": {
         const status = emp.isActive ? "active" : "inactive";
         return status.includes(text);
       }

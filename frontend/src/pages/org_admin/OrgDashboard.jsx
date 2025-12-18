@@ -25,9 +25,12 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
+import AIInsightsCard from '../../components/dashboard/AIInsightsCard';
+
 /**
  * Organization Dashboard Component
  * Role-based dashboard for ORG_ADMIN, HR_STAFF, and EMPLOYEE
+ * Now includes AI-powered insights!
  */
 const OrgDashboard = () => {
   const user = useSelector(selectUser);
@@ -226,6 +229,12 @@ const OrgDashboard = () => {
     }
   };
 
+  // NEW: Check if AI Insights should be shown (only for ORG_ADMIN and HR_STAFF)
+  const shouldShowAIInsights = () => {
+    const userRole = user?.role;
+    return userRole === 'ORG_ADMIN' || userRole === 'HR_STAFF';
+  };
+
   const statsCards = getStatsCards();
   const quickActions = getQuickActions();
 
@@ -289,6 +298,7 @@ const OrgDashboard = () => {
           />
         )}
 
+
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {statsCards.map((stat, index) => {
@@ -318,6 +328,13 @@ const OrgDashboard = () => {
             );
           })}
         </div>
+
+        {/* NEW: AI Insights Section - Only for ORG_ADMIN and HR_STAFF */}
+        {shouldShowAIInsights() && user?.organizationUuid && (
+          <div className="mb-8">
+            <AIInsightsCard organizationUuid={user.organizationUuid} />
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Quick Actions */}

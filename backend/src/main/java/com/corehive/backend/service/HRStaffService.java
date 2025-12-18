@@ -7,11 +7,11 @@ import com.corehive.backend.dto.response.CreateHRStaffResponse;
 import com.corehive.backend.dto.response.HRStaffResponse;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.AppUserRole;
-import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.Organization;
 import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +40,8 @@ public class HRStaffService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final DepartmentService departmentService;
-    private final DepartmentRepository departmentRepository;
+    private final EmailService emailService;
+    private final OrganizationRepository organizationRepository;
 
     /**
      * Get all HR staff members for an organization with pagination
@@ -138,13 +140,12 @@ public class HRStaffService {
      */
     @Transactional(rollbackFor = Exception.class)
     public ApiResponse<CreateHRStaffResponse> createHRStaff(String organizationUuid, CreateHRStaffRequest request) {
-
-        Department department = departmentRepository
-                .findById(request.getDepartmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid department ID"));
-
         log.info("Creating HR staff for organization: {} with email: {}", organizationUuid, request.getEmail());
-        
+
+        Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+
+        Organization organization = orgOpt.get();
+
         // Validate organization UUID
         if (organizationUuid == null || organizationUuid.trim().isEmpty()) {
             log.error("Organization UUID is null or empty");
@@ -180,21 +181,30 @@ public class HRStaffService {
 
         try {
             // Generate temporary password
-            String temporaryPassword = generateTemporaryPassword();
+            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
 
             // Create AppUser first
             AppUser appUser = AppUser.builder()
                     .organizationUuid(organizationUuid)
                     .email(request.getEmail())
-                    .passwordHash(passwordEncoder.encode(temporaryPassword))
+                    .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.HR_STAFF)
                     .isActive(true)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
 
+            appUser.setIsPasswordChangeRequired(true);
             AppUser savedUser = appUserRepository.save(appUser);
             log.info("AppUser created with ID: {}", savedUser.getId());
+
+            try {
+                emailService.sendHRPasswordEmail(request.getEmail(), tempPassword, organization.getName());
+            } catch (Exception e) {
+                System.err.println("Failed to send email: " + e.getMessage());
+            }
+            log.info("HR staff created successfully");
+
 
             // Generate employee code with better error handling
             String employeeCode = generateEmployeeCodeSafe(organizationUuid);
@@ -210,13 +220,14 @@ public class HRStaffService {
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
             employee.setDesignation(request.getDesignation());
-            employee.setDepartment(department);
+            employee.setDepartmentId(request.getDepartmentId());
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType()));
             employee.setIsActive(true);
             employee.setCreatedAt(LocalDateTime.now());
             employee.setUpdatedAt(LocalDateTime.now());
+
 
             Employee savedEmployee = employeeRepository.save(employee);
             log.info("Employee created with ID: {} and code: {}", savedEmployee.getId(), employeeCode);
@@ -232,7 +243,7 @@ public class HRStaffService {
                 request.getFirstName(),
                 request.getLastName(),
                 request.getEmail(),
-                temporaryPassword
+                tempPassword
             );
 
             log.info("HR staff created successfully with ID: {}", savedEmployee.getId());
@@ -250,11 +261,6 @@ public class HRStaffService {
      */
     @Transactional
     public ApiResponse<HRStaffResponse> updateHRStaff(String organizationUuid, UpdateHRStaffRequest request) {
-
-        Department department = departmentRepository
-                .findById(request.getDepartmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid department ID"));
-
         try {
             log.info("Updating HR staff with ID: {} for organization: {}", request.getId(), organizationUuid);
 
@@ -286,7 +292,7 @@ public class HRStaffService {
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
             employee.setDesignation(request.getDesignation());
-            employee.setDepartment(department);
+            employee.setDepartmentId(request.getDepartmentId());
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType()));
@@ -427,8 +433,8 @@ public class HRStaffService {
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .designation(employee.getDesignation())
-//                .departmentId(employee.getDepartmentId())
-//                .departmentName(getDepartmentName(employee.getDepartmentId())) // TODO: Implement department lookup
+                .departmentId(employee.getDepartmentId())
+                .departmentName(getDepartmentName(employee.getDepartmentId())) // TODO: Implement department lookup
                 .basicSalary(employee.getBasicSalary())
                 .dateOfJoining(employee.getDateOfJoining())
                 .salaryType(employee.getSalaryType().toString())
@@ -465,17 +471,9 @@ public class HRStaffService {
     }
 
     /**
-     * Get department name by ID
-     * TODO: Implement proper department service lookup
+     * Get department name by ID using DepartmentService
      */
     private String getDepartmentName(Long departmentId) {
-        // Mock department names for now
-        switch (departmentId != null ? departmentId.intValue() : 0) {
-            case 1: return "Human Resources";
-            case 2: return "Information Technology";
-            case 3: return "Finance";
-            case 4: return "Operations";
-            default: return "Unknown Department";
-        }
+        return departmentService.getDepartmentNameById(departmentId);
     }
 }

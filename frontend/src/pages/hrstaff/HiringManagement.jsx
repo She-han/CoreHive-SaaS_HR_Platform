@@ -107,7 +107,7 @@ useEffect(() => {
   };
 
   return (
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8"> {/*Creates a full-screen white container with padding.*/}
+     <div  style={{ backgroundColor: '#F1FDF9' }} className="w-full h-screen bg-white shadow-md flex flex-col p-8">
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>

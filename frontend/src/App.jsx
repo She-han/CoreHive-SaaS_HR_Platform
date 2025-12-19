@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Provider, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 
-
 import store from './store/store';
 import { selectUser } from './store/slices/authSlice';
 
@@ -40,28 +39,25 @@ import DepartmentManagement from './pages/org_admin/DepartmentManagement';
 import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 
 // HR Staff pages
+
 import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
-import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
-import EditEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
 import LeaveManagement from './pages/hrstaff/LeaveManagement';
+import HiringManagement from './pages/hrstaff/HiringManagement';
 import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
 import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
-import EditeEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
+import EditEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
 import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';
 import EditeJobPosting from './components/hrstaff/hiringmanagement/EditeJobPosting';
 import AttendanceManagement from './pages/AttendaceManagement/AttendanceManagement';
 import FeedBackManagement from './pages/hrstaff/feedBackManagement/FeedBackManagement';
+import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
+import QRAttendancePage from './pages/AttendaceManagement/QRAttendancePage';
 import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
 import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
 import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
 import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSurveyQuestions';
-
-import HiringManagement from './pages/hrstaff/HiringManagement';
-import FeedBackManagement from './pages/hrstaff/FeedBackManagement';
-import FaceAttendancePage from './pages/AttendaceManagement/FaceAttendancePage';
-import QRAttendancePage from './pages/AttendaceManagement/QRAttendancePage';
 
 // Employee Pages
 import EmployeeProfile from './pages/employee/EmployeeProfile';
@@ -299,15 +295,14 @@ const HRStaffRoutes = () => {
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
-        <Route path="addemployee" element={<AddEmployee />} />
-        <Route path="editemployee/:id" element={<EditeEmployee />} />
-        <Route path="addjobform" element={<AddJobForm />} />
+         <Route path="addjobform" element={<AddJobForm />} /> 
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
-        <Route path="FeedBackManagement" element={<FeedBackManagement />} />
-        <Route path="feedback/create" element={<CreateSurvey />} />
-        <Route path="feedback/:id/questions" element={<ViewSurveyQuestions />} />
-        <Route path="feedback/:id/responses" element={<ViewResponsesWithQuestions />} />
-        <Route path="feedback/:id/edit" element={<EditSurveyQuestions/>} />
+        <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
+        <Route path="HiringManagement" element={<HiringManagement />} /> 
+        <Route path="faceattendance" element={<FaceAttendancePage />} />
+        <Route path="qrattendance" element={<QRAttendancePage />} />
+        
+        <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>
   );

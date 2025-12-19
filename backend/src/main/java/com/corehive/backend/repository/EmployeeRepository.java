@@ -126,21 +126,23 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 /**
  * Fetch employees by organization UUID WITH their department details.
  */
-    @Query(
-            value = """
+@Query(
+        value = """
         SELECT e FROM Employee e
         LEFT JOIN FETCH e.department
         WHERE e.organizationUuid = :orgUuid
     """,
-            countQuery = """
+        countQuery = """
         SELECT COUNT(e) FROM Employee e
         WHERE e.organizationUuid = :orgUuid
     """
-    )
-    Page<Employee> findByOrganizationUuidWithDepartment(
-            @Param("orgUuid") String orgUuid,
-            Pageable pageable
-    );
+)
+Page<Employee> findByOrganizationUuidWithDepartment(
+        @Param("orgUuid") String orgUuid,
+        Pageable pageable
+);
+
+
 
     /**
      * Fetch an employees by organization UUID and userId WITH their department details.

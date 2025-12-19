@@ -1,13 +1,17 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
+import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,9 +24,9 @@ import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequiredArgsConstructor
+
 @Slf4j
-@RequestMapping("/api/orgs/employees")
+@RequestMapping("/api/employees")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -31,6 +35,10 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
+
+    //************************************************//
+    //GET ALL EMPLOYEE//
+    //************************************************//
     @GetMapping
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<StandardResponse> getAll(
@@ -78,13 +86,11 @@ public class EmployeeController {
         );
     }
 
-    //************************************************//
-    //CREATE AN EMPLOYEE//
-    //************************************************//
+
     /**
      * Create new employee
      */
-
+    @PostMapping
     public ResponseEntity<ApiResponse<Employee>> createEmployee(
             HttpServletRequest request,
             @Valid @RequestBody EmployeeRequestDTO employeeRequest) {
@@ -96,24 +102,33 @@ public class EmployeeController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Organization not found in request"));
         }
+
+        log.info("Creating employee for organization: {}", organizationUuid);
+        ApiResponse<Employee> response = employeeService.createEmployee(organizationUuid, employeeRequest);
+
+        return ResponseEntity.ok(response);
     }
-        @PutMapping("/{id}")
+    /**
+     * Update employee
+     */
+    @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<Employee>> updateEmployee(
             HttpServletRequest request,
             @PathVariable Long id,
             @Valid @RequestBody EmployeeRequestDTO employeeRequest) {
 
         String organizationUuid = (String) request.getAttribute("organizationUuid");
+
         if (organizationUuid == null || organizationUuid.isEmpty()) {
             log.warn("Organization UUID not found in request");
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Organization not found in request"));
         }
+
         log.info("Updating employee {} for organization: {}", id, organizationUuid);
         ApiResponse<Employee> response = employeeService.updateEmployee(organizationUuid, id, employeeRequest);
 
         return ResponseEntity.ok(response);
-
-
+    }
 
 }

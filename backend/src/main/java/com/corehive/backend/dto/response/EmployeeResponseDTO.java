@@ -1,6 +1,5 @@
 package com.corehive.backend.dto.response;
 
-import com.corehive.backend.dto.DepartmentDTO;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
 import jakarta.persistence.*;
@@ -29,7 +28,7 @@ public class EmployeeResponseDTO {
     private LocalDate dateOfJoining;
     private Boolean isActive = true;
 
-    private DepartmentDTO department;
+    private com.corehive.backend.dto.response.DepartmentDTO departmentDTO;
 
     private Employee.SalaryType salaryType = Employee.SalaryType.MONTHLY;
 

@@ -22,8 +22,7 @@ const JobCard = ({
   };
 
   return (
-    <div className="relative bg-gradient-to-br from-[#FFFFFF] via-[#F1FDF9] to-[#EBFAF5] border border-[#02C39A]/30 rounded-2xl shadow-[0_4px_15px_rgba(2,195,154,0.1)] hover:shadow-[0_6px_20px_rgba(2,195,154,0.2)] hover:-translate-y-[3px] transition-all duration-300 ease-out p-5 flex flex-col gap-4 overflow-hidden">
-      
+   <div className="relative bg-white border border-[#02C39A]/30 rounded-2xl shadow-[0_4px_15px_rgba(2,195,154,0.1)] hover:shadow-[0_6px_20px_rgba(2,195,154,0.2)] hover:-translate-y-[3px] transition-all duration-300 ease-out p-5 flex flex-col gap-4 overflow-hidden">
       {/* Top-right decorative corner */}
       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#02C39A]/15 to-transparent rounded-bl-[100px]" />
 

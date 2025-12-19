@@ -19,7 +19,7 @@ export default function EmployeeTable({ search, filterBy }) {
 
   //For pagenated
   const [page, setPage] = useState(0);       // current page
-  const [size, setSize] = useState(9);      // items per page
+  const [size, setSize] = useState(8);      // items per page
   const [totalPages, setTotalPages] = useState(0);  
 
   const user = useSelector(selectUser); // get token from Redux
@@ -169,7 +169,7 @@ const handleDeactivate = async (id) => {
         <td className="p-3 font-medium text-[#333333]">{emp.employeeCode}</td>
         <td className="p-3">{emp.firstName} {emp.lastName}</td>
         <td className="p-3">{emp.designation}</td>
-        <td className="p-3">{emp.department?.name}</td>
+        <td className="p-3">{emp.departmentDTO?.name}</td>
         <td className="p-3">{emp.phone}</td>
         <td className="px-4 py-2">
           <span

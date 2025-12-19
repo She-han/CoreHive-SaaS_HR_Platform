@@ -8,7 +8,7 @@ const BASE =  "http://localhost:8080/api";
 // 1) GET ALL EMPLOYEES
 export async function getAllEmployees(page = 0, size = 9 , token) {
   return axios
-    .get(`${BASE}/orgs/employees?page=${page}&size=${size}` , 
+    .get(`${BASE}/employees?page=${page}&size=${size}` , 
       {
       headers: {
         Authorization: `Bearer ${token}` 
@@ -29,7 +29,7 @@ export async function getAllEmployees(page = 0, size = 9 , token) {
 export const deactivateEmployee = async (id , token) => {
 
 return axios 
-    .put(`${BASE}/orgs/employees/${id}/deactivate` ,  null , 
+    .put(`${BASE}/employees/${id}/deactivate` ,  null , 
       {
       headers: {
         Authorization: `Bearer ${token}`
@@ -46,7 +46,7 @@ return axios
 //3) CREATE EMPLOYEE
 export async function createEmployee(data, token) {
   return axios.post(
-    `${BASE}/orgs/employees`,
+    `${BASE}/employees`,
     data,
     {
       headers: {
@@ -68,7 +68,7 @@ export async function getSingleEmployee(id , token) {
     throw new Error("Employee ID is required");
   }
   return axios
-    .get(`${BASE}/orgs/employees/${id}` , 
+    .get(`${BASE}/employees/${id}` , 
       {
       headers: {
         Authorization: `Bearer ${token}` 
@@ -88,7 +88,7 @@ export async function updateEmployee(id, payload , token) {
 
   try {
     const response = await axios.put(
-      `${BASE}/orgs/employees/${id}`, 
+      `${BASE}/employees/${id}`, 
       payload, // send JSON body
       {
         headers: {

@@ -1,7 +1,8 @@
 package com.corehive.backend.util.mappers;
 
-import com.corehive.backend.dto.DepartmentDTO;
+
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
+import com.corehive.backend.dto.response.DepartmentDTO;
 import com.corehive.backend.model.Department;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

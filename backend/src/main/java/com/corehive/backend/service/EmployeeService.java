@@ -1,92 +1,109 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.EmployeeRequestDTO;
+import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.ApiResponse;
-import com.corehive.backend.model.AppUser;
-import com.corehive.backend.model.AppUserRole;
-import com.corehive.backend.model.Employee;
-import com.corehive.backend.model.Organization;
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
+import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
+import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
+import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
+import com.corehive.backend.model.*;
 import com.corehive.backend.repository.AppUserRepository;
+import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.OrganizationRepository;
-import lombok.RequiredArgsConstructor;
+import com.corehive.backend.util.mappers.EmployeeMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataAccessException;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+
 public class EmployeeService {
-
     private final EmployeeRepository employeeRepository;
-    private final AppUserRepository appUserRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final DepartmentService departmentService;
-    private final EmailService emailService;
+    private EmployeeMapper employeeMapper;
+    private final DepartmentRepository departmentRepository;
     private final OrganizationRepository organizationRepository;
+    private final DepartmentService departmentService;
+    private final AppUserRepository appUserRepository;
+    private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Get all employees for an organization
-     * Returns plain List wrapped in ApiResponse (not individual employee responses)
-     */
-    public ApiResponse<List<Employee>> getAllEmployees(String organizationUuid) {
-        try {
-            log.info("Fetching all employees for organization: {}", organizationUuid);
-            List<Employee> employees = employeeRepository.findByOrganizationUuid(organizationUuid);
-            log.info("Found {} employees for organization: {}", employees.size(), organizationUuid);
 
-            // Return plain Employee list - frontend can handle department names if needed
-            return ApiResponse.success("Employees retrieved successfully", employees);
 
-        } catch (Exception e) {
-            log.error("Error fetching employees for organization: {}", organizationUuid, e);
-            return ApiResponse.error("Failed to retrieve employees");
-        }
+    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, DepartmentRepository departmentRepository, OrganizationRepository organizationRepository, DepartmentService departmentService, AppUserRepository appUserRepository, EmailService emailService, PasswordEncoder passwordEncoder) {
+        this.employeeRepository = employeeRepository;
+        this.employeeMapper = employeeMapper;
+        this.departmentRepository = departmentRepository;
+
+        this.organizationRepository = organizationRepository;
+        this.departmentService = departmentService;
+        this.appUserRepository = appUserRepository;
+        this.emailService = emailService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    /**
-     * Get employee by ID
-     */
-    public ApiResponse<Employee> getEmployeeById(String organizationUuid, Long id) {
-        try {
-            log.info("Fetching employee with ID: {} for organization: {}", id, organizationUuid);
-
-            Optional<Employee> employeeOpt = employeeRepository.findById(id);
-
-            if (employeeOpt.isEmpty()) {
-                log.warn("Employee not found with ID: {}", id);
-                return ApiResponse.error("Employee not found");
-            }
-
-            Employee employee = employeeOpt.get();
-
-            // Verify it's from the correct organization
-            if (!employee.getOrganizationUuid().equals(organizationUuid)) {
-                log.warn("Employee {} does not belong to organization: {}", id, organizationUuid);
-                return ApiResponse.error("Employee not found");
-            }
-
-            log.info("Employee retrieved successfully: {}", id);
-            return ApiResponse.success("Employee retrieved successfully", employee);
-
-        } catch (Exception e) {
-            log.error("Error fetching employee with ID: {}", id, e);
-            return ApiResponse.error("Failed to retrieve employee");
+    //************************************************//
+    //GET ALL EMPLOYEES//
+    //************************************************//
+    public PaginatedResponseItemDTO getAllEmployeesWithPaginated(String orgUuid, int page, int size) {
+        // 1. Validate the orgUuid first
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID cannot be null or empty");
         }
+
+        // 2️. Validate pagination parameters
+        if (page < 0) {
+            throw new IllegalArgumentException("Page number must be 0 or greater");
+        }
+
+        if (size <= 0) {
+            throw new IllegalArgumentException("Page size must be greater than 0");
+        }
+
+        // 3. Create Pageable object
+        Pageable pageable = PageRequest.of(page, size);
+
+        // 4. Fetch employees
+        Page<Employee> employeePage =
+                employeeRepository.findByOrganizationUuidWithDepartment(orgUuid, pageable);
+
+
+        // 5. Map entities to DTOs
+        List<EmployeeResponseDTO> employeeDTOs = employeeMapper.toDtos(employeePage.getContent());
+
+        // 6. Build paginated response
+        PaginatedResponseItemDTO paginatedResponse = new PaginatedResponseItemDTO();
+        paginatedResponse.setItems(employeeDTOs);
+        paginatedResponse.setPage(page);
+        paginatedResponse.setSize(size);
+        paginatedResponse.setTotalItems(employeePage.getTotalElements());
+        paginatedResponse.setTotalPages(employeePage.getTotalPages());
+
+        return paginatedResponse;
+
+
     }
 
     /**
      * Create new employee
      */
     @Transactional(rollbackFor = Exception.class)
-    public ApiResponse<Employee> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
+    public ApiResponse<EmployeeResponseDTO> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
         log.info("Creating employee for organization: {} with email: {}", organizationUuid, request.getEmail());
 
         // Validate organization UUID
@@ -152,14 +169,14 @@ public class EmployeeService {
             }
 
             // Generate employee code
-            String employeeCode = generateEmployeeCodeSafe(organizationUuid);
-            log.info("Generated employee code: {}", employeeCode);
+
+            log.info("Generated employee code: {}");
 
             // Create Employee
             Employee employee = new Employee();
             employee.setOrganizationUuid(organizationUuid);
             employee.setAppUserId(savedUser.getId());
-            employee.setEmployeeCode(employeeCode);
+            employee.setEmployeeCode(request.getEmployeeCode());
             employee.setFirstName(request.getFirstName());
             employee.setLastName(request.getLastName());
             employee.setEmail(request.getEmail());
@@ -176,7 +193,7 @@ public class EmployeeService {
             employee.setUpdatedAt(LocalDateTime.now());
 
             Employee savedEmployee = employeeRepository.save(employee);
-            log.info("Employee created with ID: {} and code: {}", savedEmployee.getId(), employeeCode);
+            log.info("Employee created with ID: {} and code: {}", savedEmployee.getId());
 
             // Update AppUser with linked employee ID
             savedUser.setLinkedEmployeeId(savedEmployee.getId());
@@ -184,7 +201,9 @@ public class EmployeeService {
             log.info("AppUser updated with linked employee ID: {}", savedEmployee.getId());
 
             log.info("Employee created successfully with ID: {}", savedEmployee.getId());
-            return ApiResponse.success("Employee created successfully", savedEmployee);
+            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+            return ApiResponse.success("Employee created successfully", dto);
+
 
         } catch (Exception e) {
             log.error("Error creating employee for organization: {} - {}", organizationUuid, e.getMessage(), e);
@@ -192,11 +211,116 @@ public class EmployeeService {
         }
     }
 
+//    //************************************************//
+//    //MAKE DEACTIVATE EMPLOYEE//
+//    //************************************************//
+//    public void deactivateEmployee(String orgUuid, Long id) {
+//        // Step 1: Find the employee
+//        Optional<Employee> optionalEmployee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid);
+//
+//        // Step 2: Check if employee exists
+//        if (optionalEmployee.isPresent()) {
+//            Employee employee = optionalEmployee.get();
+//
+//            // Throw exception if already inactive
+//            if (!employee.getIsActive()) {
+//                throw new EmployeeAlreadyInactiveException(
+//                        "Employee with id " + id + " is already inactive."
+//                );
+//            }
+//
+//            // Deactivate employee
+//            employee.setIsActive(false);
+//            employeeRepository.save(employee);
+//
+//        } else {
+//            // Throw exception if employee not found
+//            throw new EmployeeNotFoundException(
+//                    "Employee with id " + id + " not found in organization " + orgUuid
+//            );
+//        }
+//    }
+
+    //************************************************//
+    //Toggle status(active and deactivate)//
+    //************************************************//
+    @Transactional
+    public Employee toggleEmployeeStatus(String orgUuid, Long id) {
+        try {
+            // 1. Fetch employee
+            Employee employee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid)
+                    .orElseThrow(() -> new EmployeeNotFoundException("Employee with ID " + id + " not found in this organization"));
+
+            // 2. Toggle status
+            employee.setIsActive(!employee.getIsActive());
+            employee.setUpdatedAt(LocalDateTime.now());
+
+            Employee savedEmployee;
+            try {
+                savedEmployee = employeeRepository.save(employee);
+            } catch (DataAccessException dae) {
+                throw new RuntimeException("Failed to update employee status in database: " + dae.getMessage(), dae);
+            }
+
+            // 3. Update linked AppUser (if exists)
+            if (savedEmployee.getAppUserId() != null) {
+                try {
+                    appUserRepository.findById(savedEmployee.getAppUserId()).ifPresent(user -> {
+                        user.setIsActive(savedEmployee.getIsActive());
+                        user.setUpdatedAt(LocalDateTime.now());
+                        appUserRepository.save(user);
+                    });
+                } catch (DataAccessException dae) {
+                    throw new RuntimeException("Failed to update linked AppUser status: " + dae.getMessage(), dae);
+                }
+            }
+
+            return savedEmployee;
+
+        } catch (EmployeeNotFoundException enf) {
+            // Handle not found
+            throw enf;
+        } catch (Exception e) {
+            // Catch-all for unexpected exceptions
+            throw new RuntimeException("Error toggling employee status: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    //************************************************//
+    //GET ONE EMPLOYEE//
+    //************************************************//
+    public EmployeeResponseDTO getEmployeeById(String organizationUuid, Long id) {
+        // 1️) Validate organization
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is missing");
+        }
+
+
+        // 2️) Fetch employee safely
+        Employee employee = employeeRepository
+                .findByIdAndOrganizationUuidWithDepartment(id, organizationUuid)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException(
+                                "Employee with id " + id + " not found in this organization"
+                        )
+                );
+
+
+        // 3) Map entity → DTO
+        return employeeMapper.toDto(employee);
+
+    }
+
+
+
+
     /**
      * Update employee
      */
     @Transactional
-    public ApiResponse<Employee> updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO request) {
+    public ApiResponse<EmployeeResponseDTO> updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO request) {
         try {
             log.info("Updating employee with ID: {} for organization: {}", id, organizationUuid);
 
@@ -259,7 +383,9 @@ public class EmployeeService {
             }
 
             log.info("Employee updated successfully with ID: {}", id);
-            return ApiResponse.success("Employee updated successfully", savedEmployee);
+            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+            return ApiResponse.success("Employee updated successfully", dto);
+
 
         } catch (Exception e) {
             log.error("Error updating employee with ID: {}", id, e);
@@ -267,64 +393,4 @@ public class EmployeeService {
         }
     }
 
-    /**
-     * Delete employee
-     */
-    @Transactional
-    public ApiResponse<String> deleteEmployee(String organizationUuid, Long id) {
-        try {
-            log.info("Deleting employee with ID: {} for organization: {}", id, organizationUuid);
-
-            Optional<Employee> employeeOpt = employeeRepository.findById(id);
-
-            if (employeeOpt.isEmpty()) {
-                log.warn("Employee not found with ID: {}", id);
-                return ApiResponse.error("Employee not found");
-            }
-
-            Employee employee = employeeOpt.get();
-
-            // Verify it's from the correct organization
-            if (!employee.getOrganizationUuid().equals(organizationUuid)) {
-                log.warn("Employee {} does not belong to organization: {}", id, organizationUuid);
-                return ApiResponse.error("Employee not found");
-            }
-
-            // Delete linked AppUser if exists
-            if (employee.getAppUserId() != null) {
-                Optional<AppUser> userOpt = appUserRepository.findById(employee.getAppUserId());
-                if (userOpt.isPresent()) {
-                    appUserRepository.delete(userOpt.get());
-                    log.info("Deleted linked AppUser with ID: {}", employee.getAppUserId());
-                }
-            }
-
-            // Delete Employee
-            employeeRepository.delete(employee);
-
-            log.info("Employee deleted successfully with ID: {}", id);
-            return ApiResponse.success("Employee deleted successfully", null);
-
-        } catch (Exception e) {
-            log.error("Error deleting employee with ID: {}", id, e);
-            return ApiResponse.error("Failed to delete employee: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Generate employee code with proper error handling
-     */
-    private String generateEmployeeCodeSafe(String organizationUuid) {
-        try {
-            Integer nextNumber = employeeRepository.findNextEmployeeNumber(organizationUuid);
-            if (nextNumber == null) {
-                nextNumber = 1;
-            }
-            return String.format("EMP%03d", nextNumber);
-        } catch (Exception e) {
-            log.error("Error generating employee code for organization: {}", organizationUuid, e);
-            // Fallback to timestamp-based code if query fails
-            return "EMP" + System.currentTimeMillis() % 10000;
-        }
-    }
 }

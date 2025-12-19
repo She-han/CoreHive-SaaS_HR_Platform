@@ -1,5 +1,6 @@
 package com.corehive.backend.repository;
 
+import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
      * Find employees by organization UUID
      */
     List<Employee> findByOrganizationUuid(String organizationUuid);
+
+
 
     /**
      * Find employees by organization UUID with pagination
@@ -114,4 +117,46 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
            "AND e.employeeCode LIKE 'EMP%' " +
            "AND LENGTH(e.employeeCode) > 3")
     Integer findNextEmployeeNumber(@Param("organizationUuid") String organizationUuid);
+
+    List<Employee> findAllByorganizationUuidEquals(String orgUuid);
+
+    Optional<Employee> findByIdAndOrganizationUuid(Long id, String orgUuid);
+
+
+/**
+ * Fetch employees by organization UUID WITH their department details.
+ */
+@Query(
+        value = """
+        SELECT e FROM Employee e
+        LEFT JOIN FETCH e.department
+        WHERE e.organizationUuid = :orgUuid
+    """,
+        countQuery = """
+        SELECT COUNT(e) FROM Employee e
+        WHERE e.organizationUuid = :orgUuid
+    """
+)
+Page<Employee> findByOrganizationUuidWithDepartment(
+        @Param("orgUuid") String orgUuid,
+        Pageable pageable
+);
+
+
+
+    /**
+     * Fetch an employees by organization UUID and userId WITH their department details.
+     */
+
+    @Query("""
+    SELECT e FROM Employee e
+    LEFT JOIN FETCH e.department
+    WHERE e.id = :id AND e.organizationUuid = :orgUuid
+""")
+    Optional<Employee> findByIdAndOrganizationUuidWithDepartment(
+            @Param("id") Long id,
+            @Param("orgUuid") String orgUuid
+    );
+
+
 }

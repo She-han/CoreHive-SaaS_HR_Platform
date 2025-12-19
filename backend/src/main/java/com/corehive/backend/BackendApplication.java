@@ -1,5 +1,6 @@
 package com.corehive.backend;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -28,5 +29,6 @@ public class BackendApplication {
 				"║                                          ║\n" +
 				"║  Ready to serve CoreHive Frontend!       ║\n" +
 				"╚══════════════════════════════════════════╝\n");
+
 	}
 }

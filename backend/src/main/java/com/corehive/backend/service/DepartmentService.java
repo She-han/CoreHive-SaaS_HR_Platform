@@ -3,6 +3,7 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
 import com.corehive.backend.dto.request.UpdateDepartmentRequest;
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.DepartmentDTO;
 import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing departments
@@ -83,9 +85,24 @@ public class DepartmentService {
     /**
      * Get all departments for an organization
      */
-    public List<Department> getDepartmentsByOrganization(String organizationUuid) {
-        return departmentRepository.findByOrganizationUuid(organizationUuid);
+    // Replace getDepartmentsByOrganization() in controller with DTO mapping
+    public List<DepartmentDTO> getDepartmentsDTOByOrganization(String organizationUuid) {
+        List<Department> departments = departmentRepository.findByOrganizationUuid(organizationUuid);
+
+        return departments.stream()
+                .map(dep -> new DepartmentDTO(
+                        dep.getId(),
+                        dep.getOrganizationUuid(),
+                        dep.getName(),
+                        dep.getCode(),
+                        dep.getManagerId(),
+                        dep.getIsActive(),
+                        dep.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
+
+
 
     /**
      * Validate if department exists for organization

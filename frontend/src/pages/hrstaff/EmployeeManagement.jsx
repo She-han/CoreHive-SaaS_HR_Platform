@@ -9,7 +9,7 @@ export default function EmployeeManagement() {
   const [filterBy, setFilterBy] = useState("name");
 
   return (
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
+     <div  style={{ backgroundColor: '#F1FDF9' }} className="w-full h-screen bg-white shadow-md flex flex-col p-8">
        <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-[#333333]">Employee Management</h1>
@@ -46,6 +46,8 @@ export default function EmployeeManagement() {
       <div className="flex-1 overflow-y-auto">
         <EmployeeTable search={search} filterBy={filterBy} />
       </div>
+
+      
     </div>
   );
 }

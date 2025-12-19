@@ -21,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataAccessException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -210,35 +211,82 @@ public class EmployeeService {
         }
     }
 
-    //************************************************//
-    //MAKE DEACTIVATE EMPLOYEE//
-    //************************************************//
-    public void deactivateEmployee(String orgUuid, Long id) {
-        // Step 1: Find the employee
-        Optional<Employee> optionalEmployee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid);
+//    //************************************************//
+//    //MAKE DEACTIVATE EMPLOYEE//
+//    //************************************************//
+//    public void deactivateEmployee(String orgUuid, Long id) {
+//        // Step 1: Find the employee
+//        Optional<Employee> optionalEmployee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid);
+//
+//        // Step 2: Check if employee exists
+//        if (optionalEmployee.isPresent()) {
+//            Employee employee = optionalEmployee.get();
+//
+//            // Throw exception if already inactive
+//            if (!employee.getIsActive()) {
+//                throw new EmployeeAlreadyInactiveException(
+//                        "Employee with id " + id + " is already inactive."
+//                );
+//            }
+//
+//            // Deactivate employee
+//            employee.setIsActive(false);
+//            employeeRepository.save(employee);
+//
+//        } else {
+//            // Throw exception if employee not found
+//            throw new EmployeeNotFoundException(
+//                    "Employee with id " + id + " not found in organization " + orgUuid
+//            );
+//        }
+//    }
 
-        // Step 2: Check if employee exists
-        if (optionalEmployee.isPresent()) {
-            Employee employee = optionalEmployee.get();
+    //************************************************//
+    //Toggle status(active and deactivate)//
+    //************************************************//
+    @Transactional
+    public Employee toggleEmployeeStatus(String orgUuid, Long id) {
+        try {
+            // 1. Fetch employee
+            Employee employee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid)
+                    .orElseThrow(() -> new EmployeeNotFoundException("Employee with ID " + id + " not found in this organization"));
 
-            // Throw exception if already inactive
-            if (!employee.getIsActive()) {
-                throw new EmployeeAlreadyInactiveException(
-                        "Employee with id " + id + " is already inactive."
-                );
+            // 2. Toggle status
+            employee.setIsActive(!employee.getIsActive());
+            employee.setUpdatedAt(LocalDateTime.now());
+
+            Employee savedEmployee;
+            try {
+                savedEmployee = employeeRepository.save(employee);
+            } catch (DataAccessException dae) {
+                throw new RuntimeException("Failed to update employee status in database: " + dae.getMessage(), dae);
             }
 
-            // Deactivate employee
-            employee.setIsActive(false);
-            employeeRepository.save(employee);
+            // 3. Update linked AppUser (if exists)
+            if (savedEmployee.getAppUserId() != null) {
+                try {
+                    appUserRepository.findById(savedEmployee.getAppUserId()).ifPresent(user -> {
+                        user.setIsActive(savedEmployee.getIsActive());
+                        user.setUpdatedAt(LocalDateTime.now());
+                        appUserRepository.save(user);
+                    });
+                } catch (DataAccessException dae) {
+                    throw new RuntimeException("Failed to update linked AppUser status: " + dae.getMessage(), dae);
+                }
+            }
 
-        } else {
-            // Throw exception if employee not found
-            throw new EmployeeNotFoundException(
-                    "Employee with id " + id + " not found in organization " + orgUuid
-            );
+            return savedEmployee;
+
+        } catch (EmployeeNotFoundException enf) {
+            // Handle not found
+            throw enf;
+        } catch (Exception e) {
+            // Catch-all for unexpected exceptions
+            throw new RuntimeException("Error toggling employee status: " + e.getMessage(), e);
         }
     }
+
+
 
     //************************************************//
     //GET ONE EMPLOYEE//

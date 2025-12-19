@@ -26,22 +26,15 @@ export async function getAllEmployees(page = 0, size = 9 , token) {
 // Body --> In this body is null
 
 //2)MARK AS DEACTIVE EMPLOYEE
-export const deactivateEmployee = async (id , token) => {
-
-return axios 
-    .put(`${BASE}/employees/${id}/deactivate` ,  null , 
-      {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-    )
-    .then((res)=>res.data.data)
-    .catch((err)=>{
-        throw new Error(err.response?.data?.message || err.message);
-    });
-
+export const toggleEmployeeStatus = async (id, token) => {
+  return axios.put(`${BASE}/employees/${id}/toggle-status`, null, {
+    headers: { Authorization: `Bearer ${token}` }
+  }).then(res => res.data.data)
+  .catch(err => {
+    throw new Error(err.response?.data?.message || err.message);
+  });
 };
+
 
 //3) CREATE EMPLOYEE
 export async function createEmployee(data, token) {

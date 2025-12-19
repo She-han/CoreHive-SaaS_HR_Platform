@@ -68,18 +68,34 @@ public class EmployeeController {
         );
     }
 
+//    //************************************************//
+//    //MAKE DEACTIVATE EMPLOYEE//
+//    //************************************************//
+//    @PutMapping("/{id}/deactivate")
+//    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+//    public ResponseEntity<StandardResponse> deactivateEmployee(HttpServletRequest httpRequest,
+//                                                               @PathVariable Long id) {
+//        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+//        String userEmail = (String) httpRequest.getAttribute("userEmail");
+//        employeeService.deactivateEmployee(organizationUuid, id);
+//        return new ResponseEntity<>(
+//                new StandardResponse(200, "Employee marked as inactive", null),
+//                HttpStatus.OK
+//        );
+//    }
+
     //************************************************//
-    //MAKE DEACTIVATE EMPLOYEE//
+    //Toggle status(active and deactivate)//
     //************************************************//
-    @PutMapping("/{id}/deactivate")
+    @PutMapping("/{id}/toggle-status")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<StandardResponse> deactivateEmployee(HttpServletRequest httpRequest,
-                                                               @PathVariable Long id) {
-        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
-        String userEmail = (String) httpRequest.getAttribute("userEmail");
-        employeeService.deactivateEmployee(organizationUuid, id);
+    public ResponseEntity<StandardResponse> toggleEmployeeStatus(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id) {
+        String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
+        Employee updatedEmployee = employeeService.toggleEmployeeStatus(orgUuid, id);
         return new ResponseEntity<>(
-                new StandardResponse(200, "Employee marked as inactive", null),
+                new StandardResponse(200, "Employee status updated successfully", updatedEmployee),
                 HttpStatus.OK
         );
     }

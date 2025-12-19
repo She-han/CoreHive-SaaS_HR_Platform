@@ -1,10 +1,10 @@
-import { FaEdit, FaBan } from "react-icons/fa";
+import { FaEdit, FaBan  , FaCheckCircle} from "react-icons/fa";
 import { useState, useEffect } from "react";
 import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
- import {getAllEmployees , deactivateEmployee} from "../../../api/employeeService"
+ import {getAllEmployees , toggleEmployeeStatus} from "../../../api/employeeService"
  import { useSelector } from "react-redux";
  import { selectUser } from "../../../store/slices/authSlice";
 
@@ -19,7 +19,7 @@ export default function EmployeeTable({ search, filterBy }) {
 
   //For pagenated
   const [page, setPage] = useState(0);       // current page
-  const [size, setSize] = useState(8);      // items per page
+  const [size, setSize] = useState(7);      // items per page
   const [totalPages, setTotalPages] = useState(0);  
 
   const user = useSelector(selectUser); // get token from Redux
@@ -98,27 +98,25 @@ export default function EmployeeTable({ search, filterBy }) {
   });
 
 
-const handleDeactivate = async (id) => {
-  // Show confirmation dialog
-  const confirmed = window.confirm("Are you sure you want to deactivate this employee?");
-  if (!confirmed) return; // exit if user cancels
+const handleToggleStatus = async (id, currentStatus) => {
+  const action = currentStatus ? "deactivate" : "activate";
+  const confirmed = window.confirm(`Are you sure you want to ${action} this employee?`);
+  if (!confirmed) return;
 
   try {
-    await deactivateEmployee(id, token);
-    alert("Employee deactivated successfully!");
+    const updatedEmployee = await toggleEmployeeStatus(id, token);
+    alert(`Employee ${updatedEmployee.isActive ? "activated" : "deactivated"} successfully!`);
 
-    // Update your state so the UI reflects the change
-    setEmployees((prevEmployees) =>
-      prevEmployees.map((emp) =>
-        emp.id === id ? { ...emp, isActive: false } : emp
-      )
-    );
-  } catch (error) {
-    // Handle errors
-    console.error("Error deactivating employee:", error);
-    alert("Failed to deactivate employee");
+    // Update state to reflect change
+    setEmployees(prev => prev.map(emp => 
+      emp.id === id ? { ...emp, isActive: updatedEmployee.isActive } : emp
+    ));
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update employee status");
   }
 };
+
 
 
 
@@ -183,26 +181,45 @@ const handleDeactivate = async (id) => {
           </span>
         </td>
 
-        <td className="px-4 py-2 flex justify-center gap-2">
-          <Link
-            to={`/hr_staff/editemployee/${emp.id}`}
-            className="text-[#05668D] hover:text-[#02C39A] transition"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <FaEdit />
-          </Link>
+<td className="px-4 py-2">
+  <div className="flex items-center justify-center gap-3 flex-nowrap">
+    
+    {/* ONE-LINE EDIT ACTION: Uses #05668D, #FFFFFF, and #F1FDF9 */}
+    <div className="flex justify-center">
+      <Link
+        to={`/hr_staff/editemployee/${emp.id}`}
+        className="group flex items-center justify-center gap-2 px-3 h-10 rounded border transition-all duration-300 bg-[#FFFFFF] border-[#05668D]/30 text-[#05668D] hover:bg-[#05668D] hover:text-[#FFFFFF] shadow-sm hover:shadow-md"
+        onClick={(e) => e.stopPropagation()}
+        title="Edit Employee Information"
+      >
+        <FaEdit size={14} />
+        <span className="text-[11px] font-bold uppercase tracking-wide">Edit</span>
+      </Link>
+    </div>
 
-          <button
-  className="text-red-500 hover:text-red-700 flex items-center gap-1 px-2 py-1 rounded border border-red-200 hover:border-red-400 transition"
-  onClick={(e) => {
-    e.stopPropagation();
-    handleDeactivate(emp.id);
-  }}
->
-  <FaBan /> Deactivate
-</button>
+    {/* STATUS TOGGLE ACTION: Uses #02C39A, #333333, #9B9B9B */}
+    <div className="flex justify-center">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleToggleStatus(emp.id, emp.isActive);
+        }}
+        className={`
+          flex items-center justify-center gap-2 w-32 h-10 rounded border transition-all duration-300 text-[10px] font-bold uppercase tracking-wider shadow-sm hover:shadow-md
+          ${emp.isActive 
+            ? "bg-[#FFFFFF] border-[#9B9B9B] text-[#333333] hover:bg-[#333333] hover:text-[#FFFFFF] hover:border-[#333333]" 
+            : "bg-[#F1FDF9] border-[#02C39A] text-[#02C39A] hover:bg-[#02C39A] hover:text-[#FFFFFF]"}
+        `}
+      >
+        {emp.isActive ? <FaBan size={12} /> : <FaCheckCircle size={12} />}
+        <span>{emp.isActive ? "Deactivate" : "Activate"}</span>
+      </button>
+    </div>
 
-        </td>
+  </div>
+</td>
+
+
       </tr>
     ))
   ) : (

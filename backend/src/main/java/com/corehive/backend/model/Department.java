@@ -43,7 +43,9 @@ public class Department {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Set<Employee> employees;
+
 
     @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
     private Set<JobPosting> jobPostings;

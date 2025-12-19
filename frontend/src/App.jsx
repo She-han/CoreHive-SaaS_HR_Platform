@@ -291,7 +291,7 @@ const HRStaffRoutes = () => {
         <Route path="dashboard" element={<HRDashboard />} />
         <Route path="EmployeeManagement" element={<EmployeeManagement />} /> 
         <Route path="EmployeeManagement/addemployee" element={<AddEmployee />} /> 
-        <Route path="EmployeeManagement/editemployee/:id" element={<EditEmployee />} />  {/* ADD :id parameter */}
+        <Route path="editemployee/:id" element={<EditEmployee />} />  {/* ADD :id parameter */}
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 

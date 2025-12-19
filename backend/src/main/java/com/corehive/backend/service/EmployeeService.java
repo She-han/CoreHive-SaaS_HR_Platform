@@ -102,7 +102,7 @@ public class EmployeeService {
      * Create new employee
      */
     @Transactional(rollbackFor = Exception.class)
-    public ApiResponse<Employee> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
+    public ApiResponse<EmployeeResponseDTO> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
         log.info("Creating employee for organization: {} with email: {}", organizationUuid, request.getEmail());
 
         // Validate organization UUID
@@ -200,7 +200,9 @@ public class EmployeeService {
             log.info("AppUser updated with linked employee ID: {}", savedEmployee.getId());
 
             log.info("Employee created successfully with ID: {}", savedEmployee.getId());
-            return ApiResponse.success("Employee created successfully", savedEmployee);
+            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+            return ApiResponse.success("Employee created successfully", dto);
+
 
         } catch (Exception e) {
             log.error("Error creating employee for organization: {} - {}", organizationUuid, e.getMessage(), e);
@@ -270,7 +272,7 @@ public class EmployeeService {
      * Update employee
      */
     @Transactional
-    public ApiResponse<Employee> updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO request) {
+    public ApiResponse<EmployeeResponseDTO> updateEmployee(String organizationUuid, Long id, EmployeeRequestDTO request) {
         try {
             log.info("Updating employee with ID: {} for organization: {}", id, organizationUuid);
 
@@ -333,7 +335,9 @@ public class EmployeeService {
             }
 
             log.info("Employee updated successfully with ID: {}", id);
-            return ApiResponse.success("Employee updated successfully", savedEmployee);
+            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+            return ApiResponse.success("Employee updated successfully", dto);
+
 
         } catch (Exception e) {
             log.error("Error updating employee with ID: {}", id, e);

@@ -15,8 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -91,7 +89,7 @@ public class EmployeeController {
      * Create new employee
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<Employee>> createEmployee(
+    public ResponseEntity<ApiResponse<EmployeeResponseDTO>> createEmployee(
             HttpServletRequest request,
             @Valid @RequestBody EmployeeRequestDTO employeeRequest) {
 
@@ -104,7 +102,7 @@ public class EmployeeController {
         }
 
         log.info("Creating employee for organization: {}", organizationUuid);
-        ApiResponse<Employee> response = employeeService.createEmployee(organizationUuid, employeeRequest);
+        ApiResponse<EmployeeResponseDTO> response = employeeService.createEmployee(organizationUuid, employeeRequest);
 
         return ResponseEntity.ok(response);
     }
@@ -112,7 +110,7 @@ public class EmployeeController {
      * Update employee
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Employee>> updateEmployee(
+    public ResponseEntity<ApiResponse<EmployeeResponseDTO>> updateEmployee(
             HttpServletRequest request,
             @PathVariable Long id,
             @Valid @RequestBody EmployeeRequestDTO employeeRequest) {
@@ -126,7 +124,7 @@ public class EmployeeController {
         }
 
         log.info("Updating employee {} for organization: {}", id, organizationUuid);
-        ApiResponse<Employee> response = employeeService.updateEmployee(organizationUuid, id, employeeRequest);
+        ApiResponse<EmployeeResponseDTO> response = employeeService.updateEmployee(organizationUuid, id, employeeRequest);
 
         return ResponseEntity.ok(response);
     }

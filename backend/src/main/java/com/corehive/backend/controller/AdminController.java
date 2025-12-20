@@ -2,6 +2,7 @@ package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
+import com.corehive.backend.dto.response.PlatformStatistics;
 import com.corehive.backend.service.OrganizationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -220,7 +221,7 @@ public class AdminController {
      * Get Platform Statistics
      * GET /api/admin/statistics
      *
-     * Platform level statistics (for dashboard charts)
+     * Platform level statistics (for dashboard charts) - REAL DATA
      */
     @GetMapping("/statistics")
     @PreAuthorize("hasRole('SYS_ADMIN')")
@@ -230,17 +231,15 @@ public class AdminController {
         log.info("Platform statistics request from admin: {}", adminEmail);
 
         try {
-            // TODO: Implement PlatformStatistics service
-            // Currently returning basic response
-            PlatformStatistics stats = PlatformStatistics.builder()
-                    .totalOrganizations(10L)
-                    .activeOrganizations(8L)
-                    .pendingOrganizations(2L)
-                    .totalEmployees(150L)
-                    .build();
+            // Get real statistics from database
+            PlatformStatistics stats = organizationService.getPlatformStatistics();
 
             ApiResponse<PlatformStatistics> response =
                     ApiResponse.success("Platform statistics retrieved successfully", stats);
+
+            log.info("Platform statistics retrieved - Total Orgs: {}, Active: {}, Pending: {}, Employees: {}",
+                    stats.getTotalOrganizations(), stats.getActiveOrganizations(), 
+                    stats.getPendingOrganizations(), stats.getTotalEmployees());
 
             return ResponseEntity.ok(response);
 
@@ -298,19 +297,4 @@ public class AdminController {
                         status.equalsIgnoreCase("SUSPENDED")
         );
     }
-}
-
-/**
- * Platform Statistics DTO (Future implementation)
- */
-@lombok.Data
-@lombok.Builder
-class PlatformStatistics {
-    private Long totalOrganizations;
-    private Long activeOrganizations;
-    private Long pendingOrganizations;
-    private Long dormantOrganizations;
-    private Long suspendedOrganizations;
-    private Long totalEmployees;
-    private Long totalSystemUsers;
 }

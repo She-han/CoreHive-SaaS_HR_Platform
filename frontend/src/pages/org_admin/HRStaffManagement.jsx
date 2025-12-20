@@ -45,6 +45,17 @@ const HRStaffManagement = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
 
+  // Theme colors
+  const THEME = {
+    primary: '#02C39A',
+    secondary: '#05668D',
+    dark: '#0C397A',
+    background: '#F1FDF9',
+    success: '#1ED292',
+    text: '#333333',
+    muted: '#9B9B9B'
+  };
+
   // Form states
   const [formData, setFormData] = useState({
     firstName: '',
@@ -320,7 +331,7 @@ const HRStaffManagement = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">HR Staff Management</h1>
+            <h1 className="text-2xl font-bold" style={{ color: THEME.dark }}>HR Staff Management</h1>
             <p className="text-gray-600 mt-1">Manage HR staff members and their information</p>
           </div>
           <Button

@@ -4,6 +4,7 @@ import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
 import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
+import com.corehive.backend.dto.response.PlatformStatistics;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Organization;
 import com.corehive.backend.model.OrganizationStatus;
@@ -403,6 +404,54 @@ public class OrganizationService {
         } catch (Exception e) {
             log.error("Error updating module configuration: {}", organizationUuid, e);
             return ApiResponse.error("Failed to update module configuration");
+        }
+    }
+
+    /**
+     * Get Platform Statistics for System Admin Dashboard
+     * Returns real-time statistics from the database
+     */
+    public PlatformStatistics getPlatformStatistics() {
+        log.info("Fetching platform statistics from database");
+        
+        try {
+            // Count organizations by status
+            long totalOrganizations = organizationRepository.count();
+            long activeOrganizations = organizationRepository.countByStatus("ACTIVE");
+            long pendingOrganizations = organizationRepository.countByStatus("PENDING_APPROVAL");
+            long dormantOrganizations = organizationRepository.countByStatus("DORMANT");
+            long suspendedOrganizations = organizationRepository.countByStatus("SUSPENDED");
+            
+            // Count total employees (AppUsers) across all organizations
+            long totalEmployees = appUserRepository.count();
+            
+            PlatformStatistics stats = PlatformStatistics.builder()
+                    .totalOrganizations(totalOrganizations)
+                    .activeOrganizations(activeOrganizations)
+                    .pendingOrganizations(pendingOrganizations)
+                    .dormantOrganizations(dormantOrganizations)
+                    .suspendedOrganizations(suspendedOrganizations)
+                    .totalEmployees(totalEmployees)
+                    .totalSystemUsers(0L) // Can be updated when SystemUser count is needed
+                    .build();
+            
+            log.info("Platform statistics fetched - Total: {}, Active: {}, Pending: {}, Employees: {}",
+                    totalOrganizations, activeOrganizations, pendingOrganizations, totalEmployees);
+            
+            return stats;
+            
+        } catch (Exception e) {
+            log.error("Error fetching platform statistics", e);
+            // Return empty stats instead of throwing exception
+            return PlatformStatistics.builder()
+                    .totalOrganizations(0L)
+                    .activeOrganizations(0L)
+                    .pendingOrganizations(0L)
+                    .dormantOrganizations(0L)
+                    .suspendedOrganizations(0L)
+                    .totalEmployees(0L)
+                    .totalSystemUsers(0L)
+                    .build();
         }
     }
  }

@@ -159,6 +159,11 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8001",
+         # Azure Production URLs
+        "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net",
+        "https://corehive-backend-app-gtdreadhagd9ggfc.southeastasia-01.azurewebsites.net",
+        # Allow all Azure subdomains
+        "https://*.azurewebsites.net",
     ],
     allow_credentials=True,
     allow_methods=["*"],

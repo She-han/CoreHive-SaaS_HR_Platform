@@ -116,7 +116,7 @@ export default function EditEmployee() {
           department: empData.departmentId || "",
           email: empData.email || "",
           phone: empData.phone || "",
-          nationalId: empData.nationalId || "",  // ADD THIS
+          nationalId: empData.nationalId || "", 
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
           leaveCount: empData.leaveCount || "",

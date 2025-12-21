@@ -22,6 +22,7 @@ public class EmployeeResponseDTO {
     private String lastName;
     private String email;
     private String phone;
+    private String nationalId;
     private String designation;
     private Long departmentId;
     private BigDecimal basicSalary;

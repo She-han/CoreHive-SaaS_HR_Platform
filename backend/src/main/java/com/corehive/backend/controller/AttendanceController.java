@@ -85,20 +85,21 @@ public class AttendanceController {
     }
 
     // MANUAL CHECK-OUT
-    @PostMapping("/check-out/{employeeId}")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    @PostMapping("/check-out/{employeeId}")
     public ResponseEntity<StandardResponse> manualCheckOut(
             HttpServletRequest request,
             @PathVariable Long employeeId
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
 
-        attendanceService.manualCheckOut(orgUuid, employeeId);
+        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId);
 
         return ResponseEntity.ok(
-                new StandardResponse(200, "Check-out successful", null)
+                new StandardResponse(200, "Check-out successful", dto) // ✅ RETURN DATA
         );
     }
+
 
     /**
      * Mark CHECK-IN using face recognition - KIOSK MODE

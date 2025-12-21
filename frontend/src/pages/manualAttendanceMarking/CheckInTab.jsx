@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { getCheckInList, manualCheckIn } from "../../api/manualAttendanceService";
+import { Search, CheckCircle2, Clock } from "lucide-react";
 
 const CheckInTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-
-
   const fetchEmployees = async () => {
+    if (!token) return;
     setLoading(true);
     try {
       const data = await getCheckInList(token);
       setEmployees(data);
     } catch (err) {
-      alert(err.message);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -27,8 +27,7 @@ const CheckInTab = ({ token }) => {
   const handleCheckIn = async (employeeId) => {
     try {
       await manualCheckIn(employeeId, token);
-      alert("Check-in successful");
-      fetchEmployees(); // refresh list
+      fetchEmployees();
     } catch (err) {
       alert(err.message);
     }
@@ -39,44 +38,82 @@ const CheckInTab = ({ token }) => {
   );
 
   return (
-    <div>
-      <h2>Manual Check-In</h2>
-      <input
-        type="text"
-        placeholder="Search employee..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      {loading ? <p>Loading...</p> : (
-        <table border="1" cellPadding="5" style={{ marginTop: "10px", width: "100%" }}>
-          <thead>
+    <div className="space-y-4">
+      {/* SEARCH BAR */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9B9B9B]" size={18} />
+        <input
+          type="text"
+          placeholder="Search by employee name..."
+          className="w-full pl-10 pr-4 py-2 border border-[#9B9B9B] rounded-lg text-sm focus:ring-2 focus:ring-[#02C39A] focus:outline-none"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-[#F1FDF9] text-[#0C397A] font-semibold">
             <tr>
-              <th>Employee Name</th>
-              <th>Employee Code</th>
-              <th>Status</th>
-              <th>Check-in Time</th>
-              <th>Action</th>
+              <th className="p-4 text-left">Employee Name</th>
+              <th className="p-4 text-left">Code</th>
+              <th className="p-4 text-left">Status</th>
+              <th className="p-4 text-left">Check-In Time</th> {/* NEW COLUMN */}
+              <th className="p-4 text-center">Action</th>
             </tr>
           </thead>
-          <tbody>
-            {filteredEmployees.map((emp) => (
-              <tr key={emp.employeeId}>
-                <td>{emp.employeeName}</td>
-                <td>{emp.employeeCode}</td>
-                <td>{emp.status}</td>
-                <td>{emp.checkInTime ? new Date(emp.checkInTime).toLocaleTimeString() : "-"}</td>
-                <td>
-                  {emp.status === "NOT_CHECKED_IN" ? (
-                    <button onClick={() => handleCheckIn(emp.employeeId)}>Check In</button>
-                  ) : (
-                    <span>Checked In</span>
-                  )}
+          <tbody className="bg-white divide-y divide-gray-100">
+            {loading ? (
+              <tr><td colSpan="5" className="text-center p-10 text-[#9B9B9B]">Loading...</td></tr>
+            ) : filteredEmployees.map((emp) => (
+              <tr key={emp.employeeId} className="hover:bg-[#E6FFFA] transition">
+                <td className="p-4 font-medium text-[#333333]">
+                  {emp.employeeName}
+                </td>
+                <td className="p-4 text-[#9B9B9B] font-mono">{emp.employeeCode}</td>
+                <td className="p-4">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                    emp.status === "NOT_CHECKED_IN" 
+                    ? "bg-red-50 text-red-500 border border-red-100" 
+                    : "bg-[#F1FDF9] text-[#02C39A] border border-[#02C39A]/20"
+                  }`}>
+                    {emp.status.replace(/_/g, " ")}
+                  </span>
+                </td>
+                
+                {/* CHECK-IN TIME DISPLAY */}
+                <td className="p-4">
+                  <div className="flex items-center gap-2 text-[#333333]">
+                    <Clock size={14} className="text-[#02C39A]" />
+                    <span className="font-medium">
+                      {emp.checkInTime 
+                        ? new Date(emp.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                        : "--:--"}
+                    </span>
+                  </div>
+                </td>
+
+                <td className="p-4">
+                  <div className="flex justify-center">
+                    {emp.status === "NOT_CHECKED_IN" ? (
+                      <button 
+                        onClick={() => handleCheckIn(emp.employeeId)}
+                        className="flex items-center justify-center gap-2 w-32 h-10 rounded border border-[#02C39A] bg-[#F1FDF9] text-[#02C39A] hover:bg-[#02C39A] hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                      >
+                        Check In
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 text-[#02C39A] font-bold text-xs uppercase tracking-tight">
+                        <CheckCircle2 size={16} /> Recorded
+                      </div>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
 };

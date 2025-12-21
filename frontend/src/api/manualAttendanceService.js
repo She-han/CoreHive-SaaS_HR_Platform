@@ -36,12 +36,18 @@ export const getPendingCheckouts = async (token) => {
 };
 
 export const manualCheckOut = async (employeeId, token) => {
-  return axios
-    .post(`${BASE}/check-out/${employeeId}`, {}, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    .then((res) => res.data)
-    .catch((err) => {
-      throw new Error(err.response?.data?.message || err.message);
-    });
+  return axios.post(
+    `${BASE}/check-out/${employeeId}`,
+    {},
+    { headers: { Authorization: `Bearer ${token}` } }
+  ).then(res => res.data.data); // ✅ RETURN DTO ONLY
 };
+
+export const getTodayAttendance = async (token) => {
+  return axios.get(
+    `${BASE}/today-all`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  ).then(res => res.data);
+};
+
+

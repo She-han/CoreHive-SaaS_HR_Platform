@@ -134,58 +134,77 @@ public class AttendanceService {
     }
 
     // =========================================================
+// GET PENDING CHECK-OUTS (Admin / HR)
+// Employees who checked in today but not checked out
+// =========================================================
+    @Transactional(readOnly = true)
+    public List<TodayAttendanceDTO> getPendingCheckouts(String orgUuid) {
+
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is required");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        List<Attendance> pendingAttendances =
+                attendanceRepository.findPendingCheckouts(orgUuid, today);
+
+        return pendingAttendances.stream()
+                .map(att -> {
+                    Employee emp = att.getEmployee();
+
+                    if (emp == null) {
+                        throw new EmployeeNotFoundException(
+                                "Employee not found for attendance ID: " + att.getId()
+                        );
+                    }
+
+                    return TodayAttendanceDTO.builder()
+                            .id(att.getId())
+                            .employeeId(emp.getId())
+                            .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                            .employeeCode(emp.getEmployeeCode())
+                            .checkInTime(att.getCheckInTime())
+                            .checkOutTime(null) // explicitly pending
+                            .status(att.getStatus().name())
+                            .isComplete(false)
+                            .build();
+                })
+                .toList();
+    }
+
+
+    // =========================================================
     // MANUAL CHECK-OUT
     // Admin / HR marks check-out for an employee
     // =========================================================
-    public void manualCheckOut(String orgUuid, Long employeeId) {
+    public TodayAttendanceDTO manualCheckOut(String orgUuid, Long employeeId) {
 
-        // 1. Fetch today's attendance record
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndAttendanceDate(employeeId, LocalDate.now())
-                .orElseThrow(() ->
-                        new AttendanceNotCheckedInException(
-                                "Employee has not checked in"
-                        )
-                );
+                .orElseThrow(() -> new AttendanceNotCheckedInException("Not checked in"));
 
-        // 2. Prevent double check-outs
         if (attendance.getCheckOutTime() != null) {
-            throw new AttendanceAlreadyCheckedInException(
-                    "Employee already checked out"
-            );
+            throw new AttendanceAlreadyCheckedInException("Already checked out");
         }
 
-        // 3. Mark check-out time
         attendance.setCheckOutTime(LocalDateTime.now());
-
-        // 4. Save updated record
         attendanceRepository.save(attendance);
+
+        Employee emp = attendance.getEmployee();
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(attendance.getEmployeeId())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .employeeCode(emp.getEmployeeCode())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime()) // ✅ IMPORTANT
+                .status(attendance.getStatus().name())
+                .isComplete(true)
+                .build();
     }
 
-    // =========================================================
-    // GET EMPLOYEES PENDING CHECK-OUT
-    // Used in CHECK-OUT TAB
-    // =========================================================
-    public List<TodayAttendanceDTO> getPendingCheckouts(String orgUuid) {
-
-        // 1. Fetch all attendance records for today
-        //    where check-in exists but check-out is NULL
-        return attendanceRepository
-                .findPendingCheckouts(orgUuid, LocalDate.now())
-                .stream()
-
-                // 2. Map Attendance → DTO
-                .map(att -> TodayAttendanceDTO.builder()
-                        .employeeId(att.getEmployeeId())
-                        .employeeName(att.getEmployeeFullName())
-                        .checkInTime(att.getCheckInTime())
-                        .status(att.getStatus().name())
-
-                        // Pending checkout is never complete
-                        .isComplete(false)
-                        .build())
-                .toList();
-    }
 
     /**
      * Mark CHECK-IN only - won't allow if already checked in today

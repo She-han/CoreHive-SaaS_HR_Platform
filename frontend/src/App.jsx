@@ -58,6 +58,7 @@ import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
 import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
 import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
 import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSurveyQuestions';
+import AttendanceMarking from './pages/attendanceMarking/AttendanceMarking';
 
 // Employee Pages
 import EmployeeProfile from './pages/employee/EmployeeProfile';
@@ -301,6 +302,11 @@ const HRStaffRoutes = () => {
         <Route path="HiringManagement" element={<HiringManagement />} /> 
         <Route path="faceattendance" element={<FaceAttendancePage />} />
         <Route path="qrattendance" element={<QRAttendancePage />} />
+        <Route path="attendancemarking" element={<AttendanceMarking />} />
+        <Route path="createsurvey" element={<CreateSurvey />} />
+        <Route path="viewsurveyquestions/:id" element={<ViewSurveyQuestions />} />
+        <Route path="viewresponseswithquestions/:id" element={<ViewResponsesWithQuestions />} />
+        <Route path="editsurveyquestions/:id" element={<EditSurveyQuestions />} />
         
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>

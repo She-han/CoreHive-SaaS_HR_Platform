@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
-import { LogOut } from 'lucide-react';
+import { LogOut , CheckSquare } from 'lucide-react';
 import {
   HomeIcon,
   UsersIcon,
@@ -233,7 +233,14 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: ClockIcon,
             path: '/hr_staff/attendancemanagement',
             current: location.pathname.startsWith('/hr_staff/attendancemanagement')
-          },
+          }
+          ,
+          {
+            name: 'Attendance Marking',
+            icon: CheckSquare,
+            path: '/hr_staff/attendancemarking',
+            current: location.pathname.startsWith('/hr_staff/attendancemarking')
+          } ,
           {
             name: 'Payroll Management',
             icon: DollarSign,
@@ -246,6 +253,7 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: '/hr_staff/hrreportingmanagement',
             current: location.pathname.startsWith('/hr_staff/hrreportingmanagement')
           }
+
         ];
 
         // Module-based navigation items (conditional)

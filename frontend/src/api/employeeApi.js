@@ -108,7 +108,5 @@ export default {
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  getAllEmployees,
-  getEmployeeById,
   deactivateEmployee
 };

@@ -145,4 +145,23 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
+
+    /**
+     * Get next auto-generated employee code (READ-ONLY)
+     * Example: EMP-001, EMP-002
+     */
+    @GetMapping("/next-code")
+    public ResponseEntity<ApiResponse<String>> getNextEmployeeCode(HttpServletRequest request) {
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
+        try {
+            String code = employeeService.generateEmployeeCode(organizationUuid);
+            return ResponseEntity.ok(ApiResponse.success("Next employee code generated successfully", code));
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Unable to generate employee code"));
+        }
+    }
+
+
+
+
 }

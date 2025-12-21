@@ -111,12 +111,20 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     /**
      * Find next employee code for organization
      */
-    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(e.employeeCode, 4) AS INTEGER)), 0) + 1 " +
-           "FROM Employee e " +
-           "WHERE e.organizationUuid = :organizationUuid " +
-           "AND e.employeeCode LIKE 'EMP%' " +
-           "AND LENGTH(e.employeeCode) > 3")
+    @Query(
+            value = """
+        SELECT COALESCE(
+            MAX(CAST(SUBSTRING(employee_code, 5) AS UNSIGNED)),
+            0
+        ) + 1
+        FROM employee
+        WHERE organization_uuid = :organizationUuid
+          AND employee_code LIKE 'EMP-%'
+    """,
+            nativeQuery = true
+    )
     Integer findNextEmployeeNumber(@Param("organizationUuid") String organizationUuid);
+
 
     List<Employee> findAllByorganizationUuidEquals(String orgUuid);
 

@@ -13,10 +13,6 @@ import java.time.LocalDate;
 @Data
 public class EmployeeRequestDTO {
 
-    @JsonProperty("employeeCode")
-    @Size(max = 50, message = "Employee code must not exceed 50 characters")
-    private String employeeCode;
-
     @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name must not exceed 100 characters")
     @JsonProperty("firstName")

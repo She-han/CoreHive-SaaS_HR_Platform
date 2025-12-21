@@ -100,116 +100,281 @@ public class EmployeeService {
     }
 
     /**
-     * Create new employee
+     * Create a new employee
+     *
+     * IMPORTANT DESIGN RULES USED HERE:
+     * 1. Validate EVERYTHING before starting DB writes
+     * 2. Never return success before transaction commit
+     * 3. Never swallow exceptions inside @Transactional
+     * 4. Generate employee code ONLY ONCE
+     * 5. Fail fast on invalid data
      */
-    @Transactional(rollbackFor = Exception.class)
-    public ApiResponse<EmployeeResponseDTO> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
-        log.info("Creating employee for organization: {} with email: {}", organizationUuid, request.getEmail());
+    @Transactional
+    public ApiResponse<EmployeeResponseDTO> createEmployee(
+            String organizationUuid,
+            EmployeeRequestDTO request
+    ) {
+        log.info("Creating employee for organization={} email={}", organizationUuid, request.getEmail());
 
-        // Validate organization UUID
-        if (organizationUuid == null || organizationUuid.trim().isEmpty()) {
-            log.error("Organization UUID is null or empty");
-            return ApiResponse.error("Invalid organization");
+        /* -------------------------------------------------
+         * 1️⃣ Validate organization UUID
+         * ------------------------------------------------- */
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is invalid");
         }
 
-        // Get organization
-        Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
-        if (orgOpt.isEmpty()) {
-            log.error("Organization not found with UUID: {}", organizationUuid);
-            return ApiResponse.error("Organization not found");
-        }
-        Organization organization = orgOpt.get();
+        Organization organization = organizationRepository
+                .findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() ->
+                        new OrganizationNotFoundException("Organization not found")
+                );
 
-        // Validate department ID and ensure departments exist
+        /* -------------------------------------------------
+         * 2️⃣ Ensure & validate department
+         * (FAIL FAST – prevents FK rollback later)
+         * ------------------------------------------------- */
         departmentService.ensureDefaultDepartments(organizationUuid);
 
         if (!departmentService.validateDepartment(request.getDepartment(), organizationUuid)) {
-            log.warn("Invalid department ID {} for organization: {}", request.getDepartment(), organizationUuid);
-            return ApiResponse.error("Invalid department ID. Please select a valid department.");
+            throw new InvalidEmployeeDataException("Invalid department ID");
         }
 
-        // Check if email already exists in organization
-        if (employeeRepository.existsByEmailAndOrganizationUuid(request.getEmail(), organizationUuid)) {
-            log.warn("Email {} already exists in organization: {}", request.getEmail(), organizationUuid);
-            return ApiResponse.error("Email already exists in this organization");
+        /* -------------------------------------------------
+         * 3️⃣ Email uniqueness checks
+         * ------------------------------------------------- */
+        if (employeeRepository.existsByEmailAndOrganizationUuid(
+                request.getEmail(), organizationUuid)) {
+            throw new InvalidEmployeeDataException(
+                    "Email already exists in this organization"
+            );
         }
 
-        // Check if email exists as an app user
-        Optional<AppUser> existingUser = appUserRepository.findByEmail(request.getEmail());
-        if (existingUser.isPresent() && existingUser.get().getOrganizationUuid().equals(organizationUuid)) {
-            log.warn("User with email {} already exists in organization: {}", request.getEmail(), organizationUuid);
-            return ApiResponse.error("User with this email already exists");
+        Optional<AppUser> existingUser =
+                appUserRepository.findByEmail(request.getEmail());
+
+        if (existingUser.isPresent()
+                && organizationUuid.equals(existingUser.get().getOrganizationUuid())) {
+            throw new InvalidEmployeeDataException(
+                    "User with this email already exists"
+            );
         }
 
+        /* -------------------------------------------------
+         * 4️⃣ Create AppUser (FIRST)
+         * ------------------------------------------------- */
+        String tempPassword = UUID.randomUUID()
+                .toString()
+                .substring(0, 8);
+
+        AppUser appUser = AppUser.builder()
+                .organizationUuid(organizationUuid)
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(tempPassword))
+                .role(AppUserRole.EMPLOYEE)
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        appUser.setIsPasswordChangeRequired(true);
+
+        AppUser savedUser = appUserRepository.save(appUser);
+        log.info("AppUser created with id={}", savedUser.getId());
+
+        /* -------------------------------------------------
+         * 5️⃣ Send email (NON-TRANSACTIONAL SIDE EFFECT)
+         * Email failure MUST NOT rollback DB
+         * ------------------------------------------------- */
         try {
-            // Generate temporary password
-            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
-
-            // Create AppUser first
-            AppUser appUser = AppUser.builder()
-                    .organizationUuid(organizationUuid)
-                    .email(request.getEmail())
-                    .passwordHash(passwordEncoder.encode(tempPassword))
-                    .role(AppUserRole.EMPLOYEE)
-                    .isActive(true)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-
-            appUser.setIsPasswordChangeRequired(true);
-            AppUser savedUser = appUserRepository.save(appUser);
-            log.info("AppUser created with ID: {}", savedUser.getId());
-
-            // Send email with credentials
-            try {
-                emailService.sendEmployeePasswordEmail(request.getEmail(), tempPassword, organization.getName());
-                log.info("Employee password email sent successfully to: {}", request.getEmail());
-            } catch (Exception e) {
-                log.error("Failed to send employee password email: {}", e.getMessage());
-            }
-
-            // Generate employee code
-
-            log.info("Generated employee code: {}");
-
-            // Create Employee
-            Employee employee = new Employee();
-            employee.setOrganizationUuid(organizationUuid);
-            employee.setAppUserId(savedUser.getId());
-            employee.setEmployeeCode(request.getEmployeeCode());
-            employee.setFirstName(request.getFirstName());
-            employee.setLastName(request.getLastName());
-            employee.setEmail(request.getEmail());
-            employee.setPhone(request.getPhone());
-            employee.setNationalId(request.getNationalId());
-            employee.setDesignation(request.getDesignation());
-            employee.setDepartmentId(request.getDepartment());
-            employee.setBasicSalary(request.getBasicSalary());
-            employee.setLeaveCount(request.getLeaveCount());
-            employee.setDateOfJoining(request.getDateOfJoining());
-            employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
-            employee.setIsActive(request.getStatus().equalsIgnoreCase("Active"));
-            employee.setCreatedAt(LocalDateTime.now());
-            employee.setUpdatedAt(LocalDateTime.now());
-
-            Employee savedEmployee = employeeRepository.save(employee);
-            log.info("Employee created with ID: {} and code: {}", savedEmployee.getId());
-
-            // Update AppUser with linked employee ID
-            savedUser.setLinkedEmployeeId(savedEmployee.getId());
-            appUserRepository.save(savedUser);
-            log.info("AppUser updated with linked employee ID: {}", savedEmployee.getId());
-
-            log.info("Employee created successfully with ID: {}", savedEmployee.getId());
-            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
-            return ApiResponse.success("Employee created successfully", dto);
-
-
+            emailService.sendEmployeePasswordEmail(
+                    request.getEmail(),
+                    tempPassword,
+                    organization.getName()
+            );
         } catch (Exception e) {
-            log.error("Error creating employee for organization: {} - {}", organizationUuid, e.getMessage(), e);
-            throw new RuntimeException("Failed to create employee: " + e.getMessage(), e);
+            log.error("Email sending failed: {}", e.getMessage());
+            // intentionally ignored
         }
+
+        /* -------------------------------------------------
+         * 6️⃣ Generate employee code (ONLY ONCE)
+         * ------------------------------------------------- */
+        String employeeCode = generateEmployeeCode(organizationUuid);
+        log.info("Generated employee code={}", employeeCode);
+
+        /* -------------------------------------------------
+         * 7️⃣ Create Employee entity
+         * ------------------------------------------------- */
+        Employee employee = new Employee();
+        employee.setOrganizationUuid(organizationUuid);
+        employee.setAppUserId(savedUser.getId());
+        employee.setEmployeeCode(employeeCode);
+        employee.setFirstName(request.getFirstName());
+        employee.setLastName(request.getLastName());
+        employee.setEmail(request.getEmail());
+        employee.setPhone(request.getPhone());
+        employee.setNationalId(request.getNationalId());
+        employee.setDesignation(request.getDesignation());
+        employee.setDepartmentId(request.getDepartment());
+        employee.setBasicSalary(request.getBasicSalary());
+        employee.setLeaveCount(request.getLeaveCount());
+        employee.setDateOfJoining(request.getDateOfJoining());
+
+        /* ---- SAFE enum conversion ---- */
+        try {
+            employee.setSalaryType(
+                    Employee.SalaryType.valueOf(
+                            request.getSalaryType().toUpperCase()
+                    )
+            );
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidEmployeeDataException("Invalid salary type");
+        }
+
+        employee.setIsActive("Active".equalsIgnoreCase(request.getStatus()));
+        employee.setCreatedAt(LocalDateTime.now());
+        employee.setUpdatedAt(LocalDateTime.now());
+
+        /* -------------------------------------------------
+         * 8️⃣ Persist employee
+         * save() is enough – commit happens after method ends
+         * ------------------------------------------------- */
+        Employee savedEmployee = employeeRepository.save(employee);
+        log.info("Employee persisted with id={}", savedEmployee.getId());
+
+        /* -------------------------------------------------
+         * 9️⃣ Link AppUser → Employee
+         * ------------------------------------------------- */
+        savedUser.setLinkedEmployeeId(savedEmployee.getId());
+        appUserRepository.save(savedUser);
+
+        /* -------------------------------------------------
+         * 🔟 Build response AFTER successful persistence
+         * ------------------------------------------------- */
+        EmployeeResponseDTO responseDto =
+                employeeMapper.toDto(savedEmployee);
+
+        return ApiResponse.success(
+                "Employee created successfully",
+                responseDto
+        );
     }
+
+
+//    /**
+//     * Create new employee
+//     */
+//    @Transactional(rollbackFor = Exception.class)
+//    public ApiResponse<EmployeeResponseDTO> createEmployee(String organizationUuid, EmployeeRequestDTO request) {
+//        log.info("Creating employee for organization: {} with email: {}", organizationUuid, request.getEmail());
+//
+//        // Validate organization UUID
+//        if (organizationUuid == null || organizationUuid.trim().isEmpty()) {
+//            log.error("Organization UUID is null or empty");
+//            return ApiResponse.error("Invalid organization");
+//        }
+//
+//        // Get organization
+//        Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+//        if (orgOpt.isEmpty()) {
+//            log.error("Organization not found with UUID: {}", organizationUuid);
+//            return ApiResponse.error("Organization not found");
+//        }
+//        Organization organization = orgOpt.get();
+//
+//        // Validate department ID and ensure departments exist
+//        departmentService.ensureDefaultDepartments(organizationUuid);
+//
+//        if (!departmentService.validateDepartment(request.getDepartment(), organizationUuid)) {
+//            throw new InvalidEmployeeDataException("Invalid department ID");
+//        }
+//
+//
+//        // Check if email already exists in organization
+//        if (employeeRepository.existsByEmailAndOrganizationUuid(request.getEmail(), organizationUuid)) {
+//            log.warn("Email {} already exists in organization: {}", request.getEmail(), organizationUuid);
+//            return ApiResponse.error("Email already exists in this organization");
+//        }
+//
+//        // Check if email exists as an app user
+//        Optional<AppUser> existingUser = appUserRepository.findByEmail(request.getEmail());
+//        if (existingUser.isPresent() && existingUser.get().getOrganizationUuid().equals(organizationUuid)) {
+//            log.warn("User with email {} already exists in organization: {}", request.getEmail(), organizationUuid);
+//            return ApiResponse.error("User with this email already exists");
+//        }
+//
+//        try {
+//            // Generate temporary password
+//            String tempPassword = UUID.randomUUID().toString().substring(0, 8);
+//
+//            // Create AppUser first
+//            AppUser appUser = AppUser.builder()
+//                    .organizationUuid(organizationUuid)
+//                    .email(request.getEmail())
+//                    .passwordHash(passwordEncoder.encode(tempPassword))
+//                    .role(AppUserRole.EMPLOYEE)
+//                    .isActive(true)
+//                    .createdAt(LocalDateTime.now())
+//                    .updatedAt(LocalDateTime.now())
+//                    .build();
+//
+//            appUser.setIsPasswordChangeRequired(true);
+//            AppUser savedUser = appUserRepository.save(appUser);
+//            log.info("AppUser created with ID: {}", savedUser.getId());
+//
+//            // Send email with credentials
+//            try {
+//                emailService.sendEmployeePasswordEmail(request.getEmail(), tempPassword, organization.getName());
+//                log.info("Employee password email sent successfully to: {}", request.getEmail());
+//            } catch (Exception e) {
+//                log.error("Failed to send employee password email: {}", e.getMessage());
+//            }
+//
+//            // Generate employee code
+//
+//            log.info("Generated employee code: {}");
+//
+//            String employeeCode = generateEmployeeCode(organizationUuid);
+//
+//            // Create Employee
+//            Employee employee = new Employee();
+//            employee.setOrganizationUuid(organizationUuid);
+//            employee.setAppUserId(savedUser.getId());
+//            employee.setEmployeeCode(employeeCode);
+//            employee.setFirstName(request.getFirstName());
+//            employee.setLastName(request.getLastName());
+//            employee.setEmail(request.getEmail());
+//            employee.setPhone(request.getPhone());
+//            employee.setNationalId(request.getNationalId());
+//            employee.setDesignation(request.getDesignation());
+//            employee.setDepartmentId(request.getDepartment());
+//            employee.setBasicSalary(request.getBasicSalary());
+//            employee.setLeaveCount(request.getLeaveCount());
+//            employee.setDateOfJoining(request.getDateOfJoining());
+//            employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
+//            employee.setIsActive(request.getStatus().equalsIgnoreCase("Active"));
+//            employee.setCreatedAt(LocalDateTime.now());
+//            employee.setUpdatedAt(LocalDateTime.now());
+//
+//            Employee savedEmployee = employeeRepository.saveAndFlush(employee);
+////            String code = generateEmployeeCode(organizationUuid);
+//            log.info("Employee created with ID: {} and code: {}", savedEmployee.getId());
+//
+//            // Update AppUser with linked employee ID
+//            savedUser.setLinkedEmployeeId(savedEmployee.getId());
+//            appUserRepository.save(savedUser);
+//            log.info("AppUser updated with linked employee ID: {}", savedEmployee.getId());
+//
+//            log.info("Employee created successfully with ID: {}", savedEmployee.getId());
+//            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+//            return ApiResponse.success("Employee created successfully", dto);
+//
+//
+//        } catch (Exception e) {
+//            log.error("Error creating employee for organization: {} - {}", organizationUuid, e.getMessage(), e);
+//            throw new RuntimeException("Failed to create employee: " + e.getMessage(), e);
+//        }
+//    }
 
 //    //************************************************//
 //    //MAKE DEACTIVATE EMPLOYEE//
@@ -392,5 +557,38 @@ public class EmployeeService {
             return ApiResponse.error("Failed to update employee: " + e.getMessage());
         }
     }
+
+    //************************************************//
+    //GENERATE EMPLOYEE-CODE AUTOMATICALLY//
+    //************************************************//
+    public String generateEmployeeCode(String organizationUuid) {
+
+        // 1️⃣ Validate input
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        try {
+            // 2️⃣ Fetch next number from DB
+            Integer nextNumber = employeeRepository.findNextEmployeeNumber(organizationUuid);
+
+            if (nextNumber == null || nextNumber <= 0) {
+                throw new IllegalStateException("Failed to generate next employee number");
+            }
+
+            // 3️⃣ Format employee code
+            return String.format("EMP-%03d", nextNumber);
+
+        } catch (Exception ex) {
+            // 4️⃣ Log & wrap exception
+            log.error(
+                    "Error generating employee code for organizationUuid={}",
+                    organizationUuid,
+                    ex
+            );
+            throw new RuntimeException("Unable to generate employee code at this time");
+        }
+    }
+
 
 }

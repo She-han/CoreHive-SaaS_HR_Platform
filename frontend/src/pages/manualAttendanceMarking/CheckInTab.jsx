@@ -28,9 +28,16 @@ const CheckInTab = ({ token }) => {
       )
     );
   } catch (err) {
-    alert(err.message);
+    // Axios backend error
+    if (err.response && err.response.data) {
+      const message = err.response.data.message || "Something went wrong";
+      alert(message); // Show backend error
+    } else {
+      alert(err.message); // Fallback
+    }
   }
 };
+
 
 
   const fetchEmployees = async () => {

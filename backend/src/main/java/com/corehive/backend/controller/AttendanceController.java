@@ -11,11 +11,13 @@ import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.service.AttendanceService;
+import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -34,6 +36,69 @@ public class AttendanceController {
     private final AppUserRepository appUserRepository;
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
+
+
+    // CHECK-IN TAB LOAD
+    @GetMapping("/check-in/list")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getCheckInList(HttpServletRequest request) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Employees loaded",
+                        attendanceService.getEmployeesForCheckIn(orgUuid)
+                )
+        );
+    }
+
+    // MANUAL CHECK-IN
+    @PostMapping("/check-in/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> manualCheckIn(
+            HttpServletRequest request,
+            @PathVariable Long employeeId
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        attendanceService.manualCheckIn(orgUuid, employeeId);
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Check-in successful", null)
+        );
+    }
+
+    // CHECK-OUT TAB LOAD
+    @GetMapping("/check-out/list")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getCheckOutList(HttpServletRequest request) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Pending check-outs loaded",
+                        attendanceService.getPendingCheckouts(orgUuid)
+                )
+        );
+    }
+
+    // MANUAL CHECK-OUT
+    @PostMapping("/check-out/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> manualCheckOut(
+            HttpServletRequest request,
+            @PathVariable Long employeeId
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        attendanceService.manualCheckOut(orgUuid, employeeId);
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Check-out successful", null)
+        );
+    }
 
     /**
      * Mark CHECK-IN using face recognition - KIOSK MODE

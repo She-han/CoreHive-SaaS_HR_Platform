@@ -1,5 +1,9 @@
 package com.corehive.backend.advisor;
 
+import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedOutException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
 import com.corehive.backend.exception.departmentException.DepartmentNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyInactiveException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
@@ -85,5 +89,43 @@ public class AppWideException {
                 HttpStatus.NOT_FOUND
         );
     }
+
+    @ExceptionHandler(AttendanceAlreadyCheckedInException.class)
+    public ResponseEntity<StandardResponse> handleAlreadyCheckedIn(AttendanceAlreadyCheckedInException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(400, "Already Checked In", e.getMessage()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(AttendanceAlreadyCheckedOutException.class)
+    public ResponseEntity<StandardResponse> handleAlreadyCheckedOut(AttendanceAlreadyCheckedOutException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(400, "Already Checked Out", e.getMessage()),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(AttendanceNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleAttendanceNotFound(AttendanceNotFoundException e) {
+        return new ResponseEntity<>(
+                new StandardResponse(404, "Attendance Not Found", e.getMessage()),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(AttendanceNotCheckedInException.class)
+    public ResponseEntity<StandardResponse> handleAttendanceNotCheckedIn(
+            AttendanceNotCheckedInException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new StandardResponse(
+                        400,
+                        ex.getMessage(),
+                        null
+                ));
+    }
+
 
 }

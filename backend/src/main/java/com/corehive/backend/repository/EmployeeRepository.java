@@ -167,4 +167,5 @@ Page<Employee> findByOrganizationUuidWithDepartment(
     );
 
 
+    List<Employee> findByOrganizationUuidAndIsActiveTrue(String orgUuid);
 }

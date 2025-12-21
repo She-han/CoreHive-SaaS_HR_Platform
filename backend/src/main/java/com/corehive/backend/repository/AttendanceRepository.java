@@ -1,6 +1,7 @@
 package com.corehive.backend.repository;
 
 import com.corehive.backend.model.Attendance;
+import com.corehive.backend.model.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -96,4 +97,5 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             LocalDate startDate,
             LocalDate endDate
     );
+
 }

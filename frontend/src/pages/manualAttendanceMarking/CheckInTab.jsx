@@ -1,11 +1,37 @@
 import React, { useEffect, useState } from "react";
-import { getCheckInList, manualCheckIn } from "../../api/manualAttendanceService";
+import { getCheckInList, manualCheckIn , updateAttendanceStatus } from "../../api/manualAttendanceService";
 import { Search, CheckCircle2, Clock } from "lucide-react";
 
 const CheckInTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const STATUS_OPTIONS = [
+  "PRESENT",
+  "ABSENT",
+  "LATE",
+  "HALF_DAY",
+  "ON_LEAVE",
+  "WORK_FROM_HOME"
+];
+
+    const handleStatusChange = async (employeeId, newStatus) => {
+  try {
+    const updated = await updateAttendanceStatus(employeeId, newStatus, token);
+
+    setEmployees(prev =>
+      prev.map(emp =>
+        emp.employeeId === employeeId
+          ? { ...emp, status: updated.status }
+          : emp
+      )
+    );
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   const fetchEmployees = async () => {
     if (!token) return;
@@ -72,15 +98,24 @@ const CheckInTab = ({ token }) => {
                 </td>
                 <td className="p-4 text-[#9B9B9B] font-mono">{emp.employeeCode}</td>
                 <td className="p-4">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                    emp.status === "NOT_CHECKED_IN" 
-                    ? "bg-red-50 text-red-500 border border-red-100" 
-                    : "bg-[#F1FDF9] text-[#02C39A] border border-[#02C39A]/20"
-                  }`}>
-                    {emp.status.replace(/_/g, " ")}
-                  </span>
-                </td>
-                
+                    <select
+                        value={emp.status}
+                        disabled={emp.status === "NOT_CHECKED_IN"}
+                        onChange={(e) => handleStatusChange(emp.employeeId, e.target.value)}
+                        className="px-3 py-2 border rounded-md text-xs font-semibold
+                                border-gray-300 focus:ring-2 focus:ring-[#02C39A]"
+                    >
+                        {emp.status === "NOT_CHECKED_IN" && (
+                        <option value="NOT_CHECKED_IN">NOT CHECKED IN</option>
+                        )}
+
+                        {STATUS_OPTIONS.map(status => (
+                        <option key={status} value={status}>
+                            {status.replace("_", " ")}
+                        </option>
+                        ))}
+                    </select>
+                    </td>
                 {/* CHECK-IN TIME DISPLAY */}
                 <td className="p-4">
                   <div className="flex items-center gap-2 text-[#333333]">

@@ -205,6 +205,44 @@ public class AttendanceService {
                 .build();
     }
 
+    // =========================================================
+    // UPDATE ATTENDANCE STATUS
+    // =========================================================
+    @Transactional
+    public TodayAttendanceDTO updateAttendanceStatus(
+            String orgUuid,
+            Long employeeId,
+            AttendanceStatus newStatus
+    ) {
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, LocalDate.now())
+                .orElseThrow(() ->
+                        new AttendanceNotCheckedInException("Attendance not found for today")
+                );
+
+        // Optional business rules
+        if (attendance.isComplete()) {
+            throw new IllegalStateException("Cannot change status after checkout");
+        }
+
+        attendance.setStatus(newStatus);
+        attendanceRepository.save(attendance);
+
+        Employee emp = attendance.getEmployee();
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(emp.getId())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .employeeCode(emp.getEmployeeCode())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .status(attendance.getStatus().name())
+                .isComplete(attendance.isComplete())
+                .build();
+    }
+
+
 
     /**
      * Mark CHECK-IN only - won't allow if already checked in today

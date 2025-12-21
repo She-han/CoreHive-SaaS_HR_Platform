@@ -4,6 +4,7 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Employee;
@@ -99,6 +100,29 @@ public class AttendanceController {
                 new StandardResponse(200, "Check-out successful", dto) // ✅ RETURN DATA
         );
     }
+
+    // =========================================================
+    // UPDATE ATTENDANCE STATUS
+    // =========================================================
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    @PutMapping("/status/{employeeId}")
+    public StandardResponse updateAttendanceStatus(
+            HttpServletRequest request,
+            @PathVariable Long employeeId,
+            @RequestBody UpdateAttendanceStatusRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        TodayAttendanceDTO updated =
+                attendanceService.updateAttendanceStatus(
+                        orgUuid,
+                        employeeId,
+                        Attendance.AttendanceStatus.valueOf(req.getStatus())
+                );
+
+        return new StandardResponse(200, "Attendance status updated", updated);
+    }
+
 
 
     /**

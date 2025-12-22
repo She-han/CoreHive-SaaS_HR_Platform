@@ -1,78 +1,162 @@
-import React from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Alert from '../../components/common/Alert';
+import { getCurrentEmployeeProfile } from '../../api/employeeApi';
 
 export default function EmployeeProfile() {
+  const navigate = useNavigate();
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchEmployeeProfile();
+  }, []);
+
+  const fetchEmployeeProfile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getCurrentEmployeeProfile();
+      
+      if (response.success) {
+        setEmployee(response.data);
+      } else {
+        setError(response.message || 'Failed to load profile');
+      }
+    } catch (err) {
+      console.error('Error fetching employee profile:', err);
+      setError('Failed to load profile. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getInitials = () => {
+    if (!employee) return '';
+    return `${employee.firstName?.charAt(0) || ''}${employee.lastName?.charAt(0) || ''}`.toUpperCase();
+  };
+
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center min-h-screen">
+          <LoadingSpinner />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="px-10 mt-10">
+          <Alert type="error" message={error} />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!employee) {
+    return (
+      <DashboardLayout>
+        <div className="px-10 mt-10">
+          <Alert type="error" message="Employee profile not found" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-5xl mx-auto animate-fade-in">
-
-        {/* PAGE HEADER */}
-        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">
-          My Profile
-        </h1>
-
-        {/* BASIC PROFILE + CONTACT INFO */}
-        <div
-          className="
-            bg-[var(--color-background-white)]
-            rounded-xl p-6
-            shadow-[0_10px_15px_-3px_rgba(12,57,122,0.1),0_4px_6px_-2px_rgba(12,57,122,0.05)]
-            border border-[#f1f5f9]
-            animate-slide-up
-          "
-        >
-          <div className="flex flex-col md:flex-row gap-10">
-
-            {/* LEFT */}
-            <div className="md:w-1/4 text-center">
-              <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white
-                              w-36 h-36 rounded-full flex items-center justify-center
-                              text-4xl font-semibold mx-auto">
-                SJ
-              </div>
-
-              <h3 className="text-xl font-semibold mt-6">Sarah Johnson</h3>
-              <p className="text-gray-500">Senior Software Engineer</p>
-              <p className="text-gray-600 mt-2">ID: EMP001</p>
+      <div className="bg-gray-100 min-h-screen">
+        {/* MAIN PROFILE CARD */}
+        <div className="px-10 mt-10">
+          <div className="bg-white p-10 rounded-xl shadow w-full">
+            
+            {/* Header with Edit Button */}
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-semibold">My Profile</h2>
+              <button
+                onClick={() => navigate('/employee/profile/edit')}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         transition-colors duration-200 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Profile
+              </button>
             </div>
 
-            {/* RIGHT */}
-            <div className="md:w-3/4">
-              <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-                Contact Information
-              </h3>
+            <div className="flex gap-16">
+              {/* LEFT SIDE */}
+              <div className="w-1/4 text-center">
+                <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white 
+                                w-40 h-40 rounded-full flex items-center justify-center 
+                                text-5xl font-semibold mx-auto">
+                  {getInitials()}
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <p><strong>Email:</strong> sarah.johnson@company.com</p>
-                <p><strong>Phone:</strong> +1 (555) 123-4567</p>
-                <p><strong>Location:</strong> New York, NY</p>
+                <h3 className="text-xl font-semibold mt-6">
+                  {employee.firstName} {employee.lastName}
+                </h3>
+                <p className="text-gray-500">{employee.designation || 'N/A'}</p>
+                <p className="text-gray-600 mt-2">ID: {employee.employeeCode}</p>
+                
+                {/* Status Badge */}
+                <div className="mt-4">
+                  <span className={`px-4 py-1 rounded-full text-sm font-medium ${
+                    employee.isActive 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {employee.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+
+              {/* RIGHT SIDE */}
+              <div className="w-3/4">
+                {/* Contact Info */}
+                <div className="mb-10">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Contact Information</h3>
+                  <div className="space-y-3 text-gray-700">
+                    <p><strong>Email:</strong> {employee.email}</p>
+                    <p><strong>Phone:</strong> {employee.phone || 'N/A'}</p>
+                    <p><strong>National ID:</strong> {employee.nationalId || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <hr className="my-6" />
+
+                {/* Employment Info */}
+                <div className="mb-10">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Employment Information</h3>
+                  <div className="space-y-3 text-gray-700">
+                    <p><strong>Department:</strong> {employee.department?.name || 'N/A'}</p>
+                    <p><strong>Position:</strong> {employee.designation || 'N/A'}</p>
+                    <p><strong>Date of Joining:</strong> {formatDate(employee.dateOfJoining)}</p>
+                    <p><strong>Salary Type:</strong> {employee.salaryType}</p>
+                    <p><strong>Leave Balance:</strong> {employee.leaveCount} days</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* EMPLOYMENT INFORMATION (SEPARATE SECTION) */}
-        <div
-          className="
-            bg-[var(--color-background-white)]
-            rounded-xl p-6 mt-8
-            shadow-[0_10px_15px_-3px_rgba(12,57,122,0.1),0_4px_6px_-2px_rgba(12,57,122,0.05)]
-            border border-[#f1f5f9]
-            animate-slide-up
-          "
-        >
-          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
-            Employment Information
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-            <p><strong>Department:</strong> Engineering</p>
-            <p><strong>Position:</strong> Senior Software Engineer</p>
-            <p><strong>Date Joined:</strong> 02/05/2025</p>
-            <p><strong>Basic Salary:</strong> Rs. 258,000</p>
-          </div>
-        </div>
-
       </div>
     </DashboardLayout>
   );

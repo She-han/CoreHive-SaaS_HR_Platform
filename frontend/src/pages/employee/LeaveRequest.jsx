@@ -40,8 +40,8 @@ export default function LeaveRequest() {
     <DashboardLayout>
       <div className="p-6 max-w-5xl mx-auto animate-fade-in">
 
-        {/* PAGE HEADER */}
-        <h1 className="text-2xl font-semibold font-serif text-[var(--color-text-primary)] mb-6">
+         {/* PAGE HEADER */}
+        <h1 className="text-2xl font-semibold  text-[var(--color-text-primary)] mb-6">
           Leave Request Portal
         </h1>
 
@@ -55,6 +55,7 @@ export default function LeaveRequest() {
           animate-slide-up
         "
         >
+         
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
             Apply for Leave
           </h2>

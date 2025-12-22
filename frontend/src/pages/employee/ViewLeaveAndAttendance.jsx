@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 
 export default function ViewLeaveAndAttendance() {
 const [attendance, setAttendance] = useState(null);
@@ -36,12 +37,13 @@ const [attendance, setAttendance] = useState(null);
   if (loading) return <div className="p-6">Loading...</div>;
 
   return (
+    <DashboardLayout>
     <div className="p-6 max-w-5xl mx-auto animate-fade-in">
 
-      {/* HEADER */}
-      <h1 className="text-2xl font-semibold font-serif text-(--color-text-primary) mb-6">
-        Attendance Dashboard
-      </h1>
+      {/* PAGE HEADER */}
+        <h1 className="text-2xl font-semibold  text-[var(--color-text-primary)] mb-6">
+           Attendance Dashboard
+        </h1>
 
       {/* TODAY’S ATTENDANCE */}
       <div className="
@@ -51,56 +53,19 @@ const [attendance, setAttendance] = useState(null);
         border border-[#f1f5f9] 
         animate-slide-up
       ">
+         {/* HEADER */}
         <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
           Today’s Attendance
         </h2>
 
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+          
           <p><strong>Status:</strong> {attendance.status}</p>
           <p><strong>Late Minutes:</strong> {attendance.lateMinutes}</p>
           <p><strong>Check-In:</strong> {attendance.checkIn || "--"}</p>
           <p><strong>Check-Out:</strong> {attendance.checkOut || "--"}</p>
         </div>
-
-        {/* CHECK-IN / CHECK-OUT BUTTONS */}
-        <div className="mt-6">
-          {!attendance.checkIn ? (
-            <button
-              onClick={handleCheckIn}
-              className="
-                bg-[var(--color-primary-500)]
-                text-white
-                px-6 py-3 rounded-lg font-medium
-                transition-all duration-200 ease-in-out
-                cursor-pointer inline-flex items-center justify-center
-                text-base leading-[1.5] select-none min-h-[44px]
-                hover:bg-[var(--color-primary-600)] hover:-translate-y-[1px]
-                hover:shadow-[0_4px_6px_-1px_rgba(2,195,154,0.2)]
-              "
-            >
-              Check In
-            </button>
-          ) : !attendance.checkOut ? (
-            <button
-              onClick={handleCheckOut}
-              className="
-                bg-red-500 text-white
-                px-6 py-3 rounded-lg font-medium
-                transition-all duration-200 ease-in-out
-                cursor-pointer inline-flex items-center justify-center
-                text-base min-h-[44px]
-                hover:bg-red-600 hover:-translate-y-[1px]
-              "
-            >
-              Check Out
-            </button>
-          ) : (
-            <p className="text-green-600 font-medium mt-2">
-              You have completed today's attendance.
-            </p>
-          )}
-        </div>
-      </div>
+      
 
       {/* MONTHLY SUMMARY */}
       <div className="
@@ -218,7 +183,9 @@ const [attendance, setAttendance] = useState(null);
   </div>
 </div>
 
-
+</div>
+   
     </div>
+    </DashboardLayout>
   );
 }

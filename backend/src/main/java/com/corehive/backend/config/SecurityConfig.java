@@ -73,7 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
-                        .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+                        .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
                         .requestMatchers( "/api/attendance" ,"/api/attendance/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
 
                         // Departments - allow both ORG_ADMIN and HR_STAFF

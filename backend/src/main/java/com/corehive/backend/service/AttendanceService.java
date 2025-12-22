@@ -24,7 +24,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -40,6 +42,124 @@ public class AttendanceService {
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
     private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
 
+    //GET ATTENDANCE DETAILS FOR A WEEK/////////////////////////////////////
+    private long calculateWorkingMinutes(Attendance attendance) {
+
+        if (attendance.getCheckInTime() == null ||
+                attendance.getCheckOutTime() == null) {
+            return 0;
+        }
+
+        return Duration.between(
+                attendance.getCheckInTime(),
+                attendance.getCheckOutTime()
+        ).toMinutes();
+    }
+
+    private long calculateLateMinutes(Attendance attendance) {
+
+        if (attendance.getStatus() != Attendance.AttendanceStatus.LATE ||
+                attendance.getCheckInTime() == null) {
+            return 0;
+        }
+
+        //assume office start at 9am
+        LocalTime officeStart = LocalTime.of(9, 0);
+
+        return Math.max(
+                0,
+                Duration.between(
+                        officeStart,
+                        attendance.getCheckInTime().toLocalTime()
+                ).toMinutes()
+        );
+    }
+
+
+    private Map<String, Object> buildAttendanceRow(Attendance attendance) {
+
+        Map<String, Object> row = new HashMap<>();
+
+        Employee emp = attendance.getEmployee();
+
+        row.put("employeeId", emp.getId());
+        row.put("name", emp.getFirstName() + " " + emp.getLastName());
+        row.put("dept", emp.getDepartment() != null
+                ? emp.getDepartment().getName()
+                : "N/A");
+
+        row.put("date", attendance.getAttendanceDate());
+
+        row.put("status", attendance.getStatus().name());
+
+        row.put("checkIn", attendance.getCheckInTime());
+        row.put("checkOut", attendance.getCheckOutTime());
+
+        // Calculate working minutes
+        row.put("workingMinutes", calculateWorkingMinutes(attendance));
+
+        row.put("lateMinutes", calculateLateMinutes(attendance));
+
+        return row;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    //GET TODAY SUMMARY BY STATUS WITH COUNT
+    public Map<String, Long> getTodaySummary(String orgUuid, LocalDate date) {
+
+        // If frontend does not send date → use today
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        List<Object[]> results =
+                attendanceRepository.countByStatus(orgUuid, targetDate);
+
+        // 🔑 MUST MATCH FRONTEND KEYS
+        Map<String, Long> summary = new HashMap<>();
+        summary.put("PRESENT", 0L);
+        summary.put("LATE", 0L);
+        summary.put("ON_LEAVE", 0L);
+        summary.put("HALF_DAY", 0L);
+        summary.put("ABSENT", 0L);
+        summary.put("WORK_FROM_HOME", 0L);
+
+        for (Object[] row : results) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            Long count = (Long) row[1];
+
+            switch (status) {
+                case PRESENT -> summary.put("PRESENT", count);
+                case LATE -> summary.put("LATE", count);
+                case ON_LEAVE -> summary.put("ON_LEAVE", count);
+                case ABSENT -> summary.put("ABSENT", count);
+                case WORK_FROM_HOME -> summary.put("WORK_FROM_HOME", count);
+
+                // ❌ HALF_DAY intentionally ignored (not shown in cards)
+                case HALF_DAY -> { }
+            }
+        }
+
+        return summary;
+    }
+
+
+    //GET ATTENDANCE BY DATE
+    public List<Map<String, Object>> getAttendanceForDate(
+            String orgUuid,
+            LocalDate date
+    ) {
+
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
+
+        List<Attendance> records =
+                attendanceRepository.findByOrgAndDate(orgUuid, date);
+
+        // Convert entities → response objects (NO MAPPER)
+        return records.stream()
+                .map(this::buildAttendanceRow)
+                .toList();
+    }
 
     // =========================================================
     // GET ALL EMPLOYEES WITH TODAY'S ATTENDANCE STATUS

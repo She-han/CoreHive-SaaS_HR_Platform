@@ -104,6 +104,30 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             LocalDate endDate
     );
 
+    //GET ATTENDANCE BY DATE
+    @Query("""
+        SELECT a
+        FROM Attendance a
+        JOIN FETCH a.employee e
+        WHERE a.organizationUuid = :orgUuid
+          AND a.attendanceDate = :date
+    """)
+    List<Attendance> findByOrgAndDate(
+            @Param("orgUuid") String orgUuid,
+            @Param("date") LocalDate date
+    );
 
+    //Get summary from attendance by status with count
+    @Query("""
+        SELECT a.status, COUNT(a)
+        FROM Attendance a
+        WHERE a.organizationUuid = :orgUuid
+          AND a.attendanceDate = :date
+        GROUP BY a.status
+    """)
+    List<Object[]> countByStatus(
+            @Param("orgUuid") String orgUuid,
+            @Param("date") LocalDate date
+    );
 
 }

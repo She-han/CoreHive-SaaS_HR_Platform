@@ -38,6 +38,47 @@ public class AttendanceController {
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
 
+    /**
+     * Load attendance for a single day
+     * Frontend calls this 7 times (Sun → Sat)
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceByDate(
+            @RequestParam("date") LocalDate date,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance loaded",
+                        attendanceService.getAttendanceForDate(orgUuid, date)
+                )
+        );
+    }
+
+    //GET SUMMARY BY STATUS WITH COUNT
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayAttendanceSummary(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance summary loaded",
+                        attendanceService.getTodaySummary(orgUuid, date)
+                )
+        );
+    }
+
 
     // CHECK-IN TAB LOAD
     @GetMapping("/check-in/list")

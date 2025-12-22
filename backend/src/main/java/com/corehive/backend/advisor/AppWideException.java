@@ -9,6 +9,10 @@ import com.corehive.backend.exception.employeeCustomException.EmployeeAlreadyIna
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
+import com.corehive.backend.exception.feedbackSurveyException.InvalidSurveyRequestException;
+import com.corehive.backend.exception.feedbackSurveyException.SurveyDeletionException;
+import com.corehive.backend.exception.feedbackSurveyException.SurveyNotFoundException;
+import com.corehive.backend.exception.feedbackSurveyException.SurveyResponseNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
@@ -125,6 +129,55 @@ public class AppWideException {
                         ex.getMessage(),
                         null
                 ));
+    }
+
+    // ============================================================
+    // FEEDBACK SURVEY EXCEPTIONS  ✅ (NEW)
+    // ============================================================
+
+    @ExceptionHandler(SurveyNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleSurveyNotFound(SurveyNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new StandardResponse(
+                        404,
+                        "Survey not found",
+                        null
+                ));
+    }
+
+    @ExceptionHandler(SurveyResponseNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleSurveyResponseNotFound(
+            SurveyResponseNotFoundException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new StandardResponse(
+                        404,
+                        "Survey Response not found",
+                        null
+                ));
+    }
+
+    @ExceptionHandler(InvalidSurveyRequestException.class)
+    public ResponseEntity<StandardResponse> handleInvalidSurveyRequest(
+            InvalidSurveyRequestException ex
+    ) {
+        return new ResponseEntity<>(
+                new StandardResponse(400, "Invalid survey request", null),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(SurveyDeletionException.class)
+    public ResponseEntity<StandardResponse> handleSurveyDeletionException(
+            SurveyDeletionException ex
+    ) {
+
+        return new ResponseEntity<>(
+                new StandardResponse(409, "Survey deletion failed", null),
+                HttpStatus.BAD_REQUEST
+        );
     }
 
 

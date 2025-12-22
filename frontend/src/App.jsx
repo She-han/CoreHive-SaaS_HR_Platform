@@ -303,10 +303,10 @@ const HRStaffRoutes = () => {
         <Route path="faceattendance" element={<FaceAttendancePage />} />
         <Route path="qrattendance" element={<QRAttendancePage />} />
         <Route path="attendancemarking" element={<AttendanceMarking />} />
-        <Route path="createsurvey" element={<CreateSurvey />} />
-        <Route path="viewsurveyquestions/:id" element={<ViewSurveyQuestions />} />
-        <Route path="viewresponseswithquestions/:id" element={<ViewResponsesWithQuestions />} />
-        <Route path="editsurveyquestions/:id" element={<EditSurveyQuestions />} />
+        <Route path="feedback/create" element={<CreateSurvey />} />
+        <Route path="feedback/:id/questions" element={<ViewSurveyQuestions />} />
+        <Route path="feedback/:id/responses" element={<ViewResponsesWithQuestions />} />
+        <Route path="feedback/:id/edit" element={<EditSurveyQuestions />} />
         
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>

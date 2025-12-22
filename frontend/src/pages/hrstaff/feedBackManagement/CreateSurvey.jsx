@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { createSurvey } from "../../../api/feedbackService";
+import { createSurvey } from "../../../api/feedbackService.js"; // ✅ token-based API
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 export default function CreateSurvey() {
+
+  const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
   const navigate = useNavigate();
-  const orgUuid = "org-uuid-001";//For testing purpose. Replace with real org from session/auth
 
   const [form, setForm] = useState({
     title: "",
@@ -16,10 +17,10 @@ export default function CreateSurvey() {
     questions: [],
   });
 
-  // Add Question (use destructuring)
+  // Add a new question
   const addQuestion = () => {
     setForm({
-      ...form, 
+      ...form,
       questions: [
         ...form.questions,
         {
@@ -32,46 +33,43 @@ export default function CreateSurvey() {
     });
   };
 
-  // Remove Question
+  // Remove a question
   const removeQuestion = (index) => {
-    let updated = [...form.questions];//copy the existing questions into a new array called updated.
-    updated.splice(index, 1);//This removes 1 item from the array at position index.
-    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));//Reassign question positions
+    let updated = [...form.questions];
+    updated.splice(index, 1);
+    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));
     setForm({ ...form, questions: updated });
   };
 
-  // Update Question
-  //Index = Which question you are editing(0=first,1=second)
-  //key = Which property of the question to update(question_text, question_type, options)
-  //value = new value the user entered
+  // Update a question's field
   const updateQuestion = (index, key, value) => {
-    const updated = [...form.questions]; // Copy the questions array
+    const updated = [...form.questions];
     updated[index][key] = value;
 
     if (key === "question_type") {
-      if (value === "TEXT") updated[index].options = []; //Remove all options
-      if (value === "MCQ") updated[index].options = []; //Remove all options because user must type options manually
+      if (value === "TEXT") updated[index].options = [];
+      if (value === "MCQ") updated[index].options = [];
       if (value === "RATING") updated[index].options = ["1", "2", "3", "4", "5"];
     }
 
     setForm({ ...form, questions: updated });
   };
 
-  // 📝 Update MCQ Options
+  // Update MCQ options
   const updateOptions = (index, value) => {
     const updated = [...form.questions];
-    updated[index].options = value.split(",").map((o) => o.trim()); //Split text into array by commas -> trim = Remove extra spaces
+    updated[index].options = value.split(",").map((o) => o.trim());
     setForm({ ...form, questions: updated });
   };
 
-  // 🚀 Submit
+  // Submit survey (token-based)
   const handleSubmit = async () => {
     if (!form.title.trim()) return alert("Survey title is required");
     if (form.questions.length === 0)
       return alert("Please add at least one question.");
 
     try {
-      await createSurvey(orgUuid, form);
+      await createSurvey(form, token); // ✅ token passed here
       alert("Survey created successfully!");
       navigate("/hr_staff/FeedBackManagement");
     } catch (err) {
@@ -91,8 +89,7 @@ export default function CreateSurvey() {
 
         <button
           onClick={() => navigate("/hr_staff/FeedBackManagement")}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 
-                     rounded-lg shadow-sm transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm transition-all"
         >
           <FiArrowLeft /> Back
         </button>
@@ -104,9 +101,7 @@ export default function CreateSurvey() {
         {/* SURVEY DETAILS */}
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
           <h2 className="text-xl font-bold text-[#0D2847] mb-4">Survey Details</h2>
-
           <div className="space-y-4">
-
             <input
               type="text"
               placeholder="Enter survey title..."
@@ -114,7 +109,6 @@ export default function CreateSurvey() {
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-
             <textarea
               placeholder="Enter survey description..."
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
@@ -122,44 +116,35 @@ export default function CreateSurvey() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
 
-           <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Start Date */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-medium text-gray-600">Start Date</label>
+                <input
+                  type="date"
+                  className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                  value={form.start_date}
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                />
+              </div>
 
-  {/* Start Date */}
-  <div className="flex flex-col">
-    <label className="mb-1 text-sm font-medium text-gray-600">
-      Start Date
-    </label>
-    <input
-      type="date"
-      className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
-      value={form.start_date}
-      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-    />
-  </div>
-
-  {/* End Date */}
-  <div className="flex flex-col">
-    <label className="mb-1 text-sm font-medium text-gray-600">
-      End Date
-    </label>
-    <input
-      type="date"
-      className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
-      value={form.end_date}
-      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-    />
-  </div>
-
-</div>
-
+              {/* End Date */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-medium text-gray-600">End Date</label>
+                <input
+                  type="date"
+                  className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                  value={form.end_date}
+                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                />
+              </div>
+            </div>
 
             <label className="flex items-center gap-3 text-[#0D2847]">
               <input
                 type="checkbox"
                 checked={form.is_anonymous}
-                onChange={(e) =>
-                  setForm({ ...form, is_anonymous: e.target.checked })
-                }
+                onChange={(e) => setForm({ ...form, is_anonymous: e.target.checked })}
                 className="h-5 w-5"
               />
               Allow Anonymous Responses
@@ -176,12 +161,8 @@ export default function CreateSurvey() {
               key={index}
               className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-6 hover:shadow-2xl transition-all"
             >
-              {/* Header Row */}
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-[#0D2847]">
-                  Question {index + 1}
-                </h3>
-
+                <h3 className="text-lg font-semibold text-[#0D2847]">Question {index + 1}</h3>
                 <button
                   className="text-red-600 hover:text-red-800 transition"
                   onClick={() => removeQuestion(index)}
@@ -190,31 +171,24 @@ export default function CreateSurvey() {
                 </button>
               </div>
 
-              {/* Question Input */}
               <input
                 type="text"
                 placeholder="Type your question here..."
                 className="w-full p-3 border rounded-lg shadow-sm mb-3"
                 value={q.question_text}
-                onChange={(e) =>
-                  updateQuestion(index, "question_text", e.target.value)
-                }
+                onChange={(e) => updateQuestion(index, "question_text", e.target.value)}
               />
 
-              {/* Question Type */}
               <select
                 className="w-full p-3 border rounded-lg shadow-sm mb-3"
                 value={q.question_type}
-                onChange={(e) =>
-                  updateQuestion(index, "question_type", e.target.value)
-                }
+                onChange={(e) => updateQuestion(index, "question_type", e.target.value)}
               >
                 <option value="TEXT">Text Answer</option>
                 <option value="MCQ">Multiple Choice</option>
                 <option value="RATING">Rating (1–5)</option>
               </select>
 
-              {/* MCQ INPUT */}
               {q.question_type === "MCQ" && (
                 <input
                   type="text"
@@ -225,7 +199,6 @@ export default function CreateSurvey() {
                 />
               )}
 
-              {/* RATING INFO */}
               {q.question_type === "RATING" && (
                 <div className="mt-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
                   ⭐ Rating scale automatically set to: <b>1 → 5</b>
@@ -234,20 +207,16 @@ export default function CreateSurvey() {
             </div>
           ))}
 
-          {/* ADD QUESTION BUTTON */}
           <button
             onClick={addQuestion}
-            className="mt-4 px-6 py-3 bg-[#02C39A] text-white rounded-xl 
-                       shadow-lg flex items-center gap-2 hover:bg-[#029575] transition-all"
+            className="mt-4 px-6 py-3 bg-[#02C39A] text-white rounded-xl shadow-lg flex items-center gap-2 hover:bg-[#029575] transition-all"
           >
             <FiPlus /> Add Question
           </button>
 
-          {/* SUBMIT BUTTON */}
           <button
             onClick={handleSubmit}
-            className="mt-6 w-full bg-[#05668D] text-white p-4 rounded-xl text-lg font-semibold
-                       shadow-lg hover:bg-[#044d6a] transition-all"
+            className="mt-6 w-full bg-[#05668D] text-white p-4 rounded-xl text-lg font-semibold shadow-lg hover:bg-[#044d6a] transition-all"
           >
             Create Survey
           </button>

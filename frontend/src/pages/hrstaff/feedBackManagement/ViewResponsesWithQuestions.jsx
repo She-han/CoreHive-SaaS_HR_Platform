@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getResponseDetails, getSurveyDetails } from "../../../api/feedbackService";
+import { getSurveyDetails, getResponseDetails } from "../../../api/feedbackService";
 import { FiArrowLeft, FiUser, FiHelpCircle } from "react-icons/fi";
 
 export default function ViewResponsesWithQuestions() {
-  const { id } = useParams();
-  const orgUuid = "org-uuid-001";
+ const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
+  const { id } = useParams(); // surveyId from route params
 
   const [survey, setSurvey] = useState(null);
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getSurveyDetails(orgUuid, id), getResponseDetails(orgUuid, id)])
+    setLoading(true);
+    Promise.all([getSurveyDetails(id, token), getResponseDetails(id, token)])
       .then(([surveyData, responseData]) => {
         setSurvey(surveyData || null);
         setResponses(responseData || []);
       })
+      .catch((err) => console.error("Error fetching survey/responses:", err))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, token]);
 
   const renderStars = (value) => {
     const num = Number(value);
@@ -31,8 +33,7 @@ export default function ViewResponsesWithQuestions() {
 
   return (
     <div className="flex flex-col h-screen bg-[#F7FAFC]">
-
-      {/* FIXED HEADER */}
+      {/* HEADER */}
       <div className="p-6 bg-white shadow-sm border-b sticky top-0 z-20">
         <Link
           to="/hr_staff/FeedBackManagement"
@@ -49,8 +50,13 @@ export default function ViewResponsesWithQuestions() {
         </h2>
       </div>
 
-      {/* SCROLLABLE CONTENT */}
+      {/* CONTENT */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {responses.length === 0 && (
+          <p className="text-center text-[#9B9B9B] mt-10 text-lg">
+            No responses submitted yet.
+          </p>
+        )}
 
         {responses.map((resp) => (
           <div
@@ -61,15 +67,12 @@ export default function ViewResponsesWithQuestions() {
             <div className="flex items-center gap-2 mb-4">
               <FiUser className="text-[#05668D] text-lg" />
               <p className="font-medium text-[#333333] text-lg">
-                {resp.employeeId
-                  ? `Employee ${resp.employeeId}`
-                  : "Anonymous User"}
+                {resp.employeeId ? `Employee ${resp.employeeId}` : "Anonymous User"}
               </p>
             </div>
 
             {/* QUESTIONS + ANSWERS */}
             <div className="space-y-5">
-
               {survey.questions?.map((q) => {
                 const answer = resp.answers.find((a) => a.questionId === q.id);
 
@@ -112,22 +115,13 @@ export default function ViewResponsesWithQuestions() {
                     )}
 
                     {/* NOT ANSWERED */}
-                    {!answer && (
-                      <p className="mt-2 text-red-500 italic">Not answered</p>
-                    )}
+                    {!answer && <p className="mt-2 text-red-500 italic">Not answered</p>}
                   </div>
                 );
               })}
-
             </div>
           </div>
         ))}
-
-        {responses.length === 0 && (
-          <p className="text-center text-[#9B9B9B] mt-10 text-lg">
-            No responses submitted yet.
-          </p>
-        )}
       </div>
     </div>
   );

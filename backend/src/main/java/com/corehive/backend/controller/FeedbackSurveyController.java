@@ -5,110 +5,156 @@ import com.corehive.backend.dto.UpdateSurveyDTO;
 import com.corehive.backend.model.FeedbackSurvey;
 import com.corehive.backend.model.FeedbackSurveyResponse;
 import com.corehive.backend.service.FeedbackSurveyService;
+import com.corehive.backend.util.StandardResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/orgs/{orgUuid}/surveys")
+@RequestMapping("/api/orgs/surveys")
+@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class FeedbackSurveyController {
 
-    private final FeedbackSurveyService service;
+    private final FeedbackSurveyService surveyService;
 
-    // 1) GET all surveys Okay
+    // ============================================================
+    // GET ALL SURVEYS FOR ORGANIZATION
+    // ============================================================
     @GetMapping
-    public List<FeedbackSurvey> list(@PathVariable String orgUuid) {
-        return service.listSurveys(orgUuid);
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAllSurveys(HttpServletRequest request) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        List<FeedbackSurvey> surveys = surveyService.listSurveys(orgUuid);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Fetched all surveys successfully", surveys),
+                HttpStatus.OK
+        );
     }
 
-    // 2) CREATE survey Okay but without target type and who created is hardcode
+    // ============================================================
+    // CREATE A NEW SURVEY
+    // ============================================================
     @PostMapping
-    public FeedbackSurvey create(
-            @PathVariable String orgUuid,
-            @RequestBody CreateSurveyRequest req) {
-
-        return service.createSurvey(orgUuid, req);
-    }
-
-    // 3) GET one survey Oky
-    @GetMapping("/{id}")
-    public FeedbackSurvey getOne(
-            @PathVariable String orgUuid,
-            @PathVariable Long id) {
-
-        return service.getSurvey(id);
-    }
-
-    // 4) GET responses for survey
-    @GetMapping("/{id}/responses")
-    public List<FeedbackSurveyResponse> getResponses(
-            @PathVariable String orgUuid,
-            @PathVariable Long id) {
-
-        return service.getResponses(id);
-    }
-
-    // 5) DELETE survey
-    @DeleteMapping("/{id}")
-    public void deleteSurvey(@PathVariable String orgUuid, @PathVariable Long id) {
-        service.deleteSurvey(id);
-    }
-
-
-    //Get all the response for relevant survey
-    @GetMapping("/{surveyId}/responses/all")
-    public ResponseEntity<?> getAllResponses(
-            @PathVariable String orgUuid,
-            @PathVariable Long surveyId
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> createSurvey(
+            HttpServletRequest request,
+            @RequestBody CreateSurveyRequest req
     ) {
-        try {
-            List<FeedbackSurveyResponse> responses = service.getAllResponsesForSurvey(surveyId);
-            return ResponseEntity.ok(responses);
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        // NOTE: createdBy can be fetched from request if needed
+        FeedbackSurvey survey = surveyService.createSurvey(orgUuid, req);
 
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(400).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Unexpected server error: " + e.getMessage());
-        }
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey created successfully", survey),
+                HttpStatus.OK
+        );
     }
 
+    // ============================================================
+    // GET SINGLE SURVEY BY ID
+    // ============================================================
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getSurveyById(
+            HttpServletRequest request,
+            @PathVariable Long id
+    ) {
+        FeedbackSurvey survey = surveyService.getSurvey(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey fetched successfully", survey),
+                HttpStatus.OK
+        );
+    }
+
+    // ============================================================
+    // DELETE A SURVEY
+    // ============================================================
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> deleteSurvey(
+            HttpServletRequest request,
+            @PathVariable Long id
+    ) {
+        surveyService.deleteSurvey(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey deleted successfully", null),
+                HttpStatus.OK
+        );
+    }
+
+    // ============================================================
+    // GET ALL RESPONSES FOR A SURVEY (BASIC)
+    // ============================================================
+    @GetMapping("/{id}/responses")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getSurveyResponses(@PathVariable Long id) {
+        List<FeedbackSurveyResponse> responses = surveyService.getResponses(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey responses fetched successfully", responses),
+                HttpStatus.OK
+        );
+    }
+
+    // ============================================================
+    // GET ALL RESPONSES FOR SURVEY (DETAILED / ANALYTICS)
+    // ============================================================
+    @GetMapping("/{id}/responses/all")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAllResponsesForSurvey(@PathVariable Long id) {
+        // AppWideException handles SurveyResponseNotFoundException
+        List<FeedbackSurveyResponse> responses = surveyService.getAllResponsesForSurvey(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "All responses fetched successfully", responses),
+                HttpStatus.OK
+        );
+    }
+
+    // ============================================================
+    // GET DETAILED RESPONSE VIEW (PER QUESTION / USER)
+    // ============================================================
     @GetMapping("/{id}/responses/details")
-    public ResponseEntity<?> getDetailedResponses(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(service.getResponseDetails(id));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getDetailedResponses(@PathVariable Long id) {
+        // AppWideException handles SurveyResponseNotFoundException
+        var responseDetails = surveyService.getResponseDetails(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Detailed responses fetched successfully", responseDetails),
+                HttpStatus.OK
+        );
     }
 
-    //get question for relevant survey
-    @GetMapping("/{surveyId}/questions")
-    public ResponseEntity<?> getSurveyQuestions(@PathVariable Long surveyId) {
-        try {
-            return ResponseEntity.ok(service.getSurveyQuestions(surveyId));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    // ============================================================
+    // GET QUESTIONS FOR A SURVEY
+    // ============================================================
+    @GetMapping("/{id}/questions")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getSurveyQuestions(@PathVariable Long id) {
+        var questions = surveyService.getSurveyQuestions(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey questions fetched successfully", questions),
+                HttpStatus.OK
+        );
     }
 
-    //update survey question
-    @PutMapping("/{surveyId}/questions")
-    public ResponseEntity<?> updateSurveyQuestions(
-            @PathVariable Long surveyId,
+    // ============================================================
+    // UPDATE SURVEY QUESTIONS
+    // ============================================================
+    @PutMapping("/{id}/questions")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> updateSurveyQuestions(
+            @PathVariable Long id,
             @RequestBody UpdateSurveyDTO dto
     ) {
-        try {
-            return ResponseEntity.ok(service.updateSurveyQuestions(surveyId, dto));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        var updatedSurvey = surveyService.updateSurveyQuestions(id, dto);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Survey questions updated successfully", updatedSurvey),
+                HttpStatus.OK
+        );
     }
-
-
-
-
 }
-

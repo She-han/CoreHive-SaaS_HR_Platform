@@ -5,25 +5,29 @@ import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 export default function EditSurveyQuestions() {
   const { id } = useParams();
-  const orgUuid = "org-uuid-001";
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState([]);
+  const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
 
-  // Load survey questions
+    // Load survey questions
   useEffect(() => {
-    getSurveyQuestions(orgUuid, id).then((res) => {
-      const mapped = res.map((q) => ({
-        id: q.id,
-        questionText: q.questionText,
-        questionType: q.questionType,
-        options: q.options ? JSON.parse(q.options) : [],
-        position: q.position,
-      }));
-
-      setQuestions(mapped);
-    });
-  }, [id]);
+    if (!token) return; // prevent call if token not available
+    getSurveyQuestions(id, token)
+      .then((res) => {
+        const mapped = res.map((q) => ({
+          id: q.id,
+          questionText: q.questionText,
+          questionType: q.questionType,
+          options: q.options ? JSON.parse(q.options) : [],
+          position: q.position,
+        }));
+        setQuestions(mapped);
+      })
+      .catch((err) => {
+        alert("Failed to load questions: " + err.message);
+      });
+  }, [id, token]);
 
   // Add new question
   const addQuestion = () => {
@@ -73,9 +77,15 @@ export default function EditSurveyQuestions() {
 
   // Save all changes
   const saveChanges = async () => {
-    await updateSurveyQuestions(orgUuid, id, { questions });
-    alert("Survey updated successfully!");
-    navigate("/hr_staff/FeedBackManagement");
+    if (!token) return alert("Token not found. Please login again.");
+
+    try {
+      await updateSurveyQuestions(id, { questions }, token); // pass token here
+      alert("Survey updated successfully!");
+      navigate("/hr_staff/FeedBackManagement");
+    } catch (err) {
+      alert("Failed to save changes: " + err.message);
+    }
   };
 
   return (

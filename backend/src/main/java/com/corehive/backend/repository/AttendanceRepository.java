@@ -55,6 +55,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             "AND a.attendanceDate = :date " +
             "AND a.checkInTime IS NOT NULL " +
             "AND a.checkOutTime IS NULL " +
+            "AND a.status NOT IN ('ABSENT', 'ON_LEAVE') " +
             "ORDER BY a.checkInTime ASC")
     List<Attendance> findPendingCheckouts(@Param("orgUuid") String orgUuid,
                                           @Param("date") LocalDate date);
@@ -98,6 +99,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             LocalDate endDate
     );
 
-    
+
 
 }

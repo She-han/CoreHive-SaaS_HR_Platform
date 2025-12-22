@@ -1,20 +1,24 @@
 import React, { useEffect, useState } from "react";
-import {getTodayAttendance, manualCheckOut } from "../../api/manualAttendanceService";
+import { getPendingCheckouts, manualCheckOut } from "../../api/manualAttendanceService";
 import { Clock, CheckCircle, Timer } from "lucide-react";
 
 const CheckOutTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchPending = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const data = await getTodayAttendance(token);
-      setEmployees(data.map(emp => ({ ...emp, checkOutTime: emp.checkOutTime || null })));
-    } catch (err) { console.error(err); } 
-    finally { setLoading(false); }
-  };
+ const fetchPending = async () => {
+  if (!token) return;
+  setLoading(true);
+  try {
+    const data = await getPendingCheckouts(token);
+    setEmployees(data); // ABSENT & ON_LEAVE already filtered
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => { fetchPending(); }, []);
 
@@ -99,7 +103,11 @@ const CheckOutTab = ({ token }) => {
                 <div className="flex justify-center">
                   <button
                     onClick={() => handleCheckOut(emp.employeeId)}
-                    disabled={!!emp.checkOutTime}
+                    disabled={
+                        !!emp.checkOutTime ||
+                        emp.status === "ABSENT" ||
+                        emp.status === "ON_LEAVE"
+                      }
                     className={`
                       flex items-center justify-center gap-2 w-32 h-10 rounded border transition-all duration-300 text-[10px] font-bold uppercase tracking-wider
                       ${emp.checkOutTime 

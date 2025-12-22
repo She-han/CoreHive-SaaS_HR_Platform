@@ -50,13 +50,18 @@ export const getTodayAttendance = async (token) => {
   ).then(res => res.data);
 };
 
-export const updateAttendanceStatus = async (employeeId, status, token) => {
+export const updateAttendanceStatus = async (
+  employeeId,
+  status,
+  checkInTime,
+  token
+) => {
   return axios.put(
     `${BASE}/status/${employeeId}`,
-    { status },
-    { headers:
-         { Authorization: `Bearer ${token}` }  }
+    { status, checkInTime },   // ✅ send optional time
+    { headers: { Authorization: `Bearer ${token}` } }
   ).then(res => res.data.data);
 };
+
 
 

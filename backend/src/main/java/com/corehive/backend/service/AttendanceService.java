@@ -6,6 +6,7 @@ import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
 import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Attendance;
@@ -212,29 +213,68 @@ public class AttendanceService {
     public TodayAttendanceDTO updateAttendanceStatus(
             String orgUuid,
             Long employeeId,
-            AttendanceStatus newStatus
+            Attendance.AttendanceStatus newStatus
     ) {
-        Attendance attendance = attendanceRepository
-                .findByEmployeeIdAndAttendanceDate(employeeId, LocalDate.now())
-                .orElseThrow(() ->
-                        new AttendanceNotCheckedInException("Attendance not found for today")
-                );
+        LocalDate today = LocalDate.now();
 
-        // Optional business rules
-        if (attendance.isComplete()) {
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today)
+                .orElseThrow(() -> new AttendanceNotFoundException("Attendance not found"));
+
+        // DO NOT allow status change after checkout
+        if (attendance.getCheckOutTime() != null) {
             throw new IllegalStateException("Cannot change status after checkout");
         }
 
         attendance.setStatus(newStatus);
-        attendanceRepository.save(attendance);
 
-        Employee emp = attendance.getEmployee();
+        attendanceRepository.save(attendance);
 
         return TodayAttendanceDTO.builder()
                 .id(attendance.getId())
-                .employeeId(emp.getId())
-                .employeeName(emp.getFirstName() + " " + emp.getLastName())
-                .employeeCode(emp.getEmployeeCode())
+                .employeeId(attendance.getEmployeeId())
+                .employeeCode(attendance.getEmployee().getEmployeeCode())
+                .employeeName(attendance.getEmployeeFullName())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .status(attendance.getStatus().name())
+                .isComplete(attendance.isComplete())
+                .build();
+    }
+
+
+    //OVERLOADING FOR UPDATE ATTENDANCE STATUS//
+    @Transactional
+    public TodayAttendanceDTO updateAttendanceStatus(
+            String orgUuid,
+            Long employeeId,
+            Attendance.AttendanceStatus newStatus,
+            LocalDateTime newCheckInTime
+    ) {
+        LocalDate today = LocalDate.now();
+
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today)
+                .orElseThrow(() -> new AttendanceNotFoundException("Attendance not found"));
+
+        if (attendance.getCheckOutTime() != null) {
+            throw new IllegalStateException("Cannot change status after checkout");
+        }
+
+        attendance.setStatus(newStatus);
+
+        //  Update check-in time if provided
+        if (newCheckInTime != null) {
+            attendance.setCheckInTime(newCheckInTime);
+        }
+
+        attendanceRepository.save(attendance);
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(attendance.getEmployeeId())
+                .employeeCode(attendance.getEmployee().getEmployeeCode())
+                .employeeName(attendance.getEmployeeFullName())
                 .checkInTime(attendance.getCheckInTime())
                 .checkOutTime(attendance.getCheckOutTime())
                 .status(attendance.getStatus().name())

@@ -104,8 +104,8 @@ public class AttendanceController {
     // =========================================================
     // UPDATE ATTENDANCE STATUS
     // =========================================================
-    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     @PutMapping("/status/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public StandardResponse updateAttendanceStatus(
             HttpServletRequest request,
             @PathVariable Long employeeId,
@@ -113,15 +113,16 @@ public class AttendanceController {
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
 
-        TodayAttendanceDTO updated =
-                attendanceService.updateAttendanceStatus(
-                        orgUuid,
-                        employeeId,
-                        Attendance.AttendanceStatus.valueOf(req.getStatus())
-                );
+        TodayAttendanceDTO updated = attendanceService.updateAttendanceStatus(
+                orgUuid,
+                employeeId,
+                Attendance.AttendanceStatus.valueOf(req.getStatus()),
+                req.getCheckInTime()
+        );
 
         return new StandardResponse(200, "Attendance status updated", updated);
     }
+
 
 
 

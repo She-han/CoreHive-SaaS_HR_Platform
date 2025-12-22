@@ -70,10 +70,38 @@ export const deleteEmployee = async (id) => {
   }
 };
 
+/**
+ * Get current logged-in employee's profile
+ */
+export const getCurrentEmployeeProfile = async () => {
+  try {
+    const response = await apiClient.get('/employees/me');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current employee profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update current logged-in employee's profile
+ */
+export const updateCurrentEmployeeProfile = async (employeeData) => {
+  try {
+    const response = await apiClient.put('/employees/me', employeeData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating current employee profile:', error);
+    throw error;
+  }
+};
+
 export default {
   getAllEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
+   getCurrentEmployeeProfile,
+  updateCurrentEmployeeProfile
 };

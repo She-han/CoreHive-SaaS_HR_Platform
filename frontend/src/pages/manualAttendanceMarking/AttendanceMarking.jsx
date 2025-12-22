@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import CheckInTab from "../manualAttendanceMarking/CheckInTab";
-import CheckOutTab from "../manualAttendanceMarking/CheckOutTab";
+import CheckInTab from "./CheckInTab";
+import CheckOutTab from "./CheckOutTab";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../store/slices/authSlice";
 import { LogIn, LogOut } from "lucide-react";

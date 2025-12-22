@@ -58,7 +58,7 @@ import CreateSurvey from './pages/hrstaff/feedBackManagement/CreateSurvey';
 import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSurveyQuestions';
 import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
 import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSurveyQuestions';
-import AttendanceMarking from './pages/attendanceMarking/AttendanceMarking';
+import AttendanceMarking from './pages/manualAttendanceMarking/AttendanceMarking';
 
 // Employee Pages
 import EmployeeProfile from './pages/employee/EmployeeProfile';

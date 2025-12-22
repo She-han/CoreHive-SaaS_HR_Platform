@@ -1,6 +1,5 @@
 import { useState } from "react";
 import MonitorAttendance from "./MonitorAttendance";
-import MarkDailyAttendance from "./MarkDailyAttendance";
 import MonthlyReport from "./MonthlyReport";
 
 export default function AttendanceManagement() {
@@ -35,17 +34,6 @@ export default function AttendanceManagement() {
 
           <button
             className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "daily"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("daily")}
-          >
-            Mark Daily Attendance
-          </button>
-
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
               activeTab === "monthly"
                 ? "bg-[#02C39A] text-white"
                 : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
@@ -60,7 +48,6 @@ export default function AttendanceManagement() {
       {/* CONTENT */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
-        {activeTab === "daily" && <MarkDailyAttendance />}
         {activeTab === "monthly" && <MonthlyReport />}
       </div>
     </div>

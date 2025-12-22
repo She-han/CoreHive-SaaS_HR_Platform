@@ -101,6 +101,16 @@ public class AttendanceController {
         );
     }
 
+    //GET ALL TODAY ATTENDANCE
+    @GetMapping("/check-out/today")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayCheckOutList(HttpServletRequest request) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        List<TodayAttendanceDTO> employees = attendanceService.getEmployeesForCheckIn(orgUuid); // reuse existing method
+        return ResponseEntity.ok(new StandardResponse(200, "Today's attendance loaded", employees));
+    }
+
+
     // =========================================================
     // UPDATE ATTENDANCE STATUS
     // =========================================================

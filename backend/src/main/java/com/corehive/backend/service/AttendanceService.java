@@ -213,75 +213,64 @@ public class AttendanceService {
     public TodayAttendanceDTO updateAttendanceStatus(
             String orgUuid,
             Long employeeId,
-            Attendance.AttendanceStatus newStatus
-    ) {
-        LocalDate today = LocalDate.now();
-
-        Attendance attendance = attendanceRepository
-                .findByEmployeeIdAndAttendanceDate(employeeId, today)
-                .orElseThrow(() -> new AttendanceNotFoundException("Attendance not found"));
-
-        // DO NOT allow status change after checkout
-        if (attendance.getCheckOutTime() != null) {
-            throw new IllegalStateException("Cannot change status after checkout");
-        }
-
-        attendance.setStatus(newStatus);
-
-        attendanceRepository.save(attendance);
-
-        return TodayAttendanceDTO.builder()
-                .id(attendance.getId())
-                .employeeId(attendance.getEmployeeId())
-                .employeeCode(attendance.getEmployee().getEmployeeCode())
-                .employeeName(attendance.getEmployeeFullName())
-                .checkInTime(attendance.getCheckInTime())
-                .checkOutTime(attendance.getCheckOutTime())
-                .status(attendance.getStatus().name())
-                .isComplete(attendance.isComplete())
-                .build();
-    }
-
-
-    //OVERLOADING FOR UPDATE ATTENDANCE STATUS//
-    @Transactional
-    public TodayAttendanceDTO updateAttendanceStatus(
-            String orgUuid,
-            Long employeeId,
             Attendance.AttendanceStatus newStatus,
             LocalDateTime newCheckInTime
     ) {
         LocalDate today = LocalDate.now();
 
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
+
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndAttendanceDate(employeeId, today)
-                .orElseThrow(() -> new AttendanceNotFoundException("Attendance not found"));
+                .orElse(null); // 👈 important: allow null
 
-        if (attendance.getCheckOutTime() != null) {
-            throw new IllegalStateException("Cannot change status after checkout");
-        }
+        if (attendance == null) {
+            // If no record exists, create it
+            attendance = Attendance.builder()
+                    .organizationUuid(orgUuid)
+                    .employeeId(employeeId)
+                    .attendanceDate(today)
+                    .status(newStatus)
+                    .checkInTime(newCheckInTime) // optional, if passed
+                    .verificationType(Attendance.VerificationType.MANUAL)
+                    .build();
 
-        attendance.setStatus(newStatus);
+            // Prevent check-in for ABSENT or ON_LEAVE
+            if ((newStatus == Attendance.AttendanceStatus.ABSENT ||
+                    newStatus == Attendance.AttendanceStatus.ON_LEAVE)
+                    && newCheckInTime != null) {
+                throw new IllegalArgumentException("Cannot log check-in for ABSENT or ON_LEAVE status");
+            }
 
-        //  Update check-in time if provided
-        if (newCheckInTime != null) {
-            attendance.setCheckInTime(newCheckInTime);
+
+        } else {
+            // Update status if record exists
+            if (attendance.getCheckOutTime() != null) {
+                throw new IllegalStateException("Cannot change status after checkout");
+            }
+
+            attendance.setStatus(newStatus);
+
+            // If you pass check-in time, update it
+            if (newCheckInTime != null) {
+                attendance.setCheckInTime(newCheckInTime);
+            }
         }
 
         attendanceRepository.save(attendance);
 
         return TodayAttendanceDTO.builder()
                 .id(attendance.getId())
-                .employeeId(attendance.getEmployeeId())
-                .employeeCode(attendance.getEmployee().getEmployeeCode())
-                .employeeName(attendance.getEmployeeFullName())
+                .employeeId(emp.getId())
+                .employeeCode(emp.getEmployeeCode())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
                 .checkInTime(attendance.getCheckInTime())
                 .checkOutTime(attendance.getCheckOutTime())
                 .status(attendance.getStatus().name())
                 .isComplete(attendance.isComplete())
                 .build();
     }
-
 
 
     /**

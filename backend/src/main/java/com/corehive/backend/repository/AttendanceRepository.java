@@ -50,15 +50,20 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     /**
      * Get employees who have checked in but NOT checked out (pending checkouts)
      */
-    @Query("SELECT a FROM Attendance a LEFT JOIN FETCH a.employee " +
-            "WHERE a.organizationUuid = :orgUuid " +
-            "AND a.attendanceDate = :date " +
-            "AND a.checkInTime IS NOT NULL " +
-            "AND a.checkOutTime IS NULL " +
-            "AND a.status NOT IN ('ABSENT', 'ON_LEAVE') " +
-            "ORDER BY a.checkInTime ASC")
-    List<Attendance> findPendingCheckouts(@Param("orgUuid") String orgUuid,
-                                          @Param("date") LocalDate date);
+    @Query("""
+                SELECT a FROM Attendance a
+                JOIN FETCH a.employee e
+                WHERE a.organizationUuid = :orgUuid
+                AND a.attendanceDate = :date
+                AND a.checkInTime IS NOT NULL
+                AND a.checkOutTime IS NULL
+                AND a.status NOT IN ('ABSENT', 'ON_LEAVE')
+                """)
+    List<Attendance> findPendingCheckouts(
+            @Param("orgUuid") String orgUuid,
+            @Param("date") LocalDate date
+    );
+
 
     @Query("SELECT a FROM Attendance a WHERE a.organizationUuid = :orgUuid " +
             "AND a.attendanceDate BETWEEN :startDate AND :endDate " +

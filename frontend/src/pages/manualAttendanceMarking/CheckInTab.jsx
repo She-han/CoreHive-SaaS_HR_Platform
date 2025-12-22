@@ -7,6 +7,8 @@ const CheckInTab = ({ token }) => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const canCheckIn = (emp) => emp.status !== "ABSENT" && emp.status !== "ON_LEAVE" && emp.status === "NOT_CHECKED_IN";
+
   const STATUS_OPTIONS = [
     "PRESENT",
     "ABSENT",
@@ -37,6 +39,10 @@ const CheckInTab = ({ token }) => {
   };
 
   const handleStatusChange = async (employeeId, newStatus) => {
+    if ((newStatus === "ABSENT" || newStatus === "ON_LEAVE")) {
+    // optional: confirm with user
+    alert("Selecting ABSENT/ON_LEAVE will prevent check-in");
+  }
   try {
     const updated = await updateAttendanceStatus(
       employeeId,
@@ -152,6 +158,7 @@ const CheckInTab = ({ token }) => {
                     emp.status !== "ON_LEAVE" ? (
                     <button 
                       onClick={() => handleCheckIn(emp.employeeId)}
+                      disabled={!canCheckIn}
                       className="inline-flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 border-[#02C39A] text-[#02C39A] font-bold text-[10px] uppercase tracking-widest hover:bg-[#02C39A] hover:text-white transition-all active:scale-95 shadow-sm"
                     >
                       Check In

@@ -7,41 +7,7 @@ export default function EmployeeProfile() {
     <DashboardLayout>
       <div className="bg-gray-100 min-h-screen">
 
-        {/* NAVBAR */}
-        <nav className="w-full flex justify-between items-center px-10 py-4 bg-white shadow-sm">
-          
-          {/* Left */}
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-800">Employee Portal</h1>
-            <p className="text-sm text-gray-500">Welcome back, Sarah!</p>
-
-            {/* Menu Tabs */}
-            <div className="flex gap-6 mt-4 text-gray-600">
-              <button className="pb-2 border-b-2 border-blue-600 text-blue-600 font-medium">
-                Profile
-              </button>
-              <button className="hover:text-blue-600">Attendance</button>
-              <button className="hover:text-blue-600">Leave</button>
-              <button className="hover:text-blue-600">Payroll</button>
-              <button className="hover:text-blue-600">Notifications</button>
-              <button className="hover:text-blue-600">Surveys</button>
-              <button className="hover:text-blue-600">Performance</button>
-            </div>
-          </div>
-
-          {/* Right */}
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="font-semibold text-gray-800">Sarah Johnson</p>
-              <p className="text-sm text-gray-500">Senior Software Engineer</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white w-12 h-12 
-                            rounded-full flex items-center justify-center font-semibold">
-              SJ
-            </div>
-          </div>
-        </nav>
+    
 
         {/* MAIN PROFILE CARD */}
         <div className="px-10 mt-10">

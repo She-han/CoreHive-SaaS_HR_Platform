@@ -169,7 +169,7 @@ const token = user?.token;
 
       {/* SUMMARY CARDS */}
 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-  <SummaryCard title="Present Today" value={summary.PRESENT} statusKey="PRESENT" />
+  <SummaryCard title="Present" value={summary.PRESENT} statusKey="PRESENT" />
   <SummaryCard title="Absent" value={summary.ABSENT} statusKey="ABSENT" />
   <SummaryCard title="Late Entry" value={summary.LATE} statusKey="LATE" />
   <SummaryCard title="Half Day" value={summary.HALF_DAY} statusKey="HALF_DAY" />

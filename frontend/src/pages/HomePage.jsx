@@ -146,13 +146,13 @@ const HomePage = () => {
           />
           
           {/* Main Content */}
-          <div className="relative z-10 text-center p-6">
+          <div className="relative z-10 text-center p-6 ">
             {/* Main Image Container */}
             <motion.div
               style={{
                 transform: prefersReducedMotion ? undefined : "translateZ(100px)",
               }}
-              className="mx-auto mb-4 relative w-32 h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-[#02C39A]/10 to-[#05668D]/10"
+              className="mx-auto mb-4 relative w-90 h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-[#02C39A]/10 to-[#05668D]/10"
               whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
@@ -219,7 +219,7 @@ const HomePage = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              Join 500+ Companies
+              Joined 500+ Companies
             </motion.h3>
             
             {/* Subtitle */}
@@ -227,7 +227,7 @@ const HomePage = () => {
               style={{
                 transform: prefersReducedMotion ? undefined : "translateZ(30px)",
               }}
-              className="text-xl text-text-secondary mb-6"
+              className="text-xl lg:text-3xl text-text-secondary mb-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}

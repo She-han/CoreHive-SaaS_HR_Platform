@@ -120,7 +120,7 @@ const HomePage = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative h-96 w-full max-w-[550px] mx-auto rounded-xl bg-gradient-to-br from-[#02C39A] to-[#05668D] shadow-2xl"
+        className="relative h-96 w-full max-w-[550px] mx-auto rounded-xl bg-gradient-to-br from-[#02C39A]/40 to-[#05668D]/40 shadow-2xl"
         role="img"
         aria-label="Interactive 3D card showcasing CoreHive platform features"
       >
@@ -129,11 +129,22 @@ const HomePage = () => {
             transform: prefersReducedMotion ? undefined : "translateZ(75px)",
             transformStyle: "preserve-3d",
           }}
-          className="absolute inset-4 grid place-content-center rounded-xl bg-white shadow-lg overflow-hidden"
+          className="absolute inset-4 grid place-content-center rounded-xl overflow-hidden backdrop-blur-sm shadow-2xl"
         >
-          {/* Background Pattern */}
+          {/* Background Image */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-50"
+            style={{
+              backgroundImage: `url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1000&auto=format&fit=crop')`,
+            }}
+          />
+          
+          {/* Shadow Overlay Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50" />
+          
+          {/* Animated Background Pattern */}
           <motion.div 
-            className="absolute inset-0 bg-gradient-to-br from-[#F1FDF9] to-[#E0F9F4] opacity-40"
+            className="absolute inset-0 bg-gradient-to-br from-[#02C39A]/40 to-[#05668D]/30"
             animate={{
               backgroundPosition: ['0% 0%', '100% 100%'],
             }}
@@ -146,67 +157,47 @@ const HomePage = () => {
           />
           
           {/* Main Content */}
-          <div className="relative z-10 text-center p-6 ">
+          <div className="relative z-10 text-center p-6">
             {/* Main Image Container */}
             <motion.div
               style={{
                 transform: prefersReducedMotion ? undefined : "translateZ(100px)",
               }}
-              className="mx-auto mb-4 relative w-90 h-32 overflow-hidden rounded-2xl bg-gradient-to-br from-[#02C39A]/10 to-[#05668D]/10"
+              className="mx-auto mb-6 relative w-full max-w-md h-24 overflow-visible rounded-2xl"
               whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              {/* Professional HR Illustration */}
+              {/* Professional HR Illustration - 4 Icons in a Row */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <motion.div 
-                  className="relative w-24 h-24"
-                  initial={{ rotate: 0 }}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                >
-                  {/* Team/People Icons */}
-                  <div className="grid grid-cols-2 gap-1">
-                    {[
-                      { Icon: Users, color: 'bg-[#02C39A]', delay: 0 },
-                      { Icon: BarChart3, color: 'bg-[#05668D]', delay: 0.1 },
-                      { Icon: DollarSign, color: 'bg-[#1ED292]', delay: 0.2 },
-                      { Icon: Clock, color: 'bg-[#0C397A]', delay: 0.3 }
-                    ].map(({ Icon, color, delay }, idx) => (
-                      <motion.div
-                        key={idx}
-                        className={`${color} rounded-full flex items-center justify-center aspect-square`}
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ 
-                          delay: delay,
-                          type: "spring",
-                          stiffness: 200,
-                          damping: 15
-                        }}
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                      >
-                        <Icon className="w-4 h-4 text-white" aria-hidden="true" />
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
+                <div className="flex gap-3 items-center justify-center w-full px-4">
+                  {[
+                    { Icon: Users, color: 'bg-[#02C39A]', delay: 0 },
+                    { Icon: BarChart3, color: 'bg-[#05668D]', delay: 0.1 },
+                    { Icon: DollarSign, color: 'bg-[#1ED292]', delay: 0.2 },
+                    { Icon: Clock, color: 'bg-[#0C397A]', delay: 0.3 }
+                  ].map(({ Icon, color, delay }, idx) => (
+                    <motion.div
+                      key={idx}
+                      className={`${color} rounded-full flex items-center justify-center w-16 h-16 shadow-lg`}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        delay: delay,
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 15
+                      }}
+                      whileHover={{ 
+                        scale: 1.1, 
+                        
+                        transition: { duration: 0.6 }
+                      }}
+                    >
+                      <Icon className="w-7 h-7 text-white" aria-hidden="true" />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              
-              {/* Animated pulse effect */}
-              {!prefersReducedMotion && (
-                <motion.div
-                  className="absolute inset-0 bg-[#02C39A] rounded-2xl opacity-20"
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.2, 0.1, 0.2],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                />
-              )}
             </motion.div>
             
             {/* Title */}
@@ -214,7 +205,7 @@ const HomePage = () => {
               style={{
                 transform: prefersReducedMotion ? undefined : "translateZ(40px)",
               }}
-              className="text-xl font-bold text-text-primary mb-2"
+              className="text-2xl font-bold text-white mb-2 drop-shadow-lg"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -227,7 +218,7 @@ const HomePage = () => {
               style={{
                 transform: prefersReducedMotion ? undefined : "translateZ(30px)",
               }}
-              className="text-xl lg:text-3xl text-text-secondary mb-6"
+              className="text-lg text-white/90 mb-6 drop-shadow-md"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
@@ -252,12 +243,15 @@ const HomePage = () => {
               ].map((stat, idx) => (
                 <motion.div 
                   key={idx}
-                  className="text-center"
+                  className="text-center bg-white/20 backdrop-blur-sm rounded-lg py-3 px-2"
                   variants={fadeInUpVariants}
-                  whileHover={{ scale: prefersReducedMotion ? 1 : 1.1 }}
+                  whileHover={{ 
+                    scale: prefersReducedMotion ? 1 : 1.1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)'
+                  }}
                 >
-                  <div className="text-2xl font-bold text-[#02C39A]">{stat.value}</div>
-                  <div className="text-text-secondary">{stat.label}</div>
+                  <div className="text-2xl font-bold text-white drop-shadow-lg">{stat.value}</div>
+                  <div className="text-white/80 text-sm">{stat.label}</div>
                 </motion.div>
               ))}
             </motion.div>

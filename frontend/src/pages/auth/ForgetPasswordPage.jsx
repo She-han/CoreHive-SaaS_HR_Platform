@@ -8,6 +8,7 @@ import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/layout/Footer';
 
 export const ForgetPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -52,7 +53,7 @@ export const ForgetPasswordPage = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-background-primary flex items-center justify-center py-12 px-4">
+      <div className=" bg-background-primary flex items-center justify-center py-16 px-4">
         <div className="max-w-md w-full">
           <Card className="bg-white shadow-lg">
             <div className="text-center mb-6">
@@ -106,6 +107,7 @@ export const ForgetPasswordPage = () => {
           </Card>
         </div>
       </div>
+      <Footer/>
     </>
   );
 };

@@ -43,7 +43,6 @@ import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
-import LeaveManagement from './pages/hrstaff/LeaveManagement';
 import HiringManagement from './pages/hrstaff/HiringManagement';
 import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
 import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
@@ -59,6 +58,7 @@ import ViewSurveyQuestions from './components/hrstaff/feedBackManagement/ViewSur
 import ViewResponsesWithQuestions from './pages/hrstaff/feedBackManagement/ViewResponsesWithQuestions';
 import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSurveyQuestions';
 import AttendanceMarking from './pages/manualAttendanceMarking/AttendanceMarking';
+import LeaveManagement from './pages/hrstaff/LeaveManagement/LeaveManagement';
 
 // Employee Pages
 import EmployeeProfile from './pages/employee/EmployeeProfile';
@@ -307,7 +307,7 @@ const HRStaffRoutes = () => {
         <Route path="feedback/:id/questions" element={<ViewSurveyQuestions />} />
         <Route path="feedback/:id/responses" element={<ViewResponsesWithQuestions />} />
         <Route path="feedback/:id/edit" element={<EditSurveyQuestions />} />
-        
+        <Route path="leavemanagement" element={<LeaveManagement />} />
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>

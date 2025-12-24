@@ -16,6 +16,9 @@ import com.corehive.backend.exception.feedbackSurveyException.SurveyResponseNotF
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
+import com.corehive.backend.exception.leaveException.InsufficientLeaveBalanceException;
+import com.corehive.backend.exception.leaveException.LeaveRequestNotFoundException;
+import com.corehive.backend.exception.leaveException.LeaveTypeNotFoundException;
 import com.corehive.backend.util.StandardResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -180,5 +183,40 @@ public class AppWideException {
         );
     }
 
+    // ============================================================
+    // LEAVE EXCEPTIONS
+    // ============================================================
+    @ExceptionHandler(LeaveTypeNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleLeaveTypeNotFound(LeaveTypeNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new StandardResponse(
+                        404,
+                        "Leave type is not found",
+                        null
+                ));
+    }
+
+    @ExceptionHandler(LeaveRequestNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleLeaveRequestNotFound(LeaveRequestNotFoundException ex) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new StandardResponse(
+                        404,
+                        "Leave Request is not found",
+                        null
+                ));
+    }
+
+    @ExceptionHandler(InsufficientLeaveBalanceException.class)
+    public ResponseEntity<StandardResponse> handleInsufficientLeaveBalance(
+            InsufficientLeaveBalanceException ex
+    ) {
+
+        return new ResponseEntity<>(
+                new StandardResponse(409, "Insufficient leave balance", null),
+                HttpStatus.BAD_REQUEST
+        );
+    }
 
 }

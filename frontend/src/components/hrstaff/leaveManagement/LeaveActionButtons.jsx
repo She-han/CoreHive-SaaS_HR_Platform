@@ -1,3 +1,4 @@
+import React from "react";
 import { approveLeaveRequest } from "../../../api/leaveRequestApi";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../store/slices/authSlice";
@@ -8,48 +9,48 @@ export default function LeaveActionButtons({ leave, reload }) {
   const token = user?.token;
 
   const handleAction = async (approve) => {
-    const confirmMsg = approve
-      ? "Approve this leave request?"
-      : "Reject this leave request?";
+    const actionType = approve ? "approve" : "reject";
+    const confirmMsg = `Are you sure you want to ${actionType} this leave request?`;
 
     if (!window.confirm(confirmMsg)) return;
 
-    await approveLeaveRequest(leave.requestId, approve, token);
-    reload();
+    try {
+      await approveLeaveRequest(leave.requestId, approve, token);
+      reload();
+    } catch (error) {
+      console.error("Action failed:", error);
+      alert("Failed to process request. Please try again.");
+    }
   };
 
-  // Already processed
+  // If status is not PENDING, show a neutral "Processed" label
   if (leave.status !== "PENDING") {
     return (
-      <span className="text-xs text-[#9B9B9B] italic">
-        No action
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded border border-slate-100">
+        Processed
       </span>
     );
   }
 
   return (
-    <div className="flex gap-2 justify-center">
-      {/* APPROVE */}
+    <div className="flex items-center gap-2 justify-end">
+      {/* APPROVE BUTTON */}
       <button
         onClick={() => handleAction(true)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg
-          bg-[#02C39A] text-white text-xs font-semibold
-          hover:bg-[#1ED292] transition"
+        className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#02C39A] text-white text-[11px] font-bold uppercase tracking-wider hover:bg-[#1ED292] transition-all shadow-sm hover:shadow-md active:scale-95"
         title="Approve Leave"
       >
-        <Check size={14} />
+        <Check size={14} strokeWidth={3} className="transition-transform group-hover:scale-110" />
         Approve
       </button>
 
-      {/* REJECT */}
+      {/* REJECT BUTTON */}
       <button
         onClick={() => handleAction(false)}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg
-          bg-[#0C397A] text-white text-xs font-semibold
-          hover:bg-[#05668D] transition"
+        className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold uppercase tracking-wider hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm active:scale-95"
         title="Reject Leave"
       >
-        <X size={14} />
+        <X size={14} strokeWidth={3} className="transition-transform group-hover:rotate-90" />
         Reject
       </button>
     </div>

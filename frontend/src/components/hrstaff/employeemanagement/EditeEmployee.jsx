@@ -7,7 +7,7 @@ import * as designationApi from "../../../api/designationApi";
 import { Camera, RefreshCw, Check, User, X, Plus, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 
 // ===== Face API =====
-const AI_SERVICE_URL = 'http://localhost:8001';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
 
 const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();

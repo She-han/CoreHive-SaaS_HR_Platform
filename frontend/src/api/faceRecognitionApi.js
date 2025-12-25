@@ -3,7 +3,7 @@
  * Connects to Python AI Service + Java Backend
  */
 
-const AI_SERVICE_URL = 'http://localhost:8001';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
 const JAVA_BACKEND_URL = 'http://localhost:8080/api';
 
 // ===== Helper Functions =====

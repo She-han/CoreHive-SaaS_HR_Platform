@@ -279,34 +279,7 @@ const LoginPage = () => {
             </Button>
           </form>
           
-          {/* Demo login buttons (development only) */}
-          {import.meta.env.DEV && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-center text-text-secondary mb-3">
-                Demo Logins (Development Only)
-              </p>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('admin')}
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  Login as System Admin
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('org')}
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  Login as Org Admin
-                </Button>
-              </div>
-            </div>
-          )}
+        
           
           {/* Sign up link */}
           <div className="mt-6 text-center">

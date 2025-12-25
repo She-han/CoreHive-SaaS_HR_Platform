@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     - Validates types
     - Provides helpful error messages if required vars are missing
     """
+     # Azure Blob Storage Settings
+    AZURE_STORAGE_CONNECTION_STRING: str = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "")
+    AZURE_PHOTOS_CONTAINER: str = os.getenv("AZURE_PHOTOS_CONTAINER", "employee-photos")
+    AZURE_EMBEDDINGS_CONTAINER: str = os.getenv("AZURE_EMBEDDINGS_CONTAINER", "face-embeddings")
+    
+    # Use Azure Storage in production, local in development
+    USE_AZURE_STORAGE: bool = os.getenv("USE_AZURE_STORAGE", "false").lower() == "true"
     
     # ----- Application Settings -----
     APP_NAME: str = "CoreHive AI Service"

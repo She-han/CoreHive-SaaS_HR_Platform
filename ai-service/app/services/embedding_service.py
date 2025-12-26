@@ -1,11 +1,11 @@
 """
-Face Embedding Service - Updated to use Storage Service
+Face Embedding Service - With Azure Blob Storage Support
+Handles face embedding extraction, storage, and comparison.
 """
 
 import logging
 import numpy as np
-from typing import Optional, Dict, List, Tuple
-from pathlib import Path
+from typing import Optional, Dict, Tuple
 
 from app.services.storage_service import get_storage_service
 
@@ -20,6 +20,7 @@ try:
     logger.info("DeepFace dependencies loaded successfully")
 except ImportError as e:
     logger.warning(f"DeepFace dependencies not available: {e}")
+
 
 class EmbeddingService:
     """Face embedding service with Azure/Local storage support."""
@@ -36,10 +37,13 @@ class EmbeddingService:
     
     def get_embedding_from_image(self, image_data: bytes) -> Optional[np.ndarray]:
         """Extract face embedding from image bytes."""
+        if not DEEPFACE_AVAILABLE:
+            logger.error("DeepFace not available")
+            return None
+            
         try:
             from deepface import DeepFace
             import cv2
-            import numpy as np
             
             # Convert bytes to numpy array
             nparr = np.frombuffer(image_data, np.uint8)
@@ -48,6 +52,8 @@ class EmbeddingService:
             if img is None:
                 logger.error("Failed to decode image")
                 return None
+            
+            logger.info(f"Image decoded: {img.shape}")
             
             # Get embedding
             result = DeepFace.represent(
@@ -58,7 +64,9 @@ class EmbeddingService:
             )
             
             if result and len(result) > 0:
-                return np.array(result[0]["embedding"])
+                embedding = np.array(result[0]["embedding"])
+                logger.info(f"Embedding extracted: {embedding.shape}")
+                return embedding
             
             return None
             
@@ -70,45 +78,65 @@ class EmbeddingService:
                          image_data: bytes) -> Tuple[bool, str]:
         """
         Register an employee's face.
-        Returns (success, message)
+        
+        Args:
+            organization_uuid: Organization's unique identifier
+            employee_id: Employee's unique identifier
+            image_data: Raw image bytes
+            
+        Returns:
+            Tuple of (success: bool, message: str)
         """
         try:
+            logger.info(f"Registering employee {employee_id} for org {organization_uuid}")
+            
             # 1. Extract embedding from image
             embedding = self.get_embedding_from_image(image_data)
             
             if embedding is None:
-                return False, "No face detected in image"
+                return False, "No face detected in image. Please ensure face is clearly visible."
             
-            # 2. Save photo
-            self.storage.save_photo(organization_uuid, employee_id, image_data)
+            logger.info(f"Face detected, embedding extracted")
+            
+            # 2. Save photo to storage (Azure Blob or Local)
+            photo_path = self.storage.save_photo(
+                organization_uuid=organization_uuid,
+                employee_id=str(employee_id),
+                photo_data=image_data,
+                filename=f"{employee_id}.jpg"
+            )
+            logger.info(f"Photo saved: {photo_path}")
             
             # 3. Load existing embeddings for organization
             org_embeddings = self.storage.get_embedding(organization_uuid) or {}
             
             # 4. Add/update employee embedding
-            org_embeddings[employee_id] = {
+            org_embeddings[str(employee_id)] = {
                 "embedding": embedding.tolist(),
-                "employee_id": employee_id
+                "employee_id": str(employee_id)
             }
             
             # 5. Save updated embeddings
             self.storage.save_embedding(organization_uuid, org_embeddings)
+            logger.info(f"Embeddings saved for org {organization_uuid}")
             
             # 6. Update cache
             self._embedding_cache[organization_uuid] = org_embeddings
             
-            logger.info(f"Employee {employee_id} registered successfully for org {organization_uuid}")
+            logger.info(f"✅ Employee {employee_id} registered successfully for org {organization_uuid}")
             return True, "Face registered successfully"
             
         except Exception as e:
-            logger.error(f"Failed to register employee: {e}")
+            logger.error(f"Failed to register employee: {e}", exc_info=True)
             return False, f"Registration failed: {str(e)}"
     
     def identify_employee(self, organization_uuid: str, 
                          image_data: bytes) -> Tuple[Optional[str], float, str]:
         """
         Identify an employee from an image.
-        Returns (employee_id, confidence, message)
+        
+        Returns:
+            Tuple of (employee_id, similarity, message)
         """
         try:
             # 1. Extract embedding from input image
@@ -123,6 +151,8 @@ class EmbeddingService:
             if not org_embeddings:
                 return None, 0.0, "No registered employees found"
             
+            logger.info(f"Comparing against {len(org_embeddings)} registered employees")
+            
             # 3. Find best match
             best_match_id = None
             best_similarity = 0.0
@@ -130,6 +160,8 @@ class EmbeddingService:
             for emp_id, data in org_embeddings.items():
                 stored_embedding = np.array(data["embedding"])
                 similarity = self._cosine_similarity(input_embedding, stored_embedding)
+                
+                logger.debug(f"Employee {emp_id}: similarity = {similarity:.4f}")
                 
                 if similarity > best_similarity:
                     best_similarity = similarity
@@ -140,11 +172,54 @@ class EmbeddingService:
                 logger.info(f"Employee identified: {best_match_id} (confidence: {best_similarity:.2%})")
                 return best_match_id, best_similarity, "Employee identified successfully"
             else:
+                logger.warning(f"Best match {best_match_id} below threshold: {best_similarity:.2%} < {self.similarity_threshold:.2%}")
                 return None, best_similarity, "Face not recognized"
                 
         except Exception as e:
-            logger.error(f"Failed to identify employee: {e}")
+            logger.error(f"Failed to identify employee: {e}", exc_info=True)
             return None, 0.0, f"Identification failed: {str(e)}"
+    
+    def verify_employee(self, organization_uuid: str, employee_id: str,
+                       image_data: bytes) -> Tuple[bool, float, str]:
+        """
+        Verify if a face matches a specific employee.
+        
+        Returns:
+            Tuple of (verified: bool, similarity: float, message: str)
+        """
+        try:
+            # 1. Extract embedding from input image
+            input_embedding = self.get_embedding_from_image(image_data)
+            
+            if input_embedding is None:
+                return False, 0.0, "No face detected in image"
+            
+            # 2. Get organization embeddings
+            org_embeddings = self._get_org_embeddings(organization_uuid)
+            
+            if not org_embeddings:
+                return False, 0.0, "No registered employees found"
+            
+            # 3. Check if employee exists
+            employee_id_str = str(employee_id)
+            if employee_id_str not in org_embeddings:
+                return False, 0.0, f"Employee {employee_id} is not registered"
+            
+            # 4. Compare embeddings
+            stored_embedding = np.array(org_embeddings[employee_id_str]["embedding"])
+            similarity = self._cosine_similarity(input_embedding, stored_embedding)
+            
+            # 5. Check threshold
+            if similarity >= self.similarity_threshold:
+                logger.info(f"Verification successful for {employee_id}: {similarity:.2%}")
+                return True, similarity, "Face verified successfully"
+            else:
+                logger.warning(f"Verification failed for {employee_id}: {similarity:.2%}")
+                return False, similarity, "Face does not match"
+                
+        except Exception as e:
+            logger.error(f"Failed to verify employee: {e}", exc_info=True)
+            return False, 0.0, f"Verification failed: {str(e)}"
     
     def deregister_employee(self, organization_uuid: str, employee_id: str) -> Tuple[bool, str]:
         """Remove an employee's face registration."""
@@ -152,15 +227,21 @@ class EmbeddingService:
             # 1. Load embeddings
             org_embeddings = self.storage.get_embedding(organization_uuid) or {}
             
+            employee_id_str = str(employee_id)
+            
             # 2. Remove employee
-            if employee_id in org_embeddings:
-                del org_embeddings[employee_id]
+            if employee_id_str in org_embeddings:
+                del org_embeddings[employee_id_str]
                 
                 # 3. Save updated embeddings
-                self.storage.save_embedding(organization_uuid, org_embeddings)
+                if org_embeddings:
+                    self.storage.save_embedding(organization_uuid, org_embeddings)
+                else:
+                    # Delete the embedding file if no employees left
+                    self.storage.delete_embedding(organization_uuid)
                 
                 # 4. Delete photo
-                self.storage.delete_photo(organization_uuid, employee_id)
+                self.storage.delete_photo(organization_uuid, employee_id_str)
                 
                 # 5. Update cache
                 self._embedding_cache[organization_uuid] = org_embeddings
@@ -168,10 +249,10 @@ class EmbeddingService:
                 logger.info(f"Employee {employee_id} deregistered from org {organization_uuid}")
                 return True, "Face deregistered successfully"
             else:
-                return False, "Employee not found"
+                return False, "Employee not found or not registered"
                 
         except Exception as e:
-            logger.error(f"Failed to deregister employee: {e}")
+            logger.error(f"Failed to deregister employee: {e}", exc_info=True)
             return False, f"Deregistration failed: {str(e)}"
     
     def get_registration_status(self, organization_uuid: str, 
@@ -179,7 +260,8 @@ class EmbeddingService:
         """Check if employee is registered."""
         org_embeddings = self._get_org_embeddings(organization_uuid)
         
-        is_registered = employee_id in org_embeddings if org_embeddings else False
+        employee_id_str = str(employee_id)
+        is_registered = employee_id_str in org_embeddings if org_embeddings else False
         
         return {
             "employee_id": employee_id,

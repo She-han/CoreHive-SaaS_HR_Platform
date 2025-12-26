@@ -11,6 +11,16 @@ from app.services.storage_service import get_storage_service
 
 logger = logging.getLogger(__name__)
 
+# Check if DeepFace dependencies are available
+DEEPFACE_AVAILABLE = False
+try:
+    from deepface import DeepFace
+    import cv2
+    DEEPFACE_AVAILABLE = True
+    logger.info("DeepFace dependencies loaded successfully")
+except ImportError as e:
+    logger.warning(f"DeepFace dependencies not available: {e}")
+
 class EmbeddingService:
     """Face embedding service with Azure/Local storage support."""
     

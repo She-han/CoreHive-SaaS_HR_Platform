@@ -29,18 +29,29 @@ const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   return data;
 };
 
-const checkFaceStatus = async (employeeId, organizationUuid) => {
+// Face status check with timeout to prevent blocking UI
+const checkFaceStatusWithTimeout = async (employeeId, organizationUuid, timeoutMs = 5000) => {
   try {
-    // IMPORTANT: Use FULL organization UUID, not partial
-    const response = await fetch(`${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    const response = await fetch(
+      `${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+    
     if (!response.ok) return { registered: false };
     
     const data = await response.json();
     console.log("Face status check result:", data);
-    
     return data;
   } catch (error) {
-    console.error("Face status check failed:", error);
+    if (error.name === 'AbortError') {
+      console.warn("Face status check timed out after", timeoutMs, "ms");
+    } else {
+      console.error("Face status check failed:", error);
+    }
     return { registered: false };
   }
 };
@@ -85,7 +96,7 @@ export default function EditEmployee() {
     department: "",
     email: "",
     phone: "",
-    nationalId: "",  // ADD THIS
+    nationalId: "",
     salaryType: "MONTHLY",
     basicSalary: "",
     leaveCount: "",
@@ -100,8 +111,14 @@ export default function EditEmployee() {
         const orgUuid = user.organizationUuid;
         setOrganizationUuid(orgUuid);
 
-        // Load employee - FIX: Handle ApiResponse wrapper
-        const employeeRes = await apiClient.get(`/employees/${id}`);
+        // ========== PARALLEL LOADING - Much faster! ==========
+        // Load employee, departments, and designations simultaneously
+        const [employeeRes, deptRes, designationRes] = await Promise.all([
+          apiClient.get(`/employees/${id}`),
+          apiClient.get("/org-admin/departments"),
+          designationApi.getAllDesignations()
+        ]);
+
         console.log("Employee response:", employeeRes.data);
         
         // Extract employee data from ApiResponse wrapper
@@ -116,7 +133,7 @@ export default function EditEmployee() {
           department: empData.departmentId || "",
           email: empData.email || "",
           phone: empData.phone || "",
-          nationalId: empData.nationalId || "",  // ADD THIS
+          nationalId: empData.nationalId || "",
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
           leaveCount: empData.leaveCount || "",
@@ -124,22 +141,30 @@ export default function EditEmployee() {
           status: empData.isActive !== false ? "Active" : "NonActive",
         });
 
-        // Check face status
-        if (orgUuid) {
-          const status = await checkFaceStatus(empData.id, orgUuid);
-          setFaceRegistered(status.registered);
-        }
-        setCheckingFaceStatus(false);
-
-        // Load departments - Handle ApiResponse wrapper
-        const deptRes = await apiClient.get("/org-admin/departments");
+        // Set departments
         setDepartments(deptRes.data.data || deptRes.data || []);
 
-        // Load designations - Handle ApiResponse wrapper
-        const designationRes = await designationApi.getAllDesignations();
+        // Set designations
         const desigData = designationRes.data || designationRes.data.data || [];
         setDesignations(desigData);
         setFilteredDesignations(desigData);
+
+        // ========== NON-BLOCKING FACE STATUS CHECK ==========
+        // Check face status SEPARATELY with timeout - doesn't block UI loading
+        if (orgUuid && empData.id) {
+          // Don't await - let it run in background
+          checkFaceStatusWithTimeout(empData.id, orgUuid, 5000)
+            .then(status => {
+              setFaceRegistered(status.registered);
+              setCheckingFaceStatus(false);
+            })
+            .catch(() => {
+              setFaceRegistered(false);
+              setCheckingFaceStatus(false);
+            });
+        } else {
+          setCheckingFaceStatus(false);
+        }
 
       } catch (error) {
         console.error("Error loading data:", error);
@@ -148,6 +173,7 @@ export default function EditEmployee() {
           title: 'Error', 
           text: 'Failed to load employee data' 
         });
+        setCheckingFaceStatus(false);
       } finally {
         setIsLoading(false);
       }
@@ -257,7 +283,7 @@ export default function EditEmployee() {
         department: formData.department,
         email: formData.email,
         phone: formData.phone,
-        nationalId: formData.nationalId,  // ADD THIS
+        nationalId: formData.nationalId,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
         leaveCount: formData.leaveCount,
@@ -352,7 +378,6 @@ export default function EditEmployee() {
                 <input name="lastName" value={formData.lastName} onChange={handleChange} className="input-box" required />
               </Field>
               
-              {/* National ID Field - ADD THIS */}
               <Field label="National ID" required>
                 <input name="nationalId" value={formData.nationalId} onChange={handleChange} className="input-box" required />
               </Field>

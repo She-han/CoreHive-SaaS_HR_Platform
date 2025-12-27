@@ -5,7 +5,7 @@ Handles face embedding extraction, storage, and comparison.
 
 import logging
 import numpy as np
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, Any
 
 from app.services.storage_service import get_storage_service
 
@@ -74,6 +74,37 @@ class EmbeddingService:
             logger.error(f"Failed to extract embedding: {e}")
             return None
     
+    def _extract_embedding_from_data(self, data: Any, emp_id: str) -> Optional[np.ndarray]:
+        """
+        Extract embedding array from various data formats.
+        Handles both old and new storage formats.
+        
+        Supported formats:
+        - {"embedding": [...], "employee_id": "..."} (new format)
+        - [...] (direct array - old format)
+        - np.ndarray (direct numpy array)
+        """
+        try:
+            if isinstance(data, dict):
+                if "embedding" in data:
+                    # New format: {"embedding": [...], "employee_id": "..."}
+                    return np.array(data["embedding"])
+                else:
+                    logger.warning(f"Dict without 'embedding' key for employee {emp_id}: {list(data.keys())}")
+                    return None
+            elif isinstance(data, (list, tuple)):
+                # Old format: direct embedding array
+                return np.array(data)
+            elif isinstance(data, np.ndarray):
+                # Already numpy array
+                return data
+            else:
+                logger.warning(f"Unknown data type for employee {emp_id}: {type(data)}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to extract embedding for {emp_id}: {e}")
+            return None
+    
     def register_employee(self, organization_uuid: str, employee_id: str, 
                          image_data: bytes) -> Tuple[bool, str]:
         """
@@ -110,7 +141,7 @@ class EmbeddingService:
             # 3. Load existing embeddings for organization
             org_embeddings = self.storage.get_embedding(organization_uuid) or {}
             
-            # 4. Add/update employee embedding
+            # 4. Add/update employee embedding (consistent format)
             org_embeddings[str(employee_id)] = {
                 "embedding": embedding.tolist(),
                 "employee_id": str(employee_id)
@@ -153,22 +184,41 @@ class EmbeddingService:
             
             logger.info(f"Comparing against {len(org_embeddings)} registered employees")
             
+            # Debug: Log data structure
+            if org_embeddings:
+                first_key = next(iter(org_embeddings.keys()))
+                first_value = org_embeddings[first_key]
+                logger.debug(f"Data structure - Key: {first_key}, Value type: {type(first_value)}")
+                if isinstance(first_value, dict):
+                    logger.debug(f"Dict keys: {list(first_value.keys())}")
+            
             # 3. Find best match
             best_match_id = None
             best_similarity = 0.0
             
             for emp_id, data in org_embeddings.items():
-                stored_embedding = np.array(data["embedding"])
-                similarity = self._cosine_similarity(input_embedding, stored_embedding)
-                
-                logger.debug(f"Employee {emp_id}: similarity = {similarity:.4f}")
-                
-                if similarity > best_similarity:
-                    best_similarity = similarity
-                    best_match_id = emp_id
+                try:
+                    # Handle different data formats
+                    stored_embedding = self._extract_embedding_from_data(data, emp_id)
+                    
+                    if stored_embedding is None:
+                        logger.warning(f"Skipping employee {emp_id} - invalid embedding data")
+                        continue
+                    
+                    similarity = self._cosine_similarity(input_embedding, stored_embedding)
+                    
+                    logger.debug(f"Employee {emp_id}: similarity = {similarity:.4f}")
+                    
+                    if similarity > best_similarity:
+                        best_similarity = similarity
+                        best_match_id = emp_id
+                        
+                except Exception as emp_error:
+                    logger.warning(f"Error processing employee {emp_id}: {emp_error}")
+                    continue
             
             # 4. Check threshold
-            if best_similarity >= self.similarity_threshold:
+            if best_match_id and best_similarity >= self.similarity_threshold:
                 logger.info(f"Employee identified: {best_match_id} (confidence: {best_similarity:.2%})")
                 return best_match_id, best_similarity, "Employee identified successfully"
             else:
@@ -205,8 +255,13 @@ class EmbeddingService:
             if employee_id_str not in org_embeddings:
                 return False, 0.0, f"Employee {employee_id} is not registered"
             
-            # 4. Compare embeddings
-            stored_embedding = np.array(org_embeddings[employee_id_str]["embedding"])
+            # 4. Get stored embedding - handle different formats
+            emp_data = org_embeddings[employee_id_str]
+            stored_embedding = self._extract_embedding_from_data(emp_data, employee_id_str)
+            
+            if stored_embedding is None:
+                return False, 0.0, f"Invalid embedding data for employee {employee_id}"
+            
             similarity = self._cosine_similarity(input_embedding, stored_embedding)
             
             # 5. Check threshold
@@ -286,6 +341,15 @@ class EmbeddingService:
     def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
         """Calculate cosine similarity between two vectors."""
         return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    
+    def clear_cache(self, organization_uuid: str = None):
+        """Clear embedding cache. Useful after manual data changes."""
+        if organization_uuid:
+            self._embedding_cache.pop(organization_uuid, None)
+            logger.info(f"Cache cleared for org {organization_uuid}")
+        else:
+            self._embedding_cache.clear()
+            logger.info("All embedding cache cleared")
 
 
 # Singleton instance

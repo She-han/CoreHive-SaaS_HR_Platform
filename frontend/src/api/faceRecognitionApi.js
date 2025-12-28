@@ -121,7 +121,7 @@ export const deregisterFace = async (employeeId, organizationUuid) => {
   return await response.json();
 };
 
-// ===== Java Backend APIs =====
+// ===== Java Backend APIs ===
 
 /**
  * Mark CHECK-IN in database (after face identified)

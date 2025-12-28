@@ -14,8 +14,7 @@ import {
 
 // ===== Configuration =====
 const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
-const JAVA_BACKEND_URL = 'http://localhost:8080/api';
-
+const JAVA_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 // ===== Helper Functions =====
 const getAuthToken = () => {
   const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');

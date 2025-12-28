@@ -22,6 +22,8 @@ import Button from '../common/Button';
 import Card from '../common/Card';
 import { approveOrganization, rejectOrganization } from '../../store/slices/adminSlice';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+
 /**
  * Organization Review Modal Component
  * Shows detailed organization information for admin approval
@@ -35,6 +37,85 @@ const OrganizationReviewModal = ({
 }) => {
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const getDocumentUrl = (documentPath) => {
+    if (!documentPath) return null;
+    
+    if (documentPath.includes('blob.core.windows.net')) {
+      return `${API_BASE_URL}/files/business-registration/download-url?documentPath=${encodeURIComponent(documentPath)}`;
+    }
+    
+    const filename = documentPath.split('/').pop();
+    return `${API_BASE_URL}/files/business-registration/${filename}`;
+  };
+
+  const handleViewDocument = async (documentPath) => {
+    if (!documentPath) return;
+    
+    try {
+      const token = localStorage.getItem('corehive_token');
+      
+      if (documentPath.includes('blob.core.windows.net')) {
+        const response = await fetch(getDocumentUrl(documentPath), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        window.open(data.downloadUrl, '_blank');
+      } else {
+        const filename = documentPath.split('/').pop();
+        const response = await fetch(`${API_BASE_URL}/files/business-registration/${filename}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      alert('Failed to view document. Please try again.');
+    }
+  };
+
+  const handleDownloadDocument = async (documentPath) => {
+    if (!documentPath) return;
+    
+    try {
+      const token = localStorage.getItem('corehive_token');
+      const filename = documentPath.split('/').pop();
+      
+      if (documentPath.includes('blob.core.windows.net')) {
+        const response = await fetch(getDocumentUrl(documentPath), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        const blob = await fetch(data.downloadUrl).then(r => r.blob());
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } else {
+        const response = await fetch(`${API_BASE_URL}/files/business-registration/${filename}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      alert('Failed to download document. Please try again.');
+    }
+  };
 
   // Handle approve action
   const handleApprove = async () => {
@@ -260,55 +341,14 @@ const OrganizationReviewModal = ({
                 </div>
                 
               <div className="flex space-x-2">
-                <a
-                  href={`http://localhost:8080/api/files/business-registration/${organization.businessRegistrationDocument.split('/').pop()}?token=${localStorage.getItem('corehive_token')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Open file in new tab with token
-                    const filename = organization.businessRegistrationDocument.split('/').pop();
-                    const token = localStorage.getItem('corehive_token');
-                    
-                    fetch(`http://localhost:8080/api/files/business-registration/${filename}`, {
-                      headers: {
-                        'Authorization': `Bearer ${token}`
-                      }
-                    })
-                    .then(response => response.blob())
-                    .then(blob => {
-                      const url = window.URL.createObjectURL(blob);
-                      window.open(url, '_blank');
-                    })
-                    .catch(error => console.error('Error viewing document:', error));
-                  }}
+                <button
+                  onClick={() => handleViewDocument(organization.businessRegistrationDocument)}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
                 >
                   View Document
-                </a>
+                </button>
                 <button
-                  onClick={() => {
-                    const filename = organization.businessRegistrationDocument.split('/').pop();
-                    const token = localStorage.getItem('corehive_token');
-                    
-                    fetch(`http://localhost:8080/api/files/business-registration/${filename}`, {
-                      headers: {
-                        'Authorization': `Bearer ${token}`
-                      }
-                    })
-                    .then(response => response.blob())
-                    .then(blob => {
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = filename;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      window.URL.revokeObjectURL(url);
-                    })
-                    .catch(error => console.error('Error downloading document:', error));
-                  }}
+                  onClick={() => handleDownloadDocument(organization.businessRegistrationDocument)}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-medium"
                 >
                   Download

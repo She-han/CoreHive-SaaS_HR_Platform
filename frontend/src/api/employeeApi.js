@@ -102,6 +102,36 @@ export const deleteEmployee = async (id) => {
   }
 };
 
+/**
+ * Get total count of employees for the organization
+ */
+export const getTotalEmployeesCount = async () => {
+  try {
+    const response = await apiClient.get('/employees/total-count');
+    return response.data.data; // matches your original res.data.data
+  } catch (error) {
+    console.error('Error when get total-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
+/**
+ * Get total count of active employees for the organization
+ */
+export const getTotalActiveEmployeesCount = async () => {
+  try {
+    const response = await apiClient.get('/employees/total-active-count');
+    return response.data.data; // matches your original res.data.data
+  } catch (error) {
+    console.error('Error when get total-active-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
 export default {
   getAllEmployees,
   getEmployeeById,

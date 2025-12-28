@@ -744,4 +744,20 @@ public class AttendanceService {
         if (hour < 17) return "afternoon";
         return "evening";
     }
+
+    //Get today on-leave employee count
+    public int getTodayOnLeaveCount(String organizationUuid) {
+
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        return attendanceRepository.countByOrganizationUuidAndAttendanceDateAndStatus(
+                organizationUuid,
+                today,
+                Attendance.AttendanceStatus.ON_LEAVE
+        );
+    }
 }

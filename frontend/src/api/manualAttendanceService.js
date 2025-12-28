@@ -1,4 +1,5 @@
 import axios from "axios";
+import apiClient from './axios';
 
 const BASE = "http://localhost:8080/api/attendance";
 
@@ -63,5 +64,19 @@ export const updateAttendanceStatus = async (
   ).then(res => res.data.data);
 };
 
+/**
+ * Get total count of on-leave employees for the organization
+ */
+export const getTotalOnLeaveCount = async () => {
+  try {
+    const response = await apiClient.get('/attendance/today/on-leave-count');
+    return response.data.data; // matches your original res.data.data
+  } catch (error) {
+    console.error('Error when get total-on-leave-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
 
 

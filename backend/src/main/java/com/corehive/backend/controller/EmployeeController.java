@@ -68,21 +68,6 @@ public class EmployeeController {
         );
     }
 
-//    //************************************************//
-//    //MAKE DEACTIVATE EMPLOYEE//
-//    //************************************************//
-//    @PutMapping("/{id}/deactivate")
-//    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-//    public ResponseEntity<StandardResponse> deactivateEmployee(HttpServletRequest httpRequest,
-//                                                               @PathVariable Long id) {
-//        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
-//        String userEmail = (String) httpRequest.getAttribute("userEmail");
-//        employeeService.deactivateEmployee(organizationUuid, id);
-//        return new ResponseEntity<>(
-//                new StandardResponse(200, "Employee marked as inactive", null),
-//                HttpStatus.OK
-//        );
-//    }
 
     //************************************************//
     //Toggle status(active and deactivate)//
@@ -162,6 +147,32 @@ public class EmployeeController {
     }
 
 
+    //************************************************//
+    //get count of total employees//
+    //************************************************//
+    @GetMapping("/total-count")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTotalEmployeeCount(HttpServletRequest httpRequest) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        int totalEmployee = employeeService.getTotalEmployees(organizationUuid);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Get total employees count successfully", totalEmployee),
+                HttpStatus.OK
+        );
+    }
 
+    //************************************************//
+    //get count of total active employees//
+    //************************************************//
+    @GetMapping("/total-active-count")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTotalActiveEmployeeCount(HttpServletRequest httpRequest) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        int activeTotalEmployee = employeeService.getTotalActiveEmployees(organizationUuid);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Get total Active employees count successfully", activeTotalEmployee),
+                HttpStatus.OK
+        );
+    }
 
 }

@@ -590,5 +590,28 @@ public class EmployeeService {
         }
     }
 
+    //************************************************//
+    //get count of total employees//
+    //************************************************//
+    public int getTotalEmployees(String organizationUuid) {
 
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        return employeeRepository.countByOrganizationUuid(organizationUuid);
+    }
+
+    //************************************************//
+    //get count of total active employees//
+    //************************************************//
+    public int getTotalActiveEmployees(String organizationUuid) {
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        return employeeRepository.countByOrganizationUuidAndIsActive(
+                organizationUuid , true
+        );
+    }
 }

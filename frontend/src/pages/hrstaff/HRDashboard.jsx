@@ -1,9 +1,62 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import StatsCard from '../../components/hrstaff/StatCard.jsx';
 import { Users, UserCheck, UserX, ArrowRight, Zap, TrendingUp, PieChart, Briefcase } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getTotalEmployeesCount , getTotalActiveEmployeesCount } from '../../api/employeeApi.js';
+import { getTotalOnLeaveCount } from '../../api/manualAttendanceService.js';
 
 function HRDashboard() {
+
+  const [totalEmployees, setTotalEmployees] = useState(0);
+  const [totalActiveEmployees, setTotalActiveEmployees] = useState(0);
+  const [totalOnLeaveEmployees, setTotalOnLeaveEmployees] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTotalEmployees = async () => {
+      try {
+        const count = await getTotalEmployeesCount();
+        setTotalEmployees(count);
+      } catch (error) {
+        console.error('Error fetching total employees:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTotalEmployees();
+  }, []);
+
+  useEffect(() => {
+    const fetchTotalActiveEmployees = async () => {
+      try {
+        const count = await getTotalActiveEmployeesCount();
+        setTotalActiveEmployees(count);
+      } catch (error) {
+        console.error('Error fetching total active employees:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTotalActiveEmployees();
+  }, []);
+
+  useEffect(() => {
+    const fetchTotalOnLeaveEmployees = async () => {
+      try {
+        const count = await getTotalOnLeaveCount();
+        setTotalOnLeaveEmployees(count);
+      } catch (error) {
+        console.error('Error fetching total on-leave employees:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTotalOnLeaveEmployees();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F1FDF9] font-sans text-[#333333] antialiased">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-10">
@@ -21,42 +74,43 @@ function HRDashboard() {
           
           <Link 
             to="/hr_staff/employeemanagement" 
-            className="group flex items-center gap-3 px-8 py-3.5 bg-[#0C397A] text-white font-bold rounded-full hover:bg-[#05668D] transition-all duration-300 shadow-xl shadow-[#0C397A]/20"
+            className="group flex items-center gap-3 px-8 py-3.5 bg-[#080909] text-white font-bold rounded-full hover:bg-[#05668D] transition-all duration-300 shadow-xl shadow-[#0C397A]/20"
           >
             Manage Workforce 
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        {/* ANALYTICS STATS GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           <StatsCard
             title="Total Workforce"
-            value="120"
+            value={loading ? "..." : totalEmployees}
             icon={<Users size={22} />}
-            color="#0C397A"
-            trend="+3.2% growth"
-          />
+          color="#0C397A"
+          trend="Organization Headcount"
+        />
+
           <StatsCard
             title="Active Personnel"
-            value="95"
+           value={loading ? "..." : totalActiveEmployees}
             icon={<UserCheck size={22} />}
             color="#05668D"
             trend="Current Headcount"
           />
           <StatsCard
-            title="Inactive / On Leave"
-            value="25"
+            title="On Leave"
+            value={loading ? "..." : totalOnLeaveEmployees}
             icon={<UserX size={22} />}
             color="#1ED292"
-            trend="5 Pending Actions"
+            trend="Today on Leave"
           />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* QUICK OPERATIONS - 7 Columns */}
-          <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-white/50">
+          <div className="lg:col-span-8 bg-white p-8 m-6 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-white/50">
             <div className="flex justify-between items-center mb-8 border-b border-gray-50 pb-4">
               <h3 className="text-lg font-bold text-[#0C397A] flex items-center gap-3">
                 <Zap size={20} className="text-[#02C39A]" /> Essential Operations
@@ -83,7 +137,7 @@ function HRDashboard() {
           </div>
 
           {/* ACTIVITY FEED - 4 Columns */}
-          <div className="lg:col-span-4 bg-white p-8 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-white/50">
+          <div className="lg:col-span-4 bg-white p-8 m-6 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.03)] border border-white/50">
             <h3 className="text-lg font-bold text-[#0C397A] mb-8 flex items-center gap-3">
                <TrendingUp size={20} className="text-[#05668D]" /> Audit Log
             </h3>
@@ -109,8 +163,8 @@ function HRDashboard() {
 
         </div>
       </div>
-    </div>
   );
+
 }
 
 export default HRDashboard;

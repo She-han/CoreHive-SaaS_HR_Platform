@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -643,5 +644,26 @@ public class AttendanceController {
             return xRealIp;
         }
         return request.getRemoteAddr();
+    }
+
+    //************************************************//
+    // get count of today's ON_LEAVE employees
+    //************************************************//
+    @GetMapping("/today/on-leave-count")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayOnLeaveCount(HttpServletRequest request) {
+
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
+
+        int onLeaveCount = attendanceService.getTodayOnLeaveCount(organizationUuid);
+
+        return new ResponseEntity<>(
+                new StandardResponse(
+                        200,
+                        "Fetched today's ON_LEAVE employee count successfully",
+                        onLeaveCount
+                ),
+                HttpStatus.OK
+        );
     }
 }

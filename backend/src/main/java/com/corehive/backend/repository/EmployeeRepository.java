@@ -168,4 +168,8 @@ Page<Employee> findByOrganizationUuidWithDepartment(
 
 
     List<Employee> findByOrganizationUuidAndIsActiveTrue(String orgUuid);
+
+    int countByOrganizationUuid(String organizationUuid);
+
+    int countByOrganizationUuidAndIsActive(String organizationUuid, boolean b);
 }

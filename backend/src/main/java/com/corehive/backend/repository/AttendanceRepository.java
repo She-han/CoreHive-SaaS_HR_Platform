@@ -130,4 +130,12 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("date") LocalDate date
     );
 
+
+    //Get today on-leave employees count
+    int countByOrganizationUuidAndAttendanceDateAndStatus(
+            String organizationUuid,
+            LocalDate attendanceDate,
+            Attendance.AttendanceStatus status
+    );
+
 }

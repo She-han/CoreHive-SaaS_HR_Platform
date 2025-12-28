@@ -4,8 +4,8 @@
  */
 
 const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
-// FIX: Use environment variable for backend URL
-const JAVA_BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// FIX: Use VITE_API_BASE_URL (same as axios.js and .env.development)
+const JAVA_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // ===== Helper Functions =====
 

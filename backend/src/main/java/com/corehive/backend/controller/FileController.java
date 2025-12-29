@@ -16,12 +16,14 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/files")
 @Slf4j
 @RequiredArgsConstructor
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = "*", allowedHeaders = "*", exposedHeaders = "*")
 public class FileController {
 
     private final FileStorageService fileStorageService;
@@ -42,9 +44,9 @@ public class FileController {
         try {
             String userEmail = (String) request.getAttribute("userEmail");
             String userRole = (String) request.getAttribute("userRole");
-            log.info("File access by: {} (Role: {})", userEmail, userRole);
 
-            // If blobUrl is provided, redirect to Azure SAS URL
+            log.info("File access request - File: {}, User: {}, Role: {}", filename, userEmail, userRole);
+
             if (blobUrl != null && blobUrl.contains("blob.core.windows.net")) {
                 String downloadUrl = fileStorageService.getDocumentDownloadUrl(blobUrl);
                 log.info("Redirecting to Azure URL: {}", downloadUrl);
@@ -53,7 +55,6 @@ public class FileController {
                         .build();
             }
 
-            // Local file download
             Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
             Resource resource = new UrlResource(filePath.toUri());
 
@@ -74,13 +75,13 @@ public class FileController {
 
         } catch (Exception e) {
             log.error("Error downloading file: {}", filename, e);
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     /**
-     * New endpoint: Get download URL for document
-     * Returns direct Azure SAS URL or local file path
+     * Get download URL for document (with SAS token for Azure)
      */
     @GetMapping("/business-registration/download-url")
     public ResponseEntity<?> getDownloadUrl(
@@ -88,24 +89,36 @@ public class FileController {
             HttpServletRequest request) {
 
         try {
+            String userEmail = (String) request.getAttribute("userEmail");
             String userRole = (String) request.getAttribute("userRole");
 
-            // Only allow SYSTEM_ADMIN and ORG_ADMIN to access
-            if (userRole == null || (!userRole.equals("SYSTEM_ADMIN") && !userRole.equals("ORG_ADMIN"))) {
+            log.info("Download URL request - User: {}, Role: {}, Path: {}", userEmail, userRole, documentPath);
+
+            if (userRole == null) {
+                log.warn("No user role found - authentication may have failed");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("Access denied");
+                        .body(Map.of("error", "Authentication required"));
+            }
+
+            if (!userRole.equals("SYSTEM_ADMIN") && !userRole.equals("ORG_ADMIN")) {
+                log.warn("Access denied for role: {}", userRole);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Insufficient permissions"));
             }
 
             String downloadUrl = fileStorageService.getDocumentDownloadUrl(documentPath);
 
-            return ResponseEntity.ok().body(new DownloadUrlResponse(downloadUrl));
+            log.info("Generated download URL successfully");
+
+            Map<String, String> response = new HashMap<>();
+            response.put("downloadUrl", downloadUrl);
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            log.error("Error generating download URL: {}", e.getMessage());
-            return ResponseEntity.internalServerError().build();
+            log.error("Error generating download URL: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("error", e.getMessage()));
         }
     }
-
-    // Response DTO
-    record DownloadUrlResponse(String downloadUrl) {}
 }

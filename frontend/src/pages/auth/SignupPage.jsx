@@ -39,6 +39,7 @@ const SignupPage = () => {
     organizationName: '',
     adminEmail: '',
     businessRegistrationNumber: '',
+    businessRegistrationDocument: null,
     employeeCountRange: '',
     modulePerformanceTracking: false,
     moduleEmployeeFeedback: false,
@@ -61,9 +62,14 @@ const SignupPage = () => {
   // Module options
   const moduleOptions = [
     {
-      key: 'modulePerformanceTracking',
-      name: 'Performance Tracking',
-      description: 'Employee KPIs, reviews, and goal management'
+      key: 'moduleQrAttendance',
+      name: 'QR Attendance Marking',
+      description: 'QR code based attendance tracking for employees'
+    },
+    {
+      key: 'moduleFaceRecognitionAttendance',
+      name: 'Face Recognition Attendance Marking',
+      description: 'Face recognition technology for accurate attendance tracking'
     },
     {
       key: 'moduleEmployeeFeedback',
@@ -87,48 +93,88 @@ const SignupPage = () => {
   
   // Handle input changes
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const { name, value, type, checked, files } = e.target;
+  
+    if (type === 'file') {
+    const file = files[0];
+    
+    // Validate file
+      if (file) {
+        // Check file size (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+          setFormErrors(prev => ({
+            ...prev,
+            businessRegistrationDocument: 'File size must be less than 2MB'
+          }));
+          return;
+        }
+        
+        // Check file type
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+          setFormErrors(prev => ({
+            ...prev,
+            businessRegistrationDocument: 'Only PDF, JPG, and PNG files are allowed'
+          }));
+          return;
+        }
+        
+        // Clear errors if validation passed
+        setFormErrors(prev => ({
+          ...prev,
+          businessRegistrationDocument: null
+        }));
+        
+        setFormData(prev => ({
+          ...prev,
+          [name]: file
+        }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
     
     // Clear field error
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
-        [name]: ''
+        [name]: null
       }));
     }
-  };
+};
   
   // Validate step 1
-  const validateStep1 = () => {
-    const errors = {};
-    
-    if (!formData.organizationName.trim()) {
-      errors.organizationName = 'Organization name is required';
-    } else if (formData.organizationName.length < 2) {
-      errors.organizationName = 'Organization name must be at least 2 characters';
-    }
-    
-    if (!formData.adminEmail.trim()) {
-      errors.adminEmail = 'Admin email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail)) {
-      errors.adminEmail = 'Please enter a valid email address';
-    }
-    
-    if (!formData.businessRegistrationNumber.trim()) {
-      errors.businessRegistrationNumber = 'Business registration number is required';
-    }
-    
-    if (!formData.employeeCountRange) {
-      errors.employeeCountRange = 'Please select your employee count range';
-    }
-    
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+ const validateStep1 = () => {
+  const errors = {};
+  
+  if (!formData.organizationName.trim()) {
+    errors.organizationName = 'Organization name is required';
+  }
+  
+  if (!formData.adminEmail.trim()) {
+    errors.adminEmail = 'Email is required';
+  } else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) {
+    errors.adminEmail = 'Email is invalid';
+  }
+  
+  if (!formData.businessRegistrationNumber.trim()) {
+    errors.businessRegistrationNumber = 'Business registration number is required';
+  }
+  
+  if (!formData.businessRegistrationDocument) {
+    errors.businessRegistrationDocument = 'Business registration document is required';
+  }
+  
+  if (!formData.employeeCountRange) {
+    errors.employeeCountRange = 'Please select employee count range';
+  }
+  
+  setFormErrors(errors);
+  return Object.keys(errors).length === 0;
+};
   
   // Handle next step
 const handleNextStep = () => {
@@ -149,18 +195,38 @@ const handleNextStep = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Create FormData for file upload
+    const submitData = new FormData();
+    submitData.append('organizationName', formData.organizationName);
+    submitData.append('adminEmail', formData.adminEmail);
+    submitData.append('businessRegistrationNumber', formData.businessRegistrationNumber);
+    submitData.append('employeeCountRange', formData.employeeCountRange);
+    
+    // Convert boolean values to proper strings that backend can parse
+    // Only append if they are checked (true), otherwise send "false" explicitly
+    submitData.append('moduleQrAttendanceMarking', 
+      formData.moduleQrAttendanceMarking ? 'true' : 'false');
+    submitData.append('moduleFaceRecognitionAttendanceMarking', 
+      formData.moduleFaceRecognitionAttendanceMarking ? 'true' : 'false');
+    submitData.append('moduleEmployeeFeedback', 
+      formData.moduleEmployeeFeedback ? 'true' : 'false');
+    submitData.append('moduleHiringManagement', 
+      formData.moduleHiringManagement ? 'true' : 'false');
+    
+    // Append file if exists
+    if (formData.businessRegistrationDocument) {
+      submitData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
+    }
+    
     try {
-      const resultAction = await dispatch(signupOrganization(formData));
+      const result = await dispatch(signupOrganization(submitData)).unwrap();
       
-      if (signupOrganization.fulfilled.match(resultAction)) {
+      if (result.success) {
         setIsSuccess(true);
-        // Auto redirect to login after 5 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 5000);
       }
     } catch (error) {
-      console.error('❌ Signup error:', error);
+      console.error('Signup failed:', error);
+      // Error already handled by axios interceptor
     }
   };
   
@@ -311,6 +377,34 @@ const handleNextStep = () => {
                   required
                   disabled={isLoading}
                 />
+
+                {/* Business Registration Document Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-2">
+                    <FileText className="inline w-4 h-4 mr-1" />
+                    Business Registration Document *
+                  </label>
+                  <input
+                    type="file"
+                    name="businessRegistrationDocument"
+                    onChange={handleInputChange}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition ${
+                      formErrors.businessRegistrationDocument ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {formData.businessRegistrationDocument && (
+                    <p className="mt-1 text-sm text-green-600">
+                      ✓ {formData.businessRegistrationDocument.name} ({(formData.businessRegistrationDocument.size / 1024).toFixed(2)} KB)
+                    </p>
+                  )}
+                  {formErrors.businessRegistrationDocument && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.businessRegistrationDocument}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Accepted formats: PDF, JPG, PNG (Max 2MB)
+                  </p>
+                </div>
                 
                 {/* Employee count range */}
                 <div className="space-y-1">
@@ -374,7 +468,7 @@ const handleNextStep = () => {
                 
                 {/* Module selection */}
                 <div className="space-y-4">
-                  <Alert 
+                  <div 
                     type="info"
                     title="Basic Features Included"
                     message="Employee Management, Payroll, Leave Management, Attendance Tracking, and Reports are included in all plans."

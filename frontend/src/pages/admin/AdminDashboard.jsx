@@ -41,7 +41,7 @@ import Df from "./ui/Df";
 
 /**
  * System Admin Dashboard Component
- * Platform-level overview and quick actions
+ * Platform-level overview with real data and modern design
  */
 const AdminDashboard = () => {
   const user = useSelector(selectUser);
@@ -52,6 +52,10 @@ const AdminDashboard = () => {
     activeOrganizations: 0,
     pendingOrganizations: 0,
     totalEmployees: 0,
+    dormantOrganizations: 0,
+    suspendedOrganizations: 0,
+    totalEmployees: 0,
+    totalSystemUsers: 0
   });
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,62 +66,64 @@ const AdminDashboard = () => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState(null);
 
-  // Load dashboard data
-  const loadDashboardData = async () => {
+  // Load dashboard data with useCallback for optimization
+  const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Load platform statistics
-      const statsResponse = await getPlatformStatistics();
+      // Parallel data fetching for performance
+      const [statsResponse, approvalsResponse] = await Promise.all([
+        getPlatformStatistics(),
+        getPendingApprovals()
+      ]);
+      
       if (statsResponse.success) {
         setStats(statsResponse.data);
       }
 
       // Load pending approvals
       const approvalsResponse = await getPendingApprovals();
+      
       if (approvalsResponse.success) {
-        setPendingApprovals(approvalsResponse.data);
+        setPendingApprovals(approvalsResponse.data || []);
       }
 
       setLastRefresh(new Date());
     } catch (err) {
       console.error(" Error loading dashboard data:", err);
       setError("Failed to load dashboard data. Please try again.");
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Load data on component mount
   useEffect(() => {
     loadDashboardData();
+  }, [loadDashboardData]);
+
+  // Memoized handlers
+  const handleRefresh = useCallback(() => loadDashboardData(), [loadDashboardData]);
+  
+  const handleOrganizationReview = useCallback((org) => {
+    setSelectedOrganization(org);
+    setIsReviewModalOpen(true);
   }, []);
 
-  // Refresh handler
-  const handleRefresh = () => {
+  const handleApprovalSuccess = useCallback(() => {
     loadDashboardData();
-  };
+  }, [loadDashboardData]);
 
-  // Handle organization review
-  const handleOrganizationReview = (organization) => {
-    setSelectedOrganization(organization);
-    setIsReviewModalOpen(true);
-  };
-
-  // Handle organization approval success
-  const handleApprovalSuccess = () => {
-    loadDashboardData(); // Refresh data after approval/rejection
-  };
-
-  // Close modal
-  const closeReviewModal = () => {
+  const closeReviewModal = useCallback(() => {
     setIsReviewModalOpen(false);
     setSelectedOrganization(null);
-  };
+  }, []);
 
-  // Statistics cards data
-  const statCards = [
+  // Memoized statistics cards
+  const statCards = useMemo(() => [
     {
       title: "Total Organizations",
       value: stats.totalOrganizations,
@@ -156,8 +162,8 @@ const AdminDashboard = () => {
     },
   ];
 
-  // Recent activities (mock data for now)
-  const recentActivities = [
+  // Memoized quick actions
+  const quickActions = useMemo(() => [
     {
       id: 1,
       type: "approval",
@@ -209,20 +215,28 @@ const AdminDashboard = () => {
     { month: "May", tenants: 120, users: 420 },
   ];
 
+  // Loading state with skeleton
   if (isLoading && stats.totalOrganizations === 0) {
     return (
-      <DashboardLayout>
-        <LoadingSpinner centerScreen size="lg" text="Loading dashboard..." />
+      <DashboardLayout title="System Administration">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+          </div>
+          <div className="flex justify-center items-center h-40">
+            <LoadingSpinner size="lg" text="Loading dashboard..." />
+          </div>
+        </div>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout title="System Administration">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Header Section */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-text-primary">
                 Welcome back, {user?.email?.split("@")[0]}!
@@ -235,16 +249,34 @@ const AdminDashboard = () => {
             <div className="mt-4 sm:mt-0 flex items-center space-x-3">
               <div className="text-sm text-text-secondary">
                 Last updated: {lastRefresh.toLocaleTimeString()}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                loading={isLoading}
-                icon={RefreshCw}
+              <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: THEME.dark }}>
+                Welcome back, <span style={{ color: THEME.primary }}>{userName}</span>! 👋
+              </h1>
+              <p className="mt-1" style={{ color: THEME.muted }}>
+                Here's what's happening on your platform today
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div 
+                className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
+                style={{ backgroundColor: THEME.background, color: THEME.muted }}
               >
-                Refresh
-              </Button>
+                <Clock className="w-4 h-4" />
+                <span>Updated {formattedLastRefresh}</span>
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:shadow-md disabled:opacity-50"
+                style={{ 
+                  backgroundColor: THEME.primary,
+                  color: 'white'
+                }}
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
             </div>
           </div>
         </div>
@@ -295,19 +327,43 @@ const AdminDashboard = () => {
               </Card>
             );
           })}
+          <div 
+            className="mb-6 p-4 rounded-xl border flex items-center gap-3"
+            style={{ backgroundColor: '#FEF2F2', borderColor: '#FECACA', color: '#DC2626' }}
+          >
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="font-medium hover:underline">
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+          {statCards.map((stat, index) => (
+            <StatCard key={stat.title} stat={stat} index={index} />
+          ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Pending Approvals */}
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Pending Approvals Section */}
           <div className="lg:col-span-2">
-            <Card title="Pending Organization Approvals" className="h-fit">
-              {pendingApprovals.length === 0 ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                  <p className="text-text-secondary">No pending approvals</p>
-                  <p className="text-sm text-text-secondary mt-2">
-                    All organization registrations are up to date!
-                  </p>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: '#FEF3C7' }}
+                  >
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold" style={{ color: THEME.dark }}>Pending Approvals</h2>
+                    <p className="text-xs" style={{ color: THEME.muted }}>
+                      {pendingApprovals.length} organization{pendingApprovals.length !== 1 ? 's' : ''} waiting
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -403,8 +459,59 @@ const AdminDashboard = () => {
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
+                {pendingApprovals.length > 0 && (
+                  <Link 
+                    to="/sys_admin/approvals"
+                    className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
+                    style={{ color: THEME.primary }}
+                  >
+                    View All <ArrowRight className="w-4 h-4" />
+                  </Link>
+                )}
               </div>
-            </Card>
+              
+              <div className="p-4">
+                {pendingApprovals.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div 
+                      className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                      style={{ backgroundColor: '#ECFDF5' }}
+                    >
+                      <CheckCircle className="w-8 h-8 text-green-500" />
+                    </div>
+                    <p className="font-medium" style={{ color: THEME.dark }}>All caught up!</p>
+                    <p className="text-sm mt-1" style={{ color: THEME.muted }}>
+                      No pending approvals at the moment
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingApprovals.slice(0, 4).map((org) => (
+                      <PendingApprovalItem 
+                        key={org.organizationUuid} 
+                        org={org} 
+                        onReview={handleOrganizationReview}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="font-semibold" style={{ color: THEME.dark }}>Quick Actions</h2>
+              </div>
+              <div className="p-4 space-y-3">
+                {quickActions.map((action) => (
+                  <QuickActionButton key={action.label} action={action} />
+                ))}
+              </div>
+            </div>
 
             {/* Recent Activities */}
           </div>
@@ -442,11 +549,33 @@ const AdminDashboard = () => {
           </div>
           <div>
             <SystemLoad />
+            {/* System Health */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                <div 
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: '#ECFDF5' }}
+                >
+                  <Activity className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold" style={{ color: THEME.dark }}>System Health</h2>
+                  <p className="text-xs" style={{ color: THEME.muted }}>All systems operational</p>
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {healthMetrics.map((metric) => (
+                    <HealthMetric key={metric.label} metric={metric} />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <Df />
 
-        {/* System Health */}
+        {/* Organization Status Overview */}
         <div className="mt-8">
           <Card title="System Health">
             <div className="grid md:grid-cols-3 gap-6">
@@ -466,9 +595,46 @@ const AdminDashboard = () => {
                 <TrendingUp className="w-8 h-8 text-purple-500 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-purple-600">125ms</div>
                 <div className="text-sm text-text-secondary">Avg Response</div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="font-semibold" style={{ color: THEME.dark }}>Organization Status Overview</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-xl" style={{ backgroundColor: '#ECFDF5' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-500" />
+                    <span className="text-sm font-medium text-green-700">Active</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">{stats.activeOrganizations || 0}</p>
+                </div>
+                
+                <div className="p-4 rounded-xl" style={{ backgroundColor: '#FFFBEB' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-5 h-5 text-amber-500" />
+                    <span className="text-sm font-medium text-amber-700">Pending</span>
+                  </div>
+                  <p className="text-2xl font-bold text-amber-600">{pendingApprovals.length}</p>
+                </div>
+                
+                <div className="p-4 rounded-xl" style={{ backgroundColor: '#F3F4F6' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertCircle className="w-5 h-5 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Dormant</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gray-600">{stats.dormantOrganizations || 0}</p>
+                </div>
+                
+                <div className="p-4 rounded-xl" style={{ backgroundColor: '#FEF2F2' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-5 h-5 text-red-500" />
+                    <span className="text-sm font-medium text-red-700">Suspended</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600">{stats.suspendedOrganizations || 0}</p>
+                </div>
               </div>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
 

@@ -1,18 +1,116 @@
-import React, { useState } from 'react';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { Bars3Icon } from '@heroicons/react/24/outline';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../../store/slices/authSlice';
 import Sidebar from './Sidebar';
-import { Bell, LogOut } from "lucide-react";
+import { Bell, Calendar, Clock, Search, ChevronDown } from "lucide-react";
+
+// Theme colors
+const THEME = {
+  primary: '#02C39A',
+  secondary: '#05668D',
+  dark: '#0C397A',
+  background: '#F1FDF9',
+  success: '#1ED292',
+  text: '#333333',
+  muted: '#9B9B9B'
+};
+
+// Memoized Header Date/Time Component for performance
+const HeaderDateTime = memo(({ date, time }) => (
+  <div 
+    className="hidden md:flex items-center gap-3 px-4 py-2.5 rounded-xl"
+    style={{ 
+      backgroundColor: THEME.background, 
+      border: `1px solid ${THEME.primary}`,
+      boxShadow: '0 2px 4px rgba(2, 195, 154, 0.1)'
+    }}
+  >
+    <div className="flex items-center gap-1.5" style={{ color: THEME.secondary }}>
+      <Calendar className="w-4 h-4" />
+      <span className="text-sm font-medium">{date}</span>
+    </div>
+    <div 
+      className="w-px h-4"
+      style={{ backgroundColor: THEME.primary }}
+    />
+    <div className="flex items-center gap-1.5" style={{ color: THEME.secondary }}>
+      <Clock className="w-4 h-4" />
+      <span className="text-sm font-medium">{time}</span>
+    </div>
+  </div>
+));
+HeaderDateTime.displayName = 'HeaderDateTime';
+
+// Memoized Notification Button
+const NotificationButton = memo(() => (
+  <button 
+    className="relative p-2.5 rounded-xl transition-all duration-200 hover:shadow-md"
+    style={{ 
+      backgroundColor: THEME.background,
+      color: THEME.secondary 
+    }}
+  >
+    <Bell className="w-5 h-5" />
+    <span 
+      className="absolute top-1.5 right-1.5 block w-2.5 h-2.5 rounded-full ring-2 ring-white animate-pulse"
+      style={{ backgroundColor: THEME.success }}
+    />
+  </button>
+));
+NotificationButton.displayName = 'NotificationButton';
+
+
+// Memoized User Welcome Component
+const UserWelcome = memo(({ user }) => {
+
+   // Extract username from email
+  const userName = useMemo(() => 
+    user?.email?.split('@')[0] || 'Admin',
+    [user?.email]
+  );
+  
+  const displayName = useMemo(() => 
+    user?.firstName || user?.role?.replace('_', ' ') || 'User',
+    [user?.firstName, user?.role]
+  );
+  
+  return (
+    <div className="hidden lg:flex items-center gap-3">
+      <div className="text-right">
+        <p className="text-sm font-medium" style={{ color: THEME.text }}>
+          Welcome, <span style={{ color: THEME.primary }}>{userName}</span>!
+        </p>
+   
+      </div>
+    </div>
+  );
+});
+UserWelcome.displayName = 'UserWelcome';
 
 
 
 
 /**
  * Dashboard Layout with Sidebar
- * Provides consistent layout structure for all dashboard pages
+ * Modern design with CoreHive theme colors
+ * Optimized with memoization for performance
  */
 const DashboardLayout = ({ children, title }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  const { user } = useSelector((state) => state.auth);
+
+  // Update time every minute for performance
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timer);
+  }, []);
 
 
 
@@ -20,21 +118,45 @@ const DashboardLayout = ({ children, title }) => {
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
+  // Memoized date/time formatting
+  const formattedDateTime = useMemo(() => {
+    const options = { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    const date = currentTime.toLocaleDateString('en-US', options);
+    const time = currentTime.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    return { date, time };
+  }, [currentTime]);
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
+  // Memoized toggle handlers
+  const toggleSidebar = useCallback(() => {
+    setSidebarCollapsed(prev => !prev);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuOpen(prev => !prev);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+  }, []);
 
   
 
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen" style={{ backgroundColor: THEME.background }}>
       {/* Mobile sidebar overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={toggleMobileMenu}
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity"
+          onClick={closeMobileMenu}
         />
       )}
 
@@ -44,34 +166,32 @@ const DashboardLayout = ({ children, title }) => {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:hidden ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">CH</span>
-            </div>
-            <span className="ml-3 text-lg font-semibold text-gray-900">CoreHive</span>
-          </div>
-          <button
-            onClick={toggleMobileMenu}
-            className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         <Sidebar isCollapsed={false} />
       </div>
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center justify-between h-16 bg-white border-b border-gray-200 px-4 lg:px-6">
-          <div className="flex items-center">
+        <header 
+          className="flex items-center justify-between h-16 px-4 lg:px-6 shadow-sm relative z-10"
+          style={{ 
+            backgroundColor: '#FFFFFF', 
+            borderBottom: `3px solid ${THEME.primary}`,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          <div className="flex items-center gap-4">
             {/* Mobile menu button */}
             <button
               onClick={toggleMobileMenu}
-              className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 lg:hidden"
+              className="p-2 rounded-xl transition-all duration-200 lg:hidden hover:shadow-md"
+              style={{ 
+                backgroundColor: THEME.background,
+                color: THEME.secondary 
+              }}
             >
               <Bars3Icon className="w-6 h-6" />
             </button>
@@ -79,22 +199,23 @@ const DashboardLayout = ({ children, title }) => {
             {/* Desktop sidebar toggle */}
             <button
               onClick={toggleSidebar}
-              className="hidden lg:block p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              className="hidden lg:flex items-center justify-center p-2 rounded-xl transition-all duration-200 hover:shadow-md"
+              style={{ 
+                backgroundColor: THEME.background,
+                color: THEME.secondary 
+              }}
             >
               <Bars3Icon className="w-5 h-5" />
             </button>
 
-            {/* Page title */}
-            {title && (
-              <h1 className="ml-4 text-lg font-semibold text-gray-900">
-                {title}
-              </h1>
-            )}
+         
           </div>
 
-          {/* Right side items can be added here */}
-          <div className="flex items-center gap-6 p-4 space-x-4">
-            {/* Notification, profile dropdown, etc. can be added here */}
+          {/* Right side items */}
+          <div className="flex items-center gap-3 lg:gap-4">
+            {/* User Welcome */}
+            <UserWelcome user={user} />
+
             {/* Notification Icon */}
             <div className="relative">
               <Bell className="w-6 h-6 text-gray-600" />
@@ -115,11 +236,21 @@ const DashboardLayout = ({ children, title }) => {
             </div>
             {/* Logout Icon */  }
             <LogOut className="w-4 h-4 text-gray-600 cursor-pointer hover:text-black" />
+            <NotificationButton />
+
+            {/* DateTime Display */}
+            <HeaderDateTime 
+              date={formattedDateTime.date} 
+              time={formattedDateTime.time} 
+            />
           </div>
-        </div>
+        </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main 
+          className="flex-1 overflow-y-auto"
+          style={{ backgroundColor: THEME.background }}
+        >
           {children}
         </main>
       </div>

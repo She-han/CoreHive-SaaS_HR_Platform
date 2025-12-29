@@ -1,7 +1,10 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
+import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
+import com.corehive.backend.dto.response.PlatformStatistics;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Organization;
 import com.corehive.backend.model.OrganizationStatus;
@@ -128,7 +131,7 @@ public class OrganizationService {
                     AppUser savedUser = appUserRepository.save(adminUser);
                     activatedCount++;
                     try {
-                        emailService.sendPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
+                        emailService.sendOrgPasswordEmail(adminUser.getEmail(), tempPassword ,organization.getName());
                     } catch (Exception e) {
                         System.err.println("Failed to send email: " + e.getMessage());
                     }
@@ -301,13 +304,154 @@ public class OrganizationService {
                 .organizationUuid(org.getOrganizationUuid())
                 .name(org.getName())
                 .email(org.getEmail())
-                .status(org.getStatus().name()) // FIXED: Use .name() instead of .toString()
+                .status(org.getStatus().name())
+                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
+                .businessRegistrationDocument(org.getBusinessRegistrationDocument()) // NEW FIELD
                 .employeeCountRange(org.getEmployeeCountRange())
                 .createdAt(org.getCreatedAt())
-                .modulePerformanceTracking(org.getModulePerformanceTracking())
+                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
+                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
                 .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
                 .moduleHiringManagement(org.getModuleHiringManagement())
                 .modulesConfigured(org.getModulesConfigured())
                 .build();
     }
-}
+
+    /**
+     * Get current module configuration for an organization
+     */
+    public ApiResponse<ModuleConfigResponse> getModuleConfiguration(String organizationUuid) {
+        try {
+            log.info("Fetching module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(organization.getOrganizationUuid())
+                    .organizationName(organization.getName())
+                    .moduleQrAttendanceMarking(organization.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(organization.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(organization.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(organization.getModuleHiringManagement())
+                    .modulesConfigured(organization.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration retrieved for: {}", organization.getName());
+            return ApiResponse.success("Module configuration retrieved successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error fetching module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to retrieve module configuration");
+        }
+    }
+
+    /**
+     * Update module configuration for an organization
+     */
+    @Transactional
+    public ApiResponse<ModuleConfigResponse> updateModuleConfiguration(
+            String organizationUuid,
+            UpdateModuleConfigRequest request) {
+        try {
+            log.info("Updating module configuration for organization: {}", organizationUuid);
+
+            Optional<Organization> orgOpt = organizationRepository.findByOrganizationUuid(organizationUuid);
+            if (orgOpt.isEmpty()) {
+                return ApiResponse.error("Organization not found");
+            }
+
+            Organization organization = orgOpt.get();
+
+            // Update only the fields that are provided (not null)
+            if (request.getModuleQrAttendanceMarking() != null) {
+                organization.setModuleQrAttendanceMarking(request.getModuleQrAttendanceMarking());
+            }
+            if (request.getModuleFaceRecognitionAttendanceMarking() != null) {
+                organization.setModuleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking());
+            }
+            if (request.getModuleEmployeeFeedback() != null) {
+                organization.setModuleEmployeeFeedback(request.getModuleEmployeeFeedback());
+            }
+            if (request.getModuleHiringManagement() != null) {
+                organization.setModuleHiringManagement(request.getModuleHiringManagement());
+            }
+
+            // Mark as configured if not already
+            if (!Boolean.TRUE.equals(organization.getModulesConfigured())) {
+                organization.setModulesConfigured(true);
+            }
+
+            Organization savedOrg = organizationRepository.save(organization);
+
+            ModuleConfigResponse response = ModuleConfigResponse.builder()
+                    .organizationUuid(savedOrg.getOrganizationUuid())
+                    .organizationName(savedOrg.getName())
+                    .moduleQrAttendanceMarking(savedOrg.getModuleQrAttendanceMarking())
+                    .moduleFaceRecognitionAttendanceMarking(savedOrg.getModuleFaceRecognitionAttendanceMarking())
+                    .moduleEmployeeFeedback(savedOrg.getModuleEmployeeFeedback())
+                    .moduleHiringManagement(savedOrg.getModuleHiringManagement())
+                    .modulesConfigured(savedOrg.getModulesConfigured())
+                    .build();
+
+            log.info("Module configuration updated successfully for: {}", organization.getName());
+            return ApiResponse.success("Module configuration updated successfully", response);
+
+        } catch (Exception e) {
+            log.error("Error updating module configuration: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to update module configuration");
+        }
+    }
+
+    /**
+     * Get Platform Statistics for System Admin Dashboard
+     * Returns real-time statistics from the database
+     */
+    public PlatformStatistics getPlatformStatistics() {
+        log.info("Fetching platform statistics from database");
+        
+        try {
+            // Count organizations by status
+            long totalOrganizations = organizationRepository.count();
+            long activeOrganizations = organizationRepository.countByStatus("ACTIVE");
+            long pendingOrganizations = organizationRepository.countByStatus("PENDING_APPROVAL");
+            long dormantOrganizations = organizationRepository.countByStatus("DORMANT");
+            long suspendedOrganizations = organizationRepository.countByStatus("SUSPENDED");
+            
+            // Count total employees (AppUsers) across all organizations
+            long totalEmployees = appUserRepository.count();
+            
+            PlatformStatistics stats = PlatformStatistics.builder()
+                    .totalOrganizations(totalOrganizations)
+                    .activeOrganizations(activeOrganizations)
+                    .pendingOrganizations(pendingOrganizations)
+                    .dormantOrganizations(dormantOrganizations)
+                    .suspendedOrganizations(suspendedOrganizations)
+                    .totalEmployees(totalEmployees)
+                    .totalSystemUsers(0L) // Can be updated when SystemUser count is needed
+                    .build();
+            
+            log.info("Platform statistics fetched - Total: {}, Active: {}, Pending: {}, Employees: {}",
+                    totalOrganizations, activeOrganizations, pendingOrganizations, totalEmployees);
+            
+            return stats;
+            
+        } catch (Exception e) {
+            log.error("Error fetching platform statistics", e);
+            // Return empty stats instead of throwing exception
+            return PlatformStatistics.builder()
+                    .totalOrganizations(0L)
+                    .activeOrganizations(0L)
+                    .pendingOrganizations(0L)
+                    .dormantOrganizations(0L)
+                    .suspendedOrganizations(0L)
+                    .totalEmployees(0L)
+                    .totalSystemUsers(0L)
+                    .build();
+        }
+    }
+ }

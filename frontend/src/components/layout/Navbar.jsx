@@ -10,7 +10,7 @@ import {
   X,
   Building2
 } from 'lucide-react';
-import Logo from '../../assets/corehive_logo_full.png';
+import Logo from '../../assets/logo_full.png';
 
 
 import { logout, selectUser, selectIsAuthenticated } from '../../store/slices/authSlice';
@@ -93,30 +93,33 @@ const Navbar = () => {
   const navigationLinks = getNavigationLinks();
   
   return (
-    <nav className="bg-[#F1FDF9] shadow-sm border-b opacity-100 border-gray-200 sticky top-0 z-40">
+    <nav className="bg-[#0C397A] backdrop-blur-lg bg-opacity-95 shadow-lg border-b border-white/10 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-18">
           {/* Logo and brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <img src={Logo} alt="CoreHive Logo" className="w-36" />
-              
+            <Link to="/" className="flex items-center space-x-3 group">
+             
+              <img src={Logo} alt="CoreHive Logo" className="w-45 " />
             </Link>
           </div>
           
           {/* Desktop navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-2">
             {navigationLinks.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 relative group ${
                   item.current
-                    ? 'text-primary-500 bg-primary-50'
-                    : 'text-text-secondary hover:text-primary-500 hover:bg-gray-50'
+                    ? 'text-white bg-[#02C39A] shadow-lg shadow-[#02C39A]/30'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
                 {item.name}
+                {!item.current && (
+                  <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-[#02C39A] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+                )}
               </Link>
             ))}
           </div>
@@ -127,14 +130,14 @@ const Navbar = () => {
               // Guest user buttons
               <div className="hidden md:flex items-center space-x-3">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm">
+                  <button className="px-4 py-2 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300">
                     Sign In
-                  </Button>
+                  </button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="primary" size="sm">
+                  <button className="px-5 py-2 text-sm font-semibold text-white bg-gradient-to-r from-[#02C39A] to-[#1ED292] rounded-lg shadow-lg shadow-[#02C39A]/30 hover:shadow-xl hover:shadow-[#02C39A]/40 hover:scale-105 transition-all duration-300">
                     Get Started
-                  </Button>
+                  </button>
                 </Link>
               </div>
             ) : (
@@ -142,16 +145,16 @@ const Navbar = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 group"
                 >
-                  <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#02C39A] to-[#1ED292] rounded-full flex items-center justify-center shadow-lg ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-300">
+                    <User className="w-5 h-5 text-white" />
                   </div>
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium text-text-primary">
+                    <p className="text-sm font-semibold text-white">
                       {user?.email?.split('@')[0] || 'User'}
                     </p>
-                    <p className="text-xs text-text-secondary">
+                    <p className="text-xs text-white/60">
                       {user?.role?.replace('_', ' ') || 'User'}
                     </p>
                   </div>
@@ -159,12 +162,12 @@ const Navbar = () => {
                 
                 {/* User dropdown menu */}
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-background-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
-                      <p className="text-sm font-medium text-text-primary">
+                  <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl border border-gray-200/50 z-50 overflow-hidden">
+                    <div className="p-4 bg-gradient-to-br from-[#0C397A] to-[#05668D]">
+                      <p className="text-sm font-semibold text-white truncate">
                         {user?.email}
                       </p>
-                      <p className="text-xs text-text-secondary">
+                      <p className="text-xs text-white/80 mt-1">
                         {user?.role?.replace('_', ' ')}
                         {user?.organizationName && ` • ${user.organizationName}`}
                       </p>
@@ -173,40 +176,40 @@ const Navbar = () => {
                     <div className="py-2">
                       <Link
                         to="/profile"
-                        className="flex items-center px-4 py-2 text-sm text-text-primary hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-[#02C39A]/10 hover:text-[#0C397A] transition-all duration-200 group"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        <User className="w-4 h-4 mr-3" />
+                        <User className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" />
                         Profile Settings
                       </Link>
                       
                       {user?.role === 'ORG_ADMIN' && (
                         <Link
                           to="/settings"
-                          className="flex items-center px-4 py-2 text-sm text-text-primary hover:bg-gray-50 transition-colors"
+                          className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-[#02C39A]/10 hover:text-[#0C397A] transition-all duration-200 group"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
-                          <Settings className="w-4 h-4 mr-3" />
+                          <Settings className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" />
                           Organization Settings
                         </Link>
                       )}
                       
                       <Link
                         to="/help"
-                        className="flex items-center px-4 py-2 text-sm text-text-primary hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 hover:bg-[#02C39A]/10 hover:text-[#0C397A] transition-all duration-200 group"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
-                        <HelpCircle className="w-4 h-4 mr-3" />
+                        <HelpCircle className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" />
                         Help & Support
                       </Link>
                       
-                      <hr className="my-2" />
+                      <hr className="my-2 border-gray-200" />
                       
                       <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="flex items-center w-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-all duration-200 group"
                       >
-                        <LogOut className="w-4 h-4 mr-3" />
+                        <LogOut className="w-4 h-4 mr-3 group-hover:scale-110 transition-transform" />
                         Sign Out
                       </button>
                     </div>
@@ -219,7 +222,7 @@ const Navbar = () => {
             <div className="md:hidden">
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-md text-text-secondary hover:text-primary-500 hover:bg-gray-50 transition-colors duration-200"
+                className="p-2 rounded-lg text-white hover:bg-white/10 transition-all duration-300"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-6 h-6" />
@@ -233,16 +236,16 @@ const Navbar = () => {
         
         {/* Mobile navigation menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-background-white">
+          <div className="md:hidden border-t border-white/10 bg-[#0C397A]/98 backdrop-blur-xl">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigationLinks.map((item) => (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200 ${
+                  className={`block px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
                     item.current
-                      ? 'text-primary-500 bg-primary-50'
-                      : 'text-text-secondary hover:text-primary-500 hover:bg-gray-50'
+                      ? 'text-white bg-[#02C39A] shadow-lg'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -255,14 +258,14 @@ const Navbar = () => {
                 <div className="pt-4 space-y-2">
                   <Link
                     to="/login"
-                    className="block w-full text-center px-3 py-2 border border-transparent rounded-md text-text-secondary hover:text-primary-500"
+                    className="block w-full text-center px-4 py-3 border border-white/20 rounded-lg text-white font-semibold hover:bg-white/10 transition-all duration-300"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link
                     to="/signup"
-                    className="block w-full text-center px-3 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+                    className="block w-full text-center px-4 py-3 bg-gradient-to-r from-[#02C39A] to-[#1ED292] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Get Started

@@ -81,6 +81,7 @@ jobs:
         docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} \
           --build-arg VITE_API_BASE_URL=https://corehive-backend-app-gtdreadhagd9ggfc.southeastasia-01.azurewebsites.net/api \
           --build-arg VITE_AI_SERVICE_URL=https://corehive-ai-service-app-fhh9hsebfhf6enbz.southeastasia-01.azurewebsites.net \
+          --build-arg VITE_RECAPTCHA_SITE_KEY=${{ secrets.RECAPTCHA_SITE_KEY }} \
           -f frontend/Dockerfile ./frontend
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }}
 

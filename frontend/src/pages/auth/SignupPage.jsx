@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef} from 'react';
+import ReCaptcha from '../../components/common/ReCaptcha';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -22,6 +23,8 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/layout/Footer';
 
 /**
  * Signup Page Component
@@ -33,6 +36,26 @@ const SignupPage = () => {
   
   const isLoading = useSelector(selectIsSignupLoading);
   const error = useSelector(selectError);
+
+  const recaptchaRef = useRef(null);
+const [recaptchaToken, setRecaptchaToken] = useState(null);
+const [recaptchaError, setRecaptchaError] = useState('');
+
+// Add these handlers:
+const handleRecaptchaChange = (token) => {
+  setRecaptchaToken(token);
+  setRecaptchaError('');
+};
+
+const handleRecaptchaExpired = () => {
+  setRecaptchaToken(null);
+  setRecaptchaError('reCAPTCHA expired. Please verify again.');
+};
+
+const handleRecaptchaError = () => {
+  setRecaptchaToken(null);
+  setRecaptchaError('reCAPTCHA error. Please try again.');
+};
   
   // Form state
   const [formData, setFormData] = useState({
@@ -192,43 +215,44 @@ const handleNextStep = () => {
 
   
   // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!recaptchaToken) {
+    setRecaptchaError('Please complete the reCAPTCHA verification');
+    return;
+  }
+  
+  try {
+    const signupFormData = new FormData();
+    signupFormData.append('organizationName', formData.organizationName);
+    signupFormData.append('adminEmail', formData.adminEmail);
+    signupFormData.append('businessRegistrationNumber', formData.businessRegistrationNumber);
+    signupFormData.append('employeeCountRange', formData.employeeCountRange);
+    signupFormData.append('recaptchaToken', recaptchaToken); // Add token
     
-    // Create FormData for file upload
-    const submitData = new FormData();
-    submitData.append('organizationName', formData.organizationName);
-    submitData.append('adminEmail', formData.adminEmail);
-    submitData.append('businessRegistrationNumber', formData.businessRegistrationNumber);
-    submitData.append('employeeCountRange', formData.employeeCountRange);
-    
-    // Convert boolean values to proper strings that backend can parse
-    // Only append if they are checked (true), otherwise send "false" explicitly
-    submitData.append('moduleQrAttendanceMarking', 
-      formData.moduleQrAttendanceMarking ? 'true' : 'false');
-    submitData.append('moduleFaceRecognitionAttendanceMarking', 
-      formData.moduleFaceRecognitionAttendanceMarking ? 'true' : 'false');
-    submitData.append('moduleEmployeeFeedback', 
-      formData.moduleEmployeeFeedback ? 'true' : 'false');
-    submitData.append('moduleHiringManagement', 
-      formData.moduleHiringManagement ? 'true' : 'false');
-    
-    // Append file if exists
     if (formData.businessRegistrationDocument) {
-      submitData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
+      signupFormData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
     }
     
-    try {
-      const result = await dispatch(signupOrganization(submitData)).unwrap();
-      
-      if (result.success) {
-        setIsSuccess(true);
-      }
-    } catch (error) {
-      console.error('Signup failed:', error);
-      // Error already handled by axios interceptor
+    signupFormData.append('modulePerformanceTracking', formData.modulePerformanceTracking);
+    signupFormData.append('moduleEmployeeFeedback', formData.moduleEmployeeFeedback);
+    signupFormData.append('moduleHiringManagement', formData.moduleHiringManagement);
+    
+    const resultAction = await dispatch(signupOrganization(signupFormData));
+    
+    if (signupOrganization.fulfilled.match(resultAction)) {
+      setIsSuccess(true);
+    } else {
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
-  };
+  } catch (error) {
+    console.error('Signup error:', error);
+    recaptchaRef.current?.reset();
+    setRecaptchaToken(null);
+  }
+};
   
   // Success view
   if (isSuccess) {
@@ -248,11 +272,7 @@ const handleNextStep = () => {
             </div>
             
             <div className="space-y-4">
-              <Alert 
-                type="info"
-                title="Next Steps"
-                message="You will receive an email notification once your registration is approved. You can then login with your credentials."
-              />
+             
               
               <Button
                 variant="primary"
@@ -269,279 +289,298 @@ const handleNextStep = () => {
   }
   
   return (
-    <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center items-center space-x-2 mb-6">
-            <Building2 className="h-12 w-12 text-primary-500" />
-            <span className="text-3xl font-bold text-text-primary">
-              Core<span className="text-primary-500">Hive</span>
-            </span>
-          </div>
-          <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Register Your Organization
-          </h1>
-          <p className="text-text-secondary">
-            Join thousands of SMEs already using CoreHive for their HR management
-          </p>
-        </div>
-        
-        {/* Progress indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center space-x-4">
-            <div className={`flex items-center ${currentStep >= 1 ? 'text-primary-500' : 'text-text-secondary'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                currentStep >= 1 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
-              }`}>
-                1
-              </div>
-              <span className="ml-2 font-medium">Company Info</span>
+    <>
+      <Navbar/>
+      <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center items-center space-x-2 mb-6">
+              
+              <span className="text-4xl font-bold text-text-primary">
+                Core<span className="text-primary-500">Hive</span>
+              </span>
             </div>
-            
-            <div className={`w-12 h-0.5 ${currentStep > 1 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
-            
-            <div className={`flex items-center ${currentStep >= 2 ? 'text-primary-500' : 'text-text-secondary'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                currentStep >= 2 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
-              }`}>
-                2
-              </div>
-              <span className="ml-2 font-medium">Features</span>
-            </div>
+            <h1 className="text-3xl font-bold text-text-primary mb-2">
+              Register Your Organization
+            </h1>
+            <p className="text-text-secondary">
+              Join thousands of SMEs already using CoreHive for their HR management
+            </p>
           </div>
-        </div>
-        
-        <Card className="animate-slide-up">
-          {/* API Error Alert */}
-          {error && (
-            <Alert 
-              type="error" 
-              message={error} 
-              onClose={() => dispatch(clearError())}
-              className="mb-6"
-            />
-          )}
           
-          <form onSubmit={handleSubmit}>
-            {/* Step 1: Company Information */}
-            {currentStep === 1 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-semibold text-text-primary mb-2">
-                    Company Information
-                  </h2>
-                  <p className="text-text-secondary">
-                    Tell us about your organization
-                  </p>
+          {/* Progress indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-center space-x-4">
+              <div className={`flex items-center ${currentStep >= 1 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 1 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
+                  1
                 </div>
-                
-                {/* Organization name */}
-                <Input
-                  label="Organization Name"
-                  type="text"
-                  name="organizationName"
-                  value={formData.organizationName}
-                  onChange={handleInputChange}
-                  placeholder="Enter your company name"
-                  icon={Building2}
-                  error={formErrors.organizationName}
-                  required
-                  disabled={isLoading}
-                />
-                
-                {/* Admin email */}
-                <Input
-                  label="Admin Email Address"
-                  type="email"
-                  name="adminEmail"
-                  value={formData.adminEmail}
-                  onChange={handleInputChange}
-                  placeholder="admin@yourcompany.com"
-                  icon={Mail}
-                  error={formErrors.adminEmail}
-                  required
-                  disabled={isLoading}
-                />
-                
-                {/* Business registration number */}
-                <Input
-                  label="Business Registration Number"
-                  type="text"
-                  name="businessRegistrationNumber"
-                  value={formData.businessRegistrationNumber}
-                  onChange={handleInputChange}
-                  placeholder="Enter your BR number"
-                  icon={FileText}
-                  error={formErrors.businessRegistrationNumber}
-                  required
-                  disabled={isLoading}
-                />
-
-                {/* Business Registration Document Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-2">
-                    <FileText className="inline w-4 h-4 mr-1" />
-                    Business Registration Document *
-                  </label>
-                  <input
-                    type="file"
-                    name="businessRegistrationDocument"
-                    onChange={handleInputChange}
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition ${
-                      formErrors.businessRegistrationDocument ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {formData.businessRegistrationDocument && (
-                    <p className="mt-1 text-sm text-green-600">
-                      ✓ {formData.businessRegistrationDocument.name} ({(formData.businessRegistrationDocument.size / 1024).toFixed(2)} KB)
+                <span className="ml-2 font-medium">Company Info</span>
+              </div>
+              
+              <div className={`w-12 h-0.5 ${currentStep > 1 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex items-center ${currentStep >= 2 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 2 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
+                  2
+                </div>
+                <span className="ml-2 font-medium">Features</span>
+              </div>
+            </div>
+          </div>
+          
+          <Card className="animate-slide-up bg-white shadow-md">
+            {/* API Error Alert */}
+            {error && (
+              <Alert 
+                type="error" 
+                message={error} 
+                onClose={() => dispatch(clearError())}
+                className="mb-6"
+              />
+            )}
+            
+            <form onSubmit={handleSubmit}>
+              {/* Step 1: Company Information */}
+              {currentStep === 1 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-semibold text-text-primary mb-2">
+                      Company Information
+                    </h2>
+                    <p className="text-text-secondary">
+                      Tell us about your organization
                     </p>
-                  )}
-                  {formErrors.businessRegistrationDocument && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.businessRegistrationDocument}</p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    Accepted formats: PDF, JPG, PNG (Max 2MB)
-                  </p>
-                </div>
-                
-                {/* Employee count range */}
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-text-primary">
-                    Number of Employees <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <select
-                      name="employeeCountRange"
-                      value={formData.employeeCountRange}
+                  </div>
+                  
+                  {/* Organization name */}
+                  <Input
+                    label="Organization Name"
+                    type="text"
+                    name="organizationName"
+                    value={formData.organizationName}
+                    onChange={handleInputChange}
+                    placeholder="Enter your company name"
+                    icon={Building2}
+                    error={formErrors.organizationName}
+                    required
+                    disabled={isLoading}
+                  />
+                  
+                  {/* Admin email */}
+                  <Input
+                    label="Admin Email Address"
+                    type="email"
+                    name="adminEmail"
+                    value={formData.adminEmail}
+                    onChange={handleInputChange}
+                    placeholder="admin@yourcompany.com"
+                    icon={Mail}
+                    error={formErrors.adminEmail}
+                    required
+                    disabled={isLoading}
+                  />
+                  
+                  {/* Business registration number */}
+                  <Input
+                    label="Business Registration Number"
+                    type="text"
+                    name="businessRegistrationNumber"
+                    value={formData.businessRegistrationNumber}
+                    onChange={handleInputChange}
+                    placeholder="Enter your BR number"
+                    icon={FileText}
+                    error={formErrors.businessRegistrationNumber}
+                    required
+                    disabled={isLoading}
+                  />
+
+                  {/* Business Registration Document Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-text-primary mb-2">
+                      <FileText className="inline w-4 h-4 mr-1" />
+                      Business Registration Document *
+                    </label>
+                    <input
+                      type="file"
+                      name="businessRegistrationDocument"
                       onChange={handleInputChange}
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
-                        formErrors.employeeCountRange ? 'border-red-300' : 'border-gray-300'
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition ${
+                        formErrors.businessRegistrationDocument ? 'border-red-500' : 'border-gray-300'
                       }`}
+                    />
+                    {formData.businessRegistrationDocument && (
+                      <p className="mt-1 text-sm text-green-600">
+                        ✓ {formData.businessRegistrationDocument.name} ({(formData.businessRegistrationDocument.size / 1024).toFixed(2)} KB)
+                      </p>
+                    )}
+                    {formErrors.businessRegistrationDocument && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.businessRegistrationDocument}</p>
+                    )}
+                    <p className="mt-1 text-xs text-gray-500">
+                      Accepted formats: PDF, JPG, PNG (Max 2MB)
+                    </p>
+                  </div>
+                  
+                  {/* Employee count range */}
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-text-primary">
+                      Number of Employees <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <select
+                        name="employeeCountRange"
+                        value={formData.employeeCountRange}
+                        onChange={handleInputChange}
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
+                          formErrors.employeeCountRange ? 'border-red-300' : 'border-gray-300'
+                        }`}
+                        disabled={isLoading}
+                      >
+                        <option value="">Select employee count range</option>
+                        {employeeCountOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {formErrors.employeeCountRange && (
+                      <p className="text-sm text-red-600 flex items-center animate-slide-up">
+                        <Info className="h-4 w-4 mr-1" />
+                        {formErrors.employeeCountRange}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Next button */}
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleNextStep}
+                      icon={ArrowRight}
+                      iconPosition="right"
                       disabled={isLoading}
                     >
-                      <option value="">Select employee count range</option>
-                      {employeeCountOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      Next: Choose Features
+                    </Button>
                   </div>
-                  {formErrors.employeeCountRange && (
-                    <p className="text-sm text-red-600 flex items-center animate-slide-up">
-                      <Info className="h-4 w-4 mr-1" />
-                      {formErrors.employeeCountRange}
+                </div>
+              )}
+              
+              {/* Step 2: Module Selection */}
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <h2 className="text-xl font-semibold text-text-primary mb-2">
+                      Choose Your Features
+                    </h2>
+                    <p className="text-text-secondary">
+                      Select additional modules for your organization (optional)
                     </p>
-                  )}
-                </div>
-                
-                {/* Next button */}
-                <div className="flex justify-end space-x-3">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={handleNextStep}
-                    icon={ArrowRight}
-                    iconPosition="right"
-                    disabled={isLoading}
-                  >
-                    Next: Choose Features
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Step 2: Module Selection */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-semibold text-text-primary mb-2">
-                    Choose Your Features
-                  </h2>
-                  <p className="text-text-secondary">
-                    Select additional modules for your organization (optional)
-                  </p>
-                </div>
-                
-                {/* Module selection */}
-                <div className="space-y-4">
-                  <div 
-                    type="info"
-                    title="Basic Features Included"
-                    message="Employee Management, Payroll, Leave Management, Attendance Tracking, and Reports are included in all plans."
-                  />
+                  </div>
                   
-                  {moduleOptions.map((module) => (
+                  {/* Module selection */}
+                  <div className="space-y-4">
                     <div 
-                      key={module.key}
-                      className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors duration-200"
-                    >
-                      <label className="flex items-start space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name={module.key}
-                          checked={formData[module.key]}
-                          onChange={handleInputChange}
-                          className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
-                          disabled={isLoading}
-                        />
-                        <div>
-                          <h3 className="font-medium text-text-primary">
-                            {module.name}
-                          </h3>
-                          <p className="text-sm text-text-secondary mt-1">
-                            {module.description}
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Action buttons */}
-                <div className="flex justify-between space-x-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCurrentStep(1)}
-                    disabled={isLoading}
-                  >
-                    Back
-                  </Button>
+                      type="info"
+                      title="Basic Features Included"
+                      message="Employee Management, Payroll, Leave Management, Attendance Tracking, and Reports are included in all plans."
+                    />
+                    
+                    {moduleOptions.map((module) => (
+                      <div 
+                        key={module.key}
+                        className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors duration-200"
+                      >
+                        <label className="flex items-start space-x-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name={module.key}
+                            checked={formData[module.key]}
+                            onChange={handleInputChange}
+                            className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                            disabled={isLoading}
+                          />
+                          <div>
+                            <h3 className="font-medium text-text-primary">
+                              {module.name}
+                            </h3>
+                            <p className="text-sm text-text-secondary mt-1">
+                              {module.description}
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                   
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    loading={isLoading}
-                    disabled={isLoading}
-                    icon={ArrowRight}
-                    iconPosition="right"
-                  >
-                    {isLoading ? 'Registering...' : 'Complete Registration'}
-                  </Button>
+                  <ReCaptcha
+                    ref={recaptchaRef}
+                    onChange={handleRecaptchaChange}
+                    onExpired={handleRecaptchaExpired}
+                    onError={handleRecaptchaError}
+                  />
+
+                  {recaptchaError && (
+                    <div className="text-sm text-red-600 text-center mt-2">
+                      {recaptchaError}
+                    </div>
+                  )}
+
+                  {isLoading || !recaptchaToken}
+
+                  {/* Action buttons */}
+                  <div className="flex justify-between space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      disabled={isLoading}
+                    >
+                      Back
+                    </Button>
+                    
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      loading={isLoading}
+                      disabled={isLoading}
+                      icon={ArrowRight}
+                      iconPosition="right"
+                    >
+                      {isLoading ? 'Registering...' : 'Complete Registration'}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </form>
-        </Card>
-        
-        {/* Login link */}
-        <div className="text-center mt-6 ">
-          <p className="text-text-secondary">
-            Already have an account?{' '}
-            <Link 
-              to="/login"
-              className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
-            >
-              Sign in here
-            </Link>
-          </p>
+              )}
+            </form>
+          </Card>
+          
+          {/* Login link */}
+          <div className="text-center mt-6 ">
+            <p className="text-text-secondary">
+              Already have an account?{' '}
+              <Link 
+                to="/login"
+                className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
+              >
+                Sign in here
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+      <Footer/>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, KeyRound } from 'lucide-react';
 import { apiPost } from '../../api/axios'; // Ensure this path is correct
@@ -9,24 +9,37 @@ import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
+import ReCaptcha from '../../components/common/ReCaptcha';
 
 export const ForgetPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaError, setRecaptchaError] = useState('');
+  const recaptchaRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ type: '', message: '' });
+    setRecaptchaError('');
 
     if (!email) {
       setStatus({ type: 'error', message: 'Please enter your email address' });
       return;
     }
 
+    if (!recaptchaToken) {
+      setRecaptchaError('Please complete the reCAPTCHA verification');
+      return;
+    }
+
     setLoading(true);
     try {
-      const response = await apiPost('/auth/forgot-password', { email });
+      const response = await apiPost('/auth/forgot-password', { 
+        email,
+        recaptchaToken 
+      });
 
       if (response.success) {
         setStatus({ 
@@ -34,17 +47,23 @@ export const ForgetPasswordPage = () => {
           message: 'Success! Check your email for the temporary password.' 
         });
         setEmail(''); // Clear input
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
       } else {
         setStatus({ 
           type: 'error', 
           message: response.message || 'Failed to reset password.' 
         });
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
       }
     } catch (err) {
       setStatus({ 
         type: 'error', 
         message: 'An error occurred. Please try again later.' 
       });
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -70,6 +89,8 @@ export const ForgetPasswordPage = () => {
               <Alert 
                 type={status.type} 
                 message={status.message} 
+                isOpen={!!status.message}
+                onClose={() => setStatus({ type: '', message: '' })}
                 className="mb-6"
               />
             )}
@@ -84,6 +105,27 @@ export const ForgetPasswordPage = () => {
                 required
                 icon={Mail}
               />
+              
+              <div className="space-y-2">
+                <ReCaptcha
+                  ref={recaptchaRef}
+                  onChange={(token) => {
+                    setRecaptchaToken(token);
+                    setRecaptchaError('');
+                  }}
+                  onExpired={() => {
+                    setRecaptchaToken(null);
+                    setRecaptchaError('reCAPTCHA expired. Please verify again.');
+                  }}
+                  onError={() => {
+                    setRecaptchaToken(null);
+                    setRecaptchaError('reCAPTCHA error. Please try again.');
+                  }}
+                />
+                {recaptchaError && (
+                  <p className="text-sm text-red-600">{recaptchaError}</p>
+                )}
+              </div>
               
               <Button
                 type="submit"

@@ -1,7 +1,9 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
+import com.corehive.backend.dto.request.UpdateDepartmentRequest;
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.service.DepartmentService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,6 +78,31 @@ public class DepartmentController {
 
         } catch (Exception e) {
             log.error("Error creating department", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Internal server error: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<UpdateDepartmentResponse>> updateDepartment(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateDepartmentRequest request) {
+        try {
+            String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+            request.setId(id);
+            ApiResponse<UpdateDepartmentResponse> response = departmentService.updateDepartment(organizationUuid,request);
+
+            if(response.isSuccess()){
+                return ResponseEntity.ok(response);
+            }else{
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+        } catch (Exception e) {
+            log.error("Error updating department", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Internal server error: " + e.getMessage()));
         }

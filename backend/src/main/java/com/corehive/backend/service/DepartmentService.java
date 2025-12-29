@@ -1,6 +1,9 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
+import com.corehive.backend.dto.request.UpdateDepartmentRequest;
+import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +35,7 @@ public class DepartmentService {
             log.info("Ensuring default departments exist for organization: {}", organizationUuid);
 
             List<Department> existingDepts = departmentRepository.findByOrganizationUuid(organizationUuid);
-            
+
             if (existingDepts.isEmpty()) {
                 log.info("No departments found. Creating default departments for organization: {}", organizationUuid);
                 createDefaultDepartments(organizationUuid);
@@ -54,12 +57,12 @@ public class DepartmentService {
 
         // Default departments
         String[][] deptData = {
-            {"Human Resources", "HR"},
-            {"Information Technology", "IT"},
-            {"Finance", "FIN"},
-            {"Operations", "OPS"},
-            {"Sales", "SALES"},
-            {"Marketing", "MKT"}
+                {"Human Resources", "HR"},
+                {"Information Technology", "IT"},
+                {"Finance", "FIN"},
+                {"Operations", "OPS"},
+                {"Sales", "SALES"},
+                {"Marketing", "MKT"}
         };
 
         for (String[] dept : deptData) {
@@ -69,7 +72,7 @@ public class DepartmentService {
             department.setCode(dept[1]);
             department.setIsActive(true);
             department.setCreatedAt(LocalDateTime.now());
-            
+
             defaultDepartments.add(department);
         }
 
@@ -81,7 +84,7 @@ public class DepartmentService {
      * Get all departments for an organization
      */
     public List<Department> getDepartmentsByOrganization(String organizationUuid) {
-        return departmentRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+        return departmentRepository.findByOrganizationUuid(organizationUuid);
     }
 
     /**
@@ -91,11 +94,20 @@ public class DepartmentService {
         return departmentRepository.existsByIdAndOrganizationUuid(departmentId, organizationUuid);
     }
 
+    public List<Department> getAll() {
+        return departmentRepository.findAll();
+    }
+
+    /**
+     * Create a new department for an organization
+     */
     @Transactional
     public Department createDepartment(String organizationUuid, CreateDepartmentRequest request) {
-        Optional<Department> existingDept = departmentRepository
-                .findByOrganizationUuidAndName(organizationUuid, request.getName());
-        if(existingDept.isPresent()) {
+
+        Optional<Department> existingDept =
+                departmentRepository.findByOrganizationUuidAndName(organizationUuid, request.getName());
+
+        if (existingDept.isPresent()) {
             throw new RuntimeException("Department with the same name already exists");
         }
 
@@ -110,5 +122,76 @@ public class DepartmentService {
         return departmentRepository.save(department);
     }
 
+    @Transactional
+    public ApiResponse<UpdateDepartmentResponse> updateDepartment(String organizationUuid, UpdateDepartmentRequest request){
+        try{
+            Optional<Department> departmentOpt = departmentRepository.findById(request.getId());
+
+            if (departmentOpt.isEmpty() || !departmentOpt.get().getOrganizationUuid().equals(organizationUuid)) {
+                return ApiResponse.error("Department not found in the organization");
+            }
+
+            Department department = departmentOpt.get();
+
+            if(request.getName()!=null && !request.getName().isEmpty()){
+                department.setName(request.getName());
+            }
+            if(request.getCode()!=null && !request.getCode().isEmpty()){
+                department.setCode(request.getCode());
+            }
+            if(request.getManagerId()!=null){
+                department.setManagerId(request.getManagerId());
+            }
+            if(request.getIsActive()!=null){
+                department.setIsActive(request.getIsActive());
+            }
+
+            department.setCreatedAt(LocalDateTime.now());
+
+            Department savedDepartment = departmentRepository.save(department);
+
+            UpdateDepartmentResponse responseDto = UpdateDepartmentResponse.builder()
+                    .id(savedDepartment.getId())
+                    .name(savedDepartment.getName())
+                    .code(savedDepartment.getCode())
+                    .managerId(savedDepartment.getManagerId())
+                    .isActive(savedDepartment.getIsActive())
+                    .build();
+
+            return ApiResponse.<UpdateDepartmentResponse>builder()
+                    .success(true)
+                    .message("Department updated successfully")
+                    .data(responseDto)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update department",e);
+        }
+
+
+    }
+
+    /**
+     * Get department by ID
+     */
+    public Optional<Department> getDepartmentById(Long departmentId) {
+        if (departmentId == null) {
+            return Optional.empty();
+        }
+        return departmentRepository.findById(departmentId);
+    }
+
+    /**
+     * Get department name by ID
+     * Returns "Unknown Department" if not found
+     */
+    public String getDepartmentNameById(Long departmentId) {
+        if (departmentId == null) {
+            return "No Department";
+        }
+        return departmentRepository.findById(departmentId)
+                .map(Department::getName)
+                .orElse("Unknown Department");
+    }
 
 }

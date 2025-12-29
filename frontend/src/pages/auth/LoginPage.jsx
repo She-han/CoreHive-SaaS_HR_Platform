@@ -109,11 +109,22 @@ const LoginPage = () => {
       const resultAction = await dispatch(loginUser(formData));
       
       if (loginUser.fulfilled.match(resultAction)) {
-        console.log('✅ Login successful');
+        console.log('Login successful');
         
         // Get user data from result
         const userData = resultAction.payload;
-        
+
+        console.log('🔍 SERVER RESPONSE KEYS:', Object.keys(userData));
+        console.log('🔍 Password Flag Value:', userData.isPasswordChangeRequired, userData.passwordChangeRequired);
+
+        const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
+
+        if (needsPasswordChange) {
+          console.log('Password change required - redirecting...');
+          navigate('/change-password', { replace: true });
+          return;
+        }
+
         // Handle redirect based on user role and configuration status
         // Redirect to proper path based on role
         if (userData.userType === 'SYSTEM_ADMIN' && userData.role === 'SYS_ADMIN') {
@@ -127,32 +138,32 @@ const LoginPage = () => {
           if (userData.role === 'ORG_ADMIN') {
             if (!userData.modulesConfigured) {
               // First-time ORG_ADMIN - module configuration first
-              console.log('🔄 First-time ORG_ADMIN - redirecting to module configuration...');
+              console.log('First-time ORG_ADMIN - redirecting to module configuration...');
               navigate('/configure-modules', { replace: true });
               return;
             } else {
               // Existing ORG_ADMIN - organization management dashboard
-              console.log('✅ ORG_ADMIN - redirecting to org_admin dashboard...');
+              console.log('ORG_ADMIN - redirecting to org_admin dashboard...');
               navigate('/org_admin/dashboard', { replace: true });
               return;
             }
           } 
           else if (userData.role === 'HR_STAFF') {
             // HR Staff - HR management dashboard
-            console.log('� HR_STAFF - redirecting to hr_staff dashboard...');
+            console.log('HR_STAFF - redirecting to hr_staff dashboard...');
             navigate('/hr_staff/dashboard', { replace: true });
             return;
           } 
           else if (userData.role === 'EMPLOYEE') {
             // Employee - self-service profile
-            console.log('👤 EMPLOYEE - redirecting to employee profile...');
+            console.log('EMPLOYEE - redirecting to employee profile...');
             navigate('/employee/profile', { replace: true });
             return;
           }
         }
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
     }
   };
   
@@ -268,34 +279,7 @@ const LoginPage = () => {
             </Button>
           </form>
           
-          {/* Demo login buttons (development only) */}
-          {import.meta.env.DEV && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-xs text-center text-text-secondary mb-3">
-                Demo Logins (Development Only)
-              </p>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('admin')}
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  Login as System Admin
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDemoLogin('org')}
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  Login as Org Admin
-                </Button>
-              </div>
-            </div>
-          )}
+        
           
           {/* Sign up link */}
           <div className="mt-6 text-center">

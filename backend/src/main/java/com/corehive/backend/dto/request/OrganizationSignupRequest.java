@@ -2,16 +2,12 @@ package com.corehive.backend.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Organization Registration Request DTO
- * Get company registration data from frontend
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -33,8 +29,12 @@ public class OrganizationSignupRequest {
     @NotBlank(message = "Employee count range is required")
     private String employeeCountRange;
 
-    // Extended modules (Optional)
-    private Boolean modulePerformanceTracking = false;
+    // File upload field - NO validation annotations here
+    private MultipartFile businessRegistrationDocument;
+
+    // Module flags
+    private Boolean moduleQrAttendanceMarking = false;
+    private Boolean moduleFaceRecognitionAttendanceMarking = false;
     private Boolean moduleEmployeeFeedback = false;
     private Boolean moduleHiringManagement = false;
 }

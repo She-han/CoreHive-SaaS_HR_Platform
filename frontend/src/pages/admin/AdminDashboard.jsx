@@ -24,6 +24,17 @@ import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
 import TomatoPriceChart from './components/TomatoPriceChart';
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 /**
  * System Admin Dashboard Component

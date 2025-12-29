@@ -170,6 +170,31 @@ const AdminDashboard = () => {
     }
   ];
 
+  const systemLoadData = [
+  { time: '00:00', cpu: 45, memory: 62 },
+  { time: '04:00', cpu: 32, memory: 58 },
+  { time: '08:00', cpu: 78, memory: 75 },
+  { time: '12:00', cpu: 85, memory: 82 },
+  { time: '16:00', cpu: 72, memory: 71 },
+  { time: '20:00', cpu: 55, memory: 65 },
+];
+
+const moduleUsageData = [
+  { name: 'Employee', value: 108, color: '#0d9488' },
+  { name: 'Payroll', value: 95, color: '#1e3a8a' },
+  { name: 'Leave', value: 102, color: '#3b82f6' },
+  { name: 'Attendance', value: 87, color: '#06b6d4' },
+  { name: 'Performance', value: 64, color: '#8b5cf6' },
+];
+
+const tenantGrowthData = [
+  { month: "Jan", tenants: 40, users: 120 },
+  { month: "Feb", tenants: 55, users: 180 },
+  { month: "Mar", tenants: 70, users: 260 },
+  { month: "Apr", tenants: 90, users: 340 },
+  { month: "May", tenants: 120, users: 420 },
+];
+
   if (isLoading && stats.totalOrganizations === 0) {
     return (
       <DashboardLayout>
@@ -306,12 +331,63 @@ const AdminDashboard = () => {
             </div>
           </div>
 
+          {/* Charts Row */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tenant Growth</CardTitle>
+            <CardDescription>New tenants and active users over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={tenantGrowthData}>
+                <defs>
+                  <linearGradient id="colorTenants" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1e3a8a" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#1e3a8a" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Area type="monotone" dataKey="tenants" stroke="#0d9488" fillOpacity={1} fill="url(#colorTenants)" />
+                <Area type="monotone" dataKey="users" stroke="#1e3a8a" fillOpacity={1} fill="url(#colorUsers)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>System Load</CardTitle>
+            <CardDescription>CPU and memory usage over 24 hours</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={systemLoadData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="time" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Line type="monotone" dataKey="cpu" stroke="#0d9488" strokeWidth={2} />
+                <Line type="monotone" dataKey="memory" stroke="#1e3a8a" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
           {/* Quick Actions & Recent Activities */}
           <div className="space-y-6">
             {/* Quick Actions */}
             <Card title="Quick Actions">
               <div className="space-y-3">
-                <Link to="/admin/approvals" className="block">
+                <Link to="/sys_admin/approvals" className="block">
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center">
                       <Clock className="w-4 h-4 mr-2" />
@@ -321,7 +397,7 @@ const AdminDashboard = () => {
                   </Button>
                 </Link>
                 
-                <Link to="/admin/organizations" className="block">
+                <Link to="/sys_admin/organizations" className="block">
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center">
                       <Building2 className="w-4 h-4 mr-2" />
@@ -331,7 +407,7 @@ const AdminDashboard = () => {
                   </Button>
                 </Link>
                 
-                <Link to="/admin/reports" className="block">
+                <Link to="/sys_admin/analytics" className="block">
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center">
                       <TrendingUp className="w-4 h-4 mr-2" />
@@ -341,7 +417,7 @@ const AdminDashboard = () => {
                   </Button>
                 </Link>
                 
-                <Link to="/admin/settings" className="block">
+                <Link to="/sys_admin/settings" className="block">
                   <Button variant="outline" className="w-full justify-between">
                     <span className="flex items-center">
                       <Database className="w-4 h-4 mr-2" />

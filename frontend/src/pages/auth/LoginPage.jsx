@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Mail, Lock, ArrowRight, Building2, AlertCircle } from 'lucide-react';
@@ -15,42 +15,37 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
 import Alert from '../../components/common/Alert';
+import ReCaptcha from '../../components/common/ReCaptcha';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 
-/**
- * Login Page Component
- * Universal login page (For both System Admin and Organization Users)
- */
 const LoginPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const recaptchaRef = useRef(null);
   
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isLoading = useSelector(selectIsLoading);
   const error = useSelector(selectError);
   
-  // Form state
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   
   const [formErrors, setFormErrors] = useState({});
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaError, setRecaptchaError] = useState('');
   
-  // Get redirect path from location state (protected route redirect)
   const from = location.state?.from?.pathname || '/dashboard';
   
-  // Redirect if already authenticated - UPDATED VERSION
   useEffect(() => {
     if (isAuthenticated) {
-      // Don't auto-redirect, let handleSubmit handle the logic
-      console.log('🔍 User already authenticated, but allowing manual navigation logic');
+      console.log('🔍 User already authenticated');
     }
   }, [isAuthenticated]);
   
-  // Clear errors when component mounts
   useEffect(() => {
     dispatch(clearError());
     return () => {
@@ -58,7 +53,6 @@ const LoginPage = () => {
     };
   }, [dispatch]);
   
-  // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -66,7 +60,6 @@ const LoginPage = () => {
       [name]: value
     }));
     
-    // Clear specific field error when user starts typing
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -74,19 +67,31 @@ const LoginPage = () => {
       }));
     }
   };
+
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setRecaptchaError('');
+  };
+
+  const handleRecaptchaExpired = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError('reCAPTCHA expired. Please verify again.');
+  };
+
+  const handleRecaptchaError = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError('reCAPTCHA error. Please try again.');
+  };
   
-  // Validate form
   const validateForm = () => {
     const errors = {};
     
-    // Email validation
     if (!formData.email.trim()) {
       errors.email = 'Email address is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
     
-    // Password validation
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 6) {
@@ -97,96 +102,64 @@ const LoginPage = () => {
     return Object.keys(errors).length === 0;
   };
   
-  // Handle form submission - FIXED VERSION
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
+
+    if (!recaptchaToken) {
+      setRecaptchaError('Please complete the reCAPTCHA verification');
+      return;
+    }
     
     try {
-      const resultAction = await dispatch(loginUser(formData));
+      const loginData = {
+        ...formData,
+        recaptchaToken
+      };
+
+      const resultAction = await dispatch(loginUser(loginData));
       
       if (loginUser.fulfilled.match(resultAction)) {
         console.log('Login successful');
         
-        // Get user data from result
         const userData = resultAction.payload;
-
-        console.log('🔍 SERVER RESPONSE KEYS:', Object.keys(userData));
-        console.log('🔍 Password Flag Value:', userData.isPasswordChangeRequired, userData.passwordChangeRequired);
-
         const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
 
         if (needsPasswordChange) {
-          console.log('Password change required - redirecting...');
           navigate('/change-password', { replace: true });
           return;
         }
 
-        // Handle redirect based on user role and configuration status
-        // Redirect to proper path based on role
         if (userData.userType === 'SYSTEM_ADMIN' && userData.role === 'SYS_ADMIN') {
-          // System admin - platform management dashboard
-          console.log('🔧 SYSTEM_ADMIN - redirecting to sys_admin dashboard...');
           navigate('/sys_admin/dashboard', { replace: true });
-          return;
         } 
         else if (userData.userType === 'ORG_USER') {
-          // Organization users - different paths based on role
           if (userData.role === 'ORG_ADMIN') {
             if (!userData.modulesConfigured) {
-              // First-time ORG_ADMIN - module configuration first
-              console.log('First-time ORG_ADMIN - redirecting to module configuration...');
               navigate('/configure-modules', { replace: true });
-              return;
             } else {
-              // Existing ORG_ADMIN - organization management dashboard
-              console.log('ORG_ADMIN - redirecting to org_admin dashboard...');
               navigate('/org_admin/dashboard', { replace: true });
-              return;
             }
           } 
           else if (userData.role === 'HR_STAFF') {
-            // HR Staff - HR management dashboard
-            console.log('HR_STAFF - redirecting to hr_staff dashboard...');
             navigate('/hr_staff/dashboard', { replace: true });
-            return;
           } 
           else if (userData.role === 'EMPLOYEE') {
-            // Employee - self-service profile
-            console.log('EMPLOYEE - redirecting to employee profile...');
             navigate('/employee/profile', { replace: true });
-            return;
           }
         }
+      } else {
+        recaptchaRef.current?.reset();
+        setRecaptchaToken(null);
       }
     } catch (error) {
       console.error('Login error:', error);
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     }
-  };
-  
-  // Handle demo login (development only)
-  const handleDemoLogin = (userType) => {
-    const demoCredentials = {
-      admin: {
-        email: 'admin@corehive.com',
-        password: 'Admin@123'
-      },
-      org: {
-        email: 'admin@testcompany.com',
-        password: 'TempPass123!'
-      }
-    };
-    
-    const credentials = demoCredentials[userType];
-    setFormData(credentials);
-    
-    // Auto submit after a short delay
-    setTimeout(() => {
-      dispatch(loginUser(credentials));
-    }, 500);
   };
   
   return (
@@ -194,11 +167,10 @@ const LoginPage = () => {
     <Navbar/>
     <div className="min-h-screen bg-background-primary flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center items-center space-x-2 mb-6">
-            <Building2 className="h-12 w-12 text-primary-500" />
-            <span className="text-3xl font-bold text-text-primary">
+            
+            <span className="text-4xl font-bold text-text-primary">
               Core<span className="text-primary-500">Hive</span>
             </span>
           </div>
@@ -210,9 +182,7 @@ const LoginPage = () => {
           </p>
         </div>
         
-        {/* Login form */}
-        <Card className="animate-slide-up bg-white shadow-md ">
-          {/* API Error Alert */}
+        <Card className="animate-slide-up bg-white shadow-md">
           {error && (
             <Alert 
               type="error" 
@@ -223,7 +193,6 @@ const LoginPage = () => {
           )}
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email field */}
             <Input
               label="Email Address"
               type="email"
@@ -238,7 +207,6 @@ const LoginPage = () => {
               autoComplete="email"
             />
             
-            {/* Password field */}
             <Input
               label="Password"
               type="password"
@@ -254,7 +222,6 @@ const LoginPage = () => {
               autoComplete="current-password"
             />
             
-            {/* Forgot password link */}
             <div className="flex justify-end">
               <Link 
                 to="/forgot-password"
@@ -263,14 +230,26 @@ const LoginPage = () => {
                 Forgot your password?
               </Link>
             </div>
+
+            <ReCaptcha
+              ref={recaptchaRef}
+              onChange={handleRecaptchaChange}
+              onExpired={handleRecaptchaExpired}
+              onError={handleRecaptchaError}
+            />
+
+            {recaptchaError && (
+              <div className="text-sm text-red-600 text-center">
+                {recaptchaError}
+              </div>
+            )}
             
-            {/* Submit button */}
             <Button
               type="submit"
               variant="primary"
               size="lg"
               loading={isLoading}
-              disabled={isLoading || !formData.email || !formData.password}
+              disabled={isLoading || !formData.email || !formData.password || !recaptchaToken}
               className="w-full"
               icon={ArrowRight}
               iconPosition="right"
@@ -279,9 +258,6 @@ const LoginPage = () => {
             </Button>
           </form>
           
-        
-          
-          {/* Sign up link */}
           <div className="mt-6 text-center">
             <p className="text-text-secondary">
               Don't have an account?{' '}
@@ -295,7 +271,6 @@ const LoginPage = () => {
           </div>
         </Card>
         
-        {/* Support info */}
         <div className="text-center">
           <p className="text-sm text-text-secondary">
             Need help?{' '}

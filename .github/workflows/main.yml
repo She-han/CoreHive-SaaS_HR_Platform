@@ -75,7 +75,7 @@ jobs:
         docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }} -f backend/Dockerfile ./backend
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/corehive-backend:${{ github.sha }}
 
-  # Step 5: Build and Push Frontend Image
+    # Step 5: Build and Push Frontend Image
     - name: 'Step 5: Build and Push Frontend Image'
       run: |
         docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/corehive-frontend:${{ github.sha }} \

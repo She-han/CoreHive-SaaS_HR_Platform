@@ -4,9 +4,18 @@ import ReCAPTCHA from 'react-google-recaptcha';
 const ReCaptcha = forwardRef(({ onChange, onExpired, onError }, ref) => {
   const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
+  console.log('🔑 reCAPTCHA Site Key:', siteKey ? 'Present' : 'Missing');
+  console.log('🔑 Full Key (first 10 chars):', siteKey?.substring(0, 10));
+
   if (!siteKey) {
-    console.warn('⚠️ reCAPTCHA site key not configured');
-    return null;
+    console.error('❌ VITE_RECAPTCHA_SITE_KEY not configured!');
+    return (
+      <div className="text-center p-4 bg-red-50 rounded-lg">
+        <p className="text-red-600 text-sm">
+          reCAPTCHA configuration error. Please contact support.
+        </p>
+      </div>
+    );
   }
 
   return (

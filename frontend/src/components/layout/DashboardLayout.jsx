@@ -88,9 +88,6 @@ const UserWelcome = memo(({ user }) => {
 });
 UserWelcome.displayName = 'UserWelcome';
 
-
-
-
 /**
  * Dashboard Layout with Sidebar
  * Modern design with CoreHive theme colors
@@ -112,12 +109,6 @@ const DashboardLayout = ({ children, title }) => {
     return () => clearInterval(timer);
   }, []);
 
-
-
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
   // Memoized date/time formatting
   const formattedDateTime = useMemo(() => {
     const options = { 
@@ -146,9 +137,6 @@ const DashboardLayout = ({ children, title }) => {
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
   }, []);
-
-  
-
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: THEME.background }}>
@@ -217,25 +205,6 @@ const DashboardLayout = ({ children, title }) => {
             <UserWelcome user={user} />
 
             {/* Notification Icon */}
-            <div className="relative">
-              <Bell className="w-6 h-6 text-gray-600" />
-              <span className="absolute top-0 right-0 block w-3 h-3 bg-red-500 rounded-full"></span>
-            </div>
-            {/*profile*/}
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold">
-                CH
-              </div>
-
-              {/* Name + Email */}
-              <div className="leading-tight">
-                <p className="text-[13px] text-gray-900">p</p>
-                <p className="text-xs text-gray-500">pp</p>
-              </div>
-            </div>
-            {/* Logout Icon */  }
-            <LogOut className="w-4 h-4 text-gray-600 cursor-pointer hover:text-black" />
             <NotificationButton />
 
             {/* DateTime Display */}

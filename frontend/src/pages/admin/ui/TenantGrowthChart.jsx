@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import {
     LineChart,
     Line,
@@ -14,7 +14,7 @@ import {
     AreaChart
 } from 'recharts';
 
-const TenantGrowthChart = () => {
+const TenantGrowthChart = memo(() => {
     const tenantData = [
         { month: 'Jan', newTenants: 800, activeUsers: 1200 },
         { month: 'Feb', newTenants: 1100, activeUsers: 1500 },
@@ -28,12 +28,14 @@ const TenantGrowthChart = () => {
       <div style={{ 
       backgroundColor: 'white', 
       padding: '20px', 
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      marginBottom: '20px'
+      borderRadius: '16px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      border: '1px solid #f3f4f6',
+      marginBottom: '0',
+      height: '100%'
     }}>
       <h3 className="text-xl font-bold text-gray-800 mb-4">Tenant Growth</h3>
-      <p style={{ marginBottom: '20px', color: '#666' }}>New tenants and active users over time</p>
+      <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>New tenants and active users over time</p>
       
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={tenantData}>
@@ -82,6 +84,8 @@ const TenantGrowthChart = () => {
       </ResponsiveContainer>
     </div>
   )
-}
+});
+
+TenantGrowthChart.displayName = 'TenantGrowthChart';
 
 export default TenantGrowthChart

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import {
   PieChart,
   Pie,
@@ -16,7 +16,7 @@ import {
   Star,
 } from "lucide-react";
 
-const ModuleUsageChart = () => {
+const ModuleUsageChart = memo(() => {
   const moduleData = [
     { name: "Employee", value: 108, color: "#8884d8" },
     { name: "Payroll", value: 95, color: "#82ca9d" },
@@ -54,8 +54,9 @@ const ModuleUsageChart = () => {
         padding: "20px",
         paddingLeft: "30px",
         paddingRight: "30px",
-        borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        borderRadius: "16px",
+        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+        border: "1px solid #f3f4f6",
         height: "100%",
       }}
     >
@@ -65,7 +66,7 @@ const ModuleUsageChart = () => {
        
         <h3 className="text-xl font-bold text-gray-800 mb-4">Module Usage by Tenants</h3>
       </div>
-      <p style={{ marginBottom: '20px', color: '#666' }}>
+      <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
         Active module subscriptions
       </p>
 
@@ -148,234 +149,8 @@ const ModuleUsageChart = () => {
       </div>
     </div>
   );
-};
+});
 
-const PendingTenantRequests = () => {
-  const requests = [
-    {
-      company: "TechStart Inc.",
-      type: "New Registration",
-      date: "2025-11-07",
-      status: "pending",
-      icon: <AlertCircle size={16} />,
-    },
-    {
-      company: "Global Solutions",
-      type: "Module Upgrade",
-      date: "2025-11-06",
-      status: "premium",
-      icon: <Star size={16} />,
-    },
-    {
-      company: "Innovation Labs",
-      type: "User Limit Increase",
-      date: "2025-11-06",
-      status: "review",
-      icon: <Clock size={16} />,
-    },
-    {
-      company: "Digital Dynamics",
-      type: "New Registration",
-      date: "2025-11-05",
-      status: "pending",
-      icon: <AlertCircle size={16} />,
-    },
-  ];
+ModuleUsageChart.displayName = 'ModuleUsageChart';
 
-  const getStatusStyles = (status) => {
-    switch (status) {
-      case "pending":
-        return { backgroundColor: "#fef3c7", color: "#92400e" };
-      case "premium":
-        return { backgroundColor: "#dbeafe", color: "#1e40af" };
-      case "review":
-        return { backgroundColor: "#f3e8ff", color: "#5b21b6" };
-      default:
-        return { backgroundColor: "#f1f5f9", color: "#64748b" };
-    }
-  };
-
-  return (
-    <div
-      style={{
-        backgroundColor: "white",
-        padding: "20px",
-        borderRadius: "8px",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-        height: "100%",
-      }}
-    >
-      <div
-        style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
-      >
-        <Clock size={20} style={{ marginRight: "10px", color: "#4f46e5" }} />
-        <h3 style={{ margin: 0, color: "#333" }}>Pending Tenant Requests</h3>
-      </div>
-      <p style={{ marginBottom: "25px", color: "#666" }}>
-        Requests requiring approval
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        {requests.map((request, index) => (
-          <div
-            key={index}
-            style={{
-              padding: "15px",
-              borderRadius: "8px",
-              border: "1px solid #e5e7eb",
-              transition: "all 0.2s",
-              cursor: "pointer",
-              ":hover": {
-                borderColor: "#4f46e5",
-                boxShadow: "0 2px 8px rgba(79, 70, 229, 0.1)",
-              },
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    marginBottom: "8px",
-                  }}
-                >
-                  {request.icon}
-                  <h4
-                    style={{
-                      margin: "0 0 0 8px",
-                      fontSize: "16px",
-                      color: "#333",
-                    }}
-                  >
-                    {request.company}
-                  </h4>
-                </div>
-                <p
-                  style={{
-                    margin: "0 0 8px 0",
-                    fontSize: "14px",
-                    color: "#666",
-                  }}
-                >
-                  {request.type}
-                </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "12px",
-                    color: "#94a3b8",
-                  }}
-                >
-                  {request.date}
-                </p>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
-                  gap: "8px",
-                }}
-              >
-                <span
-                  style={{
-                    padding: "4px 12px",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    textTransform: "capitalize",
-                    ...getStatusStyles(request.status),
-                  }}
-                >
-                  {request.status}
-                </span>
-                <button
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: "#4f46e5",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    fontWeight: "500",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s",
-                    ":hover": {
-                      backgroundColor: "#4338ca",
-                    },
-                  }}
-                >
-                  Review
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          marginTop: "20px",
-          paddingTop: "15px",
-          borderTop: "1px solid #e5e7eb",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
-          <strong>{requests.length}</strong> requests pending review
-        </p>
-        <button
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "transparent",
-            color: "#4f46e5",
-            border: "1px solid #4f46e5",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: "500",
-            cursor: "pointer",
-            transition: "all 0.2s",
-            ":hover": {
-              backgroundColor: "#4f46e5",
-              color: "white",
-            },
-          }}
-        >
-          View All Requests
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const Dashboard = () => {
-  return (
-    <div
-      style={{
-        margin: "0 auto",
-        padding: "20px",
-        minHeight: "100vh",
-      }}
-    >
-      <div>
-        <div className="mb-10">
-          <ModuleUsageChart />
-        </div>
-
-        <PendingTenantRequests />
-      </div>
-    </div>
-  );
-};
-
-export default Dashboard;
+export default ModuleUsageChart;

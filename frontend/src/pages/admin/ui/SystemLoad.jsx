@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import {
   LineChart,
   Line,
@@ -14,7 +14,7 @@ import {
   AreaChart
 } from 'recharts';
 
-const SystemLoad = () => {
+const SystemLoad = memo(() => {
 
 const systemData = [
     { time: '00:00', cpu: 35, memory: 45 },
@@ -29,11 +29,13 @@ const systemData = [
      <div style={{ 
       backgroundColor: 'white', 
       padding: '20px', 
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+      borderRadius: '16px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      border: '1px solid #f3f4f6',
+      height: '100%'
     }}>
       <h3 className="text-xl font-bold text-gray-800 mb-4">System Load</h3>
-      <p style={{ marginBottom: '20px', color: '#666' }}>CPU and memory usage over 24 hours</p>
+      <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>CPU and memory usage over 24 hours</p>
       
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={systemData}>
@@ -83,7 +85,9 @@ const systemData = [
       </ResponsiveContainer>
     </div>
   )
-}
+});
+
+SystemLoad.displayName = 'SystemLoad';
 
 export default SystemLoad
 

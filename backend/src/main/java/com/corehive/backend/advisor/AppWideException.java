@@ -13,6 +13,9 @@ import com.corehive.backend.exception.feedbackSurveyException.InvalidSurveyReque
 import com.corehive.backend.exception.feedbackSurveyException.SurveyDeletionException;
 import com.corehive.backend.exception.feedbackSurveyException.SurveyNotFoundException;
 import com.corehive.backend.exception.feedbackSurveyException.SurveyResponseNotFoundException;
+import com.corehive.backend.exception.hrReportsException.InvalidRequestException;
+import com.corehive.backend.exception.hrReportsException.ReportGenerationException;
+import com.corehive.backend.exception.hrReportsException.ResourceNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
@@ -216,6 +219,39 @@ public class AppWideException {
         return new ResponseEntity<>(
                 new StandardResponse(409, "Insufficient leave balance", null),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+
+    // ============================================================
+    // HR-Reports EXCEPTIONS
+    // ============================================================
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<StandardResponse> handleNotFound(
+            ResourceNotFoundException ex) {
+
+        return new ResponseEntity<>(
+                new StandardResponse(404, ex.getMessage(), null),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<StandardResponse> handleInvalidRequest(
+            InvalidRequestException ex) {
+
+        return new ResponseEntity<>(
+                new StandardResponse(400, ex.getMessage(), null),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(ReportGenerationException.class)
+    public ResponseEntity<StandardResponse> handleReportError(
+            ReportGenerationException ex) {
+
+        return new ResponseEntity<>(
+                new StandardResponse(500, "Failed to generate HR report", null),
+                HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
 

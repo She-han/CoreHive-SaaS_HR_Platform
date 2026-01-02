@@ -24,10 +24,10 @@ const SystemAnalytics = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  System Configuration  🧑‍🔧
+                  Analytics & Reporting  🤵‍♀️
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
-                  Configure global system settings and integrations
+                  Comprehensive HR insights and metrics
                 </p>
               </div>
             </div>

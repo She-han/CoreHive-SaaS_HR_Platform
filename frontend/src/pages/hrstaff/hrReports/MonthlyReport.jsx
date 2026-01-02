@@ -1,19 +1,32 @@
 import { useState } from "react";
 import { getMonthlyEmployeeReport } from "../../../api/HrReportsApi";
-import { CalendarDays, UserPlus, CheckCircle2, Search, FileDown, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  UserPlus,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Home,
+  Search,
+  Loader2,
+  TrendingUp,
+  Download,
+  Calendar,
+  ArrowUpRight,
+  Activity
+} from "lucide-react";
 
-export default function MonthlyReport() {
+export default function MonthlyEmployeeReport() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
-  const [report, setReport] = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchReport = async () => {
-    if (!month || !year) return;
-    setLoading(true);
+  const loadReport = async () => {
     try {
-      const data = await getMonthlyEmployeeReport(month, year);
-      setReport(data);
+      setLoading(true);
+      const result = await getMonthlyEmployeeReport(month, year);
+      setData(result);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -21,119 +34,153 @@ export default function MonthlyReport() {
     }
   };
 
+  const statusIconMap = {
+    PRESENT: <CheckCircle size={18} className="text-[#1ED292]" />,
+    ABSENT: <XCircle size={18} className="text-red-400" />,
+    LATE: <Clock size={18} className="text-amber-500" />,
+    ON_LEAVE: <CalendarDays size={18} className="text-[#05668D]" />,
+    WORK_FROM_HOME: <Home size={18} className="text-[#02C39A]" />,
+  };
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#F1FDF9] flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#F1FDF9] rounded-xl border border-transparent focus-within:border-[#02C39A] transition-all">
-          <CalendarDays size={18} className="text-[#05668D]" />
-          <select 
-            className="bg-transparent text-sm font-bold text-[#333333] outline-none"
-            value={month}
-            onChange={e => setMonth(e.target.value)}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* 1. Filter Header (Matches Annual Report Search Bar) */}
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-[#F1FDF9] flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-[#F1FDF9] rounded-2xl">
+            <Activity className="text-[#05668D]" size={24} />
+          </div>
+          <div>
+            <h3 className="text-[#0C397A] font-bold text-lg">Monthly Workforce Insights</h3>
+            <p className="text-[#9B9B9B] text-xs font-medium uppercase tracking-widest">Attendance & Hiring Metrics</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Month Select */}
+          <div className="flex-1 md:w-40 flex items-center gap-2 px-4 py-2 bg-[#F1FDF9] rounded-xl border border-transparent focus-within:border-[#02C39A] transition-all">
+            <Calendar size={16} className="text-[#9B9B9B]" />
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="bg-transparent text-sm font-bold text-[#333333] outline-none w-full appearance-none cursor-pointer"
+            >
+              {months.map((m, i) => (
+                <option key={i + 1} value={i + 1}>{m}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Input */}
+          <div className="w-24 md:w-28 flex items-center gap-2 px-4 py-2 bg-[#F1FDF9] rounded-xl border border-transparent focus-within:border-[#02C39A] transition-all">
+            <input
+              type="number"
+              className="bg-transparent text-sm font-bold text-[#333333] outline-none w-full"
+              value={year}
+              onChange={e => setYear(e.target.value)}
+            />
+          </div>
+
+          <button
+            onClick={loadReport}
+            disabled={loading}
+            className="bg-[#02C39A] hover:bg-[#1ED292] text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#02C39A]/20 disabled:opacity-50"
           >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {new Date(0, i).toLocaleString('en-US', { month: 'long' })}
-              </option>
-            ))}
-          </select>
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+            Generate
+          </button>
         </div>
-
-        <div className="flex items-center gap-2 px-3 py-2 bg-[#F1FDF9] rounded-xl border border-transparent focus-within:border-[#02C39A] transition-all">
-          <input
-            type="number"
-            placeholder="Year"
-            className="bg-transparent text-sm font-bold text-[#333333] outline-none w-20"
-            value={year}
-            onChange={e => setYear(e.target.value)}
-          />
-        </div>
-
-        <button
-          onClick={fetchReport}
-          disabled={loading}
-          className="bg-[#0C397A] hover:bg-[#05668D] text-white px-6 py-2 rounded-xl font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-          Generate Report
-        </button>
       </div>
 
-      {report ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Key Metrics */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#F1FDF9] relative overflow-hidden group">
-              <div className="relative z-10">
-                <p className="text-[#9B9B9B] text-xs font-black uppercase tracking-widest">New Talent Acquisitions</p>
-                <h3 className="text-5xl font-black text-[#1ED292] mt-2">{report.newHires}</h3>
-                <p className="text-[#333333] text-sm mt-2 font-medium">Employees joined this month</p>
-              </div>
-              <UserPlus className="absolute -right-4 -bottom-4 text-[#F1FDF9] group-hover:text-[#1ED292]/10 transition-colors" size={120} />
+      {data ? (
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          
+          {/* Main Content: Attendance Grid (Matches Distribution Grid) */}
+          <div className="xl:col-span-3 bg-white p-6 rounded-[2rem] shadow-sm border border-[#F1FDF9]">
+            <div className="flex justify-between items-center mb-8">
+              <h4 className="text-[#333333] font-bold flex items-center gap-2">
+                <TrendingUp size={18} className="text-[#1ED292]" />
+                Attendance Summary
+              </h4>
+              <button className="text-[#05668D] hover:bg-[#F1FDF9] p-2 rounded-lg transition-colors">
+                <Download size={20} />
+              </button>
             </div>
 
-            <div className="bg-[#05668D] p-6 rounded-3xl shadow-lg text-white">
-              <div className="flex justify-between items-start mb-4">
-                <CheckCircle2 size={24} className="text-[#02C39A]" />
-                <span className="text-[10px] bg-white/10 px-2 py-1 rounded">Attendance</span>
-              </div>
-              <p className="text-blue-100/70 text-sm">Monthly Attendance Summary</p>
-              <h4 className="text-2xl font-bold mt-1">
-                {report.attendance ? `${report.attendance}% Average` : "Data Pending"}
-              </h4>
-              <div className="w-full bg-white/10 h-2 rounded-full mt-4 overflow-hidden">
-                <div 
-                  className="bg-[#02C39A] h-full transition-all duration-1000" 
-                  style={{ width: `${report.attendance || 0}%` }}
-                ></div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {data.attendance.map(([status, count]) => (
+                <div
+                  key={status}
+                  className="group relative bg-[#F1FDF9]/40 hover:bg-white hover:shadow-xl hover:shadow-[#0C397A]/5 border border-transparent hover:border-[#F1FDF9] p-5 rounded-2xl transition-all duration-300"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm group-hover:bg-[#F1FDF9] transition-colors">
+                      {statusIconMap[status] || <Activity size={18} />}
+                    </div>
+                    <p className="text-[#9B9B9B] text-[10px] font-black uppercase tracking-widest group-hover:text-[#02C39A]">
+                      {status.replace(/_/g, " ")}
+                    </p>
+                  </div>
+                  <div className="flex items-end justify-between">
+                    <p className="text-3xl font-black text-[#0C397A]">{count}</p>
+                    <ArrowUpRight size={16} className="text-[#1ED292] mb-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Details Table/Visual Area */}
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-[#F1FDF9] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-gray-50 flex justify-between items-center">
-              <div>
-                <h3 className="text-[#0C397A] font-bold text-lg">Growth Analysis</h3>
-                <p className="text-[#9B9B9B] text-xs uppercase tracking-tighter">Detailed breakdown for {new Date(0, month-1).toLocaleString('en-US', { month: 'long' })} {year}</p>
+          {/* Sidebar: New Hires (Matches Annual Insights Sidebar) */}
+          <div className="xl:col-span-1">
+            <div className="bg-[#0C397A] p-8 rounded-[2rem] text-white h-full flex flex-col justify-between relative overflow-hidden shadow-xl shadow-[#0C397A]/20">
+              <div className="relative z-10">
+                <p className="text-blue-200/60 text-xs font-bold uppercase tracking-widest mb-2">New Acquisitions</p>
+                <div className="flex items-center gap-4">
+                  <h2 className="text-6xl font-black">{data.newHires}</h2>
+                  <div className="p-2 bg-[#02C39A] rounded-lg">
+                    <UserPlus size={24} className="text-white" />
+                  </div>
+                </div>
+                
+                <div className="space-y-4 mt-8">
+                  <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md">
+                    <p className="text-blue-100/60 text-[10px] font-bold uppercase">Reporting Period</p>
+                    <p className="text-lg font-bold">
+                      {months[month - 1]} {year}
+                    </p>
+                  </div>
+                  <p className="text-sm text-blue-100/80 leading-relaxed">
+                    Growth velocity for this month is 
+                    <span className="text-[#02C39A] font-bold ml-1">Stable</span>. 
+                    {data.newHires > 0 ? " New talent integrated successfully." : " No new hires recorded."}
+                  </p>
+                </div>
               </div>
-              <button className="p-2 hover:bg-[#F1FDF9] rounded-lg text-[#05668D] transition-colors">
-                <FileDown size={20} />
+              
+              {/* Decorative graphic */}
+              <div className="absolute -right-12 -top-12 w-32 h-32 bg-[#02C39A]/10 rounded-full blur-3xl"></div>
+              
+              <button className="relative z-10 w-full mt-8 py-3 bg-[#02C39A] hover:bg-[#1ED292] text-white font-bold rounded-xl transition-all transform active:scale-95 shadow-lg">
+                View Staff Details
               </button>
-            </div>
-            
-            <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
-              <div className="w-20 h-20 bg-[#F1FDF9] rounded-full flex items-center justify-center mb-4">
-                <CalendarDays className="text-[#02C39A]" size={32} />
-              </div>
-              <h4 className="text-[#333333] font-bold text-xl">Monthly Insights Generated</h4>
-              <p className="text-[#9B9B9B] max-w-xs mt-2 text-sm">
-                The hiring rate for this period shows a stability trend. 
-                Attendance levels are currently tracking within the <span className="text-[#02C39A] font-bold">optimal</span> range.
-              </p>
-              <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-sm">
-                <div className="bg-gray-50 p-3 rounded-2xl">
-                    <p className="text-[#9B9B9B] text-[10px] font-bold uppercase">Retention</p>
-                    <p className="text-[#0C397A] font-bold">98.2%</p>
-                </div>
-                <div className="bg-gray-50 p-3 rounded-2xl">
-                    <p className="text-[#9B9B9B] text-[10px] font-bold uppercase">Absence</p>
-                    <p className="text-[#0C397A] font-bold">1.8%</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       ) : (
-        /* Empty State */
-        <div className="bg-white/50 border-2 border-dashed border-[#9B9B9B]/20 rounded-3xl p-20 flex flex-col items-center justify-center text-center">
-          <div className="p-4 bg-white rounded-2xl shadow-sm mb-4">
-             <CalendarDays size={40} className="text-[#9B9B9B]/40" />
+        /* Empty State (Matches Annual Report Placeholder) */
+        <div className="bg-white rounded-[2rem] p-20 border border-dashed border-[#9B9B9B]/30 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 bg-[#F1FDF9] rounded-2xl flex items-center justify-center mb-4 text-[#9B9B9B]">
+            <CalendarDays size={32} />
           </div>
-          <h3 className="text-[#333333] font-bold text-lg">No Report Selected</h3>
-          <p className="text-[#9B9B9B] text-sm max-w-xs mt-1">
-            Please select a month and year above to generate the monthly workforce growth analytics.
+          <h4 className="text-[#333333] font-bold text-lg">Monthly Analytics Ready</h4>
+          <p className="text-[#9B9B9B] text-sm max-w-xs mt-2">
+            Choose a specific month and year to visualize attendance trends and hiring data.
           </p>
         </div>
       )}

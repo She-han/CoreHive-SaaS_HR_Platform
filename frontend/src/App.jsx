@@ -44,7 +44,7 @@ import HRDashboard from './pages/hrstaff/HRDashboard';
 import MainHRLayout from "../src/components/layout/MainHRLayout"; 
 import EmployeeManagement from './pages/hrstaff/EmployeeManagement';
 import HiringManagement from './pages/hrstaff/HiringManagement';
-import HRReportingManagement from './pages/hrstaff/HRReportingManagement';
+import HRReportingManagement from './pages/hrstaff/hrReports/HRReportingManagement';
 import AddEmployee from './components/hrstaff/employeemanagement/AddEmployee';
 import EditEmployee from './components/hrstaff/employeemanagement/EditeEmployee';
 import AddJobForm from './components/hrstaff/hiringmanagement/AddJobForm';

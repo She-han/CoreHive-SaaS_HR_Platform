@@ -760,4 +760,5 @@ public class AttendanceService {
                 Attendance.AttendanceStatus.ON_LEAVE
         );
     }
+
 }

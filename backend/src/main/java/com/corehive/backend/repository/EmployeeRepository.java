@@ -195,4 +195,29 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             """)
     List<Object[]> countByDesignation(String orgUuid);
 
+    //Count new-hires for specific month
+    @Query("""
+        SELECT COUNT(e.id)
+        FROM Employee e
+        WHERE e.organizationUuid = :orgUuid
+          AND e.isActive = true
+          AND MONTH(e.dateOfJoining) = :month
+          AND YEAR(e.dateOfJoining) = :year
+    """)
+    long countNewHires(
+            @Param("orgUuid") String orgUuid,
+            @Param("month") int month,
+            @Param("year") int year
+    );
+
+    //Cont new-hires for specific year
+    @Query("""
+    SELECT MONTH(e.dateOfJoining), COUNT(e.id)
+    FROM Employee e
+    WHERE e.organizationUuid = :orgUuid
+      AND YEAR(e.dateOfJoining) = :year
+    GROUP BY MONTH(e.dateOfJoining)
+""")
+    List<Object[]> yearlyEmployeeGrowth(String orgUuid, int year);
+
 }

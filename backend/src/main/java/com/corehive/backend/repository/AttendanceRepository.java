@@ -138,4 +138,17 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             Attendance.AttendanceStatus status
     );
 
+    //Get monthly attendance stats
+    @Query("""
+    SELECT a.status, COUNT(a.id)
+    FROM Attendance a
+    WHERE a.organizationUuid = :orgUuid
+      AND MONTH(a.attendanceDate) = :month
+      AND YEAR(a.attendanceDate) = :year
+    GROUP BY a.status
+""")
+    List<Object[]> monthlyAttendanceStats(
+            String orgUuid, int month, int year);
+
+
 }

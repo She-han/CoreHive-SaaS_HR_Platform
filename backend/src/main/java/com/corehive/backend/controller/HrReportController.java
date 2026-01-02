@@ -20,6 +20,7 @@ public class HrReportController {
     @Autowired
     private HrReportService hrReportService;
 
+    //Get head-count report department , designation and overall wisely
     @GetMapping("/headcount")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<StandardResponse> getHeadcountReport(
@@ -33,4 +34,38 @@ public class HrReportController {
                 HttpStatus.OK
         );
     }
+
+    //Get monthly employee attendance report
+    @GetMapping("/monthly/employee-growth")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<?> getEmployeeGrowthMonthly(
+            HttpServletRequest httpRequest ,
+            @RequestParam int month,
+            @RequestParam int year) {
+        String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+        Map<String, Object> growthMap = hrReportService.getMonthlyEmployeeReports(orgUuid ,month , year);
+
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Get monthly growth successfully", growthMap),
+                HttpStatus.OK
+        );
+    }
+
+    //Get annually employee growth
+    @GetMapping("/annual/employee-growth")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<?> getEmployeeGrowthAnnually(
+            HttpServletRequest httpRequest ,
+            @RequestParam int year) {
+        String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+        Map<Integer, Long> growthMap = hrReportService.getYearlyEmployeeGrowth(orgUuid , year);
+
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Get Annually growth successfully", growthMap),
+                HttpStatus.OK
+        );
+    }
+
 }

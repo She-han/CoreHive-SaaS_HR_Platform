@@ -9,6 +9,16 @@ const tabs = [
   "Database",
 ];
 
+const THEME = {
+  primary: "#02C39A",
+  secondary: "#05668D",
+  dark: "#0C397A",
+  background: "#F1FDF9",
+  success: "#1ED292",
+  text: "#333333",
+  muted: "#9B9B9B",
+};
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("General");
 
@@ -18,17 +28,28 @@ export default function Settings() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* Header Section */}
           <div className="mb-8">
-
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <h1
+                  className="text-2xl lg:text-3xl font-bold"
+                  style={{ color: THEME.dark }}
+                >
+                  System Configuration  🧑‍🔧
+                </h1>
+                <p className="mt-1" style={{ color: THEME.muted }}>
+                  Configure global system settings and integrations
+                </p>
+              </div>
+            </div>
           </div>
-          
 
           {/* Tabs */}
-          <div className="flex gap-2 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
+          <div className="flex gap-2 mt-6 bg-gray-200 p-1 rounded-2xl w-fit">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition
+                className={`px-4 py-1.5 rounded-xl text-gray-900 text-sm font-medium transition
               ${
                 activeTab === tab
                   ? "bg-white shadow text-gray-900"
@@ -41,10 +62,11 @@ export default function Settings() {
           </div>
 
           {/* Content */}
-          <div className="mt-6 bg-white border rounded-xl p-6">
+          <div className="mt-6 bg-white border border-gray-200 rounded-xl p-6">
             {activeTab === "General" && <GeneralSettings />}
             {activeTab === "Security" && <SecuritySettings />}
-            {activeTab !== "General" && activeTab !== "Security" && (
+            {activeTab === "Database" && <DatabaseSettings />}
+            {activeTab !== "General" && activeTab !== "Database" && activeTab !== "Security" && (
               <p className="text-gray-500">Coming soon…</p>
             )}
           </div>
@@ -74,14 +96,14 @@ function GeneralSettings() {
         Configure basic system settings
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
         <Input label="System Name" value={form.name} />
         <Input label="System URL" value={form.url} />
         <Input label="Support Email" value={form.email} />
         <Select label="Default Timezone" value={form.timezone} />
       </div>
 
-      <Divider />
+      <Divider/>
 
       <Toggle
         label="Maintenance Mode"
@@ -178,10 +200,10 @@ function SecuritySettings() {
           <input
             readOnly
             value={settings.apiKey}
-            className="flex-1 bg-gray-100 border rounded-md px-3 py-2 text-sm"
+            className="flex-1 bg-gray-100 border border-gray-100 rounded-md px-3 py-2 text-sm"
           />
-          <button className="border px-3 py-2 rounded-md text-sm">Copy</button>
-          <button className="border px-3 py-2 rounded-md text-sm">
+          <button className="border border-gray-400 px-3 py-2 rounded-md text-sm">Copy</button>
+          <button className="border border-gray-400 px-3 py-2 rounded-md text-sm">
             Regenerate
           </button>
         </div>
@@ -192,7 +214,99 @@ function SecuritySettings() {
   );
 }
 
+
+/* ---------------- DATABASE ---------------- */
+
+function DatabaseSettings() {
+  const [settings, setSettings] = useState({
+    autoBackup: true,
+    frequency: "Daily",
+    retention: 30
+  });
+
+  const createBackup = () => alert("Database backup started");
+  const optimizeDatabase = () => alert("Database optimization started");
+
+  return (
+    <>
+      <SectionHeader
+        title="Database Management"
+        subtitle="Database backup and maintenance settings"
+      />
+
+      <Toggle
+        label="Automatic Backups"
+        desc="Enable automated database backups"
+        value={settings.autoBackup}
+        onChange={() =>
+          setSettings({ ...settings, autoBackup: !settings.autoBackup })
+        }
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <Select
+          label="Backup Frequency"
+          value={settings.frequency}
+          options={["Hourly", "Daily", "Weekly"]}
+        />
+        <NumberInput
+          label="Backup Retention (days)"
+          value={settings.retention}
+        />
+      </div>
+
+      <Divider />
+
+      <h3 className="font-medium mb-4">Database Statistics</h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard label="Total Size" value="48.2 GB" />
+        <StatCard label="Last Backup" value="2h ago" />
+        <StatCard label="Total Records" value="1.2M" />
+      </div>
+
+      <Divider />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <button
+          onClick={createBackup}
+          className="border border-gray-200 cursor-pointer bg-gray-200 rounded-md py-2 flex justify-center gap-2 hover:bg-gray-50"
+        >
+          🗄️ Create Backup Now
+        </button>
+        <button
+          onClick={optimizeDatabase}
+          className="border border-gray-200 cursor-pointer bg-gray-200 rounded-md py-2 flex justify-center gap-2 hover:bg-gray-50"
+        >
+          🔄 Optimize Database
+        </button>
+      </div>
+
+      <Footer />
+    </>
+  );
+}
+
+
 /* ---------------- UI COMPONENTS ---------------- */
+
+function SectionHeader({ title, subtitle }) {
+  return (
+    <>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <p className="text-sm text-gray-500 mb-6">{subtitle}</p>
+    </>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-4">
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="text-xl font-semibold mt-1">{value}</p>
+    </div>
+  );
+}
 
 function Input({ label, value }) {
   return (
@@ -200,7 +314,7 @@ function Input({ label, value }) {
       <label className="block text-sm font-medium mb-1">{label}</label>
       <input
         value={value}
-        className="w-full border rounded-md px-3 py-2 text-sm"
+        className="w-full border border-gray-100 bg-gray-100 rounded-md px-3 py-2 text-sm"
       />
     </div>
   );
@@ -213,7 +327,7 @@ function NumberInput({ label, value }) {
       <input
         type="number"
         value={value}
-        className="w-full border rounded-md px-3 py-2 text-sm"
+        className="w-full bg-gray-100 border border-gray-100 rounded-md px-3 py-2 text-sm"
       />
     </div>
   );
@@ -225,12 +339,12 @@ function Select({ label, value }) {
       <label className="block text-sm font-medium mb-1">{label}</label>
       <select
         value={value}
-        className="w-full border rounded-md px-3 py-2 text-sm"
+        className="w-full border border-gray-100 bg-gray-100 rounded-md px-3 py-2 text-sm"
       >
         <option>UTC</option>
         <option>GMT</option>
-        <option>EST</option>
-        <option>PST</option>
+        <option>EST (UTC-5)</option>
+        <option>PST (UTC-8)</option>
       </select>
     </div>
   );
@@ -245,11 +359,11 @@ function Toggle({ label, desc, value, onChange }) {
       </div>
       <button
         onClick={onChange}
-        className={`w-11 h-6 rounded-full transition
-          ${value ? "bg-black" : "bg-gray-300"}`}
+        className={`w-10 h-5 rounded-full transition
+          ${value ? "bg-gray-700" : "bg-gray-300"}`}
       >
         <span
-          className={`block w-5 h-5 bg-white rounded-full transform transition
+          className={`block w-4 h-4 bg-white rounded-full transform transition
             ${value ? "translate-x-5" : "translate-x-1"}`}
         />
       </button>
@@ -258,14 +372,14 @@ function Toggle({ label, desc, value, onChange }) {
 }
 
 function Divider() {
-  return <hr className="my-6" />;
+  return <hr className="my-6 border-gray-200" />;
 }
 
 function Footer() {
   return (
     <div className="flex justify-end gap-3 mt-8">
-      <button className="border px-4 py-2 rounded-md text-sm">Reset</button>
-      <button className="bg-emerald-600 text-white px-4 py-2 rounded-md text-sm">
+      <button className="border border-gray-400 cursor-pointer px-4 py-2 rounded-md text-sm">Reset</button>
+      <button className="bg-emerald-500 cursor-pointer text-white px-4 py-2 rounded-md text-sm">
         Save Changes
       </button>
     </div>

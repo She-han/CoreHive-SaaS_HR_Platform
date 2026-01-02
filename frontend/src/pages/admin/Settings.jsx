@@ -66,9 +66,9 @@ export default function Settings() {
             {activeTab === "General" && <GeneralSettings />}
             {activeTab === "Security" && <SecuritySettings />}
             {activeTab === "Database" && <DatabaseSettings />}
-            {activeTab !== "General" && activeTab !== "Database" && activeTab !== "Security" && (
-              <p className="text-gray-500">Coming soon…</p>
-            )}
+            {activeTab === "Notifications" && <NotificationSettings />}
+            {activeTab === "Integrations" && <IntegrationSettings />}
+           
           </div>
         </div>
       </DashboardLayout>
@@ -210,6 +210,154 @@ function SecuritySettings() {
       </div>
 
       <Footer />
+    </>
+  );
+}
+
+/* ---------------- NOTIFICATION ---------------- */
+
+function NotificationSettings() {
+  const [settings, setSettings] = useState({
+    email: true,
+    slack: false,
+    orgRegistration: true,
+    criticalErrors: true,
+    securityAlerts: true,
+    failedPayments: true,
+    supportEscalations: false,
+    systemUpdates: false
+  });
+
+  const toggle = (key) =>
+    setSettings({ ...settings, [key]: !settings[key] });
+
+  return (
+    <>
+      <h2 className="text-lg font-semibold">Notification Settings</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Configure system-wide notification preferences
+      </p>
+
+      <Toggle
+        label="Email Notifications"
+        desc="Send email notifications to admins"
+        value={settings.email}
+        onChange={() => toggle("email")}
+      />
+
+      <Toggle
+        label="Slack Notifications"
+        desc="Send notifications to Slack channels"
+        value={settings.slack}
+        onChange={() => toggle("slack")}
+      />
+
+      <Divider />
+
+      <Toggle
+        label="New organization registration"
+        value={settings.orgRegistration}
+        onChange={() => toggle("orgRegistration")}
+      />
+
+      <Toggle
+        label="Critical system errors"
+        value={settings.criticalErrors}
+        onChange={() => toggle("criticalErrors")}
+      />
+
+      <Toggle
+        label="Security alerts"
+        value={settings.securityAlerts}
+        onChange={() => toggle("securityAlerts")}
+      />
+
+      <Toggle
+        label="Failed payment notifications"
+        value={settings.failedPayments}
+        onChange={() => toggle("failedPayments")}
+      />
+
+      <Toggle
+        label="Support ticket escalations"
+        value={settings.supportEscalations}
+        onChange={() => toggle("supportEscalations")}
+      />
+
+      <Toggle
+        label="System updates available"
+        value={settings.systemUpdates}
+        onChange={() => toggle("systemUpdates")}
+      />
+
+      <Divider />
+
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Admin Email Recipients
+        </label>
+        <input
+          defaultValue="admin@corehive.com, support@corehive.com"
+          className="w-full border border-gray-200 bg-gray-200 rounded-md px-3 py-2 text-sm"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Comma-separated list of email addresses
+        </p>
+      </div>
+
+      <Footer />
+    </>
+  );
+}
+
+/* ---------------- INTEGRATION ---------------- */
+
+function IntegrationSettings() {
+  return (
+    <>
+      <h2 className="text-lg font-semibold mb-6">Integrations</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Stripe */}
+        <IntegrationCard
+          title="Stripe"
+          desc="Payment processing"
+          status="Connected"
+        >
+          <Input label="Publishable Key" value="pk_live_51JxYz..." />
+          <Input label="Secret Key" value="••••••••••••" />
+          <IntegrationActions />
+        </IntegrationCard>
+
+        {/* SendGrid */}
+        <IntegrationCard
+          title="SendGrid"
+          desc="Email delivery service"
+          status="Connected"
+        >
+          <Input label="API Key" value="••••••••••••" />
+          <Input label="From Email" value="noreply@corehive.com" />
+          <IntegrationActions />
+        </IntegrationCard>
+
+        {/* Slack */}
+        <IntegrationCard
+          title="Slack"
+          desc="Team collaboration"
+          status="Not Connected"
+        >
+          <PrimaryButton text="Connect Slack" />
+        </IntegrationCard>
+
+        {/* Google */}
+        <IntegrationCard
+          title="Google Workspace"
+          desc="SSO & Calendar integration"
+          status="Not Connected"
+        >
+          <PrimaryButton text="Connect Google" />
+        </IntegrationCard>
+      </div>
     </>
   );
 }
@@ -385,3 +533,48 @@ function Footer() {
     </div>
   );
 }
+
+function IntegrationCard({ title, desc, status, children }) {
+  return (
+    <div className="border border-gray-200 rounded-xl p-6 bg-white">
+      <div className="flex justify-between mb-4">
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-sm text-gray-500">{desc}</p>
+        </div>
+        <span
+          className={`text-xs px-3 py-1 pb-0 rounded-full font-medium
+            ${status === "Connected"
+              ? "bg-green-100 text-green-700"
+              : "bg-gray-100 text-gray-600"}`}
+        >
+          {status}
+        </span>
+      </div>
+
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function IntegrationActions() {
+  return (
+    <div className="flex gap-3 mt-3">
+      <button className="flex-1 border border-gray-200 bg-gray-100 cursor-pointer px-3 py-2 rounded-md text-sm">
+        Configure
+      </button>
+      <button className="flex-1 border border-gray-200 bg-gray-100 cursor-pointer px-3 py-2 rounded-md text-sm">
+        Disconnect
+      </button>
+    </div>
+  );
+}
+
+function PrimaryButton({ text }) {
+  return (
+    <button className="w-full bg-emerald-500 text-white py-2 rounded-md text-sm mt-3">
+      {text}
+    </button>
+  );
+}
+

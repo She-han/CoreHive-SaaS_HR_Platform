@@ -614,4 +614,62 @@ public class EmployeeService {
                 organizationUuid , true
         );
     }
+
+    /**
+     * Get employee by email (for current user profile)
+     */
+    public ApiResponse<Employee> getEmployeeByEmail(String organizationUuid, String email) {
+        try {
+            log.info("Fetching employee with email: {} for organization: {}", email, organizationUuid);
+
+            Optional<Employee> employeeOpt = employeeRepository.findByEmailAndOrganizationUuid(email, organizationUuid);
+
+            if (employeeOpt.isEmpty()) {
+                log.warn("Employee not found with email: {}", email);
+                return ApiResponse.error("Employee profile not found");
+            }
+
+            Employee employee = employeeOpt.get();
+            log.info("Employee profile retrieved successfully for: {}", email);
+            return ApiResponse.success("Employee profile retrieved successfully", employee);
+
+        } catch (Exception e) {
+            log.error("Error fetching employee with email: {}", email, e);
+            return ApiResponse.error("Failed to retrieve employee profile");
+        }
+    }
+
+    /**
+     * Update employee by email (for current user profile)
+     */
+    @Transactional
+    public ApiResponse<Employee> updateEmployeeByEmail(String organizationUuid, String email, EmployeeRequestDTO request) {
+        try {
+            log.info("Updating employee with email: {} for organization: {}", email, organizationUuid);
+
+            Optional<Employee> employeeOpt = employeeRepository.findByEmailAndOrganizationUuid(email, organizationUuid);
+
+            if (employeeOpt.isEmpty()) {
+                log.warn("Employee not found with email: {}", email);
+                return ApiResponse.error("Employee profile not found");
+            }
+
+            Employee employee = employeeOpt.get();
+
+            // Employees can only update limited fields (not email, salary, department, etc.)
+            employee.setFirstName(request.getFirstName());
+            employee.setLastName(request.getLastName());
+            employee.setPhone(request.getPhone());
+            employee.setUpdatedAt(LocalDateTime.now());
+
+            Employee savedEmployee = employeeRepository.save(employee);
+
+            log.info("Employee profile updated successfully for: {}", email);
+            return ApiResponse.success("Profile updated successfully", savedEmployee);
+
+        } catch (Exception e) {
+            log.error("Error updating employee with email: {}", email, e);
+            return ApiResponse.error("Failed to update profile: " + e.getMessage());
+        }
+    }
 }

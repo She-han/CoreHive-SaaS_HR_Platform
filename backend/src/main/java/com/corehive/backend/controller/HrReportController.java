@@ -3,6 +3,7 @@ package com.corehive.backend.controller;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.HrReportPdfService;
 import com.corehive.backend.service.HrReportService;
+import com.corehive.backend.service.OrganizationService;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,6 +26,9 @@ public class HrReportController {
 
     @Autowired
     private HrReportPdfService pdfService;
+
+    @Autowired
+    private OrganizationService organizationService;
 
 
     //Get head-count report department , designation and overall wisely
@@ -81,13 +85,13 @@ public class HrReportController {
     public void downloadHeadcountReport(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
-
         String orgUuid = (String) request.getAttribute("organizationUuid");
+        String orgName = organizationService.getOrganizationName(orgUuid);
 
         Map<String, Object> report =
                 hrReportService.getHeadcountReport(orgUuid);
 
-        byte[] pdf = pdfService.generateHeadcountPdf(report);
+        byte[] pdf = pdfService.generateHeadcountPdf(report , orgName);
 
         response.setContentType("application/pdf");
         response.setHeader(

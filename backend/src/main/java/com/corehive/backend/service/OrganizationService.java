@@ -4,6 +4,7 @@ import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
 import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
+import com.corehive.backend.exception.hrReportsException.ResourceNotFoundException;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Organization;
 import com.corehive.backend.model.OrganizationStatus;
@@ -405,4 +406,26 @@ public class OrganizationService {
             return ApiResponse.error("Failed to update module configuration");
         }
     }
+
+    /**
+     * Get organization name by organization UUID
+     * Used internally (PDFs, audits, reports)
+     */
+    public String getOrganizationName(String organizationUuid) {
+
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID is required");
+        }
+
+        Organization organization = organizationRepository
+                .findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Organization not found for UUID: " + organizationUuid
+                        )
+                );
+
+        return organization.getName();
+    }
+
  }

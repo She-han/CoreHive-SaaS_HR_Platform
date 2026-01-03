@@ -28,6 +28,9 @@ import { getPendingApprovals, getPlatformStatistics } from '../../api/adminApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
+import TenantGrowthChart from './ui/TenantGrowthChart';
+import SystemLoad from './ui/SystemLoad';
+import ModuleUsageChart from './ui/Df';
 
 // Theme colors
 const THEME = {
@@ -198,6 +201,7 @@ HealthMetric.displayName = 'HealthMetric';
  */
 const AdminDashboard = () => {
   const user = useSelector(selectUser);
+
   
   // State management
   const [stats, setStats] = useState({
@@ -389,6 +393,7 @@ const AdminDashboard = () => {
     user?.email?.split('@')[0] || 'Admin',
     [user?.email]
   );
+
 
   // Loading state with skeleton
   if (isLoading && stats.totalOrganizations === 0) {
@@ -606,6 +611,20 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Analytics Charts Section */}
+        <div className="mt-8 grid lg:grid-cols-2 gap-6">
+          {/* Tenant Growth Chart */}
+          <TenantGrowthChart />
+          
+          {/* System Load Chart */}
+          <SystemLoad />
+        </div>
+
+        {/* Module Usage Chart - Full Width */}
+        <div className="mt-8">
+          <ModuleUsageChart />
         </div>
       </div>
 

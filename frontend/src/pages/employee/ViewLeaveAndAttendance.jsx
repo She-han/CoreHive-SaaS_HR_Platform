@@ -1,35 +1,76 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 
+import { getTodayAttendance, getAttendanceHistory } from "../../api/attendanceApi";
 export default function ViewLeaveAndAttendance() {
 const [attendance, setAttendance] = useState(null);
   const [summary, setSummary] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    setAttendance({
-      checkIn: "09:10 AM",
-      checkOut: null,
-      status: "PRESENT",
-      lateMinutes: 10,
-    });
+  
 
-    setSummary({
-      present: 18,
-      absent: 2,
-      leave: 1,
-      totalHours: 120,
-    });
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      setLoading(true);
 
-    setHistory([
-      { date: "2025-02-10", status: "PRESENT", checkIn: "9:00", checkOut: "17:45" },
-      { date: "2025-02-09", status: "ABSENT", checkIn: "-", checkOut: "-" },
-      { date: "2025-02-08", status: "LEAVE", checkIn: "-", checkOut: "-" },
-    ]);
+      // 1️⃣ Today
+      const today = await getTodayAttendance();
 
-    setLoading(false);
-  }, []);
+      setAttendance({
+        checkIn: today.checkInTime
+          ? new Date(today.checkInTime).toLocaleTimeString()
+          : null,
+        checkOut: today.checkOutTime
+          ? new Date(today.checkOutTime).toLocaleTimeString()
+          : null,
+        status: today.status || "ABSENT",
+        lateMinutes: today.status === "LATE" ? 30 : 0
+      });
+
+      // 2️⃣ History (Last 30 days)
+      const historyData = await getAttendanceHistory();
+      setHistory(
+        historyData.map(h => ({
+          date: h.date,
+          status: h.status,
+          checkIn: h.checkInTime
+            ? new Date(h.checkInTime).toLocaleTimeString()
+            : "-",
+          checkOut: h.checkOutTime
+            ? new Date(h.checkOutTime).toLocaleTimeString()
+            : "-"
+        }))
+      );
+
+      // 3️⃣ Summary (Frontend calculation)
+      const summaryCalc = {
+        present: historyData.filter(h => h.status === "PRESENT").length,
+        absent: historyData.filter(h => h.status === "ABSENT").length,
+        leave: historyData.filter(h => h.status === "LEAVE").length,
+        totalHours: historyData.reduce((acc, h) => {
+          if (h.checkInTime && h.checkOutTime) {
+            const diff =
+              new Date(h.checkOutTime) - new Date(h.checkInTime);
+            return acc + diff / (1000 * 60 * 60);
+          }
+          return acc;
+        }, 0)
+      };
+
+      setSummary(summaryCalc);
+
+    } catch (err) {
+      console.error("Attendance load error", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadData();
+}, []);
+
 
   const handleCheckIn = () => alert("Checked In!");
   const handleCheckOut = () => alert("Checked Out!");

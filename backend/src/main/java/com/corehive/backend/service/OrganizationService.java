@@ -35,6 +35,9 @@ public class OrganizationService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+
+
+
     /**
      * Get all pending organization approvals
      */

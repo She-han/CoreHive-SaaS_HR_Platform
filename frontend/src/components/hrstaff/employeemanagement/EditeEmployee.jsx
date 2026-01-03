@@ -133,7 +133,7 @@ export default function EditEmployee() {
           department: empData.departmentId || "",
           email: empData.email || "",
           phone: empData.phone || "",
-          nationalId: empData.nationalId || "",
+          nationalId: empData.nationalId || "", 
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
           leaveCount: empData.leaveCount || "",
@@ -369,7 +369,12 @@ export default function EditEmployee() {
           <Box title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Employee Code" required>
-                <input name="employeeCode" value={formData.employeeCode} onChange={handleChange} className="input-box" required />
+               <input
+                name="employeeCode"
+                value={formData.employeeCode}
+                readOnly
+                className="input-box bg-gray-100 cursor-not-allowed"
+              />
               </Field>
               <Field label="First Name" required>
                 <input name="firstName" value={formData.firstName} onChange={handleChange} className="input-box" required />

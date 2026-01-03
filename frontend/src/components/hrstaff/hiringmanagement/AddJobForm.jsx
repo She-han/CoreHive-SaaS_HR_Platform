@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { getAllDepartments   } from "../../../api/departmentApi";
+import { createJobPosting } from "../../../api/hiringService";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
-
-
-    useEffect(() => {
-  axios.get("http://localhost:8080/api/departments")
-    .then(res => setDepartments(res.data))
-    .catch(err => console.error("Error loading departments", err));
-}, []);
 
   const [form, setForm] = useState({
     title: "",
@@ -30,12 +26,22 @@ export default function AddJobForm() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/departments")
-      .then((res) => setDepartments(res.data || []))
-      .catch((err) => console.error("Failed to fetch departments:", err));
-  }, []);
+  const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
+
+useEffect(() => {
+  if (token) {
+    console.log("Fetching departments with token:", token);
+    getAllDepartments(token)
+      .then(res => {
+        console.log("Departments API response:", res);
+        setDepartments(res.data || []);
+      })
+      .catch(err => console.error("Error loading departments", err));
+  }
+}, [token]);
+
+
 
   function handleInput(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,15 +93,13 @@ export default function AddJobForm() {
   setLoading(true);
 
   try {
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (avatarFile) payload.append("avatar", avatarFile);
+   // Transform department field to departmentId if needed
+    const payload = {
+      ...form,
+      departmentId: form.department// map selected department
+    };
 
-    const response = await axios.post(
-      "http://localhost:8080/api/job-postings",
-      payload,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+    await createJobPosting(payload , token);
 
     Swal.fire({
       title: "Success!",
@@ -106,7 +110,6 @@ export default function AddJobForm() {
       navigate("/hr_staff/HiringManagement");
     });
 
-    console.log("Saved:", response.data);
 
   } catch (error) {
     console.error("Error creating job posting:", error);
@@ -122,6 +125,33 @@ export default function AddJobForm() {
     setLoading(false);
   }
 }
+
+// async function handleSubmit(e) {
+//   e.preventDefault();
+//   setLoading(true);
+
+//   try {
+//     const payload = {
+//       ...form,
+//       departmentId: form.department // ensure DTO field matches backend
+//     };
+
+//     await createJobPosting(payload, token);
+
+//     Swal.fire({
+//       title: "Success!",
+//       text: "Job posting created successfully",
+//       icon: "success",
+//       confirmButtonColor: "#02C39A"
+//     }).then(() => navigate("/hr_staff/HiringManagement"));
+
+//   } catch (error) {
+//     console.error("Error creating job posting:", error);
+//     Swal.fire("Error", "Failed to create job posting", "error");
+//   } finally {
+//     setLoading(false);
+//   }
+// }
 
 
    

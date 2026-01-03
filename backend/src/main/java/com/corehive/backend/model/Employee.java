@@ -36,7 +36,7 @@ public class Employee {
         @Column(name = "last_name", nullable = false, length = 100)
         private String lastName;
 
-        @Column(name = "email", length = 200)
+        @Column(name = "email", length = 200 , unique = true)
         private String email;
 
         @Column(name = "phone", length = 50)

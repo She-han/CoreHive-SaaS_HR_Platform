@@ -8,13 +8,17 @@ import apiClient from './axios';
 /**
  * Get all employees for the organization
  */
-export const getAllEmployees = async () => {
+export const getAllEmployees = async (page = 0, size = 9) => {
   try {
-    const response = await apiClient.get('/employees');
-    return response.data; // Returns ApiResponse
+    const response = await apiClient.get('/employees', {
+      params: { page, size }
+    });
+    return response.data.data; // matches your original res.data.data
   } catch (error) {
     console.error('Error fetching employees:', error);
-    throw error;
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
   }
 };
 
@@ -22,12 +26,40 @@ export const getAllEmployees = async () => {
  * Get employee by ID
  */
 export const getEmployeeById = async (id) => {
+  if (!id) {
+    throw new Error('Employee ID is required');
+  }
+
   try {
     const response = await apiClient.get(`/employees/${id}`);
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching employee:', error);
-    throw error;
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
+/**
+ * Deactivate employee
+ */
+export const deactivateEmployee = async (id) => {
+  if (!id) {
+    throw new Error('Employee ID is required');
+  }
+
+  try {
+    const response = await apiClient.put(
+      `/employees/${id}/deactivate`,
+      null
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error deactivating employee:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
   }
 };
 
@@ -71,28 +103,32 @@ export const deleteEmployee = async (id) => {
 };
 
 /**
- * Get current logged-in employee's profile
+ * Get total count of employees for the organization
  */
-export const getCurrentEmployeeProfile = async () => {
+export const getTotalEmployeesCount = async () => {
   try {
-    const response = await apiClient.get('/employees/me');
-    return response.data;
+    const response = await apiClient.get('/employees/total-count');
+    return response.data.data; // matches your original res.data.data
   } catch (error) {
-    console.error('Error fetching current employee profile:', error);
-    throw error;
+    console.error('Error when get total-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
   }
 };
 
 /**
- * Update current logged-in employee's profile
+ * Get total count of active employees for the organization
  */
-export const updateCurrentEmployeeProfile = async (employeeData) => {
+export const getTotalActiveEmployeesCount = async () => {
   try {
-    const response = await apiClient.put('/employees/me', employeeData);
-    return response.data;
+    const response = await apiClient.get('/employees/total-active-count');
+    return response.data.data; // matches your original res.data.data
   } catch (error) {
-    console.error('Error updating current employee profile:', error);
-    throw error;
+    console.error('Error when get total-active-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
   }
 };
 
@@ -102,6 +138,5 @@ export default {
   createEmployee,
   updateEmployee,
   deleteEmployee,
-   getCurrentEmployeeProfile,
-  updateCurrentEmployeeProfile
+  deactivateEmployee
 };

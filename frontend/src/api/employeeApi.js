@@ -8,17 +8,13 @@ import apiClient from './axios';
 /**
  * Get all employees for the organization
  */
-export const getAllEmployees = async (page = 0, size = 9) => {
+export const getAllEmployees = async () => {
   try {
-    const response = await apiClient.get('/employees', {
-      params: { page, size }
-    });
-    return response.data.data; // matches your original res.data.data
+    const response = await apiClient.get('/employees');
+    return response.data; // Returns ApiResponse
   } catch (error) {
     console.error('Error fetching employees:', error);
-    throw new Error(
-      error.response?.data?.message || error.message
-    );
+    throw error;
   }
 };
 
@@ -26,40 +22,12 @@ export const getAllEmployees = async (page = 0, size = 9) => {
  * Get employee by ID
  */
 export const getEmployeeById = async (id) => {
-  if (!id) {
-    throw new Error('Employee ID is required');
-  }
-
   try {
     const response = await apiClient.get(`/employees/${id}`);
-    return response.data.data;
+    return response.data;
   } catch (error) {
     console.error('Error fetching employee:', error);
-    throw new Error(
-      error.response?.data?.message || error.message
-    );
-  }
-};
-
-/**
- * Deactivate employee
- */
-export const deactivateEmployee = async (id) => {
-  if (!id) {
-    throw new Error('Employee ID is required');
-  }
-
-  try {
-    const response = await apiClient.put(
-      `/employees/${id}/deactivate`,
-      null
-    );
-    return response.data.data;
-  } catch (error) {
-    console.error('Error deactivating employee:', error);
-    throw new Error(
-      error.response?.data?.message || error.message
-    );
+    throw error;
   }
 };
 
@@ -103,6 +71,54 @@ export const deleteEmployee = async (id) => {
 };
 
 /**
+ * Get current logged-in employee's profile
+ */
+export const getCurrentEmployeeProfile = async () => {
+  try {
+    const response = await apiClient.get('/employees/me');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching current employee profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update current logged-in employee's profile
+ */
+export const updateCurrentEmployeeProfile = async (employeeData) => {
+  try {
+    const response = await apiClient.put('/employees/me', employeeData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating current employee profile:', error);
+    throw error;
+  }
+};
+
+/**
+ * Deactivate employee
+ */
+export const deactivateEmployee = async (id) => {
+  if (!id) {
+    throw new Error('Employee ID is required');
+  }
+
+  try {
+    const response = await apiClient.put(
+      `/employees/${id}/deactivate`,
+      null
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error deactivating employee:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
+/**
  * Get total count of employees for the organization
  */
 export const getTotalEmployeesCount = async () => {
@@ -138,5 +154,9 @@ export default {
   createEmployee,
   updateEmployee,
   deleteEmployee,
-  deactivateEmployee
+  getCurrentEmployeeProfile,
+  updateCurrentEmployeeProfile,
+  deactivateEmployee,
+  getTotalEmployeesCount,
+  getTotalActiveEmployeesCount
 };

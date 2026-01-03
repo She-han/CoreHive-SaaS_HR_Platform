@@ -39,7 +39,7 @@ export default function EditeJobPosting() {
 
         setForm({
             title: data.title || "",
-            department: data.department?.id || "", // IMPORTANT
+            department: String(data.department || ""), 
             employmentType: data.employmentType || "FULL_TIME",
             status: data.status || "OPEN",
             postedDate: data.postedDate || "",
@@ -51,12 +51,18 @@ export default function EditeJobPosting() {
       .catch(console.error);
   }, [id , token]);
 
-    // Load departments
-     useEffect(() => {
-          getAllDepartments()
-         .then((res) => setDepartments(res.data))
-         .catch(console.error);
-     }, []);
+  // Load departments for the dropdown
+    useEffect(() => {
+  getAllDepartments()
+    .then((res) => {
+      setDepartments(res.data); // ✅ because API service should return res.data.data
+    })
+    .catch((err) => {
+      console.error("Failed to load departments", err);
+      setDepartments([]);
+    });
+}, []);
+
 
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -210,21 +216,23 @@ payload.append("avatar", avatarFile);
 
             {/* Department */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Department</label>
-              <select
-                name="department"
-                value={form.department}
-                onChange={handleInput}
-                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
-              >
-                <option value="">Select department</option>
-                {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                    </option>
-                    ))}
-              </select>
-            </div>
+  <label className="text-sm font-medium text-[#333333]">Department</label>
+  <select
+    name="department"
+    value={form.department}
+    onChange={handleInput}
+    className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
+  >
+    <option value="">Select department</option>
+
+    {departments.map((dep) => (
+      <option key={dep.id} value={dep.id}>
+        {dep.name}
+      </option>
+    ))}
+  </select>
+</div>
+
 
             {/* Employment Type */}
             <div>

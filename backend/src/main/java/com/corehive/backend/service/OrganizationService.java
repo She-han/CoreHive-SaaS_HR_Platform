@@ -295,27 +295,6 @@ public class OrganizationService {
         }
     }
 
-    /**
-     * Helper method - Convert Organization to Summary Response - FIXED VERSION
-     */
-    private OrganizationSummaryResponse convertToSummaryResponse(Organization org) {
-        return OrganizationSummaryResponse.builder()
-                .id(org.getId())
-                .organizationUuid(org.getOrganizationUuid())
-                .name(org.getName())
-                .email(org.getEmail())
-                .status(org.getStatus().name())
-                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
-                .businessRegistrationDocument(org.getBusinessRegistrationDocument()) // NEW FIELD
-                .employeeCountRange(org.getEmployeeCountRange())
-                .createdAt(org.getCreatedAt())
-                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
-                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
-                .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
-                .moduleHiringManagement(org.getModuleHiringManagement())
-                .modulesConfigured(org.getModulesConfigured())
-                .build();
-    }
 
     /**
      * Get current module configuration for an organization
@@ -454,4 +433,45 @@ public class OrganizationService {
                     .build();
         }
     }
- }
+
+    private String calculateBilling(String plan) {
+        if (plan == null) return "$0/mo";
+
+        switch (plan.toLowerCase()) {
+            case "starter":
+                return "$199/mo";
+            case "professional":
+                return "$599/mo";
+            case "enterprise":
+                return "$1,499/mo";
+            default:
+                return "$0/mo";
+        }
+    }
+
+    private OrganizationSummaryResponse convertToSummaryResponse(Organization org) {
+        // Count users for this organization
+        int userCount = appUserRepository.countByOrganizationUuid(org.getOrganizationUuid());
+
+        return OrganizationSummaryResponse.builder()
+                .id(org.getId())
+                .organizationUuid(org.getOrganizationUuid())
+                .name(org.getName())
+                .email(org.getEmail())
+                .status(org.getStatus().name())
+                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
+                .businessRegistrationDocument(org.getBusinessRegistrationDocument())
+                .employeeCountRange(org.getEmployeeCountRange())
+                .plan(org.getPlan() != null ? org.getPlan() : "Starter")
+                .billing(calculateBilling(org.getPlan()))
+                .createdAt(org.getCreatedAt())
+                .userCount(userCount)
+                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
+                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
+                        .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
+                        .moduleHiringManagement(org.getModuleHiringManagement())
+                        .modulesConfigured(org.getModulesConfigured())
+                        .build();
+    }
+
+}

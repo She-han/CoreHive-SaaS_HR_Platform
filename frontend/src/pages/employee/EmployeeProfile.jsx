@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import Alert from '../../components/common/Alert';
-import { getCurrentEmployeeProfile } from '../../api/employeeApi';
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import Alert from "../../components/common/Alert";
+import { getCurrentEmployeeProfile } from "../../api/employeeApi";
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
@@ -18,35 +18,27 @@ export default function EmployeeProfile() {
   const fetchEmployeeProfile = async () => {
     try {
       setLoading(true);
-      setError(null);
       const response = await getCurrentEmployeeProfile();
-      
-      if (response.success) {
-        setEmployee(response.data);
-      } else {
-        setError(response.message || 'Failed to load profile');
-      }
-    } catch (err) {
-      console.error('Error fetching employee profile:', err);
-      setError('Failed to load profile. Please try again.');
+      if (response.success) setEmployee(response.data);
+      else setError(response.message || "Failed to load profile");
+    } catch {
+      setError("Failed to load profile. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const getInitials = () => {
-    if (!employee) return '';
-    return `${employee.firstName?.charAt(0) || ''}${employee.lastName?.charAt(0) || ''}`.toUpperCase();
-  };
+  const getInitials = () =>
+    `${employee?.firstName?.[0] || ""}${employee?.lastName?.[0] || ""}`.toUpperCase();
 
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  const formatDate = (date) =>
+    date
+      ? new Date(date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "N/A";
 
   if (loading) {
     return (
@@ -61,18 +53,8 @@ export default function EmployeeProfile() {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="px-10 mt-10">
+        <div className="p-8">
           <Alert type="error" message={error} />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!employee) {
-    return (
-      <DashboardLayout>
-        <div className="px-10 mt-10">
-          <Alert type="error" message="Employee profile not found" />
         </div>
       </DashboardLayout>
     );
@@ -80,82 +62,146 @@ export default function EmployeeProfile() {
 
   return (
     <DashboardLayout>
-      <div className="bg-gray-100 min-h-screen">
-        {/* MAIN PROFILE CARD */}
-        <div className="px-10 mt-10">
-          <div className="bg-white p-10 rounded-xl shadow w-full">
-            
-            {/* Header with Edit Button */}
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-semibold">My Profile</h2>
-              <button
-                onClick={() => navigate('/employee/profile/edit')}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         transition-colors duration-200 flex items-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Profile
-              </button>
+      <div className="p-8 w-full animate-fade-in">
+
+        {/* HEADER */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
+            Employee Profile
+          </h1>
+
+          <button
+            onClick={() => navigate("/employee/profile/edit")}
+            className="
+              bg-[var(--color-primary-500)]
+              text-white px-6 py-3 rounded-lg font-medium
+              hover:bg-[var(--color-primary-600)]
+              transition-all
+            "
+          >
+            Edit Profile
+          </button>
+        </div>
+
+        {/* PROFILE SUMMARY */}
+        <div
+          className="
+          bg-[var(--color-background-white)]
+          rounded-xl p-8 mb-8
+          shadow-[0_10px_15px_-3px_rgba(12,57,122,0.1),0_4px_6px_-2px_rgba(12,57,122,0.05)]
+          border border-[#f1f5f9]
+        "
+        >
+          <div className="flex flex-col md:flex-row gap-10 items-center">
+
+            <div
+              className="
+              bg-[var(--color-primary-500)]
+              text-white w-32 h-32 rounded-full
+              flex items-center justify-center
+              text-4xl font-semibold
+            "
+            >
+              {getInitials()}
             </div>
 
-            <div className="flex gap-16">
-              {/* LEFT SIDE */}
-              <div className="w-1/4 text-center">
-                <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white 
-                                w-40 h-40 rounded-full flex items-center justify-center 
-                                text-5xl font-semibold mx-auto">
-                  {getInitials()}
-                </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl font-semibold">
+                {employee.firstName} {employee.lastName}
+              </h2>
+              <p className="text-gray-500">{employee.designation}</p>
+              <p className="text-gray-600 mt-1">
+                Employee ID: {employee.employeeCode}
+              </p>
 
-                <h3 className="text-xl font-semibold mt-6">
-                  {employee.firstName} {employee.lastName}
-                </h3>
-                <p className="text-gray-500">{employee.designation || 'N/A'}</p>
-                <p className="text-gray-600 mt-2">ID: {employee.employeeCode}</p>
-                
-                {/* Status Badge */}
-                <div className="mt-4">
-                  <span className={`px-4 py-1 rounded-full text-sm font-medium ${
-                    employee.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {employee.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
-
-              {/* RIGHT SIDE */}
-              <div className="w-3/4">
-                {/* Contact Info */}
-                <div className="mb-10">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Contact Information</h3>
-                  <div className="space-y-3 text-gray-700">
-                    <p><strong>Email:</strong> {employee.email}</p>
-                    <p><strong>Phone:</strong> {employee.phone || 'N/A'}</p>
-                    <p><strong>National ID:</strong> {employee.nationalId || 'N/A'}</p>
-                  </div>
-                </div>
-
-                <hr className="my-6" />
-
-                {/* Employment Info */}
-                <div className="mb-10">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Employment Information</h3>
-                  <div className="space-y-3 text-gray-700">
-                    <p><strong>Department:</strong> {employee.department?.name || 'N/A'}</p>
-                    <p><strong>Position:</strong> {employee.designation || 'N/A'}</p>
-                    <p><strong>Date of Joining:</strong> {formatDate(employee.dateOfJoining)}</p>
-                    <p><strong>Salary Type:</strong> {employee.salaryType}</p>
-                    <p><strong>Leave Balance:</strong> {employee.leaveCount} days</p>
-                  </div>
-                </div>
+              <div className="mt-3">
+                <span
+                  className={`px-4 py-1 rounded-full text-xs font-medium ${
+                    employee.isActive
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {employee.isActive ? "Active" : "Inactive"}
+                </span>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* DETAILS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+          {/* CONTACT INFO */}
+          <div
+            className="
+            bg-[var(--color-background-white)]
+            rounded-xl p-6
+            shadow border border-[#f1f5f9]
+          "
+          >
+            <h3 className="text-lg font-semibold mb-5 text-[var(--color-text-primary)]">
+              Contact Information
+            </h3>
+
+            <div className="space-y-4 text-gray-700">
+              <div>
+                <p className="text-xs text-gray-500">Email</p>
+                <p className="font-medium">{employee.email}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Phone</p>
+                <p className="font-medium">{employee.phone || "N/A"}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">National ID</p>
+                <p className="font-medium">{employee.nationalId || "N/A"}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* EMPLOYMENT INFO */}
+          <div
+            className="
+            bg-[var(--color-background-white)]
+            rounded-xl p-6
+            shadow border border-[#f1f5f9]
+          "
+          >
+            <h3 className="text-lg font-semibold mb-5 text-[var(--color-text-primary)]">
+              Employment Information
+            </h3>
+
+            <div className="space-y-4 text-gray-700">
+              <div>
+                <p className="text-xs text-gray-500">Department</p>
+                <p className="font-medium">{employee.department?.name || "N/A"}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Position</p>
+                <p className="font-medium">{employee.designation}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Date of Joining</p>
+                <p className="font-medium">{formatDate(employee.dateOfJoining)}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Salary Type</p>
+                <p className="font-medium">{employee.salaryType}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">Leave Balance</p>
+                <p className="font-medium">{employee.leaveCount} days</p>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </DashboardLayout>

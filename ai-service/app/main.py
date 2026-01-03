@@ -11,15 +11,39 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from pathlib import Path
 import logging
+import sys
 
-from app.config.settings import settings
-from app.routers import health, insights
-from app.routers import face_recognition
-from app.repositories.database import test_database_connection
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Setup logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Safe imports with error handling
+try:
+    from app.config.settings import settings
+    logger.info("Settings loaded successfully")
+except Exception as e:
+    logger.error(f"Failed to load settings: {e}")
+    sys.exit(1)
+
+# Import routers with error handling
+try:
+    from app.routers import health, insights
+    from app.routers import face_recognition
+    logger.info("Routers imported successfully")
+except Exception as e:
+    logger.error(f"Failed to import routers: {e}")
+    raise
+
+# Import database with error handling
+try:
+    from app.repositories.database import test_database_connection
+    logger.info("Database module imported successfully")
+except Exception as e:
+    logger.error(f"Failed to import database module: {e}")
+    test_database_connection = lambda: False
 
 # Create directories
 UPLOAD_DIR = Path("uploads/employee_photos")
@@ -150,16 +174,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS middleware
+# CORS middleware - Allow all origins for now (can restrict in production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8001",
-    ],
+    allow_origins=["*"],  # Allow all origins for debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

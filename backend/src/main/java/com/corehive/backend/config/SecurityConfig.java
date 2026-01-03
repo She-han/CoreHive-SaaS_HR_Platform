@@ -93,7 +93,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/hr/").hasAnyRole("ORG_ADMIN", "HR_STAFF")
                         .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/dashboard").authenticated() // Dashboard requires authentication
-
+                        .requestMatchers("/api/files/**").hasAnyRole("SYSTEM_ADMIN", "ORG_ADMIN", "SYS_ADMIN")
                         // Any other request needs authentication
                         .anyRequest().authenticated()
                 )

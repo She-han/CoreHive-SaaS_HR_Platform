@@ -5,6 +5,7 @@ import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
 import com.corehive.backend.exception.hrReportsException.ResourceNotFoundException;
+import com.corehive.backend.dto.response.PlatformStatistics;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Organization;
 import com.corehive.backend.model.OrganizationStatus;
@@ -295,27 +296,6 @@ public class OrganizationService {
         }
     }
 
-    /**
-     * Helper method - Convert Organization to Summary Response - FIXED VERSION
-     */
-    private OrganizationSummaryResponse convertToSummaryResponse(Organization org) {
-        return OrganizationSummaryResponse.builder()
-                .id(org.getId())
-                .organizationUuid(org.getOrganizationUuid())
-                .name(org.getName())
-                .email(org.getEmail())
-                .status(org.getStatus().name())
-                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
-                .businessRegistrationDocument(org.getBusinessRegistrationDocument()) // NEW FIELD
-                .employeeCountRange(org.getEmployeeCountRange())
-                .createdAt(org.getCreatedAt())
-                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
-                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
-                .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
-                .moduleHiringManagement(org.getModuleHiringManagement())
-                .modulesConfigured(org.getModulesConfigured())
-                .build();
-    }
 
     /**
      * Get current module configuration for an organization
@@ -429,3 +409,93 @@ public class OrganizationService {
     }
 
  }
+
+    /**
+     * Get Platform Statistics for System Admin Dashboard
+     * Returns real-time statistics from the database
+     */
+    public PlatformStatistics getPlatformStatistics() {
+        log.info("Fetching platform statistics from database");
+
+        try {
+            // Count organizations by status
+            long totalOrganizations = organizationRepository.count();
+            long activeOrganizations = organizationRepository.countByStatus("ACTIVE");
+            long pendingOrganizations = organizationRepository.countByStatus("PENDING_APPROVAL");
+            long dormantOrganizations = organizationRepository.countByStatus("DORMANT");
+            long suspendedOrganizations = organizationRepository.countByStatus("SUSPENDED");
+
+            // Count total employees (AppUsers) across all organizations
+            long totalEmployees = appUserRepository.count();
+
+            PlatformStatistics stats = PlatformStatistics.builder()
+                    .totalOrganizations(totalOrganizations)
+                    .activeOrganizations(activeOrganizations)
+                    .pendingOrganizations(pendingOrganizations)
+                    .dormantOrganizations(dormantOrganizations)
+                    .suspendedOrganizations(suspendedOrganizations)
+                    .totalEmployees(totalEmployees)
+                    .totalSystemUsers(0L) // Can be updated when SystemUser count is needed
+                    .build();
+
+            log.info("Platform statistics fetched - Total: {}, Active: {}, Pending: {}, Employees: {}",
+                    totalOrganizations, activeOrganizations, pendingOrganizations, totalEmployees);
+
+            return stats;
+
+        } catch (Exception e) {
+            log.error("Error fetching platform statistics", e);
+            // Return empty stats instead of throwing exception
+            return PlatformStatistics.builder()
+                    .totalOrganizations(0L)
+                    .activeOrganizations(0L)
+                    .pendingOrganizations(0L)
+                    .dormantOrganizations(0L)
+                    .suspendedOrganizations(0L)
+                    .totalEmployees(0L)
+                    .totalSystemUsers(0L)
+                    .build();
+        }
+    }
+
+    private String calculateBilling(String plan) {
+        if (plan == null) return "$0/mo";
+
+        switch (plan.toLowerCase()) {
+            case "starter":
+                return "$199/mo";
+            case "professional":
+                return "$599/mo";
+            case "enterprise":
+                return "$1,499/mo";
+            default:
+                return "$0/mo";
+        }
+    }
+
+    private OrganizationSummaryResponse convertToSummaryResponse(Organization org) {
+        // Count users for this organization
+        int userCount = appUserRepository.countByOrganizationUuid(org.getOrganizationUuid());
+
+        return OrganizationSummaryResponse.builder()
+                .id(org.getId())
+                .organizationUuid(org.getOrganizationUuid())
+                .name(org.getName())
+                .email(org.getEmail())
+                .status(org.getStatus().name())
+                .businessRegistrationNumber(org.getBusinessRegistrationNumber())
+                .businessRegistrationDocument(org.getBusinessRegistrationDocument())
+                .employeeCountRange(org.getEmployeeCountRange())
+                .plan(org.getPlan() != null ? org.getPlan() : "Starter")
+                .billing(calculateBilling(org.getPlan()))
+                .createdAt(org.getCreatedAt())
+                .userCount(userCount)
+                .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
+                .moduleFaceRecognitionAttendanceMarking(org.getModuleFaceRecognitionAttendanceMarking())
+                        .moduleEmployeeFeedback(org.getModuleEmployeeFeedback())
+                        .moduleHiringManagement(org.getModuleHiringManagement())
+                        .modulesConfigured(org.getModulesConfigured())
+                        .build();
+    }
+
+}

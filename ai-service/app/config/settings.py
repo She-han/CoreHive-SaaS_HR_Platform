@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     - Validates types
     - Provides helpful error messages if required vars are missing
     """
+    # Azure Blob Storage Settings
+    AZURE_STORAGE_CONNECTION_STRING: str = ""
+    AZURE_PHOTOS_CONTAINER: str = "employee-photos"
+    AZURE_EMBEDDINGS_CONTAINER: str = "face-embeddings"
+    
+    # Use Azure Storage in production, local in development
+    USE_AZURE_STORAGE: bool = False
     
     # ----- Application Settings -----
     APP_NAME: str = "CoreHive AI Service"

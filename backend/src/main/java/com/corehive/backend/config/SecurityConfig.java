@@ -73,8 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
-                        .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
-                        .requestMatchers( "/api/attendance" ,"/api/attendance/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
+                        .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
+                        .requestMatchers( "/api/attendance" ,"/api/attendance/**").hasAnyRole("ORG_ADMIN", "HR_STAFF","EMPLOYEE")
 
                         // Departments - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/org-admin/departments", "/api/org-admin/departments/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
@@ -93,7 +93,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/hr/").hasAnyRole("ORG_ADMIN", "HR_STAFF")
                         .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/dashboard").authenticated() // Dashboard requires authentication
-
+                        .requestMatchers("/api/files/**").hasAnyRole("SYSTEM_ADMIN", "ORG_ADMIN", "SYS_ADMIN")
                         // Any other request needs authentication
                         .anyRequest().authenticated()
                 )

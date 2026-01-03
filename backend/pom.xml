@@ -121,6 +121,19 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
+		<!-- Azure Storage Blob SDK -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
+			<version>12.32.0</version>
+		</dependency>
+
+		<!-- Azure Identity (for authentication) -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-identity</artifactId>
+			<version>1.18.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>

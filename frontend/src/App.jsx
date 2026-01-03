@@ -37,6 +37,8 @@ import HRStaffManagement from './pages/org_admin/HRStaffManagement';
 import ModuleConfiguration from './pages/org_admin/ModuleConfiguration';
 import DepartmentManagement from './pages/org_admin/DepartmentManagement';
 import {DesignationManagement} from './pages/org_admin/DesignationManagement';
+import Reports from './pages/org_admin/Reports';
+import OrgSettings from './pages/org_admin/Settings';
 
 // HR Staff pages
 
@@ -270,6 +272,8 @@ const OrgAdminRoutes = () => {
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
      <Route path="designationmanagement" element={<DesignationManagement />} />
      <Route path="modules" element={<ModuleConfiguration />} />
+     <Route path="reports" element={<Reports />} />
+     <Route path="settings" element={<OrgSettings />} />
      <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />

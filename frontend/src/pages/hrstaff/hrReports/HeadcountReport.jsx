@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getHeadcountReport } from "../../../api/HrReportsApi";
+import { getHeadcountReport , downloadHeadcountReport } from "../../../api/HrReportsApi";
 import { Users, Briefcase, Building2, TrendingUp, Award, ChevronRight } from "lucide-react";
 
 export default function HeadcountReport() {
@@ -12,6 +12,34 @@ export default function HeadcountReport() {
       .catch(err => alert(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+
+  const handleDownload = async () => {
+  try {
+    const blob = await downloadHeadcountReport();
+
+    // Create temporary download URL
+    const url = window.URL.createObjectURL(
+      new Blob([blob], { type: "application/pdf" })
+    );
+
+    // Create invisible link
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "headcount-report.pdf");
+
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
 
   if (loading) {
     return (
@@ -115,7 +143,9 @@ export default function HeadcountReport() {
               The largest group is <strong>{data.byDepartment[0]?.[0]}</strong>.
             </p>
           </div>
-          <button className="relative z-10 whitespace-nowrap bg-[#02C39A] hover:bg-[#1ED292] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-black/20">
+          <button 
+          onClick={handleDownload}
+          className="relative z-10 whitespace-nowrap bg-[#02C39A] hover:bg-[#1ED292] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-black/20">
             Export Report
           </button>
           {/* Decorative background circle */}

@@ -64,8 +64,31 @@ export const getAnnualEmployeeGrowthReport = async (year) => {
   }
 };
 
+/**
+ * Download Headcount Report (PDF)
+ */
+export const downloadHeadcountReport = async () => {
+  try {
+    const response = await apiClient.get(
+      "/reports/headcount/download",
+      {
+        responseType: "blob", // 👈 VERY IMPORTANT
+      }
+    );
+
+    return response.data; // Blob
+  } catch (error) {
+    console.error("Error downloading headcount report:", error);
+    throw new Error(
+      error.response?.data?.message || "Failed to download headcount report"
+    );
+  }
+};
+
+
 export default {
   getHeadcountReport,
   getMonthlyEmployeeReport,
   getAnnualEmployeeGrowthReport,
+  downloadHeadcountReport
 };

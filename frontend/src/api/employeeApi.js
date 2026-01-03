@@ -96,12 +96,35 @@ export const updateCurrentEmployeeProfile = async (employeeData) => {
   }
 };
 
+/**
+ * Deactivate employee
+ */
+export const deactivateEmployee = async (id) => {
+  if (!id) {
+    throw new Error('Employee ID is required');
+  }
+
+  try {
+    const response = await apiClient.put(
+      `/employees/${id}/deactivate`,
+      null
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error deactivating employee:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
 export default {
   getAllEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-   getCurrentEmployeeProfile,
-  updateCurrentEmployeeProfile
+  getCurrentEmployeeProfile,
+  updateCurrentEmployeeProfile,
+  deactivateEmployee
 };

@@ -244,8 +244,8 @@ const Sidebar = ({ isCollapsed = false }) => {
           {
             name: 'Payroll Management',
             icon: DollarSign,
-            path: '/hr_staff/payrolldashboard',
-            current: location.pathname.startsWith('/hr_staff/payroll')
+            path: '/hr_staff/payrollmanagement',
+            current: location.pathname.startsWith('/hr_staff/payrollmanagement')
           },
           {
             name: 'HR Reports',

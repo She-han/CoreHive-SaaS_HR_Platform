@@ -62,10 +62,10 @@ const StatCard = memo(({ stat }) => {
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center border-2 group-hover:scale-110 transition-all duration-300"
-              style={{ borderColor: stat.iconColor, backgroundColor: `${stat.iconColor}10` }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center border-2 shadow-sm group-hover:scale-110 transition-all duration-300"
+              style={{ borderColor: stat.iconColor, backgroundColor: `${stat.iconColor}22` }}
             >
-              <Icon className="w-6 h-6" style={{ color: stat.iconColor }} strokeWidth={2} />
+              <Icon className="w-6 h-6" style={{ color: stat.iconColor }} strokeWidth={2.25} />
             </div>
             
             {stat.changeType && (
@@ -227,7 +227,7 @@ const OrgDashboard = () => {
           iconColorDark: '#059669',
           change: `${dashboardData.absentToday || 0} Absent`,
           changeType: 'positive',
-          trend: '+5%',
+          trend: '+0%',
           link: '/hr_staff/attendancemanagement'
         },
         {
@@ -347,20 +347,33 @@ const OrgDashboard = () => {
   const quickActions = useMemo(() => {
     const userRole = user?.role;
     
-    if (userRole === 'ORG_ADMIN') {
-      return [
-        { icon: UserPlus, label: 'Add Employee', link: '/org_admin/hrstaffmanagement/add', color: THEME.primary, colorDark: THEME.secondary },
-        { icon: BarChart3, label: 'View Reports', link: '/org_admin/reports', color: THEME.secondary, colorDark: THEME.dark },
-        { icon: DollarSign, label: 'Process Payroll', link: '/payroll', color: '#10B981', colorDark: '#059669' },
-        { icon: Settings, label: 'Settings', link: '/settings', color: '#6366F1', colorDark: '#4F46E5' }
+    if (userRole === 'ORG_ADMIN' || userRole === 'HR_STAFF') {
+      const hrActions = [
+        { icon: BarChart3, label: 'Dashboard', link: userRole === 'ORG_ADMIN' ? '/hr_staff/dashboard' : '/hr_staff/dashboard', color: THEME.secondary, colorDark: THEME.dark },
+        { icon: Users, label: 'Employee Management', link: '/hr_staff/employeemanagement', color: THEME.primary, colorDark: THEME.secondary },
+        { icon: Calendar, label: 'Leave Management', link: '/hr_staff/leavemanagement', color: '#F59E0B', colorDark: '#D97706' },
+        { icon: Clock, label: 'Attendance', link: '/hr_staff/attendancemanagement', color: THEME.success, colorDark: '#059669' },
+        { icon: DollarSign, label: 'Payroll', link: '/hr_staff/payrolldashboard', color: THEME.secondary, colorDark: THEME.dark },
+        { icon: FileText, label: 'HR Reports', link: '/hr_staff/hrreportingmanagement', color: THEME.dark, colorDark: THEME.secondary }
       ];
-    } else if (userRole === 'HR_STAFF') {
-      return [
-        { icon: UserPlus, label: 'Add Employee', link: '/hr_staff/employeemanagement/add', color: THEME.primary, colorDark: THEME.secondary },
-        { icon: CheckCircle, label: 'Mark Attendance', link: '/hr_staff/attendancemanagement', color: THEME.success, colorDark: '#059669' },
-        { icon: FileText, label: 'Review Leaves', link: '/hr_staff/leavemanagement', color: '#F59E0B', colorDark: '#D97706' },
-        { icon: BarChart3, label: 'Generate Report', link: '/hr_staff/hrreportingmanagement', color: THEME.secondary, colorDark: THEME.dark }
-      ];
+
+      // Add module-based actions if enabled
+      if (availableModules?.moduleFaceRecognitionAttendanceMarking) {
+        hrActions.push({ icon: UserCheck, label: 'Face Attendance', link: '/hr_staff/faceattendance', color: THEME.primary, colorDark: THEME.secondary });
+      }
+      if (availableModules?.moduleQrAttendanceMarking) {
+        hrActions.push({ icon: Zap, label: 'QR Attendance', link: '/hr_staff/qrattendance', color: '#0EA5E9', colorDark: '#0284C7' });
+      }
+      if (availableModules?.moduleEmployeeFeedback) {
+        hrActions.push({ icon: FileText, label: 'Feedback Management', link: '/hr_staff/feedbackmanagement', color: '#7C3AED', colorDark: '#6D28D9' });
+      }
+      if (availableModules?.moduleHiringManagement) {
+        hrActions.push({ icon: UserPlus, label: 'Hiring Management', link: '/hr_staff/hiringmanagement', color: '#EA580C', colorDark: '#C2410C' });
+      }
+
+
+
+      return hrActions;
     } else { // EMPLOYEE
       return [
         { icon: Send, label: 'Apply Leave', link: '/employee/leaverequest', color: THEME.primary, colorDark: THEME.secondary },
@@ -369,7 +382,7 @@ const OrgDashboard = () => {
         { icon: Users, label: 'My Profile', link: '/employee/profile', color: '#8B5CF6', colorDark: '#7C3AED' }
       ];
     }
-  }, [user?.role]);
+  }, [user?.role, availableModules]);
 
   // Check if AI Insights should be shown
   const shouldShowAIInsights = useMemo(() => {
@@ -509,7 +522,7 @@ const OrgDashboard = () => {
                   <Zap className="w-5 h-5" style={{ color: THEME.primary }} />
                 </div>
                 <div>
-                  <h2 className="font-semibold" style={{ color: THEME.dark }}>Quick Actions</h2>
+                  <h2 className="font-semibold" style={{ color: THEME.dark }}>HR Management Quick Actions</h2>
                   <p className="text-xs" style={{ color: THEME.muted }}>Common tasks at your fingertips</p>
                 </div>
               </div>

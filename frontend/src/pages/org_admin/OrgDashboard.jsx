@@ -1,42 +1,29 @@
-import React, { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { 
-  Users, 
-  DollarSign, 
-  Calendar, 
-  Clock, 
-  TrendingUp, 
-  AlertCircle,
-  CheckCircle,
-  UserPlus,
-  FileText,
-  BarChart3,
-  ArrowRight,
-  RefreshCw,
-  ChevronRight,
-  Briefcase,
-  Bell,
-  Zap
-} from 'lucide-react';
-
 import { selectUser, selectAvailableModules } from '../../store/slices/authSlice';
-import { apiGet } from '../../api/axios';
-
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { Link } from 'react-router-dom';
+import {
+  Users, UserCheck, Calendar, DollarSign, 
+  TrendingUp, AlertCircle, Clock, FileText,
+  UserPlus, Send, BarChart3, Settings,
+  CheckCircle, RefreshCw, Zap, Bell, ArrowRight
+} from 'lucide-react';
+import { getDashboardData } from '../../api/dashboardApi';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import AIInsightsCard from '../../components/dashboard/AIInsightsCard';
 
-// Theme colors
+// Theme colors - Your color palette
 const THEME = {
   primary: '#02C39A',
   secondary: '#05668D',
   dark: '#0C397A',
+  darkText: '#333333',
   background: '#F1FDF9',
   success: '#1ED292',
   text: '#333333',
-  muted: '#9B9B9B'
+  muted: '#9B9B9B',
+  white: '#FFFFFF'
 };
 
 // Memoized Skeleton Loader
@@ -54,52 +41,63 @@ const SkeletonCard = memo(() => (
 ));
 SkeletonCard.displayName = 'SkeletonCard';
 
-// Memoized Stat Card Component
+// Memoized Stat Card Component - UNIQUE DESIGN
 const StatCard = memo(({ stat }) => {
   const Icon = stat.icon;
   return (
-    <Link to={stat.link || '#'} className="group">
+    <Link to={stat.link || '#'} className="group block h-full">
       <div 
-        className="bg-white rounded-xl p-5 shadow-sm hover:shadow-lg transition-all duration-300 border border-transparent hover:border-opacity-50 relative overflow-hidden h-full"
-        style={{ 
-          borderColor: stat.borderColor,
-          background: `linear-gradient(135deg, white 0%, ${stat.bgLight} 100%)`
-        }}
+        className="relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-transparent hover:border-opacity-100 h-full overflow-hidden transform hover:-translate-y-1"
+        style={{ borderColor: `${stat.iconColor}20` }}
       >
-        {/* Background decoration */}
         <div 
-          className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 group-hover:opacity-20 transition-opacity"
+          className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500"
+          style={{ backgroundColor: stat.iconColor }}
+        />
+        <div 
+          className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full blur-2xl opacity-5 group-hover:opacity-10 transition-opacity duration-500"
           style={{ backgroundColor: stat.iconColor }}
         />
         
-        <div className="flex items-center gap-4 relative z-10">
-          <div 
-            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
-            style={{ background: `linear-gradient(135deg, ${stat.iconColor} 0%, ${stat.iconColorDark} 100%)` }}
-          >
-            <Icon className="w-6 h-6 text-white" />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between mb-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center border-2 shadow-sm group-hover:scale-110 transition-all duration-300"
+              style={{ borderColor: stat.iconColor, backgroundColor: `${stat.iconColor}22` }}
+            >
+              <Icon className="w-6 h-6" style={{ color: stat.iconColor }} strokeWidth={2.25} />
+            </div>
+            
+            {stat.changeType && (
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                stat.changeType === 'positive' ? 'bg-green-50 text-green-600' :
+                stat.changeType === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-500'
+              }`}>
+                {stat.changeType === 'positive' && <TrendingUp className="w-3 h-3" />}
+                {stat.changeType === 'warning' && <AlertCircle className="w-3 h-3" />}
+                <span>{stat.trend || '0%'}</span>
+              </div>
+            )}
           </div>
           
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wider" style={{ color: THEME.muted }}>
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: THEME.muted }}>
               {stat.title}
             </p>
-            <p className="text-xl font-bold mt-0.5" style={{ color: THEME.dark }}>
-              {stat.value}
-            </p>
-            <div className="flex items-center gap-1 mt-0.5">
-              {stat.changeType === 'positive' && <TrendingUp className="w-3 h-3 text-green-500" />}
-              {stat.changeType === 'warning' && <AlertCircle className="w-3 h-3 text-amber-500" />}
-              <p className={`text-xs ${
-                stat.changeType === 'positive' ? 'text-green-600' :
-                stat.changeType === 'warning' ? 'text-amber-600' : 'text-gray-500'
-              }`}>
-                {stat.change}
+            <div className="flex items-end gap-2">
+              <p className="text-3xl font-bold" style={{ color: THEME.dark }}>
+                {stat.value}
               </p>
+              {stat.suffix && (
+                <span className="text-sm font-medium mb-1" style={{ color: THEME.muted }}>
+                  {stat.suffix}
+                </span>
+              )}
             </div>
+            <p className="text-xs" style={{ color: THEME.muted }}>
+              {stat.change}
+            </p>
           </div>
-          
-          <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </Link>
@@ -107,19 +105,19 @@ const StatCard = memo(({ stat }) => {
 });
 StatCard.displayName = 'StatCard';
 
-// Memoized Quick Action Component
+// Memoized Quick Action Component - REDESIGNED
 const QuickAction = memo(({ action }) => {
   const Icon = action.icon;
   return (
-    <Link to={action.link}>
-      <div className="p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200 group cursor-pointer text-center">
+    <Link to={action.link} className="block">
+      <div className="relative group p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-300 text-center">
         <div 
-          className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform shadow-sm"
-          style={{ background: `linear-gradient(135deg, ${action.color} 0%, ${action.colorDark} 100%)` }}
+          className="w-11 h-11 rounded-lg flex items-center justify-center mx-auto mb-2 border-2 group-hover:scale-105 transition-transform duration-300"
+          style={{ borderColor: action.color, backgroundColor: `${action.color}08` }}
         >
-          <Icon className="w-6 h-6 text-white" />
+          <Icon className="w-5 h-5" style={{ color: action.color }} strokeWidth={2} />
         </div>
-        <p className="text-sm font-medium" style={{ color: THEME.text }}>
+        <p className="text-sm font-medium" style={{ color: THEME.darkText }}>
           {action.label}
         </p>
       </div>
@@ -128,13 +126,13 @@ const QuickAction = memo(({ action }) => {
 });
 QuickAction.displayName = 'QuickAction';
 
-// Memoized Feature Badge
+// Memoized Feature Badge - REDESIGNED
 const FeatureBadge = memo(({ module }) => (
-  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-    <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#ECFDF5' }}>
-      <CheckCircle className="w-4 h-4 text-green-500" />
+  <div className="flex items-center gap-2 p-2.5 bg-green-50 rounded-lg border border-green-200 hover:shadow-sm transition-shadow duration-200">
+    <div className="w-7 h-7 rounded-md flex items-center justify-center border-2 border-green-500 bg-green-50">
+      <CheckCircle className="w-4 h-4 text-green-500" strokeWidth={2} />
     </div>
-    <span className="text-sm font-medium capitalize" style={{ color: THEME.text }}>
+    <span className="text-sm font-medium capitalize" style={{ color: THEME.dark }}>
       {module.replace(/([A-Z])/g, ' $1').trim()}
     </span>
   </div>
@@ -172,9 +170,12 @@ const OrgDashboard = () => {
     setError(null);
     
     try {
-      const response = await apiGet('/dashboard');
+      const response = await getDashboardData();
       if (response.success) {
-        setDashboardData(response.data);
+        setDashboardData(prev => ({
+          ...prev,
+          ...response.data
+        }));
       }
       setLastRefresh(new Date());
     } catch (err) {
@@ -211,25 +212,23 @@ const OrgDashboard = () => {
           title: 'Total Employees',
           value: dashboardData.totalEmployees?.toLocaleString() || '0',
           icon: Users,
-          iconColor: THEME.secondary,
-          iconColorDark: THEME.dark,
-          bgLight: '#EBF8FF',
-          borderColor: THEME.secondary,
-          change: `${dashboardData.activeEmployees || 0} active`,
+          iconColor: THEME.primary,
+          iconColorDark: THEME.secondary,
+          change: `${dashboardData.activeEmployees || 0} Active`,
           changeType: 'positive',
+          trend: '+12%',
           link: '/org_admin/hrstaffmanagement'
         },
         {
-          title: 'Monthly Payroll',
-          value: `LKR ${(dashboardData.monthlyPayrollTotal || 0).toLocaleString()}`,
-          icon: DollarSign,
-          iconColor: '#10B981',
+          title: 'Present Today',
+          value: dashboardData.attendanceToday?.toLocaleString() || '0',
+          icon: UserCheck,
+          iconColor: THEME.success,
           iconColorDark: '#059669',
-          bgLight: '#ECFDF5',
-          borderColor: '#10B981',
-          change: 'Current month',
+          change: `${dashboardData.absentToday || 0} Absent`,
           changeType: 'positive',
-          link: '/org_admin/reports'
+          trend: '+0%',
+          link: '/hr_staff/attendancemanagement'
         },
         {
           title: 'Leave Requests',
@@ -237,38 +236,41 @@ const OrgDashboard = () => {
           icon: Calendar,
           iconColor: '#F59E0B',
           iconColorDark: '#D97706',
-          bgLight: '#FFFBEB',
-          borderColor: '#F59E0B',
-          change: dashboardData.pendingLeaveRequests > 0 ? 'Pending approval' : 'All clear',
+          change: 'Pending Approval',
           changeType: dashboardData.pendingLeaveRequests > 0 ? 'warning' : 'positive',
+          trend: `${dashboardData.pendingLeaveRequests} New`,
           link: '/hr_staff/leavemanagement'
         },
         {
-          title: "Today's Attendance",
-          value: `${dashboardData.attendanceToday || 0}/${dashboardData.totalEmployees || 0}`,
-          icon: Clock,
-          iconColor: '#8B5CF6',
-          iconColorDark: '#7C3AED',
-          bgLight: '#F5F3FF',
-          borderColor: '#8B5CF6',
-          change: `${dashboardData.absentToday || 0} absent`,
-          changeType: dashboardData.absentToday > 0 ? 'warning' : 'positive',
-          link: '/hr_staff/attendancemanagement'
+          title: 'Monthly Payroll',
+          value: dashboardData.monthlyPayrollTotal || 0,
+          suffix: 'LKR',
+          icon: DollarSign,
+          iconColor: THEME.secondary,
+          iconColorDark: THEME.dark,
+          change: 'Total Amount',
+          link: '/org_admin/reports'
         }
       ];
     } else if (userRole === 'HR_STAFF') {
       return [
         {
-          title: 'Active Employees',
-          value: dashboardData.activeEmployees?.toLocaleString() || '0',
+          title: 'Total Employees',
+          value: dashboardData.totalEmployees?.toLocaleString() || '0',
           icon: Users,
-          iconColor: THEME.secondary,
-          iconColorDark: THEME.dark,
-          bgLight: '#EBF8FF',
-          borderColor: THEME.secondary,
-          change: 'Currently active',
-          changeType: 'positive',
+          iconColor: THEME.primary,
+          iconColorDark: THEME.secondary,
+          change: 'In Organization',
           link: '/hr_staff/employeemanagement'
+        },
+        {
+          title: 'Attendance Today',
+          value: dashboardData.attendanceToday?.toLocaleString() || '0',
+          icon: UserCheck,
+          iconColor: THEME.success,
+          iconColorDark: '#059669',
+          change: `${dashboardData.absentToday || 0} Absent`,
+          link: '/hr_staff/attendancemanagement'
         },
         {
           title: 'Leave Requests',
@@ -276,73 +278,38 @@ const OrgDashboard = () => {
           icon: Calendar,
           iconColor: '#F59E0B',
           iconColorDark: '#D97706',
-          bgLight: '#FFFBEB',
-          borderColor: '#F59E0B',
-          change: dashboardData.pendingLeaveRequests > 0 ? 'Needs review' : 'All reviewed',
+          change: 'Pending Approval',
           changeType: dashboardData.pendingLeaveRequests > 0 ? 'warning' : 'positive',
           link: '/hr_staff/leavemanagement'
         },
         {
-          title: 'Present Today',
-          value: dashboardData.attendanceToday || 0,
-          icon: CheckCircle,
-          iconColor: '#10B981',
-          iconColorDark: '#059669',
-          bgLight: '#ECFDF5',
-          borderColor: '#10B981',
-          change: 'Checked in',
-          changeType: 'positive',
-          link: '/hr_staff/attendancemanagement'
-        },
-        {
-          title: 'Absent Today',
-          value: dashboardData.absentToday || 0,
-          icon: AlertCircle,
+          title: 'Late Arrivals',
+          value: dashboardData.lateArrivals || 0,
+          icon: Clock,
           iconColor: '#EF4444',
           iconColorDark: '#DC2626',
-          bgLight: '#FEF2F2',
-          borderColor: '#EF4444',
-          change: dashboardData.absentToday > 0 ? 'Need follow-up' : 'All present',
-          changeType: dashboardData.absentToday > 0 ? 'warning' : 'positive',
+          change: 'Today',
           link: '/hr_staff/attendancemanagement'
         }
       ];
     } else { // EMPLOYEE
       return [
         {
-          title: 'Annual Leave',
-          value: `${dashboardData.leaveBalance?.annual || 0} days`,
+          title: 'Leave Balance',
+          value: dashboardData.leaveBalance?.annual || 0,
           icon: Calendar,
-          iconColor: THEME.secondary,
-          iconColorDark: THEME.dark,
-          bgLight: '#EBF8FF',
-          borderColor: THEME.secondary,
-          change: 'Remaining',
-          changeType: 'positive',
+          iconColor: THEME.primary,
+          iconColorDark: THEME.secondary,
+          change: 'Days Available',
           link: '/employee/viewleaveandattendance'
         },
         {
-          title: 'Sick Leave',
-          value: `${dashboardData.leaveBalance?.sick || 0} days`,
-          icon: AlertCircle,
-          iconColor: '#EF4444',
-          iconColorDark: '#DC2626',
-          bgLight: '#FEF2F2',
-          borderColor: '#EF4444',
-          change: 'Available',
-          changeType: 'positive',
-          link: '/employee/viewleaveandattendance'
-        },
-        {
-          title: 'This Month',
-          value: `${dashboardData.attendanceThisMonth?.present || 0} days`,
-          icon: CheckCircle,
-          iconColor: '#10B981',
+          title: 'Attendance',
+          value: dashboardData.attendanceThisMonth?.present || 0,
+          icon: UserCheck,
+          iconColor: THEME.success,
           iconColorDark: '#059669',
-          bgLight: '#ECFDF5',
-          borderColor: '#10B981',
-          change: `${dashboardData.attendanceThisMonth?.absent || 0} absent`,
-          changeType: 'positive',
+          change: `${dashboardData.attendanceThisMonth?.absent || 0} Days Absent`,
           link: '/employee/viewleaveandattendance'
         },
         {
@@ -351,11 +318,26 @@ const OrgDashboard = () => {
           icon: Clock,
           iconColor: '#F59E0B',
           iconColorDark: '#D97706',
-          bgLight: '#FFFBEB',
-          borderColor: '#F59E0B',
-          change: 'Leave requests',
-          changeType: dashboardData.pendingLeaveRequests > 0 ? 'warning' : 'positive',
+          change: 'Leave Requests',
+          link: '/employee/viewleaveandattendance'
+        },
+        {
+          title: 'Pending Requests',
+          value: dashboardData.pendingLeaveRequests || 0,
+          icon: Clock,
+          iconColor: '#F59E0B',
+          iconColorDark: '#D97706',
+          change: 'Leave Requests',
           link: '/employee/leaverequest'
+        },
+        {
+          title: 'Checked In',
+          value: dashboardData.checkedInToday ? 'Yes' : 'No',
+          icon: CheckCircle,
+          iconColor: dashboardData.checkedInToday ? THEME.success : '#EF4444',
+          iconColorDark: dashboardData.checkedInToday ? '#059669' : '#DC2626',
+          change: 'Today',
+          link: '/attendance/mark'
         }
       ];
     }
@@ -365,31 +347,42 @@ const OrgDashboard = () => {
   const quickActions = useMemo(() => {
     const userRole = user?.role;
     
-    if (userRole === 'ORG_ADMIN') {
-      return [
-        { icon: UserPlus, label: 'Add Staff', link: '/org_admin/hrstaffmanagement/add', color: THEME.secondary, colorDark: THEME.dark },
-        { icon: DollarSign, label: 'View Reports', link: '/org_admin/reports', color: '#10B981', colorDark: '#059669' },
-        { icon: Calendar, label: 'Leaves', link: '/hr_staff/leavemanagement', color: '#F59E0B', colorDark: '#D97706' },
-        { icon: BarChart3, label: 'Analytics', link: '/org_admin/reports', color: '#8B5CF6', colorDark: '#7C3AED' },
-        { icon: Briefcase, label: 'Departments', link: '/org_admin/departmentmanagement', color: '#EC4899', colorDark: '#DB2777' },
-        { icon: FileText, label: 'Settings', link: '/org_admin/settings', color: '#6B7280', colorDark: '#4B5563' }
+    if (userRole === 'ORG_ADMIN' || userRole === 'HR_STAFF') {
+      const hrActions = [
+        { icon: BarChart3, label: 'Dashboard', link: userRole === 'ORG_ADMIN' ? '/hr_staff/dashboard' : '/hr_staff/dashboard', color: THEME.secondary, colorDark: THEME.dark },
+        { icon: Users, label: 'Employee Management', link: '/hr_staff/employeemanagement', color: THEME.primary, colorDark: THEME.secondary },
+        { icon: Calendar, label: 'Leave Management', link: '/hr_staff/leavemanagement', color: '#F59E0B', colorDark: '#D97706' },
+        { icon: Clock, label: 'Attendance', link: '/hr_staff/attendancemanagement', color: THEME.success, colorDark: '#059669' },
+        { icon: DollarSign, label: 'Payroll', link: '/hr_staff/payrolldashboard', color: THEME.secondary, colorDark: THEME.dark },
+        { icon: FileText, label: 'HR Reports', link: '/hr_staff/hrreportingmanagement', color: THEME.dark, colorDark: THEME.secondary }
       ];
-    } else if (userRole === 'HR_STAFF') {
-      return [
-        { icon: Calendar, label: 'Review Leaves', link: '/hr_staff/leavemanagement', color: '#F59E0B', colorDark: '#D97706' },
-        { icon: UserPlus, label: 'Add Employee', link: '/hr_staff/employeemanagement/add', color: THEME.secondary, colorDark: THEME.dark },
-        { icon: Clock, label: 'Attendance', link: '/hr_staff/attendancemanagement', color: '#10B981', colorDark: '#059669' },
-        { icon: BarChart3, label: 'HR Reports', link: '/hr_staff/hrreportingmanagement', color: '#8B5CF6', colorDark: '#7C3AED' }
-      ];
+
+      // Add module-based actions if enabled
+      if (availableModules?.moduleFaceRecognitionAttendanceMarking) {
+        hrActions.push({ icon: UserCheck, label: 'Face Attendance', link: '/hr_staff/faceattendance', color: THEME.primary, colorDark: THEME.secondary });
+      }
+      if (availableModules?.moduleQrAttendanceMarking) {
+        hrActions.push({ icon: Zap, label: 'QR Attendance', link: '/hr_staff/qrattendance', color: '#0EA5E9', colorDark: '#0284C7' });
+      }
+      if (availableModules?.moduleEmployeeFeedback) {
+        hrActions.push({ icon: FileText, label: 'Feedback Management', link: '/hr_staff/feedbackmanagement', color: '#7C3AED', colorDark: '#6D28D9' });
+      }
+      if (availableModules?.moduleHiringManagement) {
+        hrActions.push({ icon: UserPlus, label: 'Hiring Management', link: '/hr_staff/hiringmanagement', color: '#EA580C', colorDark: '#C2410C' });
+      }
+
+
+
+      return hrActions;
     } else { // EMPLOYEE
       return [
-        { icon: Calendar, label: 'Apply Leave', link: '/employee/leaverequest', color: '#F59E0B', colorDark: '#D97706' },
-        { icon: Clock, label: 'View Attendance', link: '/employee/viewleaveandattendance', color: '#10B981', colorDark: '#059669' },
-        { icon: FileText, label: 'My Payslips', link: '/employee/payslips', color: THEME.secondary, colorDark: THEME.dark },
+        { icon: Send, label: 'Apply Leave', link: '/employee/leaverequest', color: THEME.primary, colorDark: THEME.secondary },
+        { icon: CheckCircle, label: 'Mark Attendance', link: '/attendance/mark', color: THEME.success, colorDark: '#059669' },
+        { icon: FileText, label: 'View Payslips', link: '/payroll/payslips', color: THEME.secondary, colorDark: THEME.dark },
         { icon: Users, label: 'My Profile', link: '/employee/profile', color: '#8B5CF6', colorDark: '#7C3AED' }
       ];
     }
-  }, [user?.role]);
+  }, [user?.role, availableModules]);
 
   // Check if AI Insights should be shown
   const shouldShowAIInsights = useMemo(() => {
@@ -529,7 +522,7 @@ const OrgDashboard = () => {
                   <Zap className="w-5 h-5" style={{ color: THEME.primary }} />
                 </div>
                 <div>
-                  <h2 className="font-semibold" style={{ color: THEME.dark }}>Quick Actions</h2>
+                  <h2 className="font-semibold" style={{ color: THEME.dark }}>HR Management Quick Actions</h2>
                   <p className="text-xs" style={{ color: THEME.muted }}>Common tasks at your fingertips</p>
                 </div>
               </div>

@@ -410,37 +410,35 @@ public class EmployeeService {
     //Toggle status(active and deactivate)//
     //************************************************//
     @Transactional
-    public Employee toggleEmployeeStatus(String orgUuid, Long id) {
+    public boolean toggleEmployeeStatus(String orgUuid, Long id) {
         try {
             // 1. Fetch employee
             Employee employee = employeeRepository.findByIdAndOrganizationUuid(id, orgUuid)
                     .orElseThrow(() -> new EmployeeNotFoundException("Employee with ID " + id + " not found in this organization"));
 
-            // 2. Toggle status
-            employee.setIsActive(!employee.getIsActive());
+            boolean newStatus = !Boolean.TRUE.equals(employee.getIsActive());
+
+            employee.setIsActive(newStatus);
             employee.setUpdatedAt(LocalDateTime.now());
 
-            Employee savedEmployee;
-            try {
-                savedEmployee = employeeRepository.save(employee);
-            } catch (DataAccessException dae) {
-                throw new RuntimeException("Failed to update employee status in database: " + dae.getMessage(), dae);
-            }
+//            Employee savedEmployee;
+//            try {
+//                savedEmployee = employeeRepository.save(employee);
+//            } catch (DataAccessException dae) {
+//                throw new RuntimeException("Failed to update employee status in database: " + dae.getMessage(), dae);
+//            }
 
             // 3. Update linked AppUser (if exists)
-            if (savedEmployee.getAppUserId() != null) {
-                try {
-                    appUserRepository.findById(savedEmployee.getAppUserId()).ifPresent(user -> {
-                        user.setIsActive(savedEmployee.getIsActive());
-                        user.setUpdatedAt(LocalDateTime.now());
-                        appUserRepository.save(user);
-                    });
-                } catch (DataAccessException dae) {
-                    throw new RuntimeException("Failed to update linked AppUser status: " + dae.getMessage(), dae);
-                }
+            // linked app user
+            if (employee.getAppUserId() != null) {
+                appUserRepository.findById(employee.getAppUserId())
+                        .ifPresent(user -> {
+                            user.setIsActive(newStatus);
+                            user.setUpdatedAt(LocalDateTime.now());
+                        });
             }
 
-            return savedEmployee;
+            return newStatus;
 
         } catch (EmployeeNotFoundException enf) {
             // Handle not found

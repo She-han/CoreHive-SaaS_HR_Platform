@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -78,9 +79,9 @@ public class EmployeeController {
             HttpServletRequest httpRequest,
             @PathVariable Long id) {
         String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
-        Employee updatedEmployee = employeeService.toggleEmployeeStatus(orgUuid, id);
+        boolean newStatus = employeeService.toggleEmployeeStatus(orgUuid, id);
         return new ResponseEntity<>(
-                new StandardResponse(200, "Employee status updated successfully", updatedEmployee),
+                new StandardResponse(200, "Employee status updated successfully", Map.of("isActive", newStatus)),
                 HttpStatus.OK
         );
     }

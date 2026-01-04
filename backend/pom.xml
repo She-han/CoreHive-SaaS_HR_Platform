@@ -30,6 +30,18 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+        <!-- QR -->
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.zxing</groupId>
+            <artifactId>javase</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+
         <!-- PDF generation (OpenPDF) -->
         <dependency>
             <groupId>com.github.librepdf</groupId>

@@ -15,8 +15,13 @@ import com.corehive.backend.model.Attendance.VerificationType;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.util.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +42,7 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final JwtUtil jwtUtil;
 
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
@@ -760,5 +766,103 @@ public class AttendanceService {
                 Attendance.AttendanceStatus.ON_LEAVE
         );
     }
+
+    @Transactional
+    public Attendance markAttendanceViaQr(
+            String qrToken,
+            String ip,
+            String deviceInfo
+    ) throws BadRequestException {
+
+//        // 1️⃣ Validate QR
+//        try {
+//            jwtUtil.extractExpiration(qrToken);
+//        } catch (Exception e) {
+//            throw new BadRequestException("Invalid or expired QR");
+//        }
+
+        Claims claims;
+        try {
+            claims = jwtUtil.extractQrClaims(qrToken);
+        } catch (Exception e) {
+            throw new BadRequestException("Invalid or expired QR");
+        }
+
+
+        Long employeeId = claims.get("employeeId", Long.class);
+        String orgUuid = claims.get("organizationUuid", String.class);
+        String purpose = claims.get("purpose", String.class);
+
+        if (employeeId == null) {
+            throw new BadRequestException("Invalid QR: employee not identified");
+        }
+
+        if (purpose == null) {
+            throw new BadRequestException("Invalid QR: purpose missing");
+        }
+
+        // 2️⃣ Validate employee
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() ->
+                        new BadRequestException("Invalid QR: employee not found")
+                );
+
+        if (!employee.getOrganizationUuid().equals(orgUuid)) {
+            throw new BadRequestException("Invalid QR: wrong organization");
+        }
+
+        if (!employee.getIsActive()) {
+            throw new BadRequestException("Employee inactive");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndOrganizationUuidAndAttendanceDate(
+                        employeeId, orgUuid, today
+                )
+                .orElse(
+                        Attendance.builder()
+                                .employeeId(employeeId)
+                                .organizationUuid(orgUuid)
+                                .attendanceDate(today)
+                                .verificationType(VerificationType.QR_CODE)
+                                .build()
+                );
+
+        // 3️⃣ Check-in / Check-out logic
+        if ("CHECK_IN".equals(purpose)) {
+
+            if (attendance.isCheckedIn()) {
+                throw new BadRequestException("Already checked in");
+            }
+
+            attendance.setCheckInTime(LocalDateTime.now());
+            attendance.setStatus(AttendanceStatus.PRESENT);
+        }
+        else if ("CHECK_OUT".equals(purpose)) {
+
+            if (!attendance.isCheckedIn()) {
+                throw new BadRequestException("Check-in required first");
+            }
+
+            if (attendance.isCheckedOut()) {
+                throw new BadRequestException("Already checked out");
+            }
+
+            attendance.setCheckOutTime(LocalDateTime.now());
+        }
+        else {
+            throw new BadRequestException("Invalid QR purpose");
+        }
+
+        // 4️⃣ Audit
+        attendance.setIpAddress(ip);
+        attendance.setDeviceInfo(deviceInfo);
+
+        return attendanceRepository.save(attendance);
+    }
+
+
 
 }

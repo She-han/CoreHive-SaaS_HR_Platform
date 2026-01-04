@@ -84,7 +84,7 @@ public class JwtUtil {
     /**
      * Extract all claims from token - UPDATED VERSION
      */
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()  // Updated method
                 .verifyWith(getSigningKey()) // Updated method
                 .build()
@@ -153,4 +153,52 @@ public class JwtUtil {
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
+
+    /**
+     * Extract employeeId from QR token
+     */
+    public Long extractEmployeeIdFromQr(String token) {
+        Claims claims = extractAllClaims(token);
+
+        Object employeeIdObj = claims.get("employeeId");
+        if (employeeIdObj instanceof Number) {
+            return ((Number) employeeIdObj).longValue();
+        }
+
+        throw new IllegalArgumentException("Invalid QR: employeeId missing");
+    }
+
+    public Claims extractQrClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+
+    /**
+     * Generate QR attendance token (NOT a login token)
+     */
+    public String generateQrToken(
+            Long employeeId,
+            String organizationUuid,
+            String purpose,
+            long ttlMillis
+    ) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("employeeId", employeeId);
+        claims.put("organizationUuid", organizationUuid);
+        claims.put("purpose", purpose);
+        claims.put("qrType", "ATTENDANCE");
+
+        return Jwts.builder()
+                .claims(claims)
+                .subject("QR_ATTENDANCE")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ttlMillis))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 }

@@ -4,6 +4,7 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.request.QrAttendanceRequest;
 import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Attendance;
@@ -14,8 +15,10 @@ import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.service.AttendanceService;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -666,4 +669,27 @@ public class AttendanceController {
                 HttpStatus.OK
         );
     }
+
+    //QR attendance
+    @PostMapping("/qr/mark")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> markAttendanceViaQr(
+            @Valid @RequestBody QrAttendanceRequest request,
+            HttpServletRequest http
+    ) throws BadRequestException {
+        Attendance attendance = attendanceService.markAttendanceViaQr(
+                request.getQrToken(),
+                http.getRemoteAddr(),
+                http.getHeader("User-Agent")
+        );
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance marked successfully",
+                        attendance
+                )
+        );
+    }
+
 }

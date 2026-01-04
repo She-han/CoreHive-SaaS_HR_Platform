@@ -3,6 +3,12 @@ import axios from "axios";
 import { useNavigate , useParams} from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { getSingleJobPosting } from "../../../api/hiringService";
+import { getAllDepartments } from "../../../api/departmentApi";
+import { updateJobPosting } from "../../../api/hiringService";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../../store/slices/authSlice";
+
 
 export default function EditeJobPosting() {
   const navigate = useNavigate();
@@ -10,6 +16,9 @@ export default function EditeJobPosting() {
 
   const[jobPosting, setJobPosting] = useState(null);
   const [departments, setDepartments] = useState([]);
+
+   const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
 
   const [form, setForm] = useState({
     title: "",
@@ -24,30 +33,36 @@ export default function EditeJobPosting() {
 
    // Load job posting data
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/job-postings/${id}`)
-      .then((res) => {
-        setJobPosting(res.data);
+    getSingleJobPosting(id , token)
+      .then((data) => {
+        setJobPosting(data);
 
         setForm({
-            title: res.data.title,
-            department: res.data.department,
-            employmentType: res.data.employmentType,
-            status: res.data.status,
-            postedDate: res.data.postedDate,
-            closingDate: res.data.closingDate,
-            availableVacancies: res.data.availableVacancies,
-            description: res.data.description,
+            title: data.title || "",
+            department: String(data.department || ""), 
+            employmentType: data.employmentType || "FULL_TIME",
+            status: data.status || "OPEN",
+            postedDate: data.postedDate || "",
+            closingDate: data.closingDate || "",
+            availableVacancies: data.availableVacancies || 1,
+            description: data.description || "",
         });
       })
       .catch(console.error);
-  }, [id]);
+  }, [id , token]);
 
+  // Load departments for the dropdown
     useEffect(() => {
-  axios.get("http://localhost:8080/api/departments")
-    .then(res => setDepartments(res.data))
-    .catch(err => console.error("Error loading departments", err));
+  getAllDepartments()
+    .then((res) => {
+      setDepartments(res.data); // ✅ because API service should return res.data.data
+    })
+    .catch((err) => {
+      console.error("Failed to load departments", err);
+      setDepartments([]);
+    });
 }, []);
+
 
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -103,16 +118,35 @@ export default function EditeJobPosting() {
 
   setLoading(true);
 
-  try {
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (avatarFile) payload.append("avatar", avatarFile);
+   try {
+    // Build FormData if there is a file, otherwise send JSON
+    let payload;
+    if (avatarFile) {
+      payload = new FormData();
+    payload.append("title", form.title);
+payload.append("departmentId", form.department); // ✅ FIX
+payload.append("employmentType", form.employmentType);
+payload.append("status", form.status);
+payload.append("postedDate", form.postedDate);
+payload.append("closingDate", form.closingDate);
+payload.append("availableVacancies", form.availableVacancies);
+payload.append("description", form.description);
+payload.append("avatar", avatarFile);
+    } else {
+     payload = {
+    title: form.title,
+    departmentId: form.department,  
+    employmentType: form.employmentType,
+    status: form.status,
+    postedDate: form.postedDate,
+    closingDate: form.closingDate,
+    availableVacancies: form.availableVacancies,
+    description: form.description,
+  };
+    }
 
-    const response = await axios.put(
-      `http://localhost:8080/api/job-postings/${id}`,
-      payload,
-      { headers: { "Content-Type": "application/json"  } }
-    );
+    const response = await updateJobPosting(id, payload, token);
+
 
     Swal.fire({
       title: "Success!",
@@ -182,21 +216,23 @@ export default function EditeJobPosting() {
 
             {/* Department */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Department</label>
-              <select
-                name="department"
-                value={form.department}
-                onChange={handleInput}
-                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
-              >
-                <option value="">Select department</option>
-                {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                    </option>
-                    ))}
-              </select>
-            </div>
+  <label className="text-sm font-medium text-[#333333]">Department</label>
+  <select
+    name="department"
+    value={form.department}
+    onChange={handleInput}
+    className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
+  >
+    <option value="">Select department</option>
+
+    {departments.map((dep) => (
+      <option key={dep.id} value={dep.id}>
+        {dep.name}
+      </option>
+    ))}
+  </select>
+</div>
+
 
             {/* Employment Type */}
             <div>

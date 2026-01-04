@@ -6,32 +6,46 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { getAllJobPostings , deleteJobPosting} from "../../api/hiringService";
+import { useSelector } from "react-redux";
+ import { selectUser } from "../../store/slices/authSlice";
+
 
 
 const MySwal = withReactContent(Swal);//allowing you to use React elements inside popups.
 
 export default function HiringManagement() {
   const [filter, setFilter] = useState({ role: "", status: "" });
-
-   const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
+  const [jobs, setJobs] = useState([]); //Array of job objects fetched from backend.
   const [loading, setLoading] = useState(true);
 
-  // Fetch job postings from backend
-  useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const res = await axios.get("http://localhost:8080/api/job-postings");
-        setJobs(res.data);
-      } catch (error) {
-        console.error("Error fetching job postings:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //For pagenated
+  const [page, setPage] = useState(0);       // current page
+  const [size, setSize] = useState(6);      // items per page
+  const [totalPages, setTotalPages] = useState(0); 
+  
+   const user = useSelector(selectUser); // get token from Redux
+    const token = user?.token;
 
-    fetchJobs();
-  }, []);
-  //[] means this effect runs only once (on initial load).
+  // Fetch job postings from backend
+useEffect(() => {
+  if (!token) return; // exit if not logged in
+
+  const fetchJobs = async () => {
+    try {
+      const data = await getAllJobPostings(page, size, token);
+      setJobs(data.items || []);
+      setTotalPages(data.totalPages || 0);
+    } catch (error) {
+      console.error("Error fetching job postings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchJobs();
+}, [token, page, size]); // ✅ token added
+
 
    //Delete job posting with confirmation popup
   const handleDeleteJob = async (id) => {
@@ -51,7 +65,7 @@ export default function HiringManagement() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/job-postings/${id}`);
+        await deleteJobPosting(id , token);
         setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
 
         MySwal.fire({
@@ -93,7 +107,7 @@ export default function HiringManagement() {
   };
 
   return (
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8"> {/*Creates a full-screen white container with padding.*/}
+     <div  style={{ backgroundColor: '#F1FDF9' }} className="w-full h-screen bg-white shadow-md flex flex-col p-8">
       {/* ===== HEADER ===== */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>
@@ -163,11 +177,48 @@ export default function HiringManagement() {
         />
       ))}
     </div>
+
+    
   ) : (
     <div className="text-center text-[#9B9B9B] mt-10">
       No job postings found.
     </div>
   )}
+
+  {/* Pagination Controls */}
+<div className="flex justify-between items-center mt-4">
+  <button
+    className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+    onClick={() => setPage(page - 1)}
+    disabled={page === 0}
+  >
+    Previous
+  </button>
+
+  <div className="flex gap-2">
+    {Array.from({ length: totalPages }).map((_, idx) => (
+      <button
+        key={idx}
+        className={`px-3 py-1 rounded ${
+          idx === page ? "bg-[#02C39A] text-white" : "bg-gray-100 hover:bg-gray-200"
+        }`}
+        onClick={() => setPage(idx)}
+      >
+        {idx + 1}
+      </button>
+    ))}
+  </div>
+
+  <button
+    className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+    onClick={() => setPage(page + 1)}
+    disabled={page + 1 === totalPages}
+  >
+    Next
+  </button>
+</div>
+
+
 </div>
 
     </div>

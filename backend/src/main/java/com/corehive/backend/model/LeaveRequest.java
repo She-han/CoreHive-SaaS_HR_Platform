@@ -48,9 +48,8 @@ public class LeaveRequest {
     @Column(nullable = false, columnDefinition = "ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING'")
     private LeaveStatus status = LeaveStatus.PENDING;
 
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by")
-    private Employee approvedBy;
+    private Long approvedBy;
 
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;

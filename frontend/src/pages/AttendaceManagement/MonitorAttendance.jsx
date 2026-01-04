@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
-import AttendancePopup from "../../components/hrstaff/attendanceManagement/AttendancePopup";
+import AttendancePopup  from "../../components/hrstaff/attendanceManagement/AttendancePopup";
+import SummaryCard from "../../components/hrstaff/attendanceManagement/SummaryCard"
+import {
+  getAttendanceSummary,
+  getAttendanceByDate
+} from "../../api/monitorAttendanceApi";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../store/slices/authSlice";
+
 
 export default function MonitorAttendance() {
 
+const user = useSelector(selectUser);
+const token = user?.token;
 
 //   👉 මේක තෝරාගත් දිනය save කරලා තියෙන්නේ.
 // 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
@@ -12,10 +21,12 @@ export default function MonitorAttendance() {
   const [selectedDate, setSelectedDate] = useState(today);
 
   const [summary, setSummary] = useState({
-  present: 0,
-  late: 0,
-  onLeave: 0,
-  absent: 0
+        PRESENT: 0,
+        ABSENT: 0,
+        LATE: 0,
+        HALF_DAY: 0,
+        ON_LEAVE: 0,
+        WORK_FROM_HOME: 0
 });
 
 
@@ -49,15 +60,13 @@ export default function MonitorAttendance() {
 
     async function loadTodaySummary() {
   try {
-    const res = await axios.get(
-      `http://localhost:8080/api/attendance/summary?date=${today}`
-    );
-    setSummary(res.data);  // Save into summary state
+    const data = await getAttendanceSummary(selectedDate, token);
+    console.log("SUMMARY API DATA:", data); // 👈 ADD THIS
+    setSummary(data);
   } catch (err) {
     console.error(err);
   }
 }
-
 
 
    /* ---------------------------------------------------------
@@ -82,10 +91,11 @@ export default function MonitorAttendance() {
 
     try {
       // fetch all 7 days
-      const fetches = weekDates.map(d =>
-        axios.get(`http://localhost:8080/api/attendance?date=${d}`)
-          .then(res => ({ date: d, data: res.data.data || [] }))
-      );
+      const fetches = weekDates.map(async (d) => ({
+  date: d,
+  data: await getAttendanceByDate(d, token)
+}));
+
 
       const results = await Promise.all(fetches);
 
@@ -146,7 +156,7 @@ export default function MonitorAttendance() {
       ? formatHours(record.workingMinutes)
       : "0h 0m",
     status: record.status,
-    lateMinutes: record.lateMinutes || 0
+    lateMinutes: record.lateMinutes ?? 0
   };
 
   setPopupData(popup);
@@ -158,12 +168,14 @@ export default function MonitorAttendance() {
     <div className="flex flex-col gap-6 p-6 h-screen overflow-hidden">
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard title="Present Today" value={summary.present} color="#02C39A" />
-        <SummaryCard title="Late Entry" value={summary.late} color="#05668D" />
-        <SummaryCard title="On Leave" value={summary.onLeave} color="#1ED292" />
-        <SummaryCard title="Absent" value={summary.absent} color="#0C397A" />
-      </div>
+<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+  <SummaryCard title="Present" value={summary.PRESENT} statusKey="PRESENT" />
+  <SummaryCard title="Absent" value={summary.ABSENT} statusKey="ABSENT" />
+  <SummaryCard title="Late Entry" value={summary.LATE} statusKey="LATE" />
+  <SummaryCard title="Half Day" value={summary.HALF_DAY} statusKey="HALF_DAY" />
+  <SummaryCard title="On Leave" value={summary.ON_LEAVE} statusKey="ON_LEAVE" />
+  <SummaryCard title="WFH" value={summary.WORK_FROM_HOME} statusKey="WORK_FROM_HOME" />
+</div>
 
       {/* SEARCH + FILTERS */}
       <div className="flex justify-between items-center gap-4">
@@ -287,8 +299,9 @@ function DayCell({ dayRecord, date, isToday, onClick }) {
 
       {/* IF RECORD EXISTS */}
       {dayRecord && (() => {
-        const status = dayRecord.status?.toUpperCase() || "ABSENT";
-        const worked = dayRecord.workingMinutes > 0;
+       const status = dayRecord.status?.toUpperCase();
+      const worked = status === "PRESENT" || status === "LATE";
+
 
         if (isToday) {
           return (
@@ -328,27 +341,31 @@ function StatusBadge({ status }) {
   const base = "px-3 py-1 rounded-md text-sm font-medium inline-block";
 
   switch (status) {
-    case "PRESENT":
-      return <span className={`${base} bg-[#E6F9F2] text-[#02C39A]`}>Present</span>;
-    case "LEAVE":
-      return <span className={`${base} bg-purple-100 text-purple-600`}>Leave</span>;
-    case "ABSENT":
-      return <span className={`${base} bg-red-100 text-red-600`}>Absent</span>;
-    case "HOLIDAY":
-      return <span className={`${base} bg-gray-100 text-[#9B9B9B]`}>Holiday</span>;
-    default:
-      return <span className={`${base} bg-gray-200 text-[#333]`}>{status}</span>;
-  }
+  case "PRESENT":
+    // Soft Mint / Emerald
+    return <span className={`${base} bg-[#ECFDF5] text-[#059669]`}>Present</span>;
+  
+  case "LEAVE":
+  case "ONLEAVE":
+    // Soft Indigo / Lavender
+    return <span className={`${base} bg-[#EEF2FF] text-[#4F46E5]`}>Leave</span>;
+  
+  case "ABSENT":
+    // Soft Rose / Pink
+    return <span className={`${base} bg-[#FFF1F2] text-[#E11D48]`}>Absent</span>;
+  
+  case "LATE":
+    // Soft Amber / Gold
+    return <span className={`${base} bg-[#FFFBEB] text-[#D97706]`}>Late</span>;
+  
+  case "WORK_FROM_HOME":
+    // Soft Sky Blue
+    return <span className={`${base} bg-[#F0F9FF] text-[#0284C7]`}>WFH</span>;
+  
+  default:
+    // Soft Slate Gray
+    return <span className={`${base} bg-[#F8FAFC] text-[#475569]`}>{status}</span>;
 }
-
-/* --- Small Summary card --- */
-function SummaryCard({ title, value, color }) {
-  return (
-    <div className="p-4 rounded-lg shadow text-white" style={{ backgroundColor: color }}>
-      <p className="text-md font-medium">{title}</p>
-      <h2 className="text-3xl font-bold">{value}</h2>
-    </div>
-  );
 }
 
 /* --- Utility Functions --- */

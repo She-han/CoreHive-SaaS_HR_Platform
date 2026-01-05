@@ -24,7 +24,7 @@ const Support = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  Support Tickets  🤵‍♀️
+                  Support Tickets  
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Manage customer support requests and tickets

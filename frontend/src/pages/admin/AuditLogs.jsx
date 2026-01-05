@@ -24,7 +24,7 @@ const AuditLogs = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  Audit Logs  🤵‍♀️
+                  Audit Logs  
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Track and monitor all system activities and changes

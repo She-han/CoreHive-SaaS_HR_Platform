@@ -24,7 +24,7 @@ const SystemAnalytics = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  Analytics & Reporting  🤵‍♀️
+                  Analytics & Reporting  
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Comprehensive HR insights and metrics

@@ -34,7 +34,7 @@ export default function Settings() {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  System Configuration  🧑‍🔧
+                  System Configuration  
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Configure global system settings and integrations

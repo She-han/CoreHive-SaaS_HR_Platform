@@ -80,7 +80,7 @@ const Users = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  User Management 🤵‍♀️
+                  User Management 
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Manage system administrators and organization admins

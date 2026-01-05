@@ -26,7 +26,7 @@ const AdminApprovals = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  Reviews & Approvals  🤵‍♀️
+                  Reviews & Approvals  
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Review and approve all tenant requests and changes

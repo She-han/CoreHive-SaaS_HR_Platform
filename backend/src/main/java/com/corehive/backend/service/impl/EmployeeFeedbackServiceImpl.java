@@ -7,59 +7,68 @@ import com.corehive.backend.model.EmployeeFeedback;
 import com.corehive.backend.repository.EmployeeFeedbackRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.service.EmployeeFeedbackService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-public class EmployeeFeedbackServiceImp implements EmployeeFeedbackService {
+public class EmployeeFeedbackServiceImpl implements EmployeeFeedbackService {
 
-    private final EmployeeFeedbackRepository feedbackRepo;
-    private final EmployeeRepository employeeRepo;
+    private final EmployeeFeedbackRepository feedbackRepository;
+    private final EmployeeRepository employeeRepository;
 
+    public EmployeeFeedbackServiceImpl(EmployeeFeedbackRepository feedbackRepository,
+                                       EmployeeRepository employeeRepository) {
+        this.feedbackRepository = feedbackRepository;
+        this.employeeRepository = employeeRepository;
+    }
+
+    // ---------------- CREATE ----------------
     @Override
-    public EmployeeFeedbackResponseDTO createFeedback(EmployeeFeedbackRequest dto) {
+    public EmployeeFeedbackResponseDTO saveFeedback(EmployeeFeedbackRequest request) {
 
-        Employee employee = employeeRepo.findById(dto.getEmployeeId())
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         EmployeeFeedback feedback = new EmployeeFeedback();
         feedback.setEmployee(employee);
-        feedback.setRating(dto.getRating());
-        feedback.setFeedbackType(dto.getFeedbackType());
-        feedback.setMessage(dto.getMessage());
+        feedback.setRating(request.getRating());
+        feedback.setFeedbackType(request.getFeedbackType());
+        feedback.setMessage(request.getMessage());
+        feedback.setCreatedAt(LocalDateTime.now());
 
-        EmployeeFeedback saved = feedbackRepo.save(feedback);
-
-        return mapToResponse(saved);
+        return mapToDTO(feedbackRepository.save(feedback));
     }
 
-    @Override
-    public List<EmployeeFeedbackResponseDTO> getFeedbacksByEmployee(Long employeeId) {
-        return feedbackRepo.findByEmployeeId(employeeId)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
 
+    // ---------------- GET ALL ----------------
     @Override
     public List<EmployeeFeedbackResponseDTO> getAllFeedbacks() {
-        return feedbackRepo.findAll()
+        return feedbackRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
-                .toList();
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
-    private EmployeeFeedbackResponseDTO mapToResponse(EmployeeFeedback feedback) {
-        EmployeeFeedbackResponseDTO res = new EmployeeFeedbackResponseDTO();
-        res.setId(feedback.getId());
-        res.setEmployeeId(feedback.getEmployee().getId());
-        res.setRating(feedback.getRating());
-        res.setFeedbackType(feedback.getFeedbackType());
-        res.setMessage(feedback.getMessage());
-        res.setCreatedAt(feedback.getCreatedAt());
-        return res;
+    // ---------------- GET BY EMPLOYEE ----------------
+    @Override
+    public List<EmployeeFeedbackResponseDTO> getFeedbacksByEmployee(Long employeeId) {
+        return feedbackRepository.findByEmployeeId(employeeId)
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------- MAPPER ----------------
+    private EmployeeFeedbackResponseDTO mapToDTO(EmployeeFeedback feedback) {
+        EmployeeFeedbackResponseDTO dto = new EmployeeFeedbackResponseDTO();
+        dto.setId(feedback.getId());
+        dto.setRating(feedback.getRating());
+        dto.setFeedbackType(feedback.getFeedbackType());
+        dto.setMessage(feedback.getMessage());
+        dto.setCreatedAt(feedback.getCreatedAt());
+        return dto;
     }
 }

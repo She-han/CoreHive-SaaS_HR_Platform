@@ -189,13 +189,7 @@ const handleSkip = async () => {
             />
           )}
           
-          <div className="mb-6">
-            <Alert 
-              type="info"
-              title="Basic Features Included"
-              message="Employee Management, Payroll, Leave Management, Attendance Tracking, Reports, and Notifications are already enabled for your organization."
-            />
-          </div>
+     
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Module selection title */}

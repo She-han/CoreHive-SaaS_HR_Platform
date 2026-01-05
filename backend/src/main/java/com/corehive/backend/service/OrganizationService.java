@@ -419,15 +419,24 @@ public class OrganizationService {
         log.info("Fetching platform statistics from database");
 
         try {
-            // Count organizations by status
+            // Count organizations by status using enum values
             long totalOrganizations = organizationRepository.count();
-            long activeOrganizations = organizationRepository.countByStatus("ACTIVE");
-            long pendingOrganizations = organizationRepository.countByStatus("PENDING_APPROVAL");
-            long dormantOrganizations = organizationRepository.countByStatus("DORMANT");
-            long suspendedOrganizations = organizationRepository.countByStatus("SUSPENDED");
+            long activeOrganizations = organizationRepository.countByStatus(OrganizationStatus.ACTIVE);
+            long pendingOrganizations = organizationRepository.countByStatus(OrganizationStatus.PENDING_APPROVAL);
+            long dormantOrganizations = organizationRepository.countByStatus(OrganizationStatus.DORMANT);
+            long suspendedOrganizations = organizationRepository.countByStatus(OrganizationStatus.SUSPENDED);
 
-            // Count total employees (AppUsers) across all organizations
-            long totalEmployees = appUserRepository.count();
+            // Calculate total employees from employee count ranges in organizations
+            List<Organization> allOrganizations = organizationRepository.findAll();
+            long estimatedTotalEmployees = allOrganizations.stream()
+                    .mapToLong(org -> estimateEmployeeCount(org.getEmployeeCountRange()))
+                    .sum();
+
+            // Also get actual employee count from AppUser table for comparison
+            long actualEmployees = appUserRepository.count();
+            
+            // Use actual count if available, otherwise use estimated
+            long totalEmployees = actualEmployees > 0 ? actualEmployees : estimatedTotalEmployees;
 
             PlatformStatistics stats = PlatformStatistics.builder()
                     .totalOrganizations(totalOrganizations)
@@ -439,8 +448,9 @@ public class OrganizationService {
                     .totalSystemUsers(0L) // Can be updated when SystemUser count is needed
                     .build();
 
-            log.info("Platform statistics fetched - Total: {}, Active: {}, Pending: {}, Employees: {}",
-                    totalOrganizations, activeOrganizations, pendingOrganizations, totalEmployees);
+            log.info("Platform statistics fetched - Total Orgs: {}, Active: {}, Pending: {}, Dormant: {}, Suspended: {}, Employees: {} (actual: {}, estimated: {})",
+                    totalOrganizations, activeOrganizations, pendingOrganizations, 
+                    dormantOrganizations, suspendedOrganizations, totalEmployees, actualEmployees, estimatedTotalEmployees);
 
             return stats;
 
@@ -456,6 +466,39 @@ public class OrganizationService {
                     .totalEmployees(0L)
                     .totalSystemUsers(0L)
                     .build();
+        }
+    }
+
+    /**
+     * Estimate employee count from range string
+     * e.g., "1-50" returns midpoint 25, "50-100" returns 75
+     */
+    private long estimateEmployeeCount(String range) {
+        if (range == null || range.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            // Handle ranges like "1-50", "50-100", "100-500", "500+"
+            if (range.contains("+")) {
+                // For "500+" assume 750
+                String number = range.replace("+", "").trim();
+                return Long.parseLong(number) + 250;
+            } else if (range.contains("-")) {
+                // For "1-50" get midpoint
+                String[] parts = range.split("-");
+                if (parts.length == 2) {
+                    long min = Long.parseLong(parts[0].trim());
+                    long max = Long.parseLong(parts[1].trim());
+                    return (min + max) / 2;
+                }
+            }
+            
+            // If it's just a number, return it
+            return Long.parseLong(range.trim());
+        } catch (Exception e) {
+            log.warn("Could not parse employee count range: {}", range);
+            return 25; // Default to 25 if parsing fails
         }
     }
 

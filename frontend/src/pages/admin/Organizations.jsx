@@ -249,7 +249,7 @@ const Organizations = () => {
                   className="text-2xl lg:text-3xl font-bold"
                   style={{ color: THEME.dark }}
                 >
-                  Organization Management 🧑‍💻
+                  Organization Management 
                 </h1>
                 <p className="mt-1" style={{ color: THEME.muted }}>
                   Manage all tenant organizations and their settings

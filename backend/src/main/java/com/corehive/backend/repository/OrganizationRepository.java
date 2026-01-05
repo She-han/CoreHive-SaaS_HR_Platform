@@ -58,4 +58,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Business Registration Number duplicate checking
      */
     boolean existsByBusinessRegistrationNumber(String brNumber);
+
+
+
 }

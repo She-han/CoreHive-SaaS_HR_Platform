@@ -32,7 +32,7 @@ export default function EmployeeModal({ employee, isOpen, onClose }) {
             <b>Employee Code:</b> {employee.employeeCode}
           </p>
           <p>
-            <b>Department:</b> {employee.department?.name || "—"}
+            <b>Department:</b> {employee.departmentDTO?.name || "—"}
           </p>
           <p>
             <b>Email:</b> {employee.email || "—"}

@@ -31,8 +31,10 @@ public class JobPosting {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 100)
-    private String department;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
+
 
     @Enumerated(EnumType.STRING)
     @Column(name = "employment_type", length = 20, nullable = false)

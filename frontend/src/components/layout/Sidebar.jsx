@@ -346,43 +346,61 @@ const Sidebar = ({ isCollapsed = false }) => {
   const navigationItems = getNavigationConfig();
 
   const renderMenuItem = (item) => {
+    const handleMenuClick = (e) => {
+      // Prevent event bubbling that might trigger sidebar expansion
+      e.stopPropagation();
+    };
+
     return (
       <div key={item.name} className="mb-1">
         <Link
           to={item.path}
+          onClick={handleMenuClick}
           className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
             item.moduleEnabled ? 'relative' : ''
           }`}
           style={item.current 
             ? { 
-                backgroundColor: '#F1FDF9', 
-                color: '#02C39A', 
-                borderRight: '3px solid #02C39A'
+                backgroundColor: 'transparent',
+                color: '#02C39A',
+                borderLeft: '2px solid #02C39A',
+                borderRight: '1px solid #02C39A',
+                borderTop: '1px solid #02C39A',
+                borderBottom: '1px solid #02C39A',
+                boxShadow: '0 0 0 1px rgba(2, 195, 154, 0.1) inset'
               } 
             : { 
-                color: '#333333'
+                color: '#333333',
+                borderLeft: '4px solid transparent',
+                borderRight: '4px solid transparent',
+                borderTop: '1px solid transparent',
+                borderBottom: '1px solid transparent'
               }
           }
           onMouseEnter={(e) => {
             if (!item.current) {
               e.currentTarget.style.backgroundColor = '#F1FDF9';
               e.currentTarget.style.color = '#05668D';
+              e.currentTarget.style.borderLeftColor = '#E0F5F0';
             }
           }}
           onMouseLeave={(e) => {
             if (!item.current) {
               e.currentTarget.style.backgroundColor = 'transparent';
               e.currentTarget.style.color = '#333333';
+              e.currentTarget.style.borderLeftColor = 'transparent';
             }
           }}
         >
           <item.icon
-            className={`${isCollapsed ? 'h-6 w-6' : 'h-5 w-5 mr-3'} shrink-0`}
-            style={{ color: item.current ? '#02C39A' : '#05668D' }}
+            className={`${isCollapsed ? 'h-5 w-5 ' : 'h-5 w-5 mr-3'} shrink-0 transition-all duration-200`}
+            style={{ 
+              color: item.current ? '#02C39A' : '#05668D'
+            }}
             aria-hidden="true"
           />
           {!isCollapsed && (
-            <span className="flex-1">{item.name}</span>
+            <span className="flex-1 font-medium">{item.name}</span>
           )}
           {!isCollapsed && item.moduleEnabled && (
             <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
@@ -398,6 +416,7 @@ const Sidebar = ({ isCollapsed = false }) => {
     <div 
       className={`shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}
       style={{ backgroundColor: '#FFFFFF', borderRight: '1px solid #E5E7EB' }}
+      onClick={(e) => e.stopPropagation()}
     >
       <div className="flex flex-col h-full">
         {/* Header */}

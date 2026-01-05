@@ -23,8 +23,13 @@ COPY . .
 # Create Vite production build
 # VITE_API_BASE_URL can be set during build time
 ARG VITE_API_BASE_URL
+ARG VITE_AI_SERVICE_URL
+ARG VITE_RECAPTCHA_SITE_KEY
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_AI_SERVICE_URL=${VITE_AI_SERVICE_URL}
+ENV VITE_RECAPTCHA_SITE_KEY=${VITE_RECAPTCHA_SITE_KEY}
 RUN npm run build
+
 
 # =========================================================================
 # Stage 2: Serve the application with Nginx

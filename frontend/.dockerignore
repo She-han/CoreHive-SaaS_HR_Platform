@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files (CRITICAL - don't copy to Docker!)
+.env
+.env.*
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.production
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Test files
+coverage/
+*.test.js
+*.spec.js

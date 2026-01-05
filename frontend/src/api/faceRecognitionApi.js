@@ -3,8 +3,9 @@
  * Connects to Python AI Service + Java Backend
  */
 
-const AI_SERVICE_URL = 'http://localhost:8001';
-const JAVA_BACKEND_URL = 'http://localhost:8080/api';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
+// FIX: Use VITE_API_BASE_URL (same as axios.js and .env.development)
+const JAVA_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 // ===== Helper Functions =====
 
@@ -49,7 +50,29 @@ export const registerFace = async (employeeId, organizationUuid, imageBlob) => {
 };
 
 /**
- * Verify face only (Python AI)
+ * Identify face (Kiosk mode - find which employee)
+ */
+export const identifyFace = async (organizationUuid, imageBlob) => {
+  const formData = new FormData();
+  formData.append('organization_uuid', organizationUuid);
+  formData.append('image', imageBlob, 'live.jpg');
+
+  const response = await fetch(`${AI_SERVICE_URL}/api/face/identify`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.detail || 'Face identification failed');
+  }
+  
+  return data;
+};
+
+/**
+ * Verify face only (Python AI) - for specific employee
  */
 export const verifyFace = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();
@@ -98,12 +121,70 @@ export const deregisterFace = async (employeeId, organizationUuid) => {
   return await response.json();
 };
 
-// ===== Java Backend APIs =====
+// ===== Java Backend APIs ===
 
 /**
- * Mark attendance in database (after face verified)
+ * Mark CHECK-IN in database (after face identified)
  */
-export const markAttendanceInDatabase = async (verificationConfidence) => {
+export const markCheckIn = async (employeeId, organizationUuid, verificationConfidence) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-in`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      employeeId: employeeId,
+      organizationUuid: organizationUuid,
+      verificationConfidence: verificationConfidence,
+      deviceInfo: navigator.userAgent
+    })
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to save check-in');
+  }
+  
+  return data;
+};
+
+/**
+ * Mark CHECK-OUT in database (after face identified)
+ */
+export const markCheckOut = async (employeeId, organizationUuid, verificationConfidence) => {
+  const token = getAuthToken();
+  
+  const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-out`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      employeeId: employeeId,
+      organizationUuid: organizationUuid,
+      verificationConfidence: verificationConfidence,
+      deviceInfo: navigator.userAgent
+    })
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to save check-out');
+  }
+  
+  return data;
+};
+
+/**
+ * Mark attendance in database (legacy - auto check-in/out)
+ */
+export const markAttendanceInDatabase = async (employeeId, organizationUuid, verificationConfidence) => {
   const token = getAuthToken();
   
   const response = await fetch(`${JAVA_BACKEND_URL}/attendance/mark-face`, {
@@ -113,6 +194,8 @@ export const markAttendanceInDatabase = async (verificationConfidence) => {
       'Authorization': `Bearer ${token}`
     },
     body: JSON.stringify({
+      employeeId: employeeId,
+      organizationUuid: organizationUuid,
       verificationConfidence: verificationConfidence,
       deviceInfo: navigator.userAgent
     })
@@ -166,13 +249,126 @@ export const getAttendanceHistory = async (startDate, endDate) => {
 // ===== Complete Flow Functions =====
 
 /**
- * COMPLETE FLOW: Verify Face + Mark Attendance
- * 1. Python AI verify face
+ * COMPLETE FLOW: Identify Face + Mark Attendance (CHECK-IN)
+ * 1. Python AI identify face
  * 2. If success, Java Backend save attendance
+ */
+export const identifyAndCheckIn = async (organizationUuid, base64Image) => {
+  try {
+    const imageBlob = base64ToBlob(base64Image);
+
+    // Step 1: Identify face with Python AI
+    console.log('Step 1: Identifying face...');
+    const identifyResult = await identifyFace(organizationUuid, imageBlob);
+
+    if (!identifyResult.identified) {
+      return {
+        success: false,
+        step: 'identification',
+        identified: false,
+        message: identifyResult.message || 'Face not recognized',
+        similarity: identifyResult.similarity
+      };
+    }
+
+    console.log('Step 1 Complete: Face identified!', identifyResult.employee_id, identifyResult.similarity);
+
+    // Step 2: Save check-in in Java Backend
+    console.log('Step 2: Saving check-in...');
+    const attendanceResult = await markCheckIn(
+      identifyResult.employee_id,
+      organizationUuid,
+      identifyResult.similarity_percent || `${(identifyResult.similarity * 100).toFixed(1)}%`
+    );
+
+    console.log('Step 2 Complete: Check-in saved!', attendanceResult);
+
+    return {
+      success: true,
+      step: 'complete',
+      identified: true,
+      employeeId: identifyResult.employee_id,
+      similarity: identifyResult.similarity,
+      message: attendanceResult.message || 'Check-in successful!',
+      data: {
+        identification: identifyResult,
+        attendance: attendanceResult
+      }
+    };
+
+  } catch (error) {
+    console.error('Check-in error:', error);
+    return {
+      success: false,
+      step: 'error',
+      identified: false,
+      message: error.message || 'Failed to mark check-in',
+      error: error
+    };
+  }
+};
+
+/**
+ * COMPLETE FLOW: Identify Face + Mark CHECK-OUT
+ */
+export const identifyAndCheckOut = async (organizationUuid, base64Image) => {
+  try {
+    const imageBlob = base64ToBlob(base64Image);
+
+    // Step 1: Identify face
+    console.log('Step 1: Identifying face for checkout...');
+    const identifyResult = await identifyFace(organizationUuid, imageBlob);
+
+    if (!identifyResult.identified) {
+      return {
+        success: false,
+        step: 'identification',
+        identified: false,
+        message: identifyResult.message || 'Face not recognized'
+      };
+    }
+
+    console.log('Step 1 Complete: Face identified!', identifyResult.employee_id);
+
+    // Step 2: Save check-out
+    console.log('Step 2: Saving check-out...');
+    const attendanceResult = await markCheckOut(
+      identifyResult.employee_id,
+      organizationUuid,
+      identifyResult.similarity_percent || `${(identifyResult.similarity * 100).toFixed(1)}%`
+    );
+
+    console.log('Step 2 Complete: Check-out saved!', attendanceResult);
+
+    return {
+      success: true,
+      step: 'complete',
+      identified: true,
+      employeeId: identifyResult.employee_id,
+      message: attendanceResult.message || 'Check-out successful!',
+      data: {
+        identification: identifyResult,
+        attendance: attendanceResult
+      }
+    };
+
+  } catch (error) {
+    console.error('Check-out error:', error);
+    return {
+      success: false,
+      step: 'error',
+      identified: false,
+      message: error.message || 'Failed to mark check-out',
+      error: error
+    };
+  }
+};
+
+/**
+ * LEGACY: Verify Face + Mark Attendance (auto check-in/out)
  */
 export const verifyAndMarkAttendance = async (employeeId, organizationUuid, base64Image) => {
   try {
-    // Convert base64 to blob
     const imageBlob = base64ToBlob(base64Image);
 
     // Step 1: Verify face with Python AI
@@ -185,16 +381,18 @@ export const verifyAndMarkAttendance = async (employeeId, organizationUuid, base
         step: 'verification',
         verified: false,
         message: verifyResult.message || 'Face not matched',
-        data: verifyResult.data
+        similarity: verifyResult.similarity
       };
     }
 
-    console.log('Step 1 Complete: Face verified!', verifyResult.data?.confidence);
+    console.log('Step 1 Complete: Face verified!', verifyResult.similarity);
 
     // Step 2: Save attendance in Java Backend
     console.log('Step 2: Saving attendance...');
     const attendanceResult = await markAttendanceInDatabase(
-      verifyResult.data?.confidence || 'N/A'
+      employeeId,
+      organizationUuid,
+      verifyResult.similarity_percent || `${(verifyResult.similarity * 100).toFixed(1)}%`
     );
 
     console.log('Step 2 Complete: Attendance saved!', attendanceResult);
@@ -205,7 +403,7 @@ export const verifyAndMarkAttendance = async (employeeId, organizationUuid, base
       verified: true,
       message: attendanceResult.message || 'Attendance marked successfully!',
       data: {
-        verification: verifyResult.data,
+        verification: verifyResult,
         attendance: attendanceResult
       }
     };

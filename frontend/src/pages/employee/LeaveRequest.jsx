@@ -14,7 +14,7 @@ export default function LeaveRequest() {
   useEffect(() => {
     // Simulated leave types – replace with API call
     setLeaveTypes([
-      { id: 1, name: "Casual Leave" },
+      { id: 1, name: "Casual Leave" },g
       { id: 2, name: "Sick Leave" },
       { id: 3, name: "Annual Leave" },
     ]);

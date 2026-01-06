@@ -19,6 +19,10 @@ public class LeaveTypeService {
         return leaveTypeRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
     }
 
+    public List<LeaveType> getLeaveTypes(String organizationUuid) {
+        return leaveTypeRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+    }
+
     public LeaveType findById(Long id) {
         return leaveTypeRepository.findById(id).orElse(null);
     }

@@ -87,6 +87,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
 
                         .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+                        .requestMatchers("/api/leave-requests").hasAnyRole("HR_STAFF", "ORG_ADMIN")
 
                         // Organization-level endpoints
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")

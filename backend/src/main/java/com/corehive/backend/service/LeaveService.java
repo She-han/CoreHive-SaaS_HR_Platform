@@ -130,8 +130,7 @@ public class LeaveService {
                 .totalDays(leaveRequest.getTotalDays())
                 .reason(leaveRequest.getReason())
                 .status(leaveRequest.getStatus())
-                .approvedByName(leaveRequest.getApprovedBy() != null ? 
-                    leaveRequest.getApprovedBy().getFirstName() + " " + leaveRequest.getApprovedBy().getLastName() : null)
+                .approvedByName(null) // approvedBy is stored as Long ID, not Employee object
                 .approvedAt(leaveRequest.getApprovedAt())
                 .createdAt(leaveRequest.getCreatedAt())
                 .build();
@@ -175,7 +174,7 @@ public class LeaveService {
                 .orElseThrow(() -> new RuntimeException("Approver not found"));
 
         leaveRequest.setStatus(LeaveRequest.LeaveStatus.APPROVED);
-        leaveRequest.setApprovedBy(approver);
+        leaveRequest.setApprovedBy(approvedById);
         leaveRequest.setApprovedAt(LocalDateTime.now());
 
         return leaveRepository.save(leaveRequest);

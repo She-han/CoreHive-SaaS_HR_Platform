@@ -25,6 +25,9 @@ public class OrganizationSummaryResponse {
     private LocalDateTime createdAt;
     private String businessRegistrationNumber;
     private String businessRegistrationDocument;
+    private String plan;
+    private String billing;
+    private Integer userCount;
     private Boolean moduleQrAttendanceMarking;
     private Boolean moduleFaceRecognitionAttendanceMarking;
     private Boolean moduleEmployeeFeedback;

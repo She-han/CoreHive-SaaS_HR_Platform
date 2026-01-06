@@ -96,12 +96,67 @@ export const updateCurrentEmployeeProfile = async (employeeData) => {
   }
 };
 
+/**
+ * Deactivate employee
+ */
+export const deactivateEmployee = async (id) => {
+  if (!id) {
+    throw new Error('Employee ID is required');
+  }
+
+  try {
+    const response = await apiClient.put(
+      `/employees/${id}/deactivate`,
+      null
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error deactivating employee:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
+/**
+ * Get total count of employees for the organization
+ */
+export const getTotalEmployeesCount = async () => {
+  try {
+    const response = await apiClient.get('/employees/total-count');
+    return response.data.data; // matches your original res.data.data
+  } catch (error) {
+    console.error('Error when get total-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
+/**
+ * Get total count of active employees for the organization
+ */
+export const getTotalActiveEmployeesCount = async () => {
+  try {
+    const response = await apiClient.get('/employees/total-active-count');
+    return response.data.data; // matches your original res.data.data
+  } catch (error) {
+    console.error('Error when get total-active-count of employees:', error);
+    throw new Error(
+      error.response?.data?.message || error.message
+    );
+  }
+};
+
 export default {
   getAllEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
   deleteEmployee,
-   getCurrentEmployeeProfile,
-  updateCurrentEmployeeProfile
+  getCurrentEmployeeProfile,
+  updateCurrentEmployeeProfile,
+  deactivateEmployee,
+  getTotalEmployeesCount,
+  getTotalActiveEmployeesCount
 };

@@ -49,4 +49,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
      * Email already exists in organization
      */
     boolean existsByOrganizationUuidAndEmail(String organizationUuid, String email);
+
+
+    @Query("SELECT COUNT(u) FROM AppUser u WHERE u.organizationUuid = :organizationUuid")
+    int countByOrganizationUuid(@Param("organizationUuid") String organizationUuid);
 }

@@ -28,6 +28,9 @@ import { getPendingApprovals, getPlatformStatistics } from '../../api/adminApi';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
+import TenantGrowthChart from './ui/TenantGrowthChart';
+import SystemLoad from './ui/SystemLoad';
+import ModuleUsageChart from './ui/Df';
 
 // Theme colors
 const THEME = {
@@ -198,6 +201,7 @@ HealthMetric.displayName = 'HealthMetric';
  */
 const AdminDashboard = () => {
   const user = useSelector(selectUser);
+
   
   // State management
   const [stats, setStats] = useState({
@@ -390,6 +394,7 @@ const AdminDashboard = () => {
     [user?.email]
   );
 
+
   // Loading state with skeleton
   if (isLoading && stats.totalOrganizations === 0) {
     return (
@@ -414,7 +419,7 @@ const AdminDashboard = () => {
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: THEME.dark }}>
-                Welcome back, <span style={{ color: THEME.primary }}>{userName}</span>! 👋
+                Welcome back, <span style={{ color: THEME.primary }}>{userName}</span>! 
               </h1>
               <p className="mt-1" style={{ color: THEME.muted }}>
                 Here's what's happening on your platform today
@@ -539,7 +544,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* System Health */}
+            {/* System Health 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                 <div 
@@ -561,6 +566,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+            */}
           </div>
         </div>
 
@@ -606,6 +612,20 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Analytics Charts Section */}
+        <div className="mt-8 grid lg:grid-cols-2 gap-6">
+          {/* Tenant Growth Chart */}
+          <TenantGrowthChart />
+          
+          {/* System Load Chart */}
+          <SystemLoad />
+        </div>
+
+        {/* Module Usage Chart - Full Width */}
+        <div className="mt-8">
+          <ModuleUsageChart />
         </div>
       </div>
 

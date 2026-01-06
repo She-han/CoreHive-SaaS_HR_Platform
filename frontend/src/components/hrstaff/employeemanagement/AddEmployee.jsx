@@ -60,7 +60,6 @@ export default function AddEmployee() {
     firstName: "",
     lastName: "",
     designation: "",
-    employeeCode: "",
     department: "",
     email: "",
     phone: "",
@@ -104,6 +103,30 @@ export default function AddEmployee() {
       })
       .catch(err => console.error("Error loading designations", err));
   }, []);
+
+ // ===== Fetch next auto-generated employee code =====
+useEffect(() => {
+  if (!organizationUuid) return;
+
+  const fetchNextCode = async () => {
+    try {
+      const response = await apiClient.get("/employees/next-code");
+      const code = response.data.data || response.data;
+      setFormData(prev => ({
+        ...prev,
+        employeeCode: code
+      }));
+    } catch (err) {
+      console.error("Failed to fetch employee code", err);
+      Swal.fire("Error", "Failed to generate employee code", "error");
+    }
+  };
+
+  fetchNextCode();
+}, [organizationUuid]);
+
+
+
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -193,7 +216,6 @@ export default function AddEmployee() {
 
       // Map frontend field names to backend DTO field names
       const employeeData = {
-        employeeCode: formData.employeeCode,
         firstName: formData.firstName,
         lastName: formData.lastName,
         designation: formData.designation,
@@ -281,7 +303,12 @@ export default function AddEmployee() {
           <Box title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Employee Code" required>
-                <input name="employeeCode" placeholder="EMP-001" value={formData.employeeCode} onChange={handleChange} className="input-box" required />
+                <input
+                name="employeeCode"
+                value={formData.employeeCode || "Generating..."}
+                readOnly
+                className="input-box bg-gray-100 cursor-not-allowed"
+              />
               </Field>
               <Field label="First Name" required>
                 <input name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} className="input-box" required />

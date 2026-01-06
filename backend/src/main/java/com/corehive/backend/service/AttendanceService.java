@@ -3,6 +3,12 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
+import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Attendance.AttendanceStatus;
 import com.corehive.backend.model.Attendance.VerificationType;
@@ -18,7 +24,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -33,6 +41,357 @@ public class AttendanceService {
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
     private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
+
+    //GET ATTENDANCE DETAILS FOR A WEEK/////////////////////////////////////
+    private long calculateWorkingMinutes(Attendance attendance) {
+
+        if (attendance.getCheckInTime() == null ||
+                attendance.getCheckOutTime() == null) {
+            return 0;
+        }
+
+        return Duration.between(
+                attendance.getCheckInTime(),
+                attendance.getCheckOutTime()
+        ).toMinutes();
+    }
+
+    private long calculateLateMinutes(Attendance attendance) {
+
+        if (attendance.getStatus() != Attendance.AttendanceStatus.LATE ||
+                attendance.getCheckInTime() == null) {
+            return 0;
+        }
+
+        //assume office start at 9am
+        LocalTime officeStart = LocalTime.of(9, 0);
+
+        return Math.max(
+                0,
+                Duration.between(
+                        officeStart,
+                        attendance.getCheckInTime().toLocalTime()
+                ).toMinutes()
+        );
+    }
+
+
+    private Map<String, Object> buildAttendanceRow(Attendance attendance) {
+
+        Map<String, Object> row = new HashMap<>();
+
+        Employee emp = attendance.getEmployee();
+
+        row.put("employeeId", emp.getId());
+        row.put("name", emp.getFirstName() + " " + emp.getLastName());
+        row.put("dept", emp.getDepartment() != null
+                ? emp.getDepartment().getName()
+                : "N/A");
+
+        row.put("date", attendance.getAttendanceDate());
+
+        row.put("status", attendance.getStatus().name());
+
+        row.put("checkIn", attendance.getCheckInTime());
+        row.put("checkOut", attendance.getCheckOutTime());
+
+        // Calculate working minutes
+        row.put("workingMinutes", calculateWorkingMinutes(attendance));
+
+        row.put("lateMinutes", calculateLateMinutes(attendance));
+
+        return row;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    //GET TODAY SUMMARY BY STATUS WITH COUNT
+    public Map<String, Long> getTodaySummary(String orgUuid, LocalDate date) {
+
+        // If frontend does not send date → use today
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        List<Object[]> results =
+                attendanceRepository.countByStatus(orgUuid, targetDate);
+
+        // 🔑 MUST MATCH FRONTEND KEYS
+        Map<String, Long> summary = new HashMap<>();
+        summary.put("PRESENT", 0L);
+        summary.put("LATE", 0L);
+        summary.put("ON_LEAVE", 0L);
+        summary.put("HALF_DAY", 0L);
+        summary.put("ABSENT", 0L);
+        summary.put("WORK_FROM_HOME", 0L);
+
+        for (Object[] row : results) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            Long count = (Long) row[1];
+
+            switch (status) {
+                case PRESENT -> summary.put("PRESENT", count);
+                case LATE -> summary.put("LATE", count);
+                case ON_LEAVE -> summary.put("ON_LEAVE", count);
+                case ABSENT -> summary.put("ABSENT", count);
+                case WORK_FROM_HOME -> summary.put("WORK_FROM_HOME", count);
+
+                // ❌ HALF_DAY intentionally ignored (not shown in cards)
+                case HALF_DAY -> { }
+            }
+        }
+
+        return summary;
+    }
+
+
+    //GET ATTENDANCE BY DATE
+    public List<Map<String, Object>> getAttendanceForDate(
+            String orgUuid,
+            LocalDate date
+    ) {
+
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
+
+        List<Attendance> records =
+                attendanceRepository.findByOrgAndDate(orgUuid, date);
+
+        // Convert entities → response objects (NO MAPPER)
+        return records.stream()
+                .map(this::buildAttendanceRow)
+                .toList();
+    }
+
+    // =========================================================
+    // GET ALL EMPLOYEES WITH TODAY'S ATTENDANCE STATUS
+    // Used in CHECK-IN TAB (Admin / HR)
+    // =========================================================
+    public List<TodayAttendanceDTO> getEmployeesForCheckIn(String orgUuid) {
+
+        // 1. Fetch all ACTIVE employees for the organization
+        //    Inactive employees should not be shown in attendance screens
+        List<Employee> employees = employeeRepository
+                .findByOrganizationUuidAndIsActiveTrue(orgUuid);
+
+        // 2. Get today's date once (avoid calling LocalDate.now() repeatedly)
+        LocalDate today = LocalDate.now();
+
+        // 3. For each employee, check if attendance exists for today
+        return employees.stream().map(emp -> {
+
+            // Fetch today's attendance record (if any)
+            Attendance att = attendanceRepository
+                    .findByEmployeeIdAndAttendanceDate(emp.getId(), today)
+                    .orElse(null);
+
+            // 4. Build response DTO with attendance status
+            return TodayAttendanceDTO.builder()
+                    .id(att != null ? att.getId() : null) // Attendance ID
+                    .employeeId(emp.getId())
+                    .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                    .employeeCode(emp.getEmployeeCode())
+
+                    // If attendance exists → show times
+                    // If not → keep null
+                    .checkInTime(att != null ? att.getCheckInTime() : null)
+                    .checkOutTime(att != null ? att.getCheckOutTime() : null)
+
+                    // Status logic:
+                    // - If attendance exists → show actual status
+                    // - If not → NOT_CHECKED_IN
+                    .status(att != null ? att.getStatus().name() : "NOT_CHECKED_IN")
+
+                    // Attendance is complete only if both check-in & check-out exist
+                    .isComplete(att != null && att.isComplete())
+                    .build();
+        }).toList();
+    }
+
+    // =========================================================
+    // MANUAL CHECK-IN
+    // Admin / HR marks check-in for an employee
+    // =========================================================
+    public void manualCheckIn(String orgUuid, Long employeeId) {
+
+        // 1. Validate employee exists
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException("Employee not found")
+                );
+
+        // 2. Validate employee belongs to the same organization
+        if (!employee.getOrganizationUuid().equals(orgUuid)) {
+            throw new OrganizationNotFoundException("Invalid organization");
+        }
+
+        // 3. Get today's date
+        LocalDate today = LocalDate.now();
+
+        // 4. Prevent duplicate check-ins for the same day
+        if (attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today)
+                .isPresent()) {
+
+            throw new AttendanceAlreadyCheckedInException(
+                    "Employee already checked in today"
+            );
+        }
+
+        // 5. Create new attendance record
+        Attendance attendance = Attendance.builder()
+                .organizationUuid(orgUuid)
+                .employeeId(employeeId)
+                .attendanceDate(today)
+                .checkInTime(LocalDateTime.now())
+
+                // Manual marking always defaults to PRESENT
+                .status(Attendance.AttendanceStatus.PRESENT)
+
+                // Since this is manual marking
+                .verificationType(Attendance.VerificationType.MANUAL)
+                .build();
+
+        // 6. Save attendance
+        attendanceRepository.save(attendance);
+    }
+
+    // =========================================================
+// GET PENDING CHECK-OUTS (Admin / HR)
+// Employees who checked in today but not checked out
+// =========================================================
+    @Transactional(readOnly = true)
+    public List<TodayAttendanceDTO> getPendingCheckouts(String orgUuid) {
+
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is required");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        List<Attendance> pendingAttendances =
+                attendanceRepository.findPendingCheckouts(orgUuid, today);
+
+        return pendingAttendances.stream()
+                .map(att -> {
+                    Employee emp = att.getEmployee();
+
+                    if (emp == null) {
+                        throw new EmployeeNotFoundException(
+                                "Employee not found for attendance ID: " + att.getId()
+                        );
+                    }
+
+                    return TodayAttendanceDTO.builder()
+                            .id(att.getId())
+                            .employeeId(emp.getId())
+                            .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                            .employeeCode(emp.getEmployeeCode())
+                            .checkInTime(att.getCheckInTime())
+                            .checkOutTime(null) // explicitly pending
+                            .status(att.getStatus().name())
+                            .isComplete(false)
+                            .build();
+                })
+                .toList();
+    }
+
+
+    // =========================================================
+    // MANUAL CHECK-OUT
+    // Admin / HR marks check-out for an employee
+    // =========================================================
+    public TodayAttendanceDTO manualCheckOut(String orgUuid, Long employeeId) {
+
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, LocalDate.now())
+                .orElseThrow(() -> new AttendanceNotCheckedInException("Not checked in"));
+
+        if (attendance.getCheckOutTime() != null) {
+            throw new AttendanceAlreadyCheckedInException("Already checked out");
+        }
+
+        attendance.setCheckOutTime(LocalDateTime.now());
+        attendanceRepository.save(attendance);
+
+        Employee emp = attendance.getEmployee();
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(attendance.getEmployeeId())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .employeeCode(emp.getEmployeeCode())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime()) // ✅ IMPORTANT
+                .status(attendance.getStatus().name())
+                .isComplete(true)
+                .build();
+    }
+
+    // =========================================================
+    // UPDATE ATTENDANCE STATUS
+    // =========================================================
+    @Transactional
+    public TodayAttendanceDTO updateAttendanceStatus(
+            String orgUuid,
+            Long employeeId,
+            Attendance.AttendanceStatus newStatus,
+            LocalDateTime newCheckInTime
+    ) {
+        LocalDate today = LocalDate.now();
+
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
+
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today)
+                .orElse(null); // 👈 important: allow null
+
+        if (attendance == null) {
+            // If no record exists, create it
+            attendance = Attendance.builder()
+                    .organizationUuid(orgUuid)
+                    .employeeId(employeeId)
+                    .attendanceDate(today)
+                    .status(newStatus)
+                    .checkInTime(newCheckInTime) // optional, if passed
+                    .verificationType(Attendance.VerificationType.MANUAL)
+                    .build();
+
+            // Prevent check-in for ABSENT or ON_LEAVE
+            if ((newStatus == Attendance.AttendanceStatus.ABSENT ||
+                    newStatus == Attendance.AttendanceStatus.ON_LEAVE)
+                    && newCheckInTime != null) {
+                throw new IllegalArgumentException("Cannot log check-in for ABSENT or ON_LEAVE status");
+            }
+
+
+        } else {
+            // Update status if record exists
+            if (attendance.getCheckOutTime() != null) {
+                throw new IllegalStateException("Cannot change status after checkout");
+            }
+
+            attendance.setStatus(newStatus);
+
+            // If you pass check-in time, update it
+            if (newCheckInTime != null) {
+                attendance.setCheckInTime(newCheckInTime);
+            }
+        }
+
+        attendanceRepository.save(attendance);
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(emp.getId())
+                .employeeCode(emp.getEmployeeCode())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .status(attendance.getStatus().name())
+                .isComplete(attendance.isComplete())
+                .build();
+    }
+
 
     /**
      * Mark CHECK-IN only - won't allow if already checked in today
@@ -385,4 +744,21 @@ public class AttendanceService {
         if (hour < 17) return "afternoon";
         return "evening";
     }
+
+    //Get today on-leave employee count
+    public int getTodayOnLeaveCount(String organizationUuid) {
+
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        return attendanceRepository.countByOrganizationUuidAndAttendanceDateAndStatus(
+                organizationUuid,
+                today,
+                Attendance.AttendanceStatus.ON_LEAVE
+        );
+    }
+
 }

@@ -5,6 +5,7 @@ import com.corehive.backend.service.LeaveRequestService;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -62,7 +63,7 @@ public class LeaveRequestController {
             @PathVariable Long id,
             @RequestParam boolean approve,
             HttpServletRequest request
-    ) {
+    ) throws BadRequestException {
         Long approverId = (Long) request.getAttribute("userId");
         leaveRequestService.approveLeave(id, approverId, approve);
 
@@ -71,20 +72,4 @@ public class LeaveRequestController {
         );
     }
 
-    // /////////////////////////////////////////////
-    // Get Count of leave requests
-    // ////////////////////////////////////////////
-    @GetMapping("/count")
-    @PreAuthorize("hasRole('HR_STAFF')")
-    public ResponseEntity<StandardResponse> countLeaveRequests(
-            HttpServletRequest request
-    ) {
-        String orgUuid = (String) request.getAttribute("organizationUuid");
-
-        int count=leaveRequestService.countLeaveRequests(orgUuid);
-
-        return ResponseEntity.ok(
-                new StandardResponse(200, "Counted leave Requests", count)
-        );
-    }
 }

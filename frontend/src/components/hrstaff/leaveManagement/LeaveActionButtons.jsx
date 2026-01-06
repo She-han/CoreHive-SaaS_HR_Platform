@@ -18,8 +18,9 @@ export default function LeaveActionButtons({ leave, reload }) {
       await approveLeaveRequest(leave.requestId, approve, token);
       reload();
     } catch (error) {
-      console.error("Action failed:", error);
-      alert("Failed to process request. Please try again.");
+      const message =
+    error?.message || "Unable to process leave request";
+    alert(message); // shows real reason
     }
   };
 

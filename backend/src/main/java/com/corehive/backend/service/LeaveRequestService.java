@@ -14,6 +14,7 @@ import com.corehive.backend.repository.LeaveRequestRepository;
 import com.corehive.backend.repository.LeaveTypeRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -60,7 +61,7 @@ public class LeaveRequestService {
 
     // APPROVE / REJECT leave request
     @Transactional
-    public void approveLeave(Long requestId, Long approverId, boolean approve) {
+    public void approveLeave(Long requestId, Long approverId, boolean approve) throws BadRequestException {
 
         // 1️⃣ Fetch leave request
         LeaveRequest request = leaveRequestRepo.findById(requestId)
@@ -68,25 +69,30 @@ public class LeaveRequestService {
                         new LeaveRequestNotFoundException("Leave request not found")
                 );
 
-//        // 2️⃣ Fetch approver (HR / Manager)
-//        Employee approver = employeeRepo.findById(approverId)
-//                .orElseThrow(() ->
-//                        new EmployeeNotFoundException("Approver not found")
-//                );
-
         // 3️⃣ Prevent double approval
         if (request.getStatus() != LeaveRequest.LeaveStatus.PENDING) {
             throw new IllegalStateException("Leave request already processed");
         }
 
+
+        // 3️⃣ Get employee & remaining leaves
+        Employee employee = request.getEmployee(); // ✅ correct employee
+        int remainingLeaves = employee.getLeaveCount();
+        int requestedDays = request.getTotalDays();
+
         // 4️⃣ Approve or Reject
         if (approve) {
-            request.setStatus(LeaveRequest.LeaveStatus.APPROVED);
 
-            // Deduct leave balance ONLY on approval
-            request.getEmployee().setLeaveCount(
-                    request.getEmployee().getLeaveCount() - request.getTotalDays()
-            );
+            if (requestedDays > remainingLeaves) {
+                throw new BadRequestException(
+                        "Cannot approve leave. Requested " + requestedDays +
+                                " days but only " + remainingLeaves + " days remaining."
+                );
+            }
+
+            // 5️⃣ Approve & deduct leaves
+            request.setStatus(LeaveRequest.LeaveStatus.APPROVED);
+            employee.setLeaveCount(remainingLeaves - requestedDays);
         } else {
             request.setStatus(LeaveRequest.LeaveStatus.REJECTED);
         }
@@ -135,11 +141,4 @@ public class LeaveRequestService {
     }
 
 
-    public int countLeaveRequests(String orgUuid) {
-        if (orgUuid == null || orgUuid.isBlank()) {
-            throw new IllegalArgumentException("Organization UUID must not be null or empty");
-        }else{
-            return leaveRequestRepo.countByOrganizationUuid(orgUuid);
-        }
-    }
 }

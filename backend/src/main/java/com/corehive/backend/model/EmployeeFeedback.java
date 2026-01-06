@@ -20,7 +20,8 @@ public class EmployeeFeedback {
 
     private Integer rating;
 
-    @Column(length = 50)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feedback_type", length = 50)
     private FeedbackType feedbackType;
 
     @Column(length = 1000)

@@ -767,6 +767,7 @@ public class AttendanceService {
         );
     }
 
+    //Mark attendance via QR
     @Transactional
     public Attendance markAttendanceViaQr(
             String qrToken,
@@ -774,16 +775,9 @@ public class AttendanceService {
             String deviceInfo
     ) throws BadRequestException {
 
-//        // 1️⃣ Validate QR
-//        try {
-//            jwtUtil.extractExpiration(qrToken);
-//        } catch (Exception e) {
-//            throw new BadRequestException("Invalid or expired QR");
-//        }
-
         Claims claims;
         try {
-            claims = jwtUtil.extractQrClaims(qrToken);
+            claims = jwtUtil.extractQrClaims(qrToken); //Decode Jwt and Read data inside QR
         } catch (Exception e) {
             throw new BadRequestException("Invalid or expired QR");
         }

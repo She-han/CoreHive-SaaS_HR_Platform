@@ -13,4 +13,7 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest , Lon
             LeaveRequest.LeaveStatus status,
             String orgUuid
     );
+
+    //Count leave requests per organization
+    int countByOrganizationUuid(String orgUuid);
 }

@@ -135,4 +135,11 @@ public class LeaveRequestService {
     }
 
 
+    public int countLeaveRequests(String orgUuid) {
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID must not be null or empty");
+        }else{
+            return leaveRequestRepo.countByOrganizationUuid(orgUuid);
+        }
+    }
 }

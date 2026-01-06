@@ -70,4 +70,21 @@ public class LeaveRequestController {
                 new StandardResponse(200, "Leave request updated", null)
         );
     }
+
+    // /////////////////////////////////////////////
+    // Get Count of leave requests
+    // ////////////////////////////////////////////
+    @GetMapping("/count")
+    @PreAuthorize("hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> countLeaveRequests(
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        int count=leaveRequestService.countLeaveRequests(orgUuid);
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Counted leave Requests", count)
+        );
+    }
 }

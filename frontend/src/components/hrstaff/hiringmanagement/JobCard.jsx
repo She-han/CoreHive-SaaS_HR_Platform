@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const JobCard = ({
   id,
-  avatar,
+  // avatar,
   title,
   description,
   department,

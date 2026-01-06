@@ -319,7 +319,7 @@ payload.append("avatar", avatarFile);
             </div>
 
 
-            {/* Avatar Upload */}
+            {/* Avatar Upload
             <div>
               <label className="text-sm font-medium text-[#333333]">Job Avatar</label>
               <input
@@ -328,7 +328,7 @@ payload.append("avatar", avatarFile);
                 onChange={handleFileChange}
                 className="mt-2 w-full text-sm text-[#9B9B9B]"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* ACTION BUTTONS */}

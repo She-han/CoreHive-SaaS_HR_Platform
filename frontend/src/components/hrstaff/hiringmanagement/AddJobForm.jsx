@@ -297,7 +297,7 @@ useEffect(() => {
 
 
             {/* Avatar Upload */}
-            <div>
+            {/* <div>
               <label className="text-sm font-medium text-[#333333]">Job Avatar</label>
               <input
                 type="file"
@@ -305,7 +305,7 @@ useEffect(() => {
                 onChange={handleFileChange}
                 className="mt-2 w-full text-sm text-[#9B9B9B]"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* ACTION BUTTONS */}

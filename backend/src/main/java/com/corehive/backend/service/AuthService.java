@@ -329,6 +329,15 @@ public class AuthService {
     }
 
     /**
+     * Extract organization UUID from HttpServletRequest attributes
+     * @param request HttpServletRequest with organizationUuid attribute set by JWT filter
+     * @return organization UUID string
+     */
+    public String getOrganizationUuidFromRequest(jakarta.servlet.http.HttpServletRequest request) {
+        return (String) request.getAttribute("organizationUuid");
+    }
+
+    /**
      * Module Configuration (First-time ORG_ADMIN login)
      * @param organizationUuid Current user's organization
      * @param request Module selections

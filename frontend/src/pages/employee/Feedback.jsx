@@ -155,11 +155,11 @@ const Feedback = () => {
                 className="w-full px-4 py-3 rounded-lg border bg-white border-gray-300 text-gray-700 focus:border-[var(--color-primary-500)] focus:ring-[var(--color-primary-500)] focus:ring-2 outline-none transition-all"
               >
                 <option value="">Select feedback type</option>
-                <option value="COMPLAINT">⚠️ Complaint</option>
-                <option value="APPRECIATION">🌟 Appreciation</option>
-                <option value="WORK_ENVIRONMENT">🏢 Work Environment</option>
-                <option value="MANAGEMENT">👔 Management</option>
-                <option value="SYSTEM_ISSUE">🔧 System Issue</option>
+                <option value="COMPLAINT"> Complaint</option>
+                <option value="APPRECIATION"> Appreciation</option>
+                <option value="WORK_ENVIRONMENT"> Work Environment</option>
+                <option value="MANAGEMENT"> Management</option>
+                <option value="SYSTEM_ISSUE"> System Issue</option>
               </select>
             </div>
 
@@ -176,11 +176,11 @@ const Feedback = () => {
                 className="w-full px-4 py-3 rounded-lg border bg-white border-gray-300 text-gray-700 focus:border-[var(--color-primary-500)] focus:ring-[var(--color-primary-500)] focus:ring-2 outline-none transition-all"
               >
                 <option value="">Rate your experience</option>
-                <option value="1">⭐ 1 - Very Bad</option>
-                <option value="2">⭐⭐ 2 - Bad</option>
-                <option value="3">⭐⭐⭐ 3 - Average</option>
-                <option value="4">⭐⭐⭐⭐ 4 - Good</option>
-                <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent</option>
+                <option value="1">Very Bad</option>
+                <option value="2">Bad</option>
+                <option value="3"> Average</option>
+                <option value="4"> Good</option>
+                <option value="5"> Excellent</option>
               </select>
             </div>
 

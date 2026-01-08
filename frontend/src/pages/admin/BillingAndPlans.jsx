@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Edit2, 
-  Trash2, 
-  Plus, 
-  X, 
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  Edit2,
+  Trash2,
+  Plus,
+  X,
   CheckCircle,
   DollarSign,
   Users,
-  AlertCircle
-} from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
+  AlertCircle,
+} from "lucide-react";
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import Button from "../../components/common/Button";
+import Card from "../../components/common/Card";
 
 const BillingAndPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -21,18 +21,18 @@ const BillingAndPlans = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    period: '/month',
-    description: '',
-    employees: '',
+    name: "",
+    price: "",
+    period: "/month",
+    description: "",
+    employees: "",
     features: [],
-    popular: false
+    popular: false,
   });
-  const [featureInput, setFeatureInput] = useState('');
+  const [featureInput, setFeatureInput] = useState("");
 
   // Backend API URL
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = "http://localhost:8080";
 
   // Fetch plans on component mount
   useEffect(() => {
@@ -43,14 +43,28 @@ const BillingAndPlans = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/billing-plans`);
-      console.log('Fetch response status:', response.status);
-      if (!response.ok) throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
+
+   
+      const token = localStorage.getItem("corehive_token"); 
+
+      const response = await fetch(`${API_BASE_URL}/api/billing-plans`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, 
+        },
+      });
+
+      console.log("Fetch response status:", response.status);
+      if (!response.ok)
+        throw new Error(
+          `Failed to fetch plans: ${response.status} ${response.statusText}`
+        );
       const data = await response.json();
       setPlans(data);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching plans:', err);
+      console.error("Error fetching plans:", err);
     } finally {
       setLoading(false);
     }
@@ -66,124 +80,144 @@ const BillingAndPlans = () => {
         description: plan.description,
         employees: plan.employees,
         features: [...plan.features],
-        popular: plan.popular
+        popular: plan.popular,
       });
     } else {
       setEditingPlan(null);
       setFormData({
-        name: '',
-        price: '',
-        period: '/month',
-        description: '',
-        employees: '',
+        name: "",
+        price: "",
+        period: "/month",
+        description: "",
+        employees: "",
         features: [],
-        popular: false
+        popular: false,
       });
     }
-    setFeatureInput('');
+    setFeatureInput("");
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingPlan(null);
-    setFeatureInput('');
+    setFeatureInput("");
   };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
   const handleAddFeature = () => {
     if (featureInput.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        features: [...prev.features, featureInput.trim()]
+        features: [...prev.features, featureInput.trim()],
       }));
-      setFeatureInput('');
+      setFeatureInput("");
     }
   };
 
   const handleRemoveFeature = (index) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index)
+      features: prev.features.filter((_, i) => i !== index),
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.price || !formData.description || !formData.employees) {
-      setError('Please fill in all required fields');
+
+    if (
+      !formData.name ||
+      !formData.price ||
+      !formData.description ||
+      !formData.employees
+    ) {
+      setError("Please fill in all required fields");
       return;
     }
 
     if (formData.features.length === 0) {
-      setError('Please add at least one feature');
+      setError("Please add at least one feature");
       return;
     }
 
     try {
       setError(null);
-      const url = editingPlan ? `${API_BASE_URL}/api/billing-plans/${editingPlan.id}` : `${API_BASE_URL}/api/billing-plans`;
-      const method = editingPlan ? 'PUT' : 'POST';
+      const url = editingPlan
+        ? `${API_BASE_URL}/api/billing-plans/${editingPlan.id}`
+        : `${API_BASE_URL}/api/billing-plans`;
+      const method = editingPlan ? "PUT" : "POST";
 
       console.log(`${method} request to:`, url);
+
+      
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("corehive_token")}`, 
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to save plan: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Failed to save plan: ${response.status} - ${errorText}`
+        );
       }
-      
+
       await fetchPlans();
       handleCloseModal();
     } catch (err) {
       setError(err.message);
-      console.error('Error saving plan:', err);
+      console.error("Error saving plan:", err);
     }
   };
 
   const handleDeletePlan = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+    if (!window.confirm("Are you sure you want to delete this plan?")) return;
 
     try {
       setError(null);
       console.log(`DELETE request to: ${API_BASE_URL}/api/billing-plans/${id}`);
+
+      
       const response = await fetch(`${API_BASE_URL}/api/billing-plans/${id}`, {
-        method: 'DELETE'
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("corehive_token")}`, 
+        },
       });
 
       if (!response.ok) {
+        
         const errorText = await response.text();
-        throw new Error(`Failed to delete plan: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Failed to delete plan: ${response.status} - ${errorText}`
+        );
       }
-      
+
       await fetchPlans();
     } catch (err) {
       setError(err.message);
-      console.error('Error deleting plan:', err);
+      console.error("Error deleting plan:", err);
     }
   };
 
   const fadeInUpVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.5 }
-    }
+      transition: { duration: 0.5 },
+    },
   };
 
   return (
@@ -204,10 +238,7 @@ const BillingAndPlans = () => {
                 Manage and configure your pricing plans
               </p>
             </div>
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="primary"
                 size="lg"
@@ -239,7 +270,7 @@ const BillingAndPlans = () => {
         {/* Loading State */}
         {loading ? (
           <div className="grid md:grid-cols-3 gap-8">
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
               <div key={i} className="h-96 bg-white rounded-lg animate-pulse" />
             ))}
           </div>
@@ -260,8 +291,8 @@ const BillingAndPlans = () => {
                 <Card
                   className={`relative h-full flex flex-col ${
                     plan.popular
-                      ? 'ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5'
-                      : 'hover:shadow-lg'
+                      ? "ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5"
+                      : "hover:shadow-lg"
                   } transition-all duration-300`}
                 >
                   {/* Popular Badge */}
@@ -367,7 +398,9 @@ const BillingAndPlans = () => {
               {/* Modal Header */}
               <div className="sticky top-0 bg-gradient-to-r from-[#02C39A] to-[#05668D] text-white p-6 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">
-                  {editingPlan ? `Edit ${editingPlan.name} Plan` : 'Create New Plan'}
+                  {editingPlan
+                    ? `Edit ${editingPlan.name} Plan`
+                    : "Create New Plan"}
                 </h2>
                 <motion.button
                   whileHover={{ rotate: 90 }}
@@ -472,7 +505,10 @@ const BillingAndPlans = () => {
                       type="text"
                       value={featureInput}
                       onChange={(e) => setFeatureInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddFeature())}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" &&
+                        (e.preventDefault(), handleAddFeature())
+                      }
                       placeholder="Add a feature and press Enter"
                       className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
                     />
@@ -495,7 +531,9 @@ const BillingAndPlans = () => {
                         exit={{ opacity: 0, x: 20 }}
                         className="flex items-center justify-between bg-[#02C39A]/10 rounded-lg p-3"
                       >
-                        <span className="text-text-primary text-sm">{feature}</span>
+                        <span className="text-text-primary text-sm">
+                          {feature}
+                        </span>
                         <motion.button
                           type="button"
                           whileHover={{ scale: 1.1 }}
@@ -522,7 +560,9 @@ const BillingAndPlans = () => {
                     className="w-4 h-4 rounded border-gray-300 text-[#02C39A] cursor-pointer"
                   />
                   <label htmlFor="popular" className="flex-1 cursor-pointer">
-                    <p className="font-semibold text-text-primary">Mark as Most Popular</p>
+                    <p className="font-semibold text-text-primary">
+                      Mark as Most Popular
+                    </p>
                     <p className="text-sm text-text-secondary">
                       This plan will be highlighted on the pricing page
                     </p>
@@ -549,7 +589,7 @@ const BillingAndPlans = () => {
                       size="lg"
                       className="w-full"
                     >
-                      {editingPlan ? 'Update Plan' : 'Create Plan'}
+                      {editingPlan ? "Update Plan" : "Create Plan"}
                     </Button>
                   </motion.div>
                 </div>

@@ -25,6 +25,9 @@ public class SystemUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, length = 50)
+    private String userName;
+
     @Column(unique = true, nullable = false, length = 200)
     private String email;
 

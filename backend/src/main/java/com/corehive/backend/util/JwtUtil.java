@@ -168,6 +168,7 @@ public class JwtUtil {
         throw new IllegalArgumentException("Invalid QR: employeeId missing");
     }
 
+    // Read QR token safely
     public Claims extractQrClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -179,24 +180,21 @@ public class JwtUtil {
 
     /**
      * Generate QR attendance token (NOT a login token)
+     * QR have JWT signature , so can not produce fake Qr
      */
     public String generateQrToken(
             Long employeeId,
-            String organizationUuid,
-            String purpose,
-            long ttlMillis
+            String organizationUuid
     ) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("employeeId", employeeId);
         claims.put("organizationUuid", organizationUuid);
-        claims.put("purpose", purpose);
-        claims.put("qrType", "ATTENDANCE");
+        claims.put("qrType", "PERMANENT_ATTENDANCE");
 
         return Jwts.builder()
                 .claims(claims)
-                .subject("QR_ATTENDANCE")
+                .subject("EMPLOYEE_QR")
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + ttlMillis))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

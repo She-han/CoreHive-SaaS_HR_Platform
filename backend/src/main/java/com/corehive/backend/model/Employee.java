@@ -78,7 +78,11 @@ public class Employee {
         @Column(name = "leave_count")
         private Integer leaveCount = 0;
 
-        public enum SalaryType {
+        @Column(name = "qr_token", length = 600, unique = true)
+        private String qrToken;
+
+
+    public enum SalaryType {
                 MONTHLY,
                 DAILY
         }

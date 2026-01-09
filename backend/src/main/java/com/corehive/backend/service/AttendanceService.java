@@ -4,6 +4,7 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
@@ -767,45 +768,42 @@ public class AttendanceService {
         );
     }
 
-    //Mark attendance via QR
+    // ***********************************************
+// Mark attendance using PERMANENT QR
+// ***********************************************
+
     @Transactional
-    public Attendance markAttendanceViaQr(
+    public QrAttendanceResponse markAttendanceViaQr(
             String qrToken,
             String ip,
             String deviceInfo
     ) throws BadRequestException {
 
+        // 1️⃣ Parse QR safely
         Claims claims;
         try {
-            claims = jwtUtil.extractQrClaims(qrToken); //Decode Jwt and Read data inside QR
+            claims = jwtUtil.extractQrClaims(qrToken);
         } catch (Exception e) {
-            throw new BadRequestException("Invalid or expired QR");
+            throw new BadRequestException("Invalid QR code");
         }
-
 
         Long employeeId = claims.get("employeeId", Long.class);
         String orgUuid = claims.get("organizationUuid", String.class);
-        String purpose = claims.get("purpose", String.class);
+        String qrType = claims.get("qrType", String.class);
 
-        if (employeeId == null) {
-            throw new BadRequestException("Invalid QR: employee not identified");
+        if (employeeId == null || orgUuid == null) {
+            throw new BadRequestException("Malformed QR code");
         }
 
-        if (purpose == null) {
-            throw new BadRequestException("Invalid QR: purpose missing");
+        if (!"PERMANENT_ATTENDANCE".equals(qrType)) {
+            throw new BadRequestException("Wrong QR type");
         }
 
         // 2️⃣ Validate employee
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() ->
-                        new BadRequestException("Invalid QR: employee not found")
-                );
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new BadRequestException("Employee not found"));
 
-        if (!employee.getOrganizationUuid().equals(orgUuid)) {
-            throw new BadRequestException("Invalid QR: wrong organization");
-        }
-
-        if (!employee.getIsActive()) {
+        if (!Boolean.TRUE.equals(emp.getIsActive())) {
             throw new BadRequestException("Employee inactive");
         }
 
@@ -815,46 +813,62 @@ public class AttendanceService {
                 .findByEmployeeIdAndOrganizationUuidAndAttendanceDate(
                         employeeId, orgUuid, today
                 )
-                .orElse(
-                        Attendance.builder()
-                                .employeeId(employeeId)
-                                .organizationUuid(orgUuid)
-                                .attendanceDate(today)
-                                .verificationType(VerificationType.QR_CODE)
-                                .build()
-                );
+                .orElse(null);
 
-        // 3️⃣ Check-in / Check-out logic
-        if ("CHECK_IN".equals(purpose)) {
+        String action;
 
-            if (attendance.isCheckedIn()) {
-                throw new BadRequestException("Already checked in");
-            }
+        // 3️⃣ FIRST SCAN → CHECK-IN
+        if (attendance == null) {
 
-            attendance.setCheckInTime(LocalDateTime.now());
-            attendance.setStatus(AttendanceStatus.PRESENT);
+            attendance = Attendance.builder()
+                    .employeeId(employeeId)
+                    .organizationUuid(orgUuid)
+                    .attendanceDate(today)
+                    .checkInTime(LocalDateTime.now())
+                    .status(AttendanceStatus.PRESENT)
+                    .verificationType(VerificationType.QR_CODE)
+                    .ipAddress(ip)
+                    .deviceInfo(deviceInfo)
+                    .build();
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_IN";
+
         }
-        else if ("CHECK_OUT".equals(purpose)) {
 
-            if (!attendance.isCheckedIn()) {
-                throw new BadRequestException("Check-in required first");
-            }
-
-            if (attendance.isCheckedOut()) {
-                throw new BadRequestException("Already checked out");
-            }
+        // 4️⃣ SECOND SCAN → CHECK-OUT
+        else if (attendance.getCheckOutTime() == null) {
 
             attendance.setCheckOutTime(LocalDateTime.now());
+            attendance.setIpAddress(ip);
+            attendance.setDeviceInfo(deviceInfo);
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_OUT";
+
         }
+
+        // 5️⃣ THIRD SCAN → ALREADY COMPLETED (SAFE)
         else {
-            throw new BadRequestException("Invalid QR purpose");
+            action = "ALREADY_COMPLETED";
         }
 
-        // 4️⃣ Audit
-        attendance.setIpAddress(ip);
-        attendance.setDeviceInfo(deviceInfo);
-
-        return attendanceRepository.save(attendance);
+        // 6️⃣ RETURN DTO (VERY IMPORTANT)
+        return QrAttendanceResponse.builder()
+                .employeeId(employeeId)
+                .attendanceDate(today)
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .completed(attendance.isComplete())
+                .action(action)
+                .message(
+                        switch (action) {
+                            case "CHECK_IN" -> "Check-in successful";
+                            case "CHECK_OUT" -> "Check-out successful";
+                            default -> "Check-in and Check-out already completed for today";
+                        }
+                )
+                .build();
     }
 
 

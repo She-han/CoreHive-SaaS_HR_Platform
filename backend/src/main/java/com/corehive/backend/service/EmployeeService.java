@@ -13,6 +13,7 @@ import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.OrganizationRepository;
+import com.corehive.backend.util.JwtUtil;
 import com.corehive.backend.util.mappers.EmployeeMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -42,10 +43,11 @@ public class EmployeeService {
     private final AppUserRepository appUserRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
 
 
-    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, DepartmentRepository departmentRepository, OrganizationRepository organizationRepository, DepartmentService departmentService, AppUserRepository appUserRepository, EmailService emailService, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, DepartmentRepository departmentRepository, OrganizationRepository organizationRepository, DepartmentService departmentService, AppUserRepository appUserRepository, EmailService emailService, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.employeeRepository = employeeRepository;
         this.employeeMapper = employeeMapper;
         this.departmentRepository = departmentRepository;
@@ -55,6 +57,7 @@ public class EmployeeService {
         this.appUserRepository = appUserRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     //************************************************//
@@ -247,6 +250,21 @@ public class EmployeeService {
          * ------------------------------------------------- */
         savedUser.setLinkedEmployeeId(savedEmployee.getId());
         appUserRepository.save(savedUser);
+
+
+        /* -------------------------------------------------
+         * 9️⃣.5️⃣ Generate & store PERMANENT QR token
+         * (Printed QR for daily attendance)
+         * ------------------------------------------------- */
+        String permanentQrToken = jwtUtil.generateQrToken(
+                savedEmployee.getId(),
+                organizationUuid
+        );
+
+        savedEmployee.setQrToken(permanentQrToken);
+        employeeRepository.save(savedEmployee);
+
+        log.info("Permanent QR generated for employee id={}", savedEmployee.getId());
 
         /* -------------------------------------------------
          * 🔟 Build response AFTER successful persistence

@@ -29,9 +29,7 @@ public class QrCodeService {
 
         return jwtUtil.generateQrToken(
                 employeeId,
-                orgUuid,
-                purpose,
-                ttlMillis
+                orgUuid
         );
     }
 }

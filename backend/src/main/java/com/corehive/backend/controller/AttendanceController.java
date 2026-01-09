@@ -6,6 +6,7 @@ import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
 import com.corehive.backend.dto.request.QrAttendanceRequest;
 import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
+import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Employee;
@@ -677,7 +678,7 @@ public class AttendanceController {
             @Valid @RequestBody QrAttendanceRequest request,
             HttpServletRequest http
     ) throws BadRequestException {
-        Attendance attendance = attendanceService.markAttendanceViaQr(
+        QrAttendanceResponse response = attendanceService.markAttendanceViaQr(
                 request.getQrToken(),
                 http.getRemoteAddr(),
                 http.getHeader("User-Agent")
@@ -686,8 +687,8 @@ public class AttendanceController {
         return ResponseEntity.ok(
                 new StandardResponse(
                         200,
-                        "Attendance marked successfully",
-                        attendance
+                        response.getMessage(),
+                        response
                 )
         );
     }

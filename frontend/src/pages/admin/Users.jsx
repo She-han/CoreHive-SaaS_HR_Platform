@@ -116,7 +116,7 @@ const Users = () => {
               <button
                 onClick={() => setTab("system")}
                 className={`px-4 py-1.5 text-sm rounded-full font-medium ${
-                  tab === "system" ? "bg-gray-100" : "bg-white border"
+                  tab === "system" ? "bg-gray-200" : "bg-gray-100"
                 }`}
               >
                 System Admins (2)
@@ -124,7 +124,7 @@ const Users = () => {
               <button
                 onClick={() => setTab("organization")}
                 className={`px-4 py-1.5 text-sm rounded-full font-medium ${
-                  tab === "organization" ? "bg-gray-100" : "bg-white border"
+                  tab === "organization" ? "bg-gray-200" : "bg-gray-100"
                 }`}
               >
                 Organization Admins (2)
@@ -132,19 +132,19 @@ const Users = () => {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-gray-500 border-b">
+                <thead className="text-left text-gray-500 border-b border-gray-200">
                   <tr>
                     <th className="py-3">User</th>
                     <th>Organization</th>
                     <th>Employees</th>
                     <th>Status</th>
                     <th>Last Active</th>
-                    <th className="text-right">Actions</th>
+                    {/*<th className="text-right">Actions</th> */}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((u, idx) => (
-                    <tr key={idx} className="border-b last:border-0">
+                    <tr key={idx} className="border-b border-gray-200 last:border-0">
                       <td className="py-4 flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
                           {u.initials}
@@ -164,7 +164,7 @@ const Users = () => {
                         </span>
                       </td>
                       <td className="text-gray-500">{u.lastActive}</td>
-                      <td className="text-right text-xl cursor-pointer">⋮</td>
+                      {/*<td className="text-right text-xl cursor-pointer">⋮</td>*/}
                     </tr>
                   ))}
                   {filteredUsers.length === 0 && (

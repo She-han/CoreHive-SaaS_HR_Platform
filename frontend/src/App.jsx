@@ -30,6 +30,7 @@ import Analytics from './pages/admin/SystemAnalytics';
 import Billing from './pages/admin/BillingAndPlans';
 import Users from './pages/admin/Users';
 import Organizations from './pages/admin/Organizations';
+import Modules from './pages/admin/Modules';
 
 // Organization admin Pages
 import OrgDashboard from './pages/org_admin/OrgDashboard';
@@ -243,6 +244,7 @@ const SystemAdminRoutes = () => {
     <Routes>
       <Route path="dashboard" element={<AdminDashboard />} />
       <Route path="approvals" element={<AdminApprovals />} />
+      <Route path="modules" element={<Modules />} />
       <Route path="settings" element={<Settings />} />
       <Route path="support" element={<Support />} />
       <Route path="audits" element={<AuditLogs />} />

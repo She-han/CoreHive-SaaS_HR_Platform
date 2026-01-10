@@ -37,6 +37,7 @@ public class OrganizationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
+    private final OrganizationModuleService organizationModuleService;
     /**
      * Get all pending organization approvals
      */
@@ -368,6 +369,10 @@ public class OrganizationService {
             }
 
             Organization savedOrg = organizationRepository.save(organization);
+
+            // Sync with organization_modules table
+            log.info("Syncing organization modules with organization_modules table");
+            organizationModuleService.syncOrganizationModules(organizationUuid);
 
             ModuleConfigResponse response = ModuleConfigResponse.builder()
                     .organizationUuid(savedOrg.getOrganizationUuid())

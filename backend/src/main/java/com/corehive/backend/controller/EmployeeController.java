@@ -216,5 +216,29 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
+    //*****************************************//
+    //Download the Employee QR
+    //*****************************************//
+    @GetMapping("/{id}/qr")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<byte[]> downloadEmployeeQr(
+            HttpServletRequest request,
+            @PathVariable Long id
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        byte[] qrImage = employeeService.downloadEmployeeQr(orgUuid, id);
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=employee-qr.png")
+                .header("Content-Type", "image/png")
+                .body(qrImage);
+
+//        return new ResponseEntity<>(
+//                new StandardResponse(200, "Get total Active employees count successfully", activeTotalEmployee),
+//                HttpStatus.OK
+//        );
+    }
+
 
 }

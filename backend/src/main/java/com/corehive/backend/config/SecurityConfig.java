@@ -70,8 +70,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 
                         // Admin-only endpoints
-                        .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
-                        .requestMatchers("/api/billing-plans/").hasRole("SYS_ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
+                        .requestMatchers("/api/billing-plans", "/api/billing-plans/**").hasRole("SYS_ADMIN")
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")

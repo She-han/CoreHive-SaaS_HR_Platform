@@ -13,6 +13,7 @@ import {
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import apiClient from '../../api/axios';
 
 const BillingAndPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -31,9 +32,6 @@ const BillingAndPlans = () => {
   });
   const [featureInput, setFeatureInput] = useState('');
 
-  // Backend API URL
-  const API_BASE_URL = 'http://localhost:8080';
-
   // Fetch plans on component mount
   useEffect(() => {
     fetchPlans();
@@ -43,13 +41,11 @@ const BillingAndPlans = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_BASE_URL}/api/billing-plans`);
-      console.log('Fetch response status:', response.status);
-      if (!response.ok) throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
-      const data = await response.json();
-      setPlans(data);
+      const response = await apiClient.get('/billing-plans');
+      console.log('Fetch response:', response.status);
+      setPlans(response.data);
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Failed to fetch plans');
       console.error('Error fetching plans:', err);
     } finally {
       setLoading(false);
@@ -130,27 +126,19 @@ const BillingAndPlans = () => {
 
     try {
       setError(null);
-      const url = editingPlan ? `${API_BASE_URL}/api/billing-plans/${editingPlan.id}` : `${API_BASE_URL}/api/billing-plans`;
-      const method = editingPlan ? 'PUT' : 'POST';
+      
+      console.log(`${editingPlan ? 'PUT' : 'POST'} request with data:`, formData);
 
-      console.log(`${method} request to:`, url);
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to save plan: ${response.status} - ${errorText}`);
+      if (editingPlan) {
+        await apiClient.put(`/billing-plans/${editingPlan.id}`, formData);
+      } else {
+        await apiClient.post('/billing-plans', formData);
       }
       
       await fetchPlans();
       handleCloseModal();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Failed to save plan');
       console.error('Error saving plan:', err);
     }
   };
@@ -160,19 +148,10 @@ const BillingAndPlans = () => {
 
     try {
       setError(null);
-      console.log(`DELETE request to: ${API_BASE_URL}/api/billing-plans/${id}`);
-      const response = await fetch(`${API_BASE_URL}/api/billing-plans/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to delete plan: ${response.status} - ${errorText}`);
-      }
-      
+      await apiClient.delete(`/billing-plans/${id}`);
       await fetchPlans();
     } catch (err) {
-      setError(err.message);
+      setError(err.response?.data?.message || err.message || 'Failed to delete plan');
       console.error('Error deleting plan:', err);
     }
   };
@@ -258,7 +237,7 @@ const BillingAndPlans = () => {
                 whileHover={{ y: -8 }}
               >
                 <Card
-                  className={`relative h-full flex flex-col ${
+                  className={`relative h-full flex flex-col bg-white ${
                     plan.popular
                       ? 'ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5'
                       : 'hover:shadow-lg'

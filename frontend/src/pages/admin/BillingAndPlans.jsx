@@ -240,7 +240,7 @@ const BillingAndPlans = () => {
                   className={`relative h-full flex flex-col bg-white ${
                     plan.popular
                       ? 'ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5'
-                      : 'hover:shadow-lg'
+                      : 'shadow-lg'
                   } transition-all duration-300`}
                 >
                   {/* Popular Badge */}

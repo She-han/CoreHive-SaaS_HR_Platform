@@ -62,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
+                        .requestMatchers("/api/billing-plans", "/api/billing-plans/**").permitAll() // Billing plans for signup
+                        .requestMatchers("/api/modules/active").permitAll() // Active modules for signup
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/error").permitAll()
 
@@ -71,7 +73,7 @@ public class SecurityConfig {
 
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
-                        .requestMatchers("/api/billing-plans", "/api/billing-plans/**").hasRole("SYS_ADMIN")
+
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")

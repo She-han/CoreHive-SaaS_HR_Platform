@@ -32,9 +32,16 @@ public class OrganizationSignupRequest {
     // File upload field - NO validation annotations here
     private MultipartFile businessRegistrationDocument;
 
-    // Module flags
+    // Module flags (legacy - keeping for backward compatibility)
     private Boolean moduleQrAttendanceMarking = false;
     private Boolean moduleFaceRecognitionAttendanceMarking = false;
     private Boolean moduleEmployeeFeedback = false;
     private Boolean moduleHiringManagement = false;
+
+    // Billing plan selection
+    private Long selectedPlanId;
+    private String selectedPlanName;
+    
+    // Custom modules (comma-separated IDs or JSON string)
+    private String customModules;
 }

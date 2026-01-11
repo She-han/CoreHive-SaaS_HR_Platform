@@ -10,17 +10,19 @@ import com.corehive.backend.model.*;
 import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import com.corehive.backend.repository.SystemUserRepository;
+import com.corehive.backend.repository.ExtendedModuleRepository;
+import com.corehive.backend.repository.OrganizationModuleRepository;
 import com.corehive.backend.util.JwtUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.time.LocalDateTime;
 
 /**
  * Authentication Service
@@ -39,6 +41,9 @@ public class AuthService {
     private final JwtUtil jwtUtil; // For JWT operations
     private final EmailService emailService;
     private final FileStorageService fileStorageService;
+    private final ExtendedModuleRepository extendedModuleRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * Organization Registration (Company Signup)
@@ -84,6 +89,7 @@ public class AuthService {
                     .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
                     .status(OrganizationStatus.PENDING_APPROVAL)
+                    .billingPlan(request.getSelectedPlanName()) // Store selected plan
                     .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
                     .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
@@ -92,6 +98,50 @@ public class AuthService {
                     .build();
 
             organizationRepository.save(organization);
+
+            // Handle custom modules if custom plan is selected
+            if (request.getCustomModules() != null && !request.getCustomModules().isEmpty()) {
+                try {
+                    log.info("Processing custom modules: {}", request.getCustomModules());
+                    
+                    // Parse the customModules JSON string to List<Long>
+                    List<Long> moduleIds = objectMapper.readValue(
+                        request.getCustomModules(), 
+                        new TypeReference<List<Long>>(){}
+                    );
+                    
+                    log.info("Parsed module IDs: {}", moduleIds);
+                    
+                    // Create OrganizationModule records for each selected module
+                    for (Long moduleId : moduleIds) {
+                        Optional<ExtendedModule> moduleOpt = extendedModuleRepository.findById(moduleId);
+                        
+                        if (moduleOpt.isPresent()) {
+                            ExtendedModule module = moduleOpt.get();
+                            
+                            OrganizationModule orgModule = OrganizationModule.builder()
+                                    .organization(organization)
+                                    .extendedModule(module)
+                                    .isEnabled(true)
+                                    .subscribedAt(LocalDateTime.now())
+                                    .build();
+                            
+                            organizationModuleRepository.save(orgModule);
+                            log.info("Added module {} to organization {}", module.getName(), organization.getName());
+                        } else {
+                            log.warn("Module with ID {} not found", moduleId);
+                        }
+                    }
+                    
+                    // Mark modules as configured
+                    organization.setModulesConfigured(true);
+                    organizationRepository.save(organization);
+                    
+                } catch (Exception e) {
+                    log.error("Error processing custom modules", e);
+                    // Continue with registration even if module assignment fails
+                }
+            }
 
             // Create ORG_ADMIN user
             String tempPassword = generateTemporaryPassword();

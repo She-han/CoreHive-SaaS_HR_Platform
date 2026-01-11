@@ -48,8 +48,8 @@ public class Organization {
     @Column(name = "employee_count_range", nullable = false, length = 50)
     private String employeeCountRange;
 
-    @Column(name = "plan", length = 50)
-    private String plan = "Starter";
+    @Column(name = "billing_plan", length = 100)
+    private String billingPlan;
 
     // Module flags
     @Column(name = "module_qr_attendance_marking")

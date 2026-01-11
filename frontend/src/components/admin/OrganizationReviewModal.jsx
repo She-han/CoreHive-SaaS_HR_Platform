@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { 
   Building2, 
@@ -25,6 +25,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import { approveOrganization, rejectOrganization } from '../../store/slices/adminSlice';
+import { getOrganizationModules } from '../../api/organizationModulesApi';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
@@ -38,6 +39,32 @@ const OrganizationReviewModal = ({
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
+  const [organizationModules, setOrganizationModules] = useState([]);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+
+  // Fetch organization modules when modal opens
+  useEffect(() => {
+    if (organization?.organizationUuid && isOpen) {
+      fetchOrganizationModules();
+    }
+  }, [organization?.organizationUuid, isOpen]);
+
+  const fetchOrganizationModules = async () => {
+    if (!organization?.organizationUuid) return;
+    
+    setIsLoadingModules(true);
+    try {
+      const response = await getOrganizationModules(organization.organizationUuid);
+      if (response.success) {
+        setOrganizationModules(response.data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch organization modules:', error);
+      setOrganizationModules([]);
+    } finally {
+      setIsLoadingModules(false);
+    }
+  };
 
   const getDocumentUrl = useCallback((documentPath) => {
     if (!documentPath) return null;
@@ -245,6 +272,17 @@ const OrganizationReviewModal = ({
   }), []);
 
   const selectedModules = useMemo(() => {
+    // Use organization_modules data if available, otherwise fall back to flags
+    if (organizationModules && organizationModules.length > 0) {
+      return organizationModules.map(om => ({
+        name: om.extendedModule?.name || 'Unknown Module',
+        icon: getModuleIcon(om.extendedModule?.moduleKey || ''),
+        enabled: om.isEnabled,
+        color: getModuleColor(om.extendedModule?.moduleKey || '')
+      }));
+    }
+    
+    // Fallback to legacy module flags
     if (!organization) return [];
     return [
       { 
@@ -272,7 +310,29 @@ const OrganizationReviewModal = ({
         color: 'text-orange-500'
       }
     ];
-  }, [organization]);
+  }, [organization, organizationModules]);
+
+  // Helper function to get icon based on module key
+  const getModuleIcon = (moduleKey) => {
+    const iconMap = {
+      'qr_attendance': TrendingUp,
+      'face_recognition': UserPlus,
+      'employee_feedback': MessageSquare,
+      'hiring_management': Users,
+    };
+    return iconMap[moduleKey] || Shield;
+  };
+
+  // Helper function to get color based on module key
+  const getModuleColor = (moduleKey) => {
+    const colorMap = {
+      'qr_attendance': 'text-purple-500',
+      'face_recognition': 'text-blue-500',
+      'employee_feedback': 'text-green-500',
+      'hiring_management': 'text-orange-500',
+    };
+    return colorMap[moduleKey] || 'text-gray-500';
+  };
 
   const enabledModulesCount = useMemo(() => 
     selectedModules.filter(m => m.enabled).length,
@@ -352,13 +412,19 @@ const OrganizationReviewModal = ({
             value={organization.employeeCountRange}
             iconColor="text-green-500"
           />
+          <InfoCard 
+            icon={CreditCard} 
+            label="Billing Plan" 
+            value={organization.billingPlan || organization.plan || 'Not Set'}
+            iconColor="text-purple-500"
+          />
           {organization.businessRegistrationNumber && (
             <InfoCard 
               icon={FileText} 
               label="Registration Number" 
               value={organization.businessRegistrationNumber}
               iconColor="text-purple-500"
-              fullWidth={!organization.businessRegistrationNumber}
+              fullWidth={false}
             />
           )}
         </div>
@@ -434,11 +500,21 @@ const OrganizationReviewModal = ({
               </div>
             </div>
             
-            <div className="grid sm:grid-cols-2 gap-3">
-              {selectedModules.map((module, index) => (
-                <ModuleCard key={index} module={module} />
-              ))}
-            </div>
+            {isLoadingModules ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : selectedModules.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {selectedModules.map((module, index) => (
+                  <ModuleCard key={index} module={module} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No modules configured
+              </div>
+            )}
           </div>
         </Card>
 

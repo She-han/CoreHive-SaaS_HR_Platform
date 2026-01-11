@@ -9,7 +9,7 @@ import api from './axios';
  * Get all modules for an organization
  */
 export const getOrganizationModules = async (organizationUuid) => {
-  const response = await api.get(`/api/organization-modules/${organizationUuid}`);
+  const response = await api.get(`/organization-modules/${organizationUuid}`);
   return response.data;
 };
 
@@ -17,7 +17,7 @@ export const getOrganizationModules = async (organizationUuid) => {
  * Get enabled modules for an organization
  */
 export const getEnabledModules = async (organizationUuid) => {
-  const response = await api.get(`/api/organization-modules/${organizationUuid}/enabled`);
+  const response = await api.get(`/organization-modules/${organizationUuid}/enabled`);
   return response.data;
 };
 
@@ -25,7 +25,7 @@ export const getEnabledModules = async (organizationUuid) => {
  * Subscribe organization to a module (SYS_ADMIN only)
  */
 export const subscribeToModule = async (organizationUuid, moduleId) => {
-  const response = await api.post(`/api/organization-modules/${organizationUuid}/subscribe/${moduleId}`);
+  const response = await api.post(`/organization-modules/${organizationUuid}/subscribe/${moduleId}`);
   return response.data;
 };
 
@@ -33,7 +33,7 @@ export const subscribeToModule = async (organizationUuid, moduleId) => {
  * Unsubscribe organization from a module (SYS_ADMIN only)
  */
 export const unsubscribeFromModule = async (organizationUuid, moduleId) => {
-  const response = await api.post(`/api/organization-modules/${organizationUuid}/unsubscribe/${moduleId}`);
+  const response = await api.post(`/organization-modules/${organizationUuid}/unsubscribe/${moduleId}`);
   return response.data;
 };
 
@@ -41,7 +41,7 @@ export const unsubscribeFromModule = async (organizationUuid, moduleId) => {
  * Sync organization modules with organization boolean flags
  */
 export const syncOrganizationModules = async (organizationUuid) => {
-  const response = await api.post(`/api/organization-modules/${organizationUuid}/sync`);
+  const response = await api.post(`/organization-modules/${organizationUuid}/sync`);
   return response.data;
 };
 
@@ -49,7 +49,7 @@ export const syncOrganizationModules = async (organizationUuid) => {
  * Get subscription count for a specific module (SYS_ADMIN only)
  */
 export const getModuleSubscriptionCount = async (moduleId) => {
-  const response = await api.get(`/api/organization-modules/module/${moduleId}/subscription-count`);
+  const response = await api.get(`/organization-modules/module/${moduleId}/subscription-count`);
   return response.data;
 };
 

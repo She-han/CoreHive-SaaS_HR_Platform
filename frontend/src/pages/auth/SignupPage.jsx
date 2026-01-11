@@ -384,7 +384,7 @@ const handleSubmit = async (e) => {
     <>
       <Navbar/>
       <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center items-center space-x-2 mb-6">
@@ -582,7 +582,7 @@ const handleSubmit = async (e) => {
               {/* Step 2: Billing Plan Selection */}
               {currentStep === 2 && (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-6 max-w-5xl">
                     <h2 className="text-xl font-semibold text-text-primary mb-2">
                       Choose Your Plan
                     </h2>
@@ -600,7 +600,7 @@ const handleSubmit = async (e) => {
                   ) : (
                     <>
                       {/* Plans grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {billingPlans.map((plan) => (
                           <div
                             key={plan.id}
@@ -658,7 +658,7 @@ const handleSubmit = async (e) => {
                                   <span className="text-sm text-text-primary">{feature}</span>
                                 </div>
                               ))}
-                              {plan.features.length > 5 && (
+                              {plan.features.length > 15 && (
                                 <p className="text-xs text-text-secondary ml-6">
                                   +{plan.features.length - 5} more features
                                 </p>
@@ -774,7 +774,7 @@ const handleSubmit = async (e) => {
                                   Total Monthly Cost:
                                 </span>
                                 <span className="text-2xl font-bold text-primary-500">
-                                  $
+                                  LKR 
                                   {extendedModules
                                     .filter(m => formData.customModules.includes(m.moduleId))
                                     .reduce((sum, m) => sum + parseFloat(m.price), 0)

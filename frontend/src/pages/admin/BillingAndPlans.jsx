@@ -268,13 +268,11 @@ const BillingAndPlans = () => {
                       <span className="text-4xl font-bold text-text-primary">
                         LKR {plan.price}
                       </span>
-                      <span className="text-text-secondary text-sm">
-                        {plan.period}
-                      </span>
+                      
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary text-sm">
                       <Users className="w-4 h-4" />
-                      {plan.employees}
+                      {plan.period}
                     </div>
                   </div>
 

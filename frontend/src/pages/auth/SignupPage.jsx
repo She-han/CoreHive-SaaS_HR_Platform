@@ -749,7 +749,7 @@ const handleSubmit = async (e) => {
                                         {module.name}
                                       </h3>
                                       <span className="text-sm font-bold text-primary-500">
-                                        ${module.price}/mo
+                                        LKR {module.price}/mo
                                       </span>
                                     </div>
                                     <p className="text-sm text-text-secondary">

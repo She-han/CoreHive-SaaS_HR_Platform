@@ -8,6 +8,7 @@ import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.service.JobPostingService;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

@@ -22,6 +22,7 @@ export default function EditeJobPosting() {
 
   const [form, setForm] = useState({
     title: "",
+    contactEmail: "",
     department: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
@@ -39,6 +40,7 @@ export default function EditeJobPosting() {
 
         setForm({
             title: data.title || "",
+            contactEmail: data.contactEmail || "",
             department: String(data.department || ""), 
             employmentType: data.employmentType || "FULL_TIME",
             status: data.status || "OPEN",
@@ -63,6 +65,10 @@ export default function EditeJobPosting() {
     });
 }, []);
 
+  // Simple email validation
+  function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -116,6 +122,17 @@ export default function EditeJobPosting() {
     return;
   }
 
+  if (!form.contactEmail.trim()) {
+  Swal.fire("Required!", "Contact email is required.", "warning");
+  return;
+}
+
+if (!isValidEmail(form.contactEmail)) {
+  Swal.fire("Invalid Email!", "Please enter a valid email address.", "warning");
+  return;
+}
+
+
   setLoading(true);
 
    try {
@@ -124,6 +141,7 @@ export default function EditeJobPosting() {
     if (avatarFile) {
       payload = new FormData();
     payload.append("title", form.title);
+payload.append("contactEmail", form.contactEmail.toLowerCase());
 payload.append("departmentId", form.department); // ✅ FIX
 payload.append("employmentType", form.employmentType);
 payload.append("status", form.status);
@@ -135,6 +153,7 @@ payload.append("avatar", avatarFile);
     } else {
      payload = {
     title: form.title,
+    contactEmail: form.contactEmail.toLowerCase(),
     departmentId: form.department,  
     employmentType: form.employmentType,
     status: form.status,
@@ -213,6 +232,22 @@ payload.append("avatar", avatarFile);
               />
             </div>
 
+            {/* Contact Email */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleInput}
+                placeholder="hr@company.com"
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg 
+                          focus:ring-2 focus:ring-[#02C39A]"
+                required
+              />
+            </div>
 
             {/* Department */}
             <div>

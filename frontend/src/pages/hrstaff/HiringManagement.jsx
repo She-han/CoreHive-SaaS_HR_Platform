@@ -173,6 +173,7 @@ useEffect(() => {
           vacancies={job.availableVacancies}
           postedDate={job.postedDate}
           closingDate={job.closingDate}
+          contactEmail={job.contactEmail} 
           onDelete={handleDeleteJob} 
         />
       ))}

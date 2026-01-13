@@ -12,6 +12,7 @@ export default function AddJobForm() {
 
   const [form, setForm] = useState({
     title: "",
+    contactEmail: "",
     department: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
@@ -52,6 +53,11 @@ useEffect(() => {
     setAvatarFile(file || null);
   }
 
+  // Simple email validation
+  function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 
   async function handleSubmit(e) {
   e.preventDefault();
@@ -89,6 +95,17 @@ useEffect(() => {
     Swal.fire("Required!", "Job description is required.", "warning");
     return;
   }
+
+  if (!form.contactEmail.trim()) {
+  Swal.fire("Required!", "Contact email is required.", "warning");
+  return;
+}
+
+if (!isValidEmail(form.contactEmail)) {
+  Swal.fire("Invalid Email!", "Please enter a valid email address.", "warning");
+  return;
+}
+
 
   setLoading(true);
 
@@ -191,6 +208,24 @@ useEffect(() => {
                 className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg focus:ring-2 focus:ring-[#02C39A]"
               />
             </div>
+
+            {/* Contact Email */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleInput}
+                placeholder="hr@company.com"
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg 
+                          focus:ring-2 focus:ring-[#02C39A]"
+                required
+              />
+            </div>
+
 
 
             {/* Department */}

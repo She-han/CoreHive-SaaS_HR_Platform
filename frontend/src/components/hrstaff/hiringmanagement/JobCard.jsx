@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Briefcase, Users, Edit3, Trash2 } from "lucide-react";
+import { Calendar, Briefcase, Users, Edit3, Trash2 , Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const JobCard = ({
@@ -13,6 +13,7 @@ const JobCard = ({
   vacancies,
   postedDate,
   closingDate,
+  contactEmail,
   onDelete,
 }) => {
   const statusStyles = {
@@ -62,6 +63,25 @@ const JobCard = ({
             <p className="font-semibold text-[#05668D]">{department}</p>
           </div>
         </div>
+
+        {/* CONTACT EMAIL */}
+        {contactEmail && (
+            <div className="flex items-center justify-center">
+              <a
+                href={`mailto:${contactEmail}`}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl 
+                          bg-[#05668D]/10 text-[#05668D] 
+                          hover:bg-[#05668D]/20 transition-all duration-200"
+              >
+                <Mail size={16} />
+                <span className="text-xs font-medium truncate max-w-[180px]">
+                  {contactEmail}
+                </span>
+              </a>
+            </div>
+          )}
+
+
 
         {/* Vacancies */}
         <div className="flex items-center gap-2.5">

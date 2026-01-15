@@ -1,5 +1,6 @@
 import React from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import RecentActivities from './components/RecentActivities';
 
 const THEME = {
   primary: "#02C39A",
@@ -32,6 +33,8 @@ const AuditLogs = () => {
               </div>
             </div>
           </div>
+          {/* Audit Logs Content */}
+          <RecentActivities />
         </div>
         </DashboardLayout>
     </div>

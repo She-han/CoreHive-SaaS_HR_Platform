@@ -66,12 +66,12 @@ const RecentActivities = () => {
                             {logs.map((log) => (
                                 <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="p-4 text-gray-500 whitespace-nowrap">
-                                        {/* Timestamp එක කියවීමට පහසු ලෙස format කිරීම */}
+                                        
                                         {new Date(log.timestamp).toLocaleString()}
                                     </td>
                                     <td className="p-4">
                                         <div className="font-medium text-gray-900">{log.userEmail}</div>
-                                        {/* Backend එකේ තියෙන්නේ 'role' මිස 'userRole' නොවේ */}
+                                       
                                         <div className="text-xs text-gray-400">{log.role}</div> 
                                     </td>
                                     <td className="p-4 text-gray-700">{log.action}</td>
@@ -81,7 +81,7 @@ const RecentActivities = () => {
                                             {log.severity}
                                         </span>
                                     </td>
-                                    {/* Backend එකේ තියෙන්නේ 'ip' මිස 'ipAddress' නොවේ */}
+                                   
                                     <td className="p-4 text-gray-500 font-mono">{log.ip}</td> 
                                 </tr>
                             ))}

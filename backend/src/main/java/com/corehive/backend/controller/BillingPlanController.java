@@ -2,9 +2,12 @@ package com.corehive.backend.controller;
 
 
 
+import com.corehive.backend.auditlogs.AuditActivitiEvent;
 import com.corehive.backend.dto.BillingPlanDTO;
 import com.corehive.backend.service.BillingPlanService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +21,7 @@ import java.util.List;
 public class BillingPlanController {
 
     private final BillingPlanService billingPlanService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @GetMapping
     public ResponseEntity<List<BillingPlanDTO>> getAllPlans() {
@@ -40,9 +44,22 @@ public class BillingPlanController {
     }
 
     @PostMapping
-    public ResponseEntity<BillingPlanDTO> createPlan(@RequestBody BillingPlanDTO planDTO) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(billingPlanService.createPlan(planDTO));
+    public ResponseEntity<BillingPlanDTO> createPlan(@RequestBody BillingPlanDTO planDTO, HttpServletRequest request) {
+        BillingPlanDTO createdPlan = billingPlanService.createPlan(planDTO);
+
+        // 2. Event එක Trigger කිරීම (Plan එක සාර්ථකව හැදූ පසු)
+        eventPublisher.publishEvent(new AuditActivitiEvent(
+                this,
+                "admin@corehive.com", // මෙතනට දැනට ලොග් වී සිටින user ගේ email එක ලැබිය යුතුයි
+                "System Admin",
+                "Billing Plan Created",
+                createdPlan.getName(),
+                "New billing plan '" + createdPlan.getName() + "' was created.",
+                "Success",
+                request.getRemoteAddr() // User ගේ IP එක ලබා ගැනීම
+        ));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdPlan);
     }
 
     @PutMapping("/{id}")

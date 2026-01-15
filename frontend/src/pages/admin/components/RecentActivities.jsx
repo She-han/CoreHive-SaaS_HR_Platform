@@ -8,7 +8,7 @@ const RecentActivities = () => {
    
     useEffect(() => {
         
-        axios.get('http://localhost:8080/api/sys-admin/auditlogswer', {
+        axios.get('http://localhost:8080/api/sys-admin/auditlogs', {
            method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -31,7 +31,7 @@ const RecentActivities = () => {
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
+        
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 
                 <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b">
@@ -89,7 +89,7 @@ const RecentActivities = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        
     );
 };
 

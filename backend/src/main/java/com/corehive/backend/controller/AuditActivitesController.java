@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 @RestController
-@RequestMapping("/api/sys-admin/auditlogswer")
+@RequestMapping("/api/sys-admin/auditlogs")
 
 @CrossOrigin(origins = "http://localhost:3000") // React development server
 public class AuditActivitesController {

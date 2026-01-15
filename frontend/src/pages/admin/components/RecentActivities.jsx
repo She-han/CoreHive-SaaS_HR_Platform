@@ -1,21 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Search, Download, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
+import { Search, Download } from 'lucide-react';
 
 const RecentActivities = () => {
-
-const [logs, setLogs] = useState([]);
-
-    // Backend එකෙන් දත්ත ලබා ගැනීම
+    const [logs, setLogs] = useState([]);
+    const token = localStorage.getItem("corehive_token");
+   
     useEffect(() => {
-        axios.get('http://localhost:8080/api/logs')
+        
+        axios.get('http://localhost:8080/api/sys-admin/auditlogswer', {
+           method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, 
+            }
+        }) 
             .then(response => setLogs(response.data))
             .catch(error => console.error('Error fetching logs:', error));
     }, []);
 
-// Severity එක අනුව පාට සහ Icon එක තීරණය කිරීම
     const getSeverityStyles = (severity) => {
-        switch (severity.toLowerCase()) {
+        
+        const s = severity ? severity.toLowerCase() : 'info';
+        switch (s) {
             case 'critical': return 'bg-red-100 text-red-600 border-red-200';
             case 'warning': return 'bg-yellow-100 text-yellow-600 border-yellow-200';
             case 'success': return 'bg-green-100 text-green-600 border-green-200';
@@ -23,12 +30,10 @@ const [logs, setLogs] = useState([]);
         }
     };
 
-  return (
-    <div>
-      <div className="p-6 bg-gray-50 min-h-screen">
+    return (
+        <div className="p-6 bg-gray-50 min-h-screen">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 
-                {/* Header & Search Section */}
                 <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800">System Activity Log</h2>
@@ -45,7 +50,6 @@ const [logs, setLogs] = useState([]);
                     </div>
                 </div>
 
-                {/* Table Section */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">
@@ -61,10 +65,14 @@ const [logs, setLogs] = useState([]);
                         <tbody className="divide-y divide-gray-100 text-sm">
                             {logs.map((log) => (
                                 <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-4 text-gray-500 whitespace-nowrap">{log.timestamp}</td>
+                                    <td className="p-4 text-gray-500 whitespace-nowrap">
+                                        {/* Timestamp එක කියවීමට පහසු ලෙස format කිරීම */}
+                                        {new Date(log.timestamp).toLocaleString()}
+                                    </td>
                                     <td className="p-4">
                                         <div className="font-medium text-gray-900">{log.userEmail}</div>
-                                        <div className="text-xs text-gray-400">{log.userRole}</div>
+                                        {/* Backend එකේ තියෙන්නේ 'role' මිස 'userRole' නොවේ */}
+                                        <div className="text-xs text-gray-400">{log.role}</div> 
                                     </td>
                                     <td className="p-4 text-gray-700">{log.action}</td>
                                     <td className="p-4 text-gray-500">{log.resource}</td>
@@ -73,7 +81,8 @@ const [logs, setLogs] = useState([]);
                                             {log.severity}
                                         </span>
                                     </td>
-                                    <td className="p-4 text-gray-500 font-mono">{log.ipAddress}</td>
+                                    {/* Backend එකේ තියෙන්නේ 'ip' මිස 'ipAddress' නොවේ */}
+                                    <td className="p-4 text-gray-500 font-mono">{log.ip}</td> 
                                 </tr>
                             ))}
                         </tbody>
@@ -81,8 +90,7 @@ const [logs, setLogs] = useState([]);
                 </div>
             </div>
         </div>
-    </div>
-  )
-}
+    );
+};
 
-export default RecentActivities
+export default RecentActivities;

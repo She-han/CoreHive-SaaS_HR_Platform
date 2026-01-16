@@ -11,7 +11,8 @@ import {
   Users, 
   ArrowRight, 
   CheckCircle,
-  Info
+  Info,
+  Package
 } from 'lucide-react';
 
 import { 
@@ -68,12 +69,14 @@ const handleRecaptchaError = () => {
     employeeCountRange: '',
     selectedPlanId: null,
     selectedPlanName: '',
+    selectedPlanPrice: 0,
     customModules: [] // Array of module IDs for custom plan
   });
   
   // Plans and modules state
   const [billingPlans, setBillingPlans] = useState([]);
   const [extendedModules, setExtendedModules] = useState([]);
+  const [allModules, setAllModules] = useState([]); // All modules for mapping
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
   const [isLoadingModules, setIsLoadingModules] = useState(false);
   
@@ -126,6 +129,7 @@ const handleRecaptchaError = () => {
   useEffect(() => {
     if (currentStep === 2 && billingPlans.length === 0) {
       fetchBillingPlans();
+      fetchAllModules(); // Also fetch modules for display
     }
   }, [currentStep]);
   
@@ -162,6 +166,21 @@ const handleRecaptchaError = () => {
     } finally {
       setIsLoadingModules(false);
     }
+  };
+  
+  // Fetch all modules for plan display
+  const fetchAllModules = async () => {
+    try {
+      const response = await getActiveModules();
+      setAllModules(response.data || []);
+    } catch (error) {
+      console.error('Error fetching modules for plan display:', error);
+    }
+  };
+  
+  // Get module details by ID
+  const getModuleById = (moduleId) => {
+    return allModules.find(m => m.moduleId === moduleId || m.id === moduleId);
   };
   
   // Handle input changes
@@ -276,6 +295,7 @@ const handleRecaptchaError = () => {
       ...prev,
       selectedPlanId: plan.id,
       selectedPlanName: plan.name,
+      selectedPlanPrice: plan.price,
       customModules: [] // Reset custom modules when changing plan
     }));
     setFormErrors(prev => ({ ...prev, plan: null }));
@@ -641,29 +661,50 @@ const handleSubmit = async (e) => {
                                 <span className="text-3xl font-bold text-text-primary">
                                   LKR {plan.price}
                                 </span>
-                                <span className="text-text-secondary text-sm">
-                                  {plan.period}
-                                </span>
+                               
                               </div>
                               <p className="text-sm text-text-secondary mt-2">
-                                {plan.employees}
+                                {plan.period}
                               </p>
                             </div>
                             
                             {/* Features list */}
-                            <div className="space-y-2 mb-4">
-                              {plan.features.slice(0, 5).map((feature, idx) => (
+                            <div className="space-y-2 mb-4 border-t border-gray-200 pt-4 mt-4">
+                              <h4 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1">
+                                
+                                Basic Features
+                              </h4>
+                              {plan.features.map((feature, idx) => (
                                 <div key={idx} className="flex items-start gap-2">
-                                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                                   <span className="text-sm text-text-primary">{feature}</span>
                                 </div>
                               ))}
-                              {plan.features.length > 15 && (
-                                <p className="text-xs text-text-secondary ml-6">
-                                  +{plan.features.length - 5} more features
-                                </p>
-                              )}
                             </div>
+                            
+                            {/* Extended Modules list */}
+                            {plan.moduleIds && plan.moduleIds.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1">
+                                  
+                                  Extended Features ({plan.moduleIds.length})
+                                </h4>
+                                <div className="space-y-2.5">
+                                  {plan.moduleIds.map((moduleId, idx) => {
+                                    const module = getModuleById(moduleId);
+                                    return module ? (
+                                      <div key={idx} className="flex gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                                        
+                                          <span className="text-sm text-text-primary">{module.name}</span>
+                                        
+                                       
+                                      </div>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -771,19 +812,42 @@ const handleSubmit = async (e) => {
                             <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
                               <div className="flex items-center justify-between">
                                 <span className="text-text-primary font-medium">
-                                  Total Monthly Cost:
+                                  Fixed cost for basic modules:
                                 </span>
                                 <span className="text-2xl font-bold text-primary-500">
-                                  LKR 
+                                  319.00 LKR                            
+                                </span>
+
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-text-primary font-medium">
+                                  Cost for selected modules:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
                                   {extendedModules
                                     .filter(m => formData.customModules.includes(m.moduleId))
                                     .reduce((sum, m) => sum + parseFloat(m.price), 0)
                                     .toFixed(2)}
+                                    <t/> LKR
                                 </span>
+
                               </div>
-                              <p className="text-sm text-text-secondary mt-2">
+                              <p className="text-sm text-text-secondary ">
                                 {formData.customModules.length} module(s) selected
                               </p>
+                              <div className="flex items-center justify-between mt-3">
+                                <span className="text-text-primary font-medium">
+                                  Total price for one active user/month:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  {extendedModules
+                                    .filter(m => formData.customModules.includes(m.moduleId))
+                                    .reduce((sum, m) => sum +  parseFloat(m.price), 319)
+                                    .toFixed(2)}
+                                    <t/> LKR
+                                </span>
+
+                              </div>
                             </div>
                           )}
                           
@@ -824,6 +888,15 @@ const handleSubmit = async (e) => {
                         <div>
                           <p className="text-sm text-text-secondary">Selected Plan</p>
                           <p className="font-semibold text-primary-500">{formData.selectedPlanName}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-text-primary font-medium">
+                            Total price for one active user/month:
+                          </span>
+                          <span className="text-2xl font-bold text-primary-500">
+                              {formData.selectedPlanPrice} LKR
+                          </span>
+
                         </div>
                       </div>
                     </>

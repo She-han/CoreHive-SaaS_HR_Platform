@@ -24,6 +24,7 @@ const THEME = {
 const RecentActivities = () => {
   const [logs, setLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSeverity, setSelectedSeverity] = useState("All");
   const token = localStorage.getItem("corehive_token");
 
   const totalEvents = logs.length;
@@ -154,13 +155,21 @@ const RecentActivities = () => {
   const filteredLogs = useMemo(() => {
     return logs.filter((log) => {
       const searchLower = searchTerm.toLowerCase();
-      return (
+
+      // Search matching logic
+      const matchesSearch =
         log.action?.toLowerCase().includes(searchLower) ||
         log.userEmail?.toLowerCase().includes(searchLower) ||
-        log.resource?.toLowerCase().includes(searchLower)
-      );
+        log.resource?.toLowerCase().includes(searchLower);
+
+      // Severity matching logic
+      const matchesSeverity =
+        selectedSeverity === "All" ||
+        log.severity?.toLowerCase() === selectedSeverity.toLowerCase();
+
+      return matchesSearch && matchesSeverity;
     });
-  }, [logs, searchTerm]);
+  }, [logs, searchTerm, selectedSeverity]);
 
   useEffect(() => {
     axios
@@ -214,8 +223,22 @@ const RecentActivities = () => {
               <input
                 type="text"
                 placeholder="Search logs..."
-                className="pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02C39A]"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors"
               />
+              {/* Severity Dropdown */}
+              <select
+                value={selectedSeverity}
+                onChange={(e) => setSelectedSeverity(e.target.value)}
+                className="px-3 ml-2 py-2 border rounded-lg text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#02C39A] bg-white cursor-pointer"
+              >
+                <option value="All">All Severities</option>
+                <option value="Info">Info</option>
+                <option value="Success">Success</option>
+                <option value="Warning">Warning</option>
+                <option value="Critical">Critical</option>
+              </select>
             </div>
             <button className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
               <Download className="h-4 w-4" /> Export
@@ -236,7 +259,7 @@ const RecentActivities = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <tr
                   key={log.id}
                   className="hover:bg-gray-50/50 transition-colors"

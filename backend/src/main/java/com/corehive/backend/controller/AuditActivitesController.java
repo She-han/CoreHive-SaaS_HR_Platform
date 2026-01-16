@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
-@RequestMapping("/api/sys-admin/auditlogswer")
 @RestController
+@RequestMapping("/api/sys-admin/auditlogs")
+
 @CrossOrigin(origins = "http://localhost:3000") // React development server
 public class AuditActivitesController {
     @Autowired

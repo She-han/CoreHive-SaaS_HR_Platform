@@ -72,6 +72,7 @@ public class SecurityConfig {
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
                         .requestMatchers("/api/billing-plans/").hasRole("SYS_ADMIN")
+                        .requestMatchers("/api/sys-admin/auditlogs").hasRole("SYS_ADMIN")
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")

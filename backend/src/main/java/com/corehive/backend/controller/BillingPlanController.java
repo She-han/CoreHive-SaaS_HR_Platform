@@ -47,7 +47,7 @@ public class BillingPlanController {
     public ResponseEntity<BillingPlanDTO> createPlan(@RequestBody BillingPlanDTO planDTO, HttpServletRequest request) {
         BillingPlanDTO createdPlan = billingPlanService.createPlan(planDTO);
 
-        // 2. Event එක Trigger කිරීම (Plan එක සාර්ථකව හැදූ පසු)
+
         eventPublisher.publishEvent(new AuditActivitiEvent(
                 this,
                 "admin@corehive.com", // මෙතනට දැනට ලොග් වී සිටින user ගේ email එක ලැබිය යුතුයි
@@ -63,15 +63,40 @@ public class BillingPlanController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BillingPlanDTO> updatePlan(
-            @PathVariable Long id,
-            @RequestBody BillingPlanDTO planDTO) {
-        return ResponseEntity.ok(billingPlanService.updatePlan(id, planDTO));
+    public ResponseEntity<BillingPlanDTO> updatePlan(@PathVariable Long id, @RequestBody BillingPlanDTO planDTO, HttpServletRequest request) {
+        BillingPlanDTO updatedPlan = billingPlanService.updatePlan(id, planDTO);
+
+
+        eventPublisher.publishEvent(new AuditActivitiEvent(
+                this,
+                "admin@corehive.com",
+                "System Admin",
+                "Billing Plan Modified",
+                updatedPlan.getName(),
+                "Billing plan details updated for: " + updatedPlan.getName(),
+                "Warning",
+                request.getRemoteAddr()
+        ));
+
+        return ResponseEntity.ok(updatedPlan);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePlan(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePlan(@PathVariable Long id, HttpServletRequest request) {
         billingPlanService.deletePlan(id);
+
+
+        eventPublisher.publishEvent(new AuditActivitiEvent(
+                this,
+                "admin@corehive.com",
+                "System Admin",
+                "Billing Plan Deleted",
+                "Plan ID: " + id,
+                "Billing plan with ID " + id + " was removed from the system.",
+                "Critical",
+                request.getRemoteAddr()
+        ));
+
         return ResponseEntity.noContent().build();
     }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
+import { exportToPDF } from "./ExportAuditLogs";
 import {
   Search,
   Download,
@@ -240,7 +241,9 @@ const RecentActivities = () => {
                 <option value="Critical">Critical</option>
               </select>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+            <button 
+            onClick={() => exportToPDF(filteredLogs, "Recent_Activities")}
+            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
               <Download className="h-4 w-4" /> Export
             </button>
           </div>

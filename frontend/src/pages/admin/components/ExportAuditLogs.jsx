@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export const exportToPDF = (data, fileName = "Activity_Log") => {
   const doc = new jsPDF();
@@ -23,13 +23,13 @@ export const exportToPDF = (data, fileName = "Activity_Log") => {
   ]);
 
   // Generate Table
-  doc.autoTable({
+  autoTable(doc, {
     head: [tableColumn],
     body: tableRows,
     startY: 35,
     theme: 'grid',
-    headStyles: { fillColor: [2, 195, 154] }, 
-    styles: { fontSize: 8 }
+    headStyles: { fillColor: [2, 195, 154] },
+    styles: { fontSize: 8 },
   });
 
   doc.save(`${fileName}_${new Date().getTime()}.pdf`);

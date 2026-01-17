@@ -11,6 +11,7 @@ import com.corehive.backend.model.*;
 import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.OrganizationRepository;
+import com.corehive.backend.repository.OrganizationModuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ public class OrganizationService {
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
     private final OrganizationModuleService organizationModuleService;
+    private final OrganizationModuleRepository organizationModuleRepository;
     /**
      * Get all pending organization approvals
      */
@@ -631,6 +633,13 @@ public class OrganizationService {
             if (!employees.isEmpty()) {
                 employeeRepository.deleteAll(employees);
                 log.info("Deleted {} employees for organization: {}", employees.size(), organizationUuid);
+            }
+
+            // Delete all organization modules
+            List<OrganizationModule> organizationModules = organizationModuleRepository.findByOrganizationUuid(organizationUuid);
+            if (!organizationModules.isEmpty()) {
+                organizationModuleRepository.deleteAll(organizationModules);
+                log.info("Deleted {} organization modules for organization: {}", organizationModules.size(), organizationUuid);
             }
 
             // Delete the organization

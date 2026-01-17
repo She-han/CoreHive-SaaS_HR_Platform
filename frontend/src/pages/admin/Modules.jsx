@@ -105,9 +105,9 @@ const ModuleCard = memo(({ module, onEdit, onToggle, onDelete }) => {
 
         {/* Price */}
         <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-          <DollarSign className="w-4 h-4" style={{ color: THEME.secondary }} />
+          
           <span className="font-bold text-lg" style={{ color: THEME.dark }}>
-            ${module.price}
+            LKR {module.price}
           </span>
           <span className="text-sm" style={{ color: THEME.muted }}>/month</span>
         </div>

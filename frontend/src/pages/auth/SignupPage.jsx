@@ -342,10 +342,19 @@ const handleSubmit = async (e) => {
       signupFormData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
     }
     
+    // Calculate total price for custom plan
+    let totalPrice = formData.selectedPlanPrice;
+    if (formData.selectedPlanName.toLowerCase() === 'custom') {
+      const modulesTotal = extendedModules
+        .filter(m => formData.customModules.includes(m.moduleId))
+        .reduce((sum, m) => sum + parseFloat(m.price), 0);
+      totalPrice = 319 + modulesTotal;
+    }
+    
     // Add billing plan information
     signupFormData.append('selectedPlanId', formData.selectedPlanId);
     signupFormData.append('selectedPlanName', formData.selectedPlanName);
-    signupFormData.append('selectedPlanPrice', formData.selectedPlanPrice);
+    signupFormData.append('selectedPlanPrice', totalPrice);
     
     // Add custom modules if custom plan
     if (formData.selectedPlanName.toLowerCase() === 'custom') {
@@ -841,11 +850,13 @@ const handleSubmit = async (e) => {
                                   Total price for one active user/month:
                                 </span>
                                 <span className="text-2xl font-bold text-primary-500">
-                                  {extendedModules
-                                    .filter(m => formData.customModules.includes(m.moduleId))
-                                    .reduce((sum, m) => sum +  parseFloat(m.price), 319)
-                                    .toFixed(2)}
-                                    <t/> LKR
+                                  {(() => {
+                                    const modulesTotal = extendedModules
+                                      .filter(m => formData.customModules.includes(m.moduleId))
+                                      .reduce((sum, m) => sum + parseFloat(m.price), 0);
+                                    return (319 + modulesTotal).toFixed(2);
+                                  })()}
+                                  {' '}LKR
                                 </span>
 
                               </div>

@@ -71,7 +71,7 @@ const OrganizationRow = memo(({ org, onViewDetails }) => (
     </td>
 
     <td className="text-center">
-      {org.billingPrice ? `$${org.billingPrice.toFixed(2)}/user/mo` : (org.billing || "$0/mo")}
+      {org.billingPrice ? `LKR ${org.billingPrice.toFixed(2)}` : (org.billing || "LKR 0")}
     </td>
 
     <td className="text-center">
@@ -250,7 +250,7 @@ export default function OrganizationList() {
                 <th className="text-center">Plan</th>
                 <th className="text-center">Users</th>
                 <th className="text-center">Status</th>
-                <th className="text-center">Billing</th>
+                <th className="text-center">Billing(user/month)</th>
                 <th className="text-center">Created</th>
                 <th className="text-center">Actions</th>
               </tr>

@@ -13,12 +13,16 @@ import {
   Eye,
   Shield,
   CreditCard,
+  Package,
+  Zap,
+  UserCheck,
+  MessageSquare,
+  Briefcase,
   TrendingUp,
-  UserPlus,
-  MessageSquare
+  Trash2
 } from "lucide-react";
 
-import { changeOrganizationStatus } from "../../api/organizationApi";
+import { changeOrganizationStatus, deleteOrganization } from "../../api/organizationApi";
 import { getOrganizationModules } from "../../api/organizationModulesApi";
 import LoadingSpinner from "../common/LoadingSpinner";
 import Alert from "../common/Alert";
@@ -30,12 +34,13 @@ const API_BASE_URL =
 /* Main Modal                                                          */
 /* ------------------------------------------------------------------ */
 
-const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
+const OrganizationDetailsModal = ({ isOpen, onClose, organization, onOrganizationDeleted }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [organizationModules, setOrganizationModules] = useState([]);
   const [isLoadingModules, setIsLoadingModules] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [alert, setAlert] = useState({
     show: false,
     type: "",
@@ -62,14 +67,20 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
     
     setIsLoadingModules(true);
     try {
+      console.log('[OrganizationDetailsModal] Fetching modules for:', organization.organizationUuid);
       const response = await getOrganizationModules(organization.organizationUuid);
+      console.log('[OrganizationDetailsModal] API Response:', response);
+      
       if (response?.success && Array.isArray(response.data)) {
+        console.log('[OrganizationDetailsModal] Modules data:', response.data);
+        console.log('[OrganizationDetailsModal] First module structure:', response.data[0]);
         setOrganizationModules(response.data);
       } else {
+        console.log('[OrganizationDetailsModal] Invalid response or empty data');
         setOrganizationModules([]);
       }
     } catch (error) {
-      console.error('Failed to fetch organization modules:', error);
+      console.error('[OrganizationDetailsModal] Failed to fetch organization modules:', error);
       setOrganizationModules([]);
       setAlert({
         show: true,
@@ -118,6 +129,44 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
       setIsProcessing(false);
     }
   }, [organization, selectedStatus, onClose]);
+
+  const handleDeleteOrganization = useCallback(async () => {
+    if (!organization) return;
+
+    setIsProcessing(true);
+    try {
+      const response = await deleteOrganization(organization.organizationUuid);
+
+      if (response?.success) {
+        setAlert({
+          show: true,
+          type: "success",
+          message: "Organization deleted successfully"
+        });
+
+        // Call the parent callback to refresh the list
+        if (onOrganizationDeleted) {
+          onOrganizationDeleted();
+        }
+
+        setTimeout(() => {
+          setShowDeleteConfirm(false);
+          onClose();
+        }, 1500);
+      } else {
+        throw new Error(response?.message || "Failed to delete organization");
+      }
+    } catch (error) {
+      setAlert({
+        show: true,
+        type: "error",
+        message: error.message || "Failed to delete organization"
+      });
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [organization, onClose, onOrganizationDeleted]);
 
   const getDocumentUrl = useCallback((documentPath) => {
     if (!documentPath) return null;
@@ -199,15 +248,53 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
     []
   );
 
+  // Helper functions for module icons
+  const getModuleIconElement = (moduleKey) => {
+    const iconMap = {
+      'moduleQrAttendanceMarking': Zap,
+      'moduleFaceRecognitionAttendanceMarking': UserCheck,
+      'moduleEmployeeFeedback': MessageSquare,
+      'moduleHiringManagement': Briefcase,
+      'modulePerformanceReviews': TrendingUp,
+    };
+    return iconMap[moduleKey] || Package;
+  };
+
+  const getModuleColor = (moduleKey, enabled) => {
+    if (!enabled) return 'text-gray-400';
+    const colorMap = {
+      'moduleQrAttendanceMarking': 'text-blue-600',
+      'moduleFaceRecognitionAttendanceMarking': 'text-purple-600',
+      'moduleEmployeeFeedback': 'text-green-600',
+      'moduleHiringManagement': 'text-orange-600',
+      'modulePerformanceReviews': 'text-indigo-600',
+    };
+    return colorMap[moduleKey] || 'text-gray-500';
+  };
+
   const selectedModules = useMemo(() => {
     // Use organization_modules data if available, otherwise fall back to flags
+    console.log('[OrganizationDetailsModal] Computing selectedModules, organizationModules:', organizationModules);
+    
     if (organizationModules && organizationModules.length > 0) {
-      return organizationModules.map(om => ({
-        name: om.extendedModule?.name || 'Unknown Module',
-        enabled: om.isEnabled,
-        icon: getModuleIcon(om.extendedModule?.moduleKey || ''),
-        iconElement: getModuleIconElement(om.extendedModule?.moduleKey || '')
-      }));
+      const mapped = organizationModules.map(om => {
+        const moduleKey = om.extendedModule?.moduleKey || '';
+        console.log('[OrganizationDetailsModal] Mapping module:', {
+          moduleName: om.extendedModule?.name,
+          moduleKey: moduleKey,
+          isEnabled: om.isEnabled,
+          fullModule: om
+        });
+        const IconComponent = getModuleIconElement(moduleKey);
+        return {
+          name: om.extendedModule?.name || 'Unknown Module',
+          enabled: om.isEnabled,
+          iconElement: IconComponent,
+          color: getModuleColor(moduleKey, om.isEnabled)
+        };
+      });
+      console.log('[OrganizationDetailsModal] Mapped modules:', mapped);
+      return mapped;
     }
     
     // Fallback to legacy module flags
@@ -217,50 +304,29 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
       {
         name: "QR Code Attendance",
         enabled: organization.moduleQrAttendanceMarking,
-        icon: "📱",
-        iconElement: TrendingUp
+        iconElement: Zap,
+        color: organization.moduleQrAttendanceMarking ? 'text-blue-600' : 'text-gray-400'
       },
       {
         name: "Face Recognition Attendance",
         enabled: organization.moduleFaceRecognitionAttendanceMarking,
-        icon: "👤",
-        iconElement: UserPlus
+        iconElement: UserCheck,
+        color: organization.moduleFaceRecognitionAttendanceMarking ? 'text-purple-600' : 'text-gray-400'
       },
       {
         name: "Employee Feedback",
         enabled: organization.moduleEmployeeFeedback,
-        icon: "💬",
-        iconElement: MessageSquare
+        iconElement: MessageSquare,
+        color: organization.moduleEmployeeFeedback ? 'text-green-600' : 'text-gray-400'
       },
       {
         name: "Hiring Management",
         enabled: organization.moduleHiringManagement,
-        icon: "🎯",
-        iconElement: Users
+        iconElement: Briefcase,
+        color: organization.moduleHiringManagement ? 'text-orange-600' : 'text-gray-400'
       }
     ];
   }, [organization, organizationModules]);
-
-  // Helper functions for module icons
-  const getModuleIcon = (moduleKey) => {
-    const iconMap = {
-      'qr_attendance': '📱',
-      'face_recognition': '👤',
-      'employee_feedback': '💬',
-      'hiring_management': '🎯',
-    };
-    return iconMap[moduleKey] || '📦';
-  };
-
-  const getModuleIconElement = (moduleKey) => {
-    const iconMap = {
-      'qr_attendance': TrendingUp,
-      'face_recognition': UserPlus,
-      'employee_feedback': MessageSquare,
-      'hiring_management': Users,
-    };
-    return iconMap[moduleKey] || Shield;
-  };
 
   if (!isOpen || !organization) return null;
 
@@ -406,7 +472,16 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-end">
+        <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={isProcessing}
+            className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 size={18} />
+            Delete Organization
+          </button>
+
           <button
             onClick={onClose}
             className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-white transition-colors font-medium text-gray-700"
@@ -415,6 +490,55 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
           </button>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <AlertCircle className="text-red-600" size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Confirm Deletion</h3>
+            </div>
+
+            <p className="text-gray-600 mb-2">
+              Are you sure you want to permanently delete <span className="font-semibold text-gray-900">{organization?.name}</span>?
+            </p>
+            
+            <p className="text-sm text-red-600 mb-6">
+              This action cannot be undone. All data including users, employees, and modules will be permanently deleted.
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteOrganization}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={18} />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -435,24 +559,30 @@ const InfoCard = ({ icon: Icon, label, value, iconColor = "text-gray-500" }) => 
   </div>
 );
 
-const ModuleCard = ({ module }) => (
-  <div
-    className={`border rounded-lg p-3 flex items-center gap-3 transition-all ${
-      module.enabled
-        ? "bg-green-50 border-green-200 hover:shadow-md"
-        : "bg-gray-50 border-gray-200 hover:border-gray-300"
-    }`}
-  >
-    <span className="text-2xl">{module.icon}</span>
-    <span className={`flex-1 font-medium ${module.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
-      {module.name}
-    </span>
-    {module.enabled ? (
-      <CheckCircle className="text-green-600 shrink-0" size={18} />
-    ) : (
-      <XCircle className="text-gray-400 shrink-0" size={18} />
-    )}
-  </div>
-);
+const ModuleCard = ({ module }) => {
+  const IconComponent = module.iconElement || Package;
+  
+  return (
+    <div
+      className={`border rounded-lg p-3 flex items-center gap-3 transition-all ${
+        module.enabled
+          ? "bg-green-50 border-green-200 hover:shadow-md"
+          : "bg-gray-50 border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      <div className={`p-2 rounded-lg ${module.enabled ? 'bg-white' : 'bg-gray-100'}`}>
+        <IconComponent className={module.color} size={20} />
+      </div>
+      <span className={`flex-1 font-medium ${module.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+        {module.name}
+      </span>
+      {module.enabled ? (
+        <CheckCircle className="text-green-600 shrink-0" size={18} />
+      ) : (
+        <XCircle className="text-gray-400 shrink-0" size={18} />
+      )}
+    </div>
+  );
+};
 
 export default OrganizationDetailsModal;

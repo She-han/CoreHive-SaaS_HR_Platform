@@ -40,6 +40,17 @@ public class OrganizationModuleService {
             List<OrganizationModule> modules = organizationModuleRepository.findByOrganizationUuid(organizationUuid);
 
             log.info("Found {} modules for organization: {}", modules.size(), organizationUuid);
+            
+            // Log each module details for debugging
+            for (OrganizationModule module : modules) {
+                log.info("Module: id={}, enabled={}, moduleName={}, moduleKey={}", 
+                    module.getId(),
+                    module.getIsEnabled(),
+                    module.getExtendedModule() != null ? module.getExtendedModule().getName() : "NULL",
+                    module.getExtendedModule() != null ? module.getExtendedModule().getModuleKey() : "NULL"
+                );
+            }
+            
             return ApiResponse.success("Organization modules retrieved successfully", modules);
 
         } catch (Exception e) {

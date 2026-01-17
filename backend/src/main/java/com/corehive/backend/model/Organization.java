@@ -51,6 +51,9 @@ public class Organization {
     @Column(name = "billing_plan", length = 100)
     private String billingPlan;
 
+    @Column(name = "billing_price_per_user_per_month", precision = 10, scale = 2)
+    private java.math.BigDecimal billingPricePerUserPerMonth;
+
     // Module flags
     @Column(name = "module_qr_attendance_marking")
     private Boolean moduleQrAttendanceMarking = false;

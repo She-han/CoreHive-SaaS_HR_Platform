@@ -537,6 +537,8 @@ public class OrganizationService {
                 .employeeCountRange(org.getEmployeeCountRange())
                 .plan(org.getBillingPlan() != null ? org.getBillingPlan() : "Starter")
                 .billing(calculateBilling(org.getBillingPlan()))
+                .billingPrice(org.getBillingPricePerUserPerMonth() != null ? 
+                    org.getBillingPricePerUserPerMonth().doubleValue() : null)
                 .createdAt(org.getCreatedAt())
                 .userCount(userCount)
                 .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
@@ -602,6 +604,44 @@ public class OrganizationService {
         } catch (Exception e) {
             log.error("Error updating employee with email: {}", email, e);
             return ApiResponse.error("Failed to update profile: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Permanently delete an organization and all related data
+     * Only accessible by System Admin
+     */
+    @Transactional
+    public ApiResponse<String> deleteOrganization(String organizationUuid) {
+        try {
+            log.info("Attempting to delete organization: {}", organizationUuid);
+
+            Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
+
+            // Delete all users associated with this organization
+            List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
+            if (!users.isEmpty()) {
+                appUserRepository.deleteAll(users);
+                log.info("Deleted {} users for organization: {}", users.size(), organizationUuid);
+            }
+
+            // Delete all employees associated with this organization
+            List<Employee> employees = employeeRepository.findByOrganizationUuid(organizationUuid);
+            if (!employees.isEmpty()) {
+                employeeRepository.deleteAll(employees);
+                log.info("Deleted {} employees for organization: {}", employees.size(), organizationUuid);
+            }
+
+            // Delete the organization
+            organizationRepository.delete(organization);
+            log.info("Successfully deleted organization: {} ({})", organization.getName(), organizationUuid);
+
+            return ApiResponse.success("Organization deleted successfully", null);
+
+        } catch (Exception e) {
+            log.error("Error deleting organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to delete organization: " + e.getMessage());
         }
     }
 

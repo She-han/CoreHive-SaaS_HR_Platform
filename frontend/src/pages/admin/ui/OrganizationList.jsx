@@ -70,7 +70,7 @@ const OrganizationRow = memo(({ org, onViewDetails }) => (
     </td>
 
     <td className="text-center">
-      {org.billing || "$0/mo"}
+      {org.billingPrice ? `$${org.billingPrice.toFixed(2)}/user/mo` : (org.billing || "$0/mo")}
     </td>
 
     <td className="text-center">
@@ -287,6 +287,9 @@ export default function OrganizationList() {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         organization={selectedOrg}
+        onOrganizationDeleted={() => {
+          fetchOrganizations();
+        }}
       />
     </>
   );

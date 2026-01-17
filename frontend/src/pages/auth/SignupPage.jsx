@@ -345,6 +345,7 @@ const handleSubmit = async (e) => {
     // Add billing plan information
     signupFormData.append('selectedPlanId', formData.selectedPlanId);
     signupFormData.append('selectedPlanName', formData.selectedPlanName);
+    signupFormData.append('selectedPlanPrice', formData.selectedPlanPrice);
     
     // Add custom modules if custom plan
     if (formData.selectedPlanName.toLowerCase() === 'custom') {

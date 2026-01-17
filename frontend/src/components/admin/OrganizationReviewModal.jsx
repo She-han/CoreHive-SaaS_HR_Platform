@@ -18,7 +18,9 @@ import {
   AlertCircle,
   Download,
   Eye,
-  ExternalLink
+  ExternalLink,
+  CreditCard,
+  Package
 } from 'lucide-react';
 
 import Modal from '../common/Modal';
@@ -54,12 +56,16 @@ const OrganizationReviewModal = ({
     
     setIsLoadingModules(true);
     try {
+      console.log('[OrganizationReviewModal] Fetching modules for:', organization.organizationUuid);
       const response = await getOrganizationModules(organization.organizationUuid);
+      console.log('[OrganizationReviewModal] API Response:', response);
+      
       if (response.success) {
+        console.log('[OrganizationReviewModal] Modules data:', response.data);
         setOrganizationModules(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch organization modules:', error);
+      console.error('[OrganizationReviewModal] Failed to fetch organization modules:', error);
       setOrganizationModules([]);
     } finally {
       setIsLoadingModules(false);
@@ -271,15 +277,52 @@ const OrganizationReviewModal = ({
     }
   }), []);
 
+  // Helper function to get icon based on module key
+  const getModuleIcon = (moduleKey) => {
+    const iconMap = {
+      'moduleQrAttendanceMarking': TrendingUp,
+      'moduleFaceRecognitionAttendanceMarking': UserPlus,
+      'moduleEmployeeFeedback': MessageSquare,
+      'moduleHiringManagement': Users,
+      'modulePerformanceReviews': Shield,
+    };
+    return iconMap[moduleKey] || Package;
+  };
+
+  // Helper function to get color based on module key
+  const getModuleColor = (moduleKey) => {
+    const colorMap = {
+      'moduleQrAttendanceMarking': 'text-purple-500',
+      'moduleFaceRecognitionAttendanceMarking': 'text-blue-500',
+      'moduleEmployeeFeedback': 'text-green-500',
+      'moduleHiringManagement': 'text-orange-500',
+      'modulePerformanceReviews': 'text-indigo-500',
+    };
+    return colorMap[moduleKey] || 'text-gray-500';
+  };
+
   const selectedModules = useMemo(() => {
     // Use organization_modules data if available, otherwise fall back to flags
+    console.log('[OrganizationReviewModal] Computing selectedModules, organizationModules:', organizationModules);
+    
     if (organizationModules && organizationModules.length > 0) {
-      return organizationModules.map(om => ({
-        name: om.extendedModule?.name || 'Unknown Module',
-        icon: getModuleIcon(om.extendedModule?.moduleKey || ''),
-        enabled: om.isEnabled,
-        color: getModuleColor(om.extendedModule?.moduleKey || '')
-      }));
+      const mapped = organizationModules.map(om => {
+        const moduleKey = om.extendedModule?.moduleKey || '';
+        console.log('[OrganizationReviewModal] Mapping module:', {
+          moduleName: om.extendedModule?.name,
+          moduleKey: moduleKey,
+          isEnabled: om.isEnabled,
+          fullModule: om
+        });
+        return {
+          name: om.extendedModule?.name || 'Unknown Module',
+          icon: getModuleIcon(moduleKey),
+          enabled: om.isEnabled,
+          color: getModuleColor(moduleKey)
+        };
+      });
+      console.log('[OrganizationReviewModal] Mapped modules:', mapped);
+      return mapped;
     }
     
     // Fallback to legacy module flags
@@ -311,28 +354,6 @@ const OrganizationReviewModal = ({
       }
     ];
   }, [organization, organizationModules]);
-
-  // Helper function to get icon based on module key
-  const getModuleIcon = (moduleKey) => {
-    const iconMap = {
-      'qr_attendance': TrendingUp,
-      'face_recognition': UserPlus,
-      'employee_feedback': MessageSquare,
-      'hiring_management': Users,
-    };
-    return iconMap[moduleKey] || Shield;
-  };
-
-  // Helper function to get color based on module key
-  const getModuleColor = (moduleKey) => {
-    const colorMap = {
-      'qr_attendance': 'text-purple-500',
-      'face_recognition': 'text-blue-500',
-      'employee_feedback': 'text-green-500',
-      'hiring_management': 'text-orange-500',
-    };
-    return colorMap[moduleKey] || 'text-gray-500';
-  };
 
   const enabledModulesCount = useMemo(() => 
     selectedModules.filter(m => m.enabled).length,

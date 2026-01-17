@@ -41,6 +41,7 @@ public class OrganizationSignupRequest {
     // Billing plan selection
     private Long selectedPlanId;
     private String selectedPlanName;
+    private Double selectedPlanPrice;
     
     // Custom modules (comma-separated IDs or JSON string)
     private String customModules;

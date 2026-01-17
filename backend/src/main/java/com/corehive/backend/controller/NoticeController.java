@@ -11,7 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/orgs/notices")
+@RequestMapping("/api/notices")
 @CrossOrigin(origins = "*")
 public class NoticeController {
 

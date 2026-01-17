@@ -62,6 +62,7 @@ import EditSurveyQuestions from './components/hrstaff/feedBackManagement/EditSur
 import AttendanceMarking from './pages/manualAttendanceMarking/AttendanceMarking';
 import LeaveManagement from './pages/hrstaff/LeaveManagement/LeaveManagement';
 import PayRollManagement from './pages/hrstaff/payRollManagement/PayRollManagement';
+import NoticeManagement from './pages/hrstaff/noticeManagement/NoticeManagement';
 
 // Employee Pages
 import EmployeeProfile from './pages/employee/EmployeeProfile';
@@ -314,6 +315,7 @@ const HRStaffRoutes = () => {
         <Route path="feedback/:id/edit" element={<EditSurveyQuestions />} />
         <Route path="leavemanagement" element={<LeaveManagement />} />
         <Route path="payrollmanagement" element={<PayRollManagement />} />
+        <Route path="noticemanagement" element={<NoticeManagement />} />
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>

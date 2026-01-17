@@ -252,7 +252,14 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: ChartBarIcon,
             path: '/hr_staff/hrreportingmanagement',
             current: location.pathname.startsWith('/hr_staff/hrreportingmanagement')
+          },
+          {
+            name: 'Notice Management',
+            icon: BellIcon,
+            path: '/hr_staff/noticemanagement',
+            current: location.pathname.startsWith('/hr_staff/noticemanagement')
           }
+
 
         ];
 

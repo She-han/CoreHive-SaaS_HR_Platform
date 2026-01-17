@@ -6,14 +6,8 @@ import {
   BarChart3,
   MessageSquare,
   Briefcase,
+  Bell
 } from "lucide-react"; // ✅ importing icons
-import EmployeeManagement from "../../pages/hrstaff/EmployeeManagement.jsx";
-import LeaveManagement from "../../pages/hrstaff/LeaveManagement.jsx";
-import HiringManagement from "../../pages/hrstaff/HiringManagement.jsx";
-import HRReportingManagement from "../../pages/hrstaff/HRReportingManagement.jsx";
-import FeedBackManagement from "../../pages/hrstaff/feedBackManagement/FeedBackManagement.jsx";
-import AttendanceManagement from "../../pages/AttendaceManagement/AttendanceManagement.jsx";
-import Dashboard from "../../pages/hrstaff/HRDashboard.jsx";
 
 export default function Sidebar() {
   return (
@@ -68,7 +62,7 @@ export default function Sidebar() {
         {/* HR Reporting */}
         <NavLink
           to="/hr_staff/HRReportingManagement"
-         className={({ isActive }) =>
+          className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
             }`
@@ -77,6 +71,20 @@ export default function Sidebar() {
           <BarChart3 className="w-5 h-5" />
           HR Reporting
         </NavLink>
+
+        {/* Notice Management */}
+        <NavLink
+          to="/hr_staff/NoticeManagement"
+          className={({ isActive }) =>
+            `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+              isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
+            }`
+          }
+        >
+          <Bell className="w-5 h-5" />
+          Notice Management
+        </NavLink>
+
 
         {/* Employee Feedback */}
         <NavLink

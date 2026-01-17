@@ -47,9 +47,9 @@ public class Notice {
     @Column(
             name = "priority",
             nullable = false,
-            columnDefinition = "ENUM('LOW','NORMAL','HIGH') DEFAULT 'NORMAL'"
+            columnDefinition = "ENUM('LOW','MEDIUM','HIGH') DEFAULT 'MEDIUM'"
     )
-    private Priority priority = Priority.NORMAL;
+    private Priority priority = Priority.MEDIUM;
 
     /* =========================
        PUBLISH / EXPIRY
@@ -98,7 +98,7 @@ public class Notice {
        ========================= */
     public enum Priority {
         LOW,
-        NORMAL,
+        MEDIUM,
         HIGH
     }
 

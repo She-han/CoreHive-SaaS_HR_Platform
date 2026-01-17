@@ -1,7 +1,7 @@
 import { FaPlus } from "react-icons/fa";
 import { useState } from "react";
 import NoticeGrid from "../../../components/hrstaff/noticemanagement/NoticeGrid";
-import AddNoticeModal from "../../../components/hrstaff/noticemanagement/AddNoticeModal";
+import NoticeFormModal from "../../../components/hrstaff/noticemanagement/NoticeFormModal";
 
 export default function NoticeManagement() {
   const [openModal, setOpenModal] = useState(false);
@@ -37,8 +37,9 @@ export default function NoticeManagement() {
       </div>
 
       {/* Modal */}
-      <AddNoticeModal
+      <NoticeFormModal
         isOpen={openModal}
+        mode="create"
         onClose={() => setOpenModal(false)}
         onSuccess={() => setRefreshKey((k) => k + 1)}
       />

@@ -29,7 +29,7 @@ public class QrCodeUtil {
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
 
             // Reduce white border around QR
-            hints.put(EncodeHintType.MARGIN, 1);
+            hints.put(EncodeHintType.MARGIN, 6);
 
             // ----------------------------------------
             // Step 2: Encode text into QR BitMatrix

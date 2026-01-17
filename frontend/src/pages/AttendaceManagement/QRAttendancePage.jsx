@@ -23,10 +23,10 @@ const API_BASE =
 // ================= TEST QR TOKEN =================
 // 🔴 INTERNAL TESTING ONLY
 // 🚨 PRODUCTION: REMOVE THIS
-const TEST_QR_TOKEN =
- "eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25VdWlkIjoib3JnLXV1aWQtMDAxIiwicXJUeXBlIjoiUEVSTUFORU5UX0FUVEVOREFOQ0UiLCJlbXBsb3llZUlkIjoyNzIsInN1YiI6IkVNUExPWUVFX1FSIiwiaWF0IjoxNzY4MTQ0MDQxfQ.IC-8DSJQKAtfeO2RGD016-PCX_bInZJ5s0q_TLJ5fik";
+// const TEST_QR_TOKEN =
+//  "eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25VdWlkIjoiNGJmOGQxNWUtNGVmNS00MmM5LTkyM2QtZTBhYTFhMDM0NWI2IiwicXJUeXBlIjoiUEVSTUFORU5UX0FUVEVOREFOQ0UiLCJlbXBsb3llZUlkIjo4LCJzdWIiOiJFTVBMT1lFRV9RUiIsImlhdCI6MTc2ODY0Njk5MX0.eZ68MhBMt20JNo3JOCW95rMeyvhsCXT04-wPZr-zyME";
 
-// ================= HELPERS =================
+// // ================= HELPERS =================
 const getAuthToken = () =>
   localStorage.getItem("corehive_token") ||
   sessionStorage.getItem("corehive_token");
@@ -46,6 +46,17 @@ const QrAttendanceMarking = () => {
     fetchTodayAttendance();
   }, []);
 
+  // Cleanup camera on unmount
+useEffect(() => {
+  return () => {
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(() => {});
+      scannerRef.current.clear().catch(() => {});
+    }
+  };
+}, []);
+
+
   const fetchTodayAttendance = async () => {
     const token = getAuthToken();
     if (!token) return;
@@ -64,33 +75,57 @@ const QrAttendanceMarking = () => {
 
   // ================= START =================
   const startScanning = async () => {
-    if (isScanning) return;
+  if (isScanning) return;
 
-    setResult(null);
-    scannedOnceRef.current = false;
-    setIsScanning(true);
+  setResult(null);
+  scannedOnceRef.current = false;
+  setIsScanning(true);
 
-    // 🔴 TEST MODE (HIDDEN)
-    submitQr(TEST_QR_TOKEN);
+  const html5QrCode = new Html5Qrcode("qr-reader");
+  scannerRef.current = html5QrCode;
 
-    /**
-     * 🚨 PRODUCTION:
-     * Replace above line with Html5Qrcode.start(...)
-     */
-  };
+  try {
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 15, qrbox: { width: 250, height: 250 } },
+      async (decodedText) => {
+        if (scannedOnceRef.current) return;
+
+        scannedOnceRef.current = true;
+
+        await html5QrCode.stop();
+        await html5QrCode.clear();
+        scannerRef.current = null;
+        setIsScanning(false);
+
+        submitQr(decodedText); // ✅ JWT goes to backend
+      },
+      () => {} // silent scan errors
+    );
+  } catch (err) {
+    console.error("Camera start failed", err);
+    setIsScanning(false);
+  }
+};
+
 
   // ================= STOP =================
-  const stopScanning = async () => {
-    try {
-      if (scannerRef.current) {
-        await scannerRef.current.stop();
-        await scannerRef.current.clear();
-      }
-    } catch {}
+const stopScanning = async () => {
+  try {
+    if (scannerRef.current) {
+      await scannerRef.current.stop();
+      await scannerRef.current.clear();
+    }
+  } catch (e) {
+    console.warn("Stop scan failed", e);
+  }
 
-    scannerRef.current = null;
-    setIsScanning(false);
-  };
+  scannedOnceRef.current = false;
+  scannerRef.current = null;
+  setIsScanning(false);
+};
+
+
 
   // ================= SUBMIT QR =================
   const submitQr = async (qrToken) => {
@@ -206,7 +241,7 @@ const QrAttendanceMarking = () => {
 
           <div className="relative bg-black h-[420px] rounded-lg flex items-center justify-center">
             {/* 🚨 PRODUCTION: ENABLE QR READER */}
-            {/* <div id="qr-reader" className="w-full h-full" /> */}
+            <div id="qr-reader" className="w-full h-full" />
 
             {result && (
               <div className={`absolute inset-0 flex items-center justify-center ${

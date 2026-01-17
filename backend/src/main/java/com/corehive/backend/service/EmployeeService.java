@@ -561,8 +561,8 @@ public class EmployeeService {
         // Generate QR image (PNG)
         return QrCodeUtil.generateQrImage(
                 employee.getQrToken(),
-                600,
-                600
+                1000,
+                1000
         );
     }
 }

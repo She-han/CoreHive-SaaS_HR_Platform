@@ -14,6 +14,7 @@ import {
 
 import { getAllOrganizations } from "../../../api/organizationApi";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import Alert from "../../../components/common/Alert";
 import OrganizationDetailsModal from "../../../components/admin/OrganizationDetailsModal";
 
 /* ---------------------------------- */
@@ -108,6 +109,11 @@ export default function OrganizationList() {
   const [totalElements, setTotalElements] = useState(0);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alert, setAlert] = useState({
+    show: false,
+    type: "",
+    message: ""
+  });
 
   const pageSize = 10;
 
@@ -148,6 +154,22 @@ export default function OrganizationList() {
     fetchOrganizations();
   }, [fetchOrganizations]);
 
+  const handleDeleteSuccess = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedOrg(null);
+    setAlert({
+      show: true,
+      type: "success",
+      message: "Organization deleted successfully"
+    });
+    fetchOrganizations();
+    
+    // Auto-hide alert after 3 seconds
+    setTimeout(() => {
+      setAlert({ show: false, type: "", message: "" });
+    }, 3000);
+  }, [fetchOrganizations]);
+
   const filteredData = organizations.filter((org) => {
     const matchesSearch =
       org.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -171,6 +193,13 @@ export default function OrganizationList() {
 
   return (
     <>
+      {/* Success/Error Alert */}
+      {alert.show && (
+        <div className="mb-4">
+          <Alert {...alert} onClose={() => setAlert({ ...alert, show: false })} />
+        </div>
+      )}
+
       <div className="p-6 bg-white rounded-xl shadow">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -287,9 +316,7 @@ export default function OrganizationList() {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         organization={selectedOrg}
-        onOrganizationDeleted={() => {
-          fetchOrganizations();
-        }}
+        onOrganizationDeleted={handleDeleteSuccess}
       />
     </>
   );

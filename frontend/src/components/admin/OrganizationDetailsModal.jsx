@@ -138,21 +138,14 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization, onOrganizatio
       const response = await deleteOrganization(organization.organizationUuid);
 
       if (response?.success) {
-        setAlert({
-          show: true,
-          type: "success",
-          message: "Organization deleted successfully"
-        });
-
-        // Call the parent callback to refresh the list
+        // Close both modals immediately
+        setShowDeleteConfirm(false);
+        onClose();
+        
+        // Call the parent callback to show success alert and refresh
         if (onOrganizationDeleted) {
           onOrganizationDeleted();
         }
-
-        setTimeout(() => {
-          setShowDeleteConfirm(false);
-          onClose();
-        }, 1500);
       } else {
         throw new Error(response?.message || "Failed to delete organization");
       }

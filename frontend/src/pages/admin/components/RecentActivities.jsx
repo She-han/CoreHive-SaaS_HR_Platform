@@ -183,7 +183,7 @@ const RecentActivities = () => {
       .then((response) => setLogs(response.data))
       .catch((error) => console.error("Error fetching logs:", error));
   }, [token]);
-
+{/* styles for serverity */}
   const getSeverityStyles = (severity) => {
     const s = severity ? severity.toLowerCase() : "info";
     switch (s) {

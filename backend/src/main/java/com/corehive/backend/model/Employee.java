@@ -78,7 +78,7 @@ public class Employee {
         @Column(name = "leave_count")
         private Integer leaveCount = 0;
 
-        @Column(name = "qr_token", length = 600, unique = true)
+        @Column(name = "qr_token", length = 64, unique = true)
         private String qrToken;
 
 

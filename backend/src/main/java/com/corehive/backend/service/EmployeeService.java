@@ -15,6 +15,7 @@ import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import com.corehive.backend.util.JwtUtil;
 import com.corehive.backend.util.QrCodeUtil;
+import com.corehive.backend.util.RandomTokenUtil;
 import com.corehive.backend.util.mappers.EmployeeMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -546,23 +547,25 @@ public class EmployeeService {
     }
 
     //*****************************************//
-    //Download the Employee QR
+    //Generate permanent QR
     //*****************************************//
-    public byte[] downloadEmployeeQr(String orgUuid, Long employeeId) {
+    @Transactional
+    public String generatePermanentQr(Long employeeId, String orgUuid) {
 
         Employee employee = employeeRepository
                 .findByIdAndOrganizationUuid(employeeId, orgUuid)
                 .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
 
-        if (employee.getQrToken() == null) {
-            throw new IllegalStateException("QR not generated for employee");
+        if (employee.getQrToken() != null) {
+            return employee.getQrToken(); // already generated
         }
 
-        // Generate QR image (PNG)
-        return QrCodeUtil.generateQrImage(
-                employee.getQrToken(),
-                1000,
-                1000
-        );
+        String qrToken = RandomTokenUtil.generateEmployeeQrToken();
+
+        employee.setQrToken(qrToken);
+        employeeRepository.save(employee);
+
+        return qrToken;
     }
+
 }

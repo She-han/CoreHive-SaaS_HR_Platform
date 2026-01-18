@@ -6,12 +6,14 @@ import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
+import com.corehive.backend.util.QrCodeUtil;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -219,26 +221,17 @@ public class EmployeeController {
     //*****************************************//
     //Download the Employee QR
     //*****************************************//
-    @GetMapping("/{id}/qr")
+    @GetMapping(value = "/{employeeId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<byte[]> downloadEmployeeQr(
-            HttpServletRequest request,
-            @PathVariable Long id
+    public byte[] downloadEmployeeQr(
+            @PathVariable Long employeeId,
+            HttpServletRequest request
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
-
-        byte[] qrImage = employeeService.downloadEmployeeQr(orgUuid, id);
-
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=employee-qr.png")
-                .header("Content-Type", "image/png")
-                .body(qrImage);
-
-//        return new ResponseEntity<>(
-//                new StandardResponse(200, "Get total Active employees count successfully", activeTotalEmployee),
-//                HttpStatus.OK
-//        );
+        String qrToken = employeeService.generatePermanentQr(employeeId, orgUuid);
+        return QrCodeUtil.generateQrImage(qrToken);
     }
+
 
 
 }

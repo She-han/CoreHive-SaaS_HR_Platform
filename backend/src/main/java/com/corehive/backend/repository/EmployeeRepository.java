@@ -220,4 +220,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 """)
     List<Object[]> yearlyEmployeeGrowth(String orgUuid, int year);
 
+    Optional<Object> findByQrToken(String qrToken);
 }

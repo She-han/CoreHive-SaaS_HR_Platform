@@ -779,36 +779,20 @@ public class AttendanceService {
             String deviceInfo
     ) throws BadRequestException {
 
-        // 1️⃣ Parse QR safely
-        Claims claims;
-        try {
-            claims = jwtUtil.extractQrClaims(qrToken);
-        } catch (Exception e) {
-            throw new BadRequestException("Invalid QR code");
-        }
+        // 1️⃣ Resolve employee using SHORT QR token
+        Employee employee = (Employee) employeeRepository
+                .findByQrToken(qrToken)
+                .orElseThrow(() -> new BadRequestException("Invalid QR"));
 
-        Long employeeId = claims.get("employeeId", Long.class);
-        String orgUuid = claims.get("organizationUuid", String.class);
-        String qrType = claims.get("qrType", String.class);
-
-        if (employeeId == null || orgUuid == null) {
-            throw new BadRequestException("Malformed QR code");
-        }
-
-        if (!"PERMANENT_ATTENDANCE".equals(qrType)) {
-            throw new BadRequestException("Wrong QR type");
-        }
-
-        // 2️⃣ Validate employee
-        Employee emp = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new BadRequestException("Employee not found"));
-
-        if (!Boolean.TRUE.equals(emp.getIsActive())) {
+        if (!Boolean.TRUE.equals(employee.getIsActive())) {
             throw new BadRequestException("Employee inactive");
         }
 
+        Long employeeId = employee.getId();
+        String orgUuid = employee.getOrganizationUuid();
         LocalDate today = LocalDate.now();
 
+        // 2️⃣ Check existing attendance for today
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndOrganizationUuidAndAttendanceDate(
                         employeeId, orgUuid, today
@@ -817,7 +801,7 @@ public class AttendanceService {
 
         String action;
 
-        // 3️⃣ FIRST SCAN → CHECK-IN
+        // ================= FIRST SCAN → CHECK-IN =================
         if (attendance == null) {
 
             attendance = Attendance.builder()
@@ -825,52 +809,47 @@ public class AttendanceService {
                     .organizationUuid(orgUuid)
                     .attendanceDate(today)
                     .checkInTime(LocalDateTime.now())
-                    .status(AttendanceStatus.PRESENT)
-                    .verificationType(VerificationType.QR_CODE)
+                    .status(Attendance.AttendanceStatus.PRESENT)   // ✅ REQUIRED
+                    .verificationType(Attendance.VerificationType.QR_CODE)
                     .ipAddress(ip)
                     .deviceInfo(deviceInfo)
                     .build();
 
             attendanceRepository.save(attendance);
             action = "CHECK_IN";
-
         }
 
-        // 4️⃣ SECOND SCAN → CHECK-OUT
+        // ================= SECOND SCAN → CHECK-OUT =================
         else if (attendance.getCheckOutTime() == null) {
 
             attendance.setCheckOutTime(LocalDateTime.now());
+            attendance.setVerificationType(Attendance.VerificationType.QR_CODE);
             attendance.setIpAddress(ip);
             attendance.setDeviceInfo(deviceInfo);
 
             attendanceRepository.save(attendance);
             action = "CHECK_OUT";
-
         }
 
-        // 5️⃣ THIRD SCAN → ALREADY COMPLETED (SAFE)
+        // ================= THIRD SCAN → SAFE NO-OP =================
         else {
             action = "ALREADY_COMPLETED";
         }
 
-        // 6️⃣ RETURN DTO (VERY IMPORTANT)
+        // 3️⃣ Response
         return QrAttendanceResponse.builder()
                 .employeeId(employeeId)
                 .attendanceDate(today)
-                .checkInTime(attendance.getCheckInTime())
-                .checkOutTime(attendance.getCheckOutTime())
-                .completed(attendance.isComplete())
                 .action(action)
                 .message(
                         switch (action) {
                             case "CHECK_IN" -> "Check-in successful";
                             case "CHECK_OUT" -> "Check-out successful";
-                            default -> "Check-in and Check-out already completed for today";
+                            default -> "Attendance already completed for today";
                         }
                 )
                 .build();
     }
-
 
 
 }

@@ -17,8 +17,8 @@ public class QrCodeUtil {
     public static byte[] generateQrImage(String text) {
         try {
             Map<EncodeHintType, Object> hints = new HashMap<>();
-            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
-            hints.put(EncodeHintType.MARGIN, 4);
+            hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M); //Medium error correction (best for short tokens)
+            hints.put(EncodeHintType.MARGIN, 4); //White border around QR → better camera recognition
 
             BitMatrix matrix = new MultiFormatWriter().encode(
                     text,

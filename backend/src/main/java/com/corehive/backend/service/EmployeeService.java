@@ -114,6 +114,16 @@ public class EmployeeService {
      * 4. Generate employee code ONLY ONCE
      * 5. Fail fast on invalid data
      */
+    /**
+     * Create a new employee
+     *
+     * IMPORTANT DESIGN RULES USED HERE:
+     * 1. Validate EVERYTHING before starting DB writes
+     * 2. Never return success before transaction commit
+     * 3. Never swallow exceptions inside @Transactional
+     * 4. Generate employee code ONLY ONCE
+     * 5. Fail fast on invalid data
+     */
     @Transactional
     public ApiResponse<EmployeeResponseDTO> createEmployee(
             String organizationUuid,
@@ -253,21 +263,6 @@ public class EmployeeService {
         savedUser.setLinkedEmployeeId(savedEmployee.getId());
         appUserRepository.save(savedUser);
 
-
-        /* -------------------------------------------------
-         * 9️⃣.5️⃣ Generate & store PERMANENT QR token
-         * (Printed QR for daily attendance)
-         * ------------------------------------------------- */
-        String permanentQrToken = jwtUtil.generateQrToken(
-                savedEmployee.getId(),
-                organizationUuid
-        );
-
-        savedEmployee.setQrToken(permanentQrToken);
-        employeeRepository.save(savedEmployee);
-
-        log.info("Permanent QR generated for employee id={}", savedEmployee.getId());
-
         /* -------------------------------------------------
          * 🔟 Build response AFTER successful persistence
          * ------------------------------------------------- */
@@ -279,6 +274,7 @@ public class EmployeeService {
                 responseDto
         );
     }
+
 
 
     //************************************************//

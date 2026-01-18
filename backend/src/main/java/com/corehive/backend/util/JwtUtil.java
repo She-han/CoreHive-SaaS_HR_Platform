@@ -154,49 +154,4 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    /**
-     * Extract employeeId from QR token
-     */
-    public Long extractEmployeeIdFromQr(String token) {
-        Claims claims = extractAllClaims(token);
-
-        Object employeeIdObj = claims.get("employeeId");
-        if (employeeIdObj instanceof Number) {
-            return ((Number) employeeIdObj).longValue();
-        }
-
-        throw new IllegalArgumentException("Invalid QR: employeeId missing");
-    }
-
-    // Read QR token safely
-    public Claims extractQrClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-
-    /**
-     * Generate QR attendance token (NOT a login token)
-     * QR have JWT signature , so can not produce fake Qr
-     */
-    public String generateQrToken(
-            Long employeeId,
-            String organizationUuid
-    ) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("employeeId", employeeId);
-        claims.put("organizationUuid", organizationUuid);
-        claims.put("qrType", "PERMANENT_ATTENDANCE");
-
-        return Jwts.builder()
-                .claims(claims)
-                .subject("EMPLOYEE_QR")
-                .issuedAt(new Date())
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
 }

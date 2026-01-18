@@ -2,6 +2,7 @@ import React from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
 import RecentActivities from './components/RecentActivities';
 
+{/* color themes for statcards */}
 const THEME = {
   primary: "#02C39A",
   secondary: "#05668D",

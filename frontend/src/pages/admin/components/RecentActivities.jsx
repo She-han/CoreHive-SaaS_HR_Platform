@@ -207,7 +207,7 @@ const RecentActivities = () => {
         ))}
       </div>
 
-      {/* Table Section */}
+      {/* Table Sections */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b">
           <div>

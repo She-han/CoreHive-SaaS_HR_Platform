@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   motion,
@@ -18,7 +18,8 @@ import {
   Shield, 
   Clock, 
   Zap,
-  Star
+  Star,
+  Package
 } from 'lucide-react';
 
 import Marquee from '../components/common/Marquee';
@@ -26,6 +27,8 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { getAllBillingPlans } from '../api/billingPlansApi';
+import { getActiveModules } from '../api/extendedModulesApi';
 
 /**
  * HomePage Component
@@ -34,6 +37,37 @@ import Footer from '../components/layout/Footer';
  */
 const HomePage = () => {
   const prefersReducedMotion = useReducedMotion();
+  const [pricingPlans, setPricingPlans] = useState([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+  const [availableModules, setAvailableModules] = useState([]);
+  
+  // Fetch billing plans and modules on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingPlans(true);
+        
+        // Fetch plans and modules in parallel
+        const [plansData, modulesResponse] = await Promise.all([
+          getAllBillingPlans(),
+          getActiveModules().catch(() => ({ success: false, data: [] }))
+        ]);
+        
+        setPricingPlans(plansData || []);
+        
+        // Set modules if fetch was successful
+        if (modulesResponse.success && Array.isArray(modulesResponse.data)) {
+          setAvailableModules(modulesResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setPricingPlans([]);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    };
+    fetchData();
+  }, []);
   
   // 3D Tilt Card Configuration
   const ROTATION_RANGE = 32.5;
@@ -330,10 +364,14 @@ const HomePage = () => {
 
   FeatureCard.displayName = 'FeatureCard';
   
-  // Pricing Card Component
-  const PricingCard = React.memo(({ plan, index }) => {
+  // Pricing Card Component - Matching SignupPage.jsx UI
+  const PricingCard = React.memo(({ plan, index, availableModules }) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-50px" });
+
+    const getModuleById = (moduleId) => {
+      return availableModules.find(m => m.moduleId === moduleId);
+    };
 
     return (
       <motion.div
@@ -342,84 +380,90 @@ const HomePage = () => {
         initial="hidden"
         animate={isInView ? "visible" : "hidden"}
         transition={{ delay: index * 0.15 }}
-        whileHover={{ 
-          scale: prefersReducedMotion ? 1 : 1.03,
-          transition: { type: "spring", stiffness: 300 }
-        }}
       >
-        <Card 
-          className={`text-center relative h-full ${
-            plan.popular 
-              ? 'ring-2 ring-[#02C39A] shadow-xl' 
-              : 'hover:shadow-lg'
-          } transition-all duration-300`}
-          role="article"
-          aria-label={`${plan.name} pricing plan`}
+        <div
+          className={`relative border-2 rounded-xl p-6 transition-all duration-200 h-full flex flex-col hover:shadow-lg ${
+            plan.popular
+              ? 'ring-1 ring-emerald-500 border-primary-500 shadow-lg'
+              : 'border-gray-200 hover:border-primary-300 shadow-lg'
+          }`}
         >
-          <AnimatePresence>
-            {plan.popular && (
-              <motion.div 
-                className="absolute -top-3 left-1/2 transform -translate-x-1/2"
-                initial={{ scale: 0, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              >
-                <span className="bg-[#02C39A] text-white px-4 py-1 rounded-full text-sm font-medium shadow-lg">
-                  Most Popular
-                </span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-text-primary mb-2">
+          {/* Popular badge */}
+          {plan.popular && (
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+              <span className="bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                Most Popular
+              </span>
+            </div>
+          )}
+
+          {/* Plan header */}
+          <div className="text-center mb-4">
+            <h3 className="text-xl font-bold text-text-primary mb-2">
               {plan.name}
             </h3>
-            <p className="text-text-secondary mb-4">
+            <p className="text-sm text-text-secondary mb-4">
               {plan.description}
             </p>
-            <div className="flex items-baseline justify-center">
-              <motion.span 
-                className="text-4xl font-bold text-text-primary"
-                initial={{ scale: 0.8 }}
-                animate={isInView ? { scale: 1 } : { scale: 0.8 }}
-                transition={{ type: "spring", stiffness: 200, delay: index * 0.15 + 0.2 }}
-              >
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-3xl font-bold text-text-primary">
                 LKR {plan.price}
-              </motion.span>
-              <span className="text-text-secondary ml-1">
-                {plan.period}
               </span>
             </div>
             <p className="text-sm text-text-secondary mt-2">
-              {plan.employees}
+              {plan.period}
             </p>
           </div>
-          
-          <ul className="space-y-3 mb-8 text-left">
-            {plan.features.map((feature, featureIndex) => (
-              <motion.li 
-                key={featureIndex} 
-                className="flex items-center text-text-primary"
-                initial={{ opacity: 0, x: -20 }}
-                animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
-                transition={{ delay: index * 0.15 + featureIndex * 0.05 }}
-              >
-                <CheckCircle className="w-5 h-5 text-[#1ED292] mr-3 flex-shrink-0" aria-hidden="true" />
-                <span>{feature}</span>
-              </motion.li>
+
+          {/* Features list */}
+          <div className="space-y-2 mb-4 border-t border-gray-200 pt-4 mt-4 flex-grow">
+            <h4 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1">
+              Basic Features
+            </h4>
+            {plan.features.map((feature, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                <span className="text-sm text-text-primary">{feature}</span>
+              </div>
             ))}
-          </ul>
-          
-          <Button 
-            variant={plan.popular ? "primary" : "outline"}
-            size="lg"
-            className="w-full"
-            aria-label={`Get started with ${plan.name} plan`}
-          >
-            {plan.name === 'Enterprise' ? 'Contact Sales' : 'Get Started'}
-          </Button>
-        </Card>
+          </div>
+
+          {/* Extended Modules list */}
+          {plan.moduleIds && plan.moduleIds.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1">
+                Extended Features ({plan.moduleIds.length})
+              </h4>
+              <div className="space-y-2.5">
+                {plan.moduleIds.map((moduleId, idx) => {
+                  const module = getModuleById(moduleId);
+                  return module ? (
+                    <div key={idx} className="flex gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                      <span className="text-sm text-text-primary">{module.name}</span>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Get Started Button - Aligned to bottom */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <Link to="/signup" className="block">
+              <Button
+                variant={plan.popular ? "primary" : "outline"}
+                size="lg"
+                className="w-full"
+                icon={ArrowRight}
+                iconPosition="right"
+                aria-label={`Get started with ${plan.name} plan`}
+              >
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </div>
       </motion.div>
     );
   });
@@ -515,59 +559,6 @@ const HomePage = () => {
       icon: Zap,
       title: 'Easy to Use',
       description: 'Intuitive interface designed specifically for Sri Lankan SMEs'
-    }
-  ];
-
-  // Pricing tiers
-  const pricingPlans = [
-    {
-      name: 'Starter',
-      price: '2,500',
-      period: '/month',
-      description: 'Perfect for small teams getting started',
-      employees: 'Up to 25 employees',
-      features: [
-        'Employee Management',
-        'Basic Payroll',
-        'Leave Management',
-        'Attendance Tracking',
-        'Basic Reports',
-        'Email Support'
-      ],
-      popular: false
-    },
-    {
-      name: 'Professional',
-      price: '5,500',
-      period: '/month',
-      description: 'Ideal for growing businesses',
-      employees: 'Up to 100 employees',
-      features: [
-        'All Starter features',
-        'Advanced Payroll',
-        'Performance Tracking',
-        'Employee Feedback',
-        'Advanced Analytics',
-        'Priority Support',
-        'API Access'
-      ],
-      popular: true
-    },
-    {
-      name: 'Enterprise',
-      price: 'Custom',
-      period: '',
-      description: 'For large organizations',
-      employees: 'Unlimited employees',
-      features: [
-        'All Professional features',
-        'Hiring Management',
-        'Custom Integrations',
-        'Advanced Security',
-        'Dedicated Support',
-        'Training & Onboarding'
-      ],
-      popular: false
     }
   ];
 
@@ -815,11 +806,21 @@ const HomePage = () => {
             </p>
           </motion.div>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
-              <PricingCard key={index} plan={plan} index={index} />
-            ))}
-          </div>
+          {isLoadingPlans ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : pricingPlans.length > 0 ? (
+            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-4">
+              {pricingPlans.map((plan, index) => (
+                <PricingCard key={plan.id || index} plan={plan} index={index} availableModules={availableModules} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <p>No pricing plans available at the moment.</p>
+            </div>
+          )}
         </div>
       </AnimatedSection>
 

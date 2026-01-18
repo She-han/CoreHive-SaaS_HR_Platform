@@ -19,7 +19,9 @@ import {
   MessageSquare,
   Briefcase,
   TrendingUp,
-  Trash2
+  Trash2,
+  FileDown,
+  Download
 } from "lucide-react";
 
 import { changeOrganizationStatus, deleteOrganization } from "../../api/organizationApi";
@@ -399,6 +401,53 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization, onOrganizatio
               iconColor="text-orange-600"
             />
           </div>
+
+          {/* Business Registration Document */}
+          {organization.businessRegistrationDocument && (
+            <div className="bg-white rounded-xl p-5 border border-gray-200">
+              <h3 className="font-semibold mb-4 flex items-center gap-2 text-gray-900">
+                <FileText size={18} className="text-blue-600" />
+                Business Registration Document
+              </h3>
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 bg-blue-100 rounded-lg shrink-0">
+                      <FileDown className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {organization.businessRegistrationDocument.split('/').pop().replace(/%2F/g, '/')}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Business Registration Certificate
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={() => handleViewDocument(organization.businessRegistrationDocument)}
+                      disabled={isLoadingDoc}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition text-sm font-medium shadow-sm hover:shadow-md disabled:cursor-not-allowed"
+                    >
+                      {isLoadingDoc ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={16} />
+                          View
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Modules Section */}
           <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">

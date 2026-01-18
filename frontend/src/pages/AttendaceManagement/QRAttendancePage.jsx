@@ -140,6 +140,13 @@ const QrAttendanceMarking = () => {
   const checkInList = todayAttendance.filter(a => a.checkInTime);
   const checkOutList = todayAttendance.filter(a => a.checkOutTime);
 
+
+  // ================= DOWNLOAD QR STATES =================
+const [searchTerm, setSearchTerm] = useState("");
+const [employees, setEmployees] = useState([]);
+const [loadingEmployees, setLoadingEmployees] = useState(false);
+
+
   return (
     <div className="w-full min-h-screen flex flex-col p-6 lg:p-10 bg-[#F1FDF9] text-[#333333]">
       

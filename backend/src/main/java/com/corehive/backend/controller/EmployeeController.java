@@ -219,18 +219,25 @@ public class EmployeeController {
     }
 
     //*****************************************//
-    //Download the Employee QR
-    //*****************************************//
-    @GetMapping(value = "/{employeeId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
+// Download Employee QR by Employee Code
+//*****************************************//
+    @GetMapping(
+            value = "/qr/by-code/{employeeCode}",
+            produces = MediaType.IMAGE_PNG_VALUE
+    )
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public byte[] downloadEmployeeQr(
-            @PathVariable Long employeeId,
+    public byte[] downloadEmployeeQrByEmployeeCode(
+            @PathVariable String employeeCode,
             HttpServletRequest request
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
-        String qrToken = employeeService.generatePermanentQr(employeeId, orgUuid);
+
+        String qrToken = employeeService
+                .generatePermanentQrByEmployeeCode(employeeCode, orgUuid);
+
         return QrCodeUtil.generateQrImage(qrToken);
     }
+
 
 
 

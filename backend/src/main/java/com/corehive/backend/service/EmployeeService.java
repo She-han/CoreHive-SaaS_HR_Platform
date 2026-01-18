@@ -546,16 +546,23 @@ public class EmployeeService {
     //Generate permanent QR
     //*****************************************//
     @Transactional
-    public String generatePermanentQr(Long employeeId, String orgUuid) {
+    public String generatePermanentQrByEmployeeCode(
+            String employeeCode,
+            String orgUuid
+    ) {
 
         Employee employee = employeeRepository
-                .findByIdAndOrganizationUuid(employeeId, orgUuid)
-                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
+                .findByEmployeeCodeAndOrganizationUuid(employeeCode, orgUuid)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException("Employee not found with code: " + employeeCode)
+                );
 
+        // If QR already exists, reuse it
         if (employee.getQrToken() != null) {
-            return employee.getQrToken(); // already generated
+            return employee.getQrToken();
         }
 
+        // Generate new permanent QR token
         String qrToken = RandomTokenUtil.generateEmployeeQrToken();
 
         employee.setQrToken(qrToken);
@@ -563,5 +570,6 @@ public class EmployeeService {
 
         return qrToken;
     }
+
 
 }

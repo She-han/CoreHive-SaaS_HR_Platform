@@ -517,7 +517,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingApprovals.slice(0, 4).map((org) => (
+                    {pendingApprovals.slice(0, 2).map((org) => (
                       <PendingApprovalItem 
                         key={org.organizationUuid} 
                         org={org} 

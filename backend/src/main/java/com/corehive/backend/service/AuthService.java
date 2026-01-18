@@ -10,17 +10,20 @@ import com.corehive.backend.model.*;
 import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import com.corehive.backend.repository.SystemUserRepository;
+import com.corehive.backend.repository.ExtendedModuleRepository;
+import com.corehive.backend.repository.OrganizationModuleRepository;
+import com.corehive.backend.repository.BillingPlanRepository;
 import com.corehive.backend.util.JwtUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.time.LocalDateTime;
 
 /**
  * Authentication Service
@@ -39,6 +42,10 @@ public class AuthService {
     private final JwtUtil jwtUtil; // For JWT operations
     private final EmailService emailService;
     private final FileStorageService fileStorageService;
+    private final ExtendedModuleRepository extendedModuleRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final BillingPlanRepository billingPlanRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * Organization Registration (Company Signup)
@@ -84,6 +91,9 @@ public class AuthService {
                     .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
                     .status(OrganizationStatus.PENDING_APPROVAL)
+                    .billingPlan(request.getSelectedPlanName()) // Store selected plan
+                    .billingPricePerUserPerMonth(request.getSelectedPlanPrice() != null ? 
+                        java.math.BigDecimal.valueOf(request.getSelectedPlanPrice()) : null)
                     .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
                     .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
@@ -92,6 +102,86 @@ public class AuthService {
                     .build();
 
             organizationRepository.save(organization);
+
+            // Handle extended modules - either from selected billing plan or custom plan
+            List<Long> moduleIdsToAssign = new ArrayList<>();
+            
+            // Priority 1: Check if user selected custom modules (Custom Plan flow)
+            if (request.getCustomModules() != null && !request.getCustomModules().isEmpty()) {
+                try {
+                    log.info("Processing custom modules: {}", request.getCustomModules());
+                    
+                    // Parse the customModules JSON string to List<Long>
+                    moduleIdsToAssign = objectMapper.readValue(
+                        request.getCustomModules(), 
+                        new TypeReference<List<Long>>(){}
+                    );
+                    
+                    log.info("Parsed custom module IDs: {}", moduleIdsToAssign);
+                } catch (Exception e) {
+                    log.error("Error parsing custom modules", e);
+                }
+            }
+            // Priority 2: If no custom modules, check if a billing plan was selected
+            else if (request.getSelectedPlanId() != null) {
+                try {
+                    log.info("Fetching modules from billing plan ID: {}", request.getSelectedPlanId());
+                    
+                    Optional<BillingPlan> planOpt = billingPlanRepository.findById(request.getSelectedPlanId());
+                    if (planOpt.isPresent()) {
+                        BillingPlan plan = planOpt.get();
+                        if (plan.getModuleIds() != null && !plan.getModuleIds().isEmpty()) {
+                            moduleIdsToAssign = new ArrayList<>(plan.getModuleIds());
+                            log.info("Found {} modules in billing plan '{}': {}", 
+                                    moduleIdsToAssign.size(), plan.getName(), moduleIdsToAssign);
+                        } else {
+                            log.info("Billing plan '{}' has no extended modules", plan.getName());
+                        }
+                    } else {
+                        log.warn("Billing plan with ID {} not found", request.getSelectedPlanId());
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching billing plan modules", e);
+                }
+            }
+            
+            // Assign modules to organization if any were found
+            if (!moduleIdsToAssign.isEmpty()) {
+                try {
+                    log.info("Assigning {} modules to organization {}", moduleIdsToAssign.size(), organization.getName());
+                    
+                    for (Long moduleId : moduleIdsToAssign) {
+                        Optional<ExtendedModule> moduleOpt = extendedModuleRepository.findById(moduleId);
+                        
+                        if (moduleOpt.isPresent()) {
+                            ExtendedModule module = moduleOpt.get();
+                            
+                            OrganizationModule orgModule = OrganizationModule.builder()
+                                    .organization(organization)
+                                    .extendedModule(module)
+                                    .isEnabled(true)
+                                    .subscribedAt(LocalDateTime.now())
+                                    .build();
+                            
+                            organizationModuleRepository.save(orgModule);
+                            log.info("Added module '{}' to organization '{}'", module.getName(), organization.getName());
+                        } else {
+                            log.warn("Module with ID {} not found", moduleId);
+                        }
+                    }
+                    
+                    // Mark modules as configured
+                    organization.setModulesConfigured(true);
+                    organizationRepository.save(organization);
+                    log.info("Organization modules configured successfully");
+                    
+                } catch (Exception e) {
+                    log.error("Error assigning modules to organization", e);
+                    // Continue with registration even if module assignment fails
+                }
+            } else {
+                log.info("No extended modules to assign for organization {}", organization.getName());
+            }
 
             // Create ORG_ADMIN user
             String tempPassword = generateTemporaryPassword();

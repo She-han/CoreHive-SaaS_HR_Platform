@@ -42,6 +42,11 @@ public class BillingPlan {
     @Column(name = "feature")
     private List<String> features = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "plan_modules", joinColumns = @JoinColumn(name = "billing_plan_id"))
+    @Column(name = "module_id")
+    private List<Long> moduleIds = new ArrayList<>();
+
     @Column(nullable = false)
     private boolean popular = false;
 

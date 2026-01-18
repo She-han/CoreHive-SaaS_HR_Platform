@@ -63,6 +63,7 @@ public class BillingPlanService {
         plan.setDescription(planDTO.getDescription());
         plan.setEmployees(planDTO.getEmployees());
         plan.setFeatures(planDTO.getFeatures());
+        plan.setModuleIds(planDTO.getModuleIds());
         plan.setPopular(planDTO.isPopular());
         plan.setActive(planDTO.isActive());
 
@@ -92,6 +93,7 @@ public class BillingPlanService {
                 plan.getDescription(),
                 plan.getEmployees(),
                 plan.getFeatures(),
+                plan.getModuleIds(),
                 plan.isPopular(),
                 plan.isActive()
         );
@@ -105,6 +107,7 @@ public class BillingPlanService {
         plan.setDescription(dto.getDescription());
         plan.setEmployees(dto.getEmployees());
         plan.setFeatures(dto.getFeatures());
+        plan.setModuleIds(dto.getModuleIds());
         plan.setPopular(dto.isPopular());
         plan.setActive(dto.isActive());
         return plan;

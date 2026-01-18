@@ -183,7 +183,9 @@ const RecentActivities = () => {
       .then((response) => setLogs(response.data))
       .catch((error) => console.error("Error fetching logs:", error));
   }, [token]);
-{/* styles for serverity */}
+  {
+    /* styles for serverity */
+  }
   const getSeverityStyles = (severity) => {
     const s = severity ? severity.toLowerCase() : "info";
     switch (s) {
@@ -241,14 +243,15 @@ const RecentActivities = () => {
                 <option value="Critical">Critical</option>
               </select>
             </div>
-            <button 
-            onClick={() => exportToPDF(filteredLogs, "Recent_Activities")}
-            className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+            <button
+              onClick={() => exportToPDF(filteredLogs, "Recent_Activities")}
+              className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
               <Download className="h-4 w-4" /> Export
             </button>
           </div>
         </div>
-
+        {/* Table details */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-gray-50 text-gray-600 text-xs uppercase font-semibold">

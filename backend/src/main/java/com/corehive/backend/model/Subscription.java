@@ -103,12 +103,3 @@ public class Subscription {
         return planPrice.multiply(BigDecimal.valueOf(activeUserCount));
     }
 }
-
-// Enums
-enum BillingCycle {
-    MONTHLY, YEARLY
-}
-
-enum SubscriptionStatus {
-    TRIAL, ACTIVE, PAST_DUE, CANCELED, SUSPENDED
-}

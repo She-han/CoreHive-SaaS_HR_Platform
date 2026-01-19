@@ -254,10 +254,7 @@ public class EmployeeService {
         EmployeeResponseDTO responseDto =
                 employeeMapper.toDto(savedEmployee);
 
-        return ApiResponse.success(
-                "Employee created successfully",
-                responseDto
-        );
+        return ApiResponse.success(responseDto, "Employee created successfully");
     }
 
 
@@ -367,7 +364,7 @@ public class EmployeeService {
 //
 //            log.info("Employee created successfully with ID: {}", savedEmployee.getId());
 //            EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
-//            return ApiResponse.success("Employee created successfully", dto);
+//            return ApiResponse.success(dto, "Employee created successfully");
 //
 //
 //        } catch (Exception e) {
@@ -549,7 +546,7 @@ public class EmployeeService {
 
             log.info("Employee updated successfully with ID: {}", id);
             EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
-            return ApiResponse.success("Employee updated successfully", dto);
+            return ApiResponse.success(dto, "Employee updated successfully");
 
 
         } catch (Exception e) {
@@ -631,7 +628,7 @@ public class EmployeeService {
 
             Employee employee = employeeOpt.get();
             log.info("Employee profile retrieved successfully for: {}", email);
-            return ApiResponse.success("Employee profile retrieved successfully", employee);
+            return ApiResponse.success(employee, "Employee profile retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching employee with email: {}", email, e);
@@ -665,7 +662,7 @@ public class EmployeeService {
             Employee savedEmployee = employeeRepository.save(employee);
 
             log.info("Employee profile updated successfully for: {}", email);
-            return ApiResponse.success("Profile updated successfully", savedEmployee);
+            return ApiResponse.success(savedEmployee, "Profile updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating employee with email: {}", email, e);

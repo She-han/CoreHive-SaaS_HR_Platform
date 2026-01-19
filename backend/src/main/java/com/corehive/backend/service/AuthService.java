@@ -7,12 +7,7 @@ import com.corehive.backend.dto.request.OrganizationSignupRequest;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.LoginResponse;
 import com.corehive.backend.model.*;
-import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.OrganizationRepository;
-import com.corehive.backend.repository.SystemUserRepository;
-import com.corehive.backend.repository.ExtendedModuleRepository;
-import com.corehive.backend.repository.OrganizationModuleRepository;
-import com.corehive.backend.repository.BillingPlanRepository;
+import com.corehive.backend.repository.*;
 import com.corehive.backend.util.JwtUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +41,7 @@ public class AuthService {
     private final OrganizationModuleRepository organizationModuleRepository;
     private final BillingPlanRepository billingPlanRepository;
     private final ObjectMapper objectMapper;
+    private final SubscriptionRepository subscriptionRepository;
 
     /**
      * Organization Registration (Company Signup)
@@ -202,7 +198,7 @@ public class AuthService {
             );
 
             log.info("Organization signup successful: {} (UUID: {})", request.getOrganizationName(), organizationUuid);
-            return ApiResponse.success("Organization registered successfully. Please wait for admin approval.", null);
+            return ApiResponse.success(null, "Organization registered successfully. Please wait for admin approval.");
 
         } catch (Exception e) {
             log.error("Organization signup failed", e);
@@ -215,31 +211,133 @@ public class AuthService {
      * @param request Email + Password
      * @return JWT token with user details or error message
      */
+
+    @Transactional
     public ApiResponse<LoginResponse> login(LoginRequest request) {
         try {
-            log.info("Login attempt for email: {}", request.getEmail());
+            String email = request.getEmail();
+            String password = request.getPassword();
 
-            // 1. Check if this is a System User (Platform Admin)
-            Optional<SystemUser> systemUser = systemUserRepository.findByEmail(request.getEmail());
+            log.info("Processing login for email: {}", email);
 
-            if (systemUser.isPresent()) {
-                return handleSystemUserLogin(systemUser.get(), request.getPassword());
+            // Try System Admin login first
+            Optional<SystemUser> systemUserOpt = systemUserRepository.findByEmail(email);
+            if (systemUserOpt.isPresent()) {
+                SystemUser systemUser = systemUserOpt.get();
+
+                if (!passwordEncoder.matches(password, systemUser.getPasswordHash())) {
+                    log.warn("Invalid password for system admin: {}", email);
+                    return ApiResponse.error("Invalid email or password");
+                }
+
+                if (!systemUser.getIsActive()) {
+                    return ApiResponse.error("Account is deactivated");
+                }
+
+                // Build user details map for JWT
+                Map<String, Object> userDetails = new HashMap<>();
+                userDetails.put("userId", systemUser.getId());
+                userDetails.put("email", email);
+                userDetails.put("role", "SYS_ADMIN");
+
+                String token = jwtUtil.generateToken(userDetails, "SYSTEM");
+
+                LoginResponse response = LoginResponse.builder()
+                        .token(token)
+                        .email(email)
+                        .role("SYS_ADMIN")
+                        .userType("SYSTEM")
+                        .isPasswordChangeRequired(systemUser.getIsPasswordChangeRequired() != null ? systemUser.getIsPasswordChangeRequired() : false)
+                        .build();
+
+                log.info("System admin login successful: {}", email);
+                return ApiResponse.success(response, "Login successful");
             }
 
-            // 2. Check if this is an App User (Organization User)
-            Optional<AppUser> appUser = appUserRepository.findByEmail(request.getEmail());
+            // Try Organization User login
+            Optional<AppUser> appUserOpt = appUserRepository.findByEmail(email);
+            if (appUserOpt.isPresent()) {
+                AppUser appUser = appUserOpt.get();
 
-            if (appUser.isPresent()) {
-                return handleAppUserLogin(appUser.get(), request.getPassword());
+                if (!passwordEncoder.matches(password, appUser.getPasswordHash())) {
+                    log.warn("Invalid password for app user: {}", email);
+                    return ApiResponse.error("Invalid email or password");
+                }
+
+                if (!appUser.getIsActive()) {
+                    return ApiResponse.error("Account is deactivated");
+                }
+
+                // Get organization
+                Organization organization = organizationRepository
+                        .findByOrganizationUuid(appUser.getOrganizationUuid())
+                        .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+                // ⭐ NEW: Check subscription status
+                boolean requiresPayment = false;
+                boolean hasActiveSubscription = false;
+
+                if (organization.getStatus() == OrganizationStatus.PENDING_APPROVAL) {
+                    return ApiResponse.error("Your organization is pending approval");
+                }
+
+                // 🚧 TESTING MODE: Payment check temporarily disabled
+                // TODO: Re-enable this check after testing payment gateway
+                /*
+                // Check if organization needs payment setup
+                Optional<Subscription> subscriptionOpt = subscriptionRepository
+                        .findByOrganizationUuid(organization.getOrganizationUuid());
+
+                if (subscriptionOpt.isEmpty()) {
+                    // No subscription exists - require payment
+                    requiresPayment = true;
+                    log.info("Organization requires payment setup: {}", organization.getOrganizationUuid());
+                } else {
+                    Subscription subscription = subscriptionOpt.get();
+                    hasActiveSubscription = subscription.isActive();
+
+                    if (!hasActiveSubscription) {
+                        requiresPayment = true;
+                        log.info("Subscription inactive - payment required");
+                    }
+                }
+                */
+
+                // Generate JWT token
+                Map<String, Object> userDetails = new HashMap<>();
+                userDetails.put("userId", appUser.getId());
+                userDetails.put("email", email);
+                userDetails.put("role", appUser.getRole().name());
+                userDetails.put("organizationUuid", appUser.getOrganizationUuid());
+
+                String token = jwtUtil.generateToken(userDetails, "ORG_USER");
+
+                // Build response
+                LoginResponse response = LoginResponse.builder()
+                        .token(token)
+                        .email(email)
+                        .role(appUser.getRole().name())
+                        .userType("ORG_USER")
+                        .organizationUuid(appUser.getOrganizationUuid())
+                        .organizationName(organization.getName())
+                        .isPasswordChangeRequired(appUser.getIsPasswordChangeRequired())
+                        .modulesConfigured(organization.getModulesConfigured())
+                        .requiresPayment(requiresPayment) // ⭐ NEW FIELD
+                        .hasActiveSubscription(hasActiveSubscription) // ⭐ NEW FIELD
+                        .build();
+
+                log.info("Organization user login successful: {} (Status: {}, Payment Required: {})",
+                        email, organization.getStatus(), requiresPayment);
+
+                return ApiResponse.success(response, "Login successful");
             }
 
-            // 3. User not found
-            log.warn("Login failed - user not found: {}", request.getEmail());
+            log.warn("No user found with email: {}", email);
             return ApiResponse.error("Invalid email or password");
 
         } catch (Exception e) {
-            log.error("Error during login for email: {}", request.getEmail(), e);
-            return ApiResponse.error("Login failed. Please try again.");
+            log.error("Login error", e);
+            return ApiResponse.error("An error occurred during login");
         }
     }
 
@@ -273,7 +371,7 @@ public class AuthService {
             emailService.sendForgotPasswordEmail(email, tempPassword);
 
             log.info("Password reset successfully for: {}", email);
-            return ApiResponse.success("A temporary password has been sent to your email.", null);
+            return ApiResponse.success(null, "A temporary password has been sent to your email.");
 
         } catch (Exception e) {
             log.error("Error during password reset", e);
@@ -310,17 +408,18 @@ public class AuthService {
                 .token(token)
                 .userId(systemUser.getId())
                 .email(systemUser.getEmail())
-                .userType("SYSTEM_ADMIN")
+                .userType("SYSTEM")
                 .role(systemUser.getRole())
                 .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
                 .modulesConfigured(true) // System admin -> no modules
-
+                .requiresPayment(false)
+                .hasActiveSubscription(true)
                 .moduleConfig(null)
                 .build();
 
         log.info("System user login successful: {}", systemUser.getEmail());
-        return ApiResponse.success("Login successful", response);
+        return ApiResponse.success(response, "Login successful");
     }
 
 
@@ -392,7 +491,7 @@ public class AuthService {
                 .build();
 
         log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
-        return ApiResponse.success("Login successful", response);
+        return ApiResponse.success(response, "Login successful");
     }
 
     @Transactional
@@ -411,7 +510,7 @@ public class AuthService {
 
             appUserRepository.save(user);
 
-            return ApiResponse.success("Password changed successfully", null);
+            return ApiResponse.success(null, "Password changed successfully");
         } catch (Exception e) {
             log.error("Error changing password", e);
             return ApiResponse.error("Failed to change password");
@@ -464,7 +563,7 @@ public class AuthService {
             organizationRepository.save(organization);
 
             log.info("Modules configured successfully for organization: {}", organizationUuid);
-            return ApiResponse.success("Modules configured successfully", null);
+            return ApiResponse.success(null, "Modules configured successfully");
 
         } catch (Exception e) {
             log.error("Error configuring modules for organization: {}", organizationUuid, e);
@@ -545,15 +644,17 @@ public class AuthService {
                 .token(token)
                 .userId(user.getId())
                 .email(user.getEmail())
-                .userType("SYSTEM_ADMIN")
+                .userType("SYSTEM")
                 .role(user.getRole())
                 .organizationUuid(null)
                 .organizationName(null)
                 .modulesConfigured(true)
+                .requiresPayment(false)
+                .hasActiveSubscription(true)
                 .moduleConfig(null)
                 .build();
 
-        return ApiResponse.success("User details retrieved", response);
+        return ApiResponse.success(response, "User details retrieved");
     }
 
     /**
@@ -589,6 +690,6 @@ public class AuthService {
                 .moduleConfig(moduleConfig)
                 .build();
 
-        return ApiResponse.success("User details retrieved", response);
+        return ApiResponse.success(response, "User details retrieved");
     }
 }

@@ -140,7 +140,7 @@ public class EmployeeController {
         String organizationUuid = (String) request.getAttribute("organizationUuid");
         try {
             String code = employeeService.generateEmployeeCode(organizationUuid);
-            return ResponseEntity.ok(ApiResponse.success("Next employee code generated successfully", code));
+            return ResponseEntity.ok(ApiResponse.success(code, "Next employee code generated successfully"));
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Unable to generate employee code"));
         }

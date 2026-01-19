@@ -79,7 +79,7 @@ public class DesignationService {
             designation.setName(request.getName());
 
             Designation updatedDesignation = designationRepository.save(designation);
-            return ApiResponse.success("Designation updated successfully", updatedDesignation);
+            return ApiResponse.success(updatedDesignation, "Designation updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating designation", e);
@@ -106,7 +106,7 @@ public class DesignationService {
             }
 
             designationRepository.delete(designation);
-            return ApiResponse.success("Designation deleted successfully", null);
+            return ApiResponse.success(null, "Designation deleted successfully");
 
         } catch (Exception e) {
             log.error("Error deleting designation", e);

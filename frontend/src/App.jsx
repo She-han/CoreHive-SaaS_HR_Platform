@@ -41,6 +41,11 @@ import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 import Reports from './pages/org_admin/Reports';
 import OrgSettings from './pages/org_admin/Settings';
 
+import PaymentGateway from './pages/payment/PaymentGateway';
+import PaymentSuccess from './pages/payment/PaymentSuccess';
+import PaymentCancel from './pages/payment/PaymentCancel';
+
+
 // HR Staff pages
 
 import HRDashboard from './pages/hrstaff/HRDashboard';
@@ -104,6 +109,16 @@ function App() {
                   } 
                 />
                 
+                {/* Payment routes 
+                <Route 
+                  path="/payment-gateway" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <PaymentGateway />
+                    </ProtectedRoute>
+                  } 
+                />*/}
+
                 {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route 
                   path="/configure-modules" 
@@ -128,7 +143,7 @@ function App() {
                 <Route 
                   path="/sys_admin/*" 
                   element={
-                    <ProtectedRoute requiredUserType="SYSTEM_ADMIN" requiredRole="SYS_ADMIN">
+                    <ProtectedRoute requiredUserType="SYSTEM" requiredRole="SYS_ADMIN">
                       <SystemAdminRoutes />
                     </ProtectedRoute>
                   } 
@@ -172,10 +187,17 @@ function App() {
                   } 
                 />
                 
-         {/*        {/* Error Routes 
-                <Route path="/unauthorized" element={<UnauthorizedPage />} />
-                <Route path="/404" element={<NotFoundPage />} />
-                <Route path="*" element={<Navigate to="/404" replace />} /> */}
+                {/* Error Routes */}
+                <Route path="/unauthorized" element={
+                  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center">
+                      <h1 className="text-4xl font-bold text-red-600 mb-4">Unauthorized</h1>
+                      <p className="text-gray-600 mb-4">You don't have permission to access this page.</p>
+                      <a href="/login" className="text-primary-500 hover:underline">Go to Login</a>
+                    </div>
+                  </div>
+                } />
+                <Route path="*" element={<Navigate to="/login" replace />} />
               </Routes>
             </main>
             
@@ -269,13 +291,16 @@ const SystemAdminRoutes = () => {
 const OrgAdminRoutes = () => {
   return (
     <Routes>
-      <Route path="dashboard" element={<OrgDashboard />} />
+     <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
      <Route path="designationmanagement" element={<DesignationManagement />} />
      <Route path="modules" element={<ModuleConfiguration />} />
      <Route path="reports" element={<Reports />} />
      <Route path="settings" element={<OrgSettings />} />
+     <Route path="payment-gateway" element={<PaymentGateway />} />
+     <Route path="/payment/success" element={<PaymentSuccess />} />
+     <Route path="/payment/cancel" element={<PaymentCancel />} />
      <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />
@@ -302,7 +327,7 @@ const HRStaffRoutes = () => {
         <Route path="LeaveManagement" element={<LeaveManagement />} /> 
         <Route path="AttendanceManagement" element={<AttendanceManagement />} /> 
         <Route path="HRReportingManagement" element={<HRReportingManagement />} /> 
-         <Route path="addjobform" element={<AddJobForm />} /> 
+        <Route path="addjobform" element={<AddJobForm />} /> 
         <Route path="editejobposting/:id" element={<EditeJobPosting />} />
         <Route path="FeedBackManagement" element={<FeedBackManagement />} /> 
         <Route path="HiringManagement" element={<HiringManagement />} /> 

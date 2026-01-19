@@ -92,12 +92,3 @@ public class PaymentTransaction {
     @JoinColumn(name = "subscription_id", insertable = false, updatable = false)
     private Subscription subscription;
 }
-
-// Enums
-enum TransactionType {
-    SUBSCRIPTION, RENEWAL, UPGRADE, REFUND
-}
-
-enum PaymentStatus {
-    PENDING, SUCCESS, FAILED, REFUNDED
-}

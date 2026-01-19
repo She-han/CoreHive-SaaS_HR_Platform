@@ -69,7 +69,7 @@ public class LeaveService {
             LeaveRequest savedRequest = leaveRepository.save(leaveRequest);
             log.info("Leave request submitted successfully with ID: {}", savedRequest.getId());
 
-            return ApiResponse.success("Leave request submitted successfully", mapToResponseDTO(savedRequest));
+            return ApiResponse.success(mapToResponseDTO(savedRequest), "Leave request submitted successfully");
 
         } catch (Exception e) {
             log.error("Error submitting leave request", e);
@@ -89,7 +89,7 @@ public class LeaveService {
                     .map(this::mapToResponseDTO)
                     .collect(Collectors.toList());
 
-            return ApiResponse.success("Leave requests retrieved successfully", responseDTOs);
+            return ApiResponse.success(responseDTOs, "Leave requests retrieved successfully");
         } catch (Exception e) {
             log.error("Error fetching leave requests for employee ID: {}", employeeId, e);
             return ApiResponse.error("Failed to retrieve leave requests");
@@ -108,7 +108,7 @@ public class LeaveService {
                     .map(this::mapToLeaveTypeDTO)
                     .collect(Collectors.toList());
 
-            return ApiResponse.success("Leave types retrieved successfully", responseDTOs);
+            return ApiResponse.success(responseDTOs, "Leave types retrieved successfully");
         } catch (Exception e) {
             log.error("Error fetching leave types", e);
             return ApiResponse.error("Failed to retrieve leave types");

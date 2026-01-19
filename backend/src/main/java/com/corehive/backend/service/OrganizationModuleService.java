@@ -51,7 +51,7 @@ public class OrganizationModuleService {
                 );
             }
             
-            return ApiResponse.success("Organization modules retrieved successfully", modules);
+            return ApiResponse.success(modules, "Organization modules retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching modules for organization: {}", organizationUuid, e);
@@ -69,7 +69,7 @@ public class OrganizationModuleService {
             List<OrganizationModule> modules = organizationModuleRepository.findEnabledByOrganizationUuid(organizationUuid);
 
             log.info("Found {} enabled modules for organization: {}", modules.size(), organizationUuid);
-            return ApiResponse.success("Enabled modules retrieved successfully", modules);
+            return ApiResponse.success(modules, "Enabled modules retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching enabled modules for organization: {}", organizationUuid, e);
@@ -124,7 +124,7 @@ public class OrganizationModuleService {
             updateOrganizationModuleFlag(organization, module.getModuleKey(), true);
 
             log.info("Organization {} successfully subscribed to module {}", organizationUuid, moduleId);
-            return ApiResponse.success("Successfully subscribed to module", saved);
+            return ApiResponse.success(saved, "Successfully subscribed to module");
 
         } catch (Exception e) {
             log.error("Error subscribing organization {} to module {}", organizationUuid, moduleId, e);
@@ -158,7 +158,7 @@ public class OrganizationModuleService {
                 updateOrganizationModuleFlag(organization, module.getModuleKey(), false);
 
                 log.info("Organization {} unsubscribed from module {}", organizationUuid, moduleId);
-                return ApiResponse.success("Successfully unsubscribed from module", null);
+                return ApiResponse.success(null, "Successfully unsubscribed from module");
             } else {
                 return ApiResponse.error("Organization is not subscribed to this module");
             }
@@ -226,7 +226,7 @@ public class OrganizationModuleService {
             }
 
             log.info("Successfully synced modules for organization: {}", organizationUuid);
-            return ApiResponse.success("Organization modules synced successfully", null);
+            return ApiResponse.success(null, "Organization modules synced successfully");
 
         } catch (Exception e) {
             log.error("Error syncing modules for organization: {}", organizationUuid, e);
@@ -285,7 +285,7 @@ public class OrganizationModuleService {
             List<OrganizationModule> subscriptions = organizationModuleRepository
                     .findByExtendedModuleIdAndEnabled(moduleId);
 
-            return ApiResponse.success("Subscription count retrieved", (long) subscriptions.size());
+            return ApiResponse.success((long) subscriptions.size(), "Subscription count retrieved");
 
         } catch (Exception e) {
             log.error("Error getting subscription count for module {}", moduleId, e);

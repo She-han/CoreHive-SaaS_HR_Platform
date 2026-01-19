@@ -170,6 +170,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname === '/org_admin/dashboard'
           },
           {
+            name: 'Payment Gateway',
+            icon: DollarSign,
+            path: '/org_admin/payment-gateway',
+            current: location.pathname === '/org_admin/payment-gateway',
+            testingMode: true
+          },
+          {
             name: 'HR Staff Management',
             icon: UsersIcon,
             path: '/org_admin/hrstaffmanagement',
@@ -413,6 +420,11 @@ const Sidebar = ({ isCollapsed = false }) => {
           {!isCollapsed && item.moduleEnabled && (
             <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
               EXT
+            </span>
+          )}
+          {!isCollapsed && item.testingMode && (
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+              TEST
             </span>
           )}
         </Link>

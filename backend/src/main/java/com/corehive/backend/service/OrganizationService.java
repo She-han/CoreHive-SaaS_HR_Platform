@@ -54,7 +54,7 @@ public class OrganizationService {
                     .collect(Collectors.toList());
 
             log.info("Found {} pending organizations", response.size());
-            return ApiResponse.success("Pending approvals retrieved successfully", response);
+            return ApiResponse.success(response, "Pending approvals retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching pending approvals", e);
@@ -121,7 +121,7 @@ public class OrganizationService {
                 // Continue with approval but note that no admin users were activated
                 log.info("Organization approved successfully: {} ({}) - No admin users found to activate",
                         organization.getName(), organizationUuid);
-                return ApiResponse.success("Organization approved successfully (no admin users found to activate)", null);
+                return ApiResponse.success(null, "Organization approved successfully (no admin users found to activate)");
             }
 
             log.info("Activating {} admin users for organization: {}", adminUsers.size(), organizationUuid);
@@ -150,7 +150,7 @@ public class OrganizationService {
 
             log.info("Organization approved successfully: {} ({}) - Activated {} admin users",
                     organization.getName(), organizationUuid, activatedCount);
-            return ApiResponse.success("Organization approved successfully", null);
+            return ApiResponse.success(null, "Organization approved successfully");
 
         } catch (Exception e) {
             log.error("Error approving organization: {} - Exception: {}", organizationUuid, e.getMessage(), e);
@@ -183,7 +183,7 @@ public class OrganizationService {
             organizationRepository.save(organization);
 
             log.info("Organization rejected: {} ({})", organization.getName(), organizationUuid);
-            return ApiResponse.success("Organization rejected", null);
+            return ApiResponse.success(null, "Organization rejected");
 
         } catch (Exception e) {
             log.error("Error rejecting organization: {}", organizationUuid, e);
@@ -214,7 +214,7 @@ public class OrganizationService {
             log.info("Retrieved {} organizations (page {} of {})",
                     responseList.size(), pageable.getPageNumber() + 1, response.getTotalPages());
 
-            return ApiResponse.success("Organizations retrieved successfully", response);
+            return ApiResponse.success(response, "Organizations retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching organizations", e);
@@ -267,7 +267,7 @@ public class OrganizationService {
             }
 
             log.info("Organization status changed: {} -> {}", organization.getName(), targetStatus.getDisplayName());
-            return ApiResponse.success("Organization status updated successfully", null);
+            return ApiResponse.success(null, "Organization status updated successfully");
 
         } catch (Exception e) {
             log.error("Error changing organization status: {}", organizationUuid, e);
@@ -292,7 +292,7 @@ public class OrganizationService {
             OrganizationSummaryResponse response = convertToSummaryResponse(organization);
 
             log.info("Organization details retrieved: {}", organization.getName());
-            return ApiResponse.success("Organization details retrieved successfully", response);
+            return ApiResponse.success(response, "Organization details retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching organization details: {}", organizationUuid, e);
@@ -326,7 +326,7 @@ public class OrganizationService {
                     .build();
 
             log.info("Module configuration retrieved for: {}", organization.getName());
-            return ApiResponse.success("Module configuration retrieved successfully", response);
+            return ApiResponse.success(response, "Module configuration retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching module configuration: {}", organizationUuid, e);
@@ -387,7 +387,7 @@ public class OrganizationService {
                     .build();
 
             log.info("Module configuration updated successfully for: {}", organization.getName());
-            return ApiResponse.success("Module configuration updated successfully", response);
+            return ApiResponse.success(response, "Module configuration updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating module configuration: {}", organizationUuid, e);
@@ -567,7 +567,7 @@ public class OrganizationService {
 
             Employee employee = employeeOpt.get();
             log.info("Employee profile retrieved successfully for: {}", email);
-            return ApiResponse.success("Employee profile retrieved successfully", employee);
+            return ApiResponse.success(employee, "Employee profile retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching employee with email: {}", email, e);
@@ -601,7 +601,7 @@ public class OrganizationService {
             Employee savedEmployee = employeeRepository.save(employee);
 
             log.info("Employee profile updated successfully for: {}", email);
-            return ApiResponse.success("Profile updated successfully", savedEmployee);
+            return ApiResponse.success(savedEmployee, "Profile updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating employee with email: {}", email, e);
@@ -646,7 +646,7 @@ public class OrganizationService {
             organizationRepository.delete(organization);
             log.info("Successfully deleted organization: {} ({})", organization.getName(), organizationUuid);
 
-            return ApiResponse.success("Organization deleted successfully", null);
+            return ApiResponse.success(null, "Organization deleted successfully");
 
         } catch (Exception e) {
             log.error("Error deleting organization: {}", organizationUuid, e);

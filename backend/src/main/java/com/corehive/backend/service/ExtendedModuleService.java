@@ -37,7 +37,7 @@ public class ExtendedModuleService {
                     .collect(Collectors.toList());
 
             log.info("Retrieved {} extended modules", response.size());
-            return ApiResponse.success("Modules retrieved successfully", response);
+            return ApiResponse.success(response, "Modules retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching extended modules", e);
@@ -58,7 +58,7 @@ public class ExtendedModuleService {
                     .collect(Collectors.toList());
 
             log.info("Retrieved {} active extended modules", response.size());
-            return ApiResponse.success("Active modules retrieved successfully", response);
+            return ApiResponse.success(response, "Active modules retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching active extended modules", e);
@@ -77,7 +77,7 @@ public class ExtendedModuleService {
                     .orElseThrow(() -> new RuntimeException("Module not found"));
 
             ExtendedModuleResponse response = convertToResponse(module);
-            return ApiResponse.success("Module retrieved successfully", response);
+            return ApiResponse.success(response, "Module retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching extended module with ID: {}", moduleId, e);
@@ -117,7 +117,7 @@ public class ExtendedModuleService {
             log.info("Extended module created successfully with ID: {}", savedModule.getModuleId());
 
             ExtendedModuleResponse response = convertToResponse(savedModule);
-            return ApiResponse.success("Module created successfully", response);
+            return ApiResponse.success(response, "Module created successfully");
 
         } catch (Exception e) {
             log.error("Error creating extended module", e);
@@ -160,7 +160,7 @@ public class ExtendedModuleService {
             log.info("Extended module updated successfully: {}", moduleId);
 
             ExtendedModuleResponse response = convertToResponse(updatedModule);
-            return ApiResponse.success("Module updated successfully", response);
+            return ApiResponse.success(response, "Module updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating extended module with ID: {}", moduleId, e);
@@ -185,7 +185,7 @@ public class ExtendedModuleService {
             log.info("Extended module status toggled to {}: {}", module.getIsActive(), moduleId);
 
             ExtendedModuleResponse response = convertToResponse(updatedModule);
-            return ApiResponse.success("Module status updated successfully", response);
+            return ApiResponse.success(response, "Module status updated successfully");
 
         } catch (Exception e) {
             log.error("Error toggling status for extended module with ID: {}", moduleId, e);
@@ -208,7 +208,7 @@ public class ExtendedModuleService {
             extendedModuleRepository.deleteById(moduleId);
             log.info("Extended module deleted successfully: {}", moduleId);
 
-            return ApiResponse.success("Module deleted successfully", null);
+            return ApiResponse.success(null, "Module deleted successfully");
 
         } catch (Exception e) {
             log.error("Error deleting extended module with ID: {}", moduleId, e);
@@ -229,7 +229,7 @@ public class ExtendedModuleService {
                     .collect(Collectors.toList());
 
             log.info("Retrieved {} extended modules for category: {}", response.size(), category);
-            return ApiResponse.success("Modules retrieved successfully", response);
+            return ApiResponse.success(response, "Modules retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching extended modules by category: {}", category, e);

@@ -267,7 +267,7 @@ public class AdminController {
             PlatformStatistics stats = organizationService.getPlatformStatistics();
 
             ApiResponse<PlatformStatistics> response =
-                    ApiResponse.success("Platform statistics retrieved successfully", stats);
+                    ApiResponse.success(stats, "Platform statistics retrieved successfully");
 
             log.info("Platform statistics retrieved - Total Orgs: {}, Active: {}, Pending: {}, Employees: {}",
                     stats.getTotalOrganizations(), stats.getActiveOrganizations(), 

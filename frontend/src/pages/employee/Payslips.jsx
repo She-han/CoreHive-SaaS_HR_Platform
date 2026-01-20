@@ -1,12 +1,12 @@
-import React from 'react'
-import DashboardLayout from '../../components/layout/DashboardLayout'
+import React from "react";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 
 const Payslips = () => {
   return (
     <DashboardLayout>
-    <div>Payslips</div>
+      <div>Payslips</div>
     </DashboardLayout>
-  )
-}
+  );
+};
 
-export default Payslips
+export default Payslips;

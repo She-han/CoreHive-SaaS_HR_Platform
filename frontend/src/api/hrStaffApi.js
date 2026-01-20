@@ -1,4 +1,4 @@
-import axios from './axios';
+import axios from "./axios";
 
 /**
  * HR Staff Management API Service
@@ -8,14 +8,19 @@ import axios from './axios';
 /**
  * Get all HR staff members with pagination
  */
-export const getAllHRStaff = async (page = 0, size = 10, sortBy = 'createdAt', sortDir = 'desc') => {
+export const getAllHRStaff = async (
+  page = 0,
+  size = 10,
+  sortBy = "createdAt",
+  sortDir = "desc"
+) => {
   try {
-    const response = await axios.get('/org-admin/hr-staff', {
+    const response = await axios.get("/org-admin/hr-staff", {
       params: { page, size, sortBy, sortDir }
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching HR staff:', error);
+    console.error("Error fetching HR staff:", error);
     throw error;
   }
 };
@@ -25,10 +30,10 @@ export const getAllHRStaff = async (page = 0, size = 10, sortBy = 'createdAt', s
  */
 export const getAllHRStaffNoPagination = async () => {
   try {
-    const response = await axios.get('/org-admin/hr-staff/all');
+    const response = await axios.get("/org-admin/hr-staff/all");
     return response.data;
   } catch (error) {
-    console.error('Error fetching all HR staff:', error);
+    console.error("Error fetching all HR staff:", error);
     throw error;
   }
 };
@@ -51,10 +56,10 @@ export const getHRStaffById = async (hrStaffId) => {
  */
 export const createHRStaff = async (hrStaffData) => {
   try {
-    const response = await axios.post('/org-admin/hr-staff', hrStaffData);
+    const response = await axios.post("/org-admin/hr-staff", hrStaffData);
     return response.data;
   } catch (error) {
-    console.error('Error creating HR staff:', error);
+    console.error("Error creating HR staff:", error);
     throw error;
   }
 };
@@ -91,14 +96,20 @@ export const deleteHRStaff = async (hrStaffId) => {
 /**
  * Search HR staff members
  */
-export const searchHRStaff = async (searchTerm, page = 0, size = 10, sortBy = 'createdAt', sortDir = 'desc') => {
+export const searchHRStaff = async (
+  searchTerm,
+  page = 0,
+  size = 10,
+  sortBy = "createdAt",
+  sortDir = "desc"
+) => {
   try {
-    const response = await axios.get('/org-admin/hr-staff/search', {
+    const response = await axios.get("/org-admin/hr-staff/search", {
       params: { searchTerm, page, size, sortBy, sortDir }
     });
     return response.data;
   } catch (error) {
-    console.error('Error searching HR staff:', error);
+    console.error("Error searching HR staff:", error);
     throw error;
   }
 };
@@ -108,10 +119,10 @@ export const searchHRStaff = async (searchTerm, page = 0, size = 10, sortBy = 'c
  */
 export const getHRStaffCount = async () => {
   try {
-    const response = await axios.get('/org-admin/hr-staff/count');
+    const response = await axios.get("/org-admin/hr-staff/count");
     return response.data;
   } catch (error) {
-    console.error('Error fetching HR staff count:', error);
+    console.error("Error fetching HR staff count:", error);
     throw error;
   }
 };
@@ -123,39 +134,39 @@ export const validateHRStaffData = (data) => {
   const errors = {};
 
   if (!data.firstName || !data.firstName.trim()) {
-    errors.firstName = 'First name is required';
+    errors.firstName = "First name is required";
   }
 
   if (!data.lastName || !data.lastName.trim()) {
-    errors.lastName = 'Last name is required';
+    errors.lastName = "Last name is required";
   }
 
   if (!data.email || !data.email.trim()) {
-    errors.email = 'Email is required';
+    errors.email = "Email is required";
   } else if (!/\S+@\S+\.\S+/.test(data.email)) {
-    errors.email = 'Email format is invalid';
+    errors.email = "Email format is invalid";
   }
 
   if (!data.phone || !data.phone.trim()) {
-    errors.phone = 'Phone number is required';
+    errors.phone = "Phone number is required";
   }
 
   if (!data.designation || !data.designation.trim()) {
-    errors.designation = 'Designation is required';
+    errors.designation = "Designation is required";
   }
 
   if (!data.departmentId) {
-    errors.departmentId = 'Department is required';
+    errors.departmentId = "Department is required";
   }
 
   if (!data.basicSalary) {
-    errors.basicSalary = 'Basic salary is required';
+    errors.basicSalary = "Basic salary is required";
   } else if (parseFloat(data.basicSalary) <= 0) {
-    errors.basicSalary = 'Basic salary must be greater than 0';
+    errors.basicSalary = "Basic salary must be greater than 0";
   }
 
   if (!data.dateOfJoining) {
-    errors.dateOfJoining = 'Date of joining is required';
+    errors.dateOfJoining = "Date of joining is required";
   }
 
   return {
@@ -177,7 +188,7 @@ export const formatHRStaffForAPI = (formData) => {
     departmentId: parseInt(formData.departmentId),
     basicSalary: parseFloat(formData.basicSalary),
     dateOfJoining: formData.dateOfJoining,
-    salaryType: formData.salaryType || 'MONTHLY',
+    salaryType: formData.salaryType || "MONTHLY",
     isActive: formData.isActive !== undefined ? formData.isActive : true
   };
 };
@@ -192,13 +203,16 @@ export const formatHRStaffForAPI = (formData) => {
 export const transformHRStaffResponse = (staff, departments = []) => {
   // Try to get department name from staff data first
   let departmentName = staff.departmentName;
-  
+
   // If not available, try to find from departments list
   if (!departmentName && staff.departmentId && departments.length > 0) {
-    const dept = departments.find(d => d.id === staff.departmentId || d.id === parseInt(staff.departmentId));
+    const dept = departments.find(
+      (d) =>
+        d.id === staff.departmentId || d.id === parseInt(staff.departmentId)
+    );
     departmentName = dept ? dept.name : null;
   }
-  
+
   // If still not available, try department object if exists
   if (!departmentName && staff.department) {
     departmentName = staff.department.name;
@@ -207,30 +221,30 @@ export const transformHRStaffResponse = (staff, departments = []) => {
   return {
     id: staff.id,
     odooEmployeeId: staff.odooEmployeeId,
-    firstName: staff.firstName || '',
-    lastName: staff.lastName || '',
-    email: staff.email || '',
-    phone: staff.phone || staff.mobilePhone || '',
-    designation: staff.designation || staff.jobTitle || '',
+    firstName: staff.firstName || "",
+    lastName: staff.lastName || "",
+    email: staff.email || "",
+    phone: staff.phone || staff.mobilePhone || "",
+    designation: staff.designation || staff.jobTitle || "",
     departmentId: staff.departmentId,
-    departmentName: departmentName || 'Unknown Department',
-    employeeCode: staff.employeeCode || staff.workEmail || 'N/A',
+    departmentName: departmentName || "Unknown Department",
+    employeeCode: staff.employeeCode || staff.workEmail || "N/A",
     basicSalary: staff.basicSalary || staff.wage || 0,
-    salaryType: staff.salaryType || 'MONTHLY',
-    dateOfJoining: staff.dateOfJoining || staff.hireDate || '',
+    salaryType: staff.salaryType || "MONTHLY",
+    dateOfJoining: staff.dateOfJoining || staff.hireDate || "",
     isActive: staff.isActive !== undefined ? staff.isActive : true,
     createdAt: staff.createdAt,
     updatedAt: staff.updatedAt,
     // Formatted fields for display
     formattedSalary: `Rs. ${(staff.basicSalary || staff.wage || 0).toLocaleString()}`,
-    formattedDateOfJoining: staff.dateOfJoining 
-      ? new Date(staff.dateOfJoining).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
+    formattedDateOfJoining: staff.dateOfJoining
+      ? new Date(staff.dateOfJoining).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric"
         })
-      : 'N/A',
-    statusDisplay: staff.isActive ? 'Active' : 'Inactive'
+      : "N/A",
+    statusDisplay: staff.isActive ? "Active" : "Inactive"
   };
 };
 

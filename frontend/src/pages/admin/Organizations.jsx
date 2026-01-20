@@ -17,7 +17,6 @@ import {
   MonitorX
 } from "lucide-react";
 
-
 const THEME = {
   primary: "#02C39A",
   secondary: "#05668D",
@@ -25,7 +24,7 @@ const THEME = {
   background: "#F1FDF9",
   success: "#1ED292",
   text: "#333333",
-  muted: "#9B9B9B",
+  muted: "#9B9B9B"
 };
 
 // Memoized Skeleton Loader for performance
@@ -52,7 +51,7 @@ const StatCard = memo(({ stat, index }) => {
         className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-transparent hover:border-opacity-50 relative overflow-hidden"
         style={{
           borderColor: stat.borderColor,
-          background: `linear-gradient(135deg, white 0%, ${stat.bgLight} 100%)`,
+          background: `linear-gradient(135deg, white 0%, ${stat.bgLight} 100%)`
         }}
       >
         {/* Background decoration */}
@@ -65,7 +64,7 @@ const StatCard = memo(({ stat, index }) => {
           <div
             className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
             style={{
-              background: `linear-gradient(135deg, ${stat.iconColor} 0%, ${stat.iconColorDark} 100%)`,
+              background: `linear-gradient(135deg, ${stat.iconColor} 0%, ${stat.iconColorDark} 100%)`
             }}
           >
             <Icon className="w-7 h-7 text-white" />
@@ -96,8 +95,8 @@ const StatCard = memo(({ stat, index }) => {
                   stat.changeType === "positive"
                     ? "text-green-600"
                     : stat.changeType === "warning"
-                    ? "text-amber-600"
-                    : "text-gray-500"
+                      ? "text-amber-600"
+                      : "text-gray-500"
                 }`}
               >
                 {stat.change}
@@ -124,7 +123,7 @@ const Organizations = () => {
     dormantOrganizations: 0,
     suspendedOrganizations: 0,
     totalEmployees: 0,
-    totalSystemUsers: 0,
+    totalSystemUsers: 0
   });
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -144,7 +143,7 @@ const Organizations = () => {
       // Parallel data fetching for performance
       const [statsResponse, approvalsResponse] = await Promise.all([
         getPlatformStatistics(),
-        getPendingApprovals(),
+        getPendingApprovals()
       ]);
 
       if (statsResponse.success) {
@@ -186,7 +185,7 @@ const Organizations = () => {
         borderColor: THEME.secondary,
         change: `${stats.activeOrganizations || 0} active`,
         changeType: "positive",
-        link: "/sys_admin/organizations",
+        link: "/sys_admin/organizations"
       },
       {
         title: "Active Organizations",
@@ -198,7 +197,7 @@ const Organizations = () => {
         borderColor: "#10B981",
         change: "Running smoothly",
         changeType: "positive",
-        link: "/sys_admin/organizations?status=ACTIVE",
+        link: "/sys_admin/organizations?status=ACTIVE"
       },
       {
         title: "OnTrial Organizations",
@@ -210,7 +209,7 @@ const Organizations = () => {
         borderColor: "#F59E0B",
         change: pendingApprovals.length > 0 ? "Needs attention" : "All clear",
         changeType: pendingApprovals.length > 0 ? "warning" : "positive",
-        link: "/sys_admin/approvals",
+        link: "/sys_admin/approvals"
       },
       {
         title: "Suspended Organizations",
@@ -222,8 +221,8 @@ const Organizations = () => {
         borderColor: "#8B5CF6",
         change: "Across all orgs",
         changeType: "positive",
-        link: "/sys_admin/users",
-      },
+        link: "/sys_admin/users"
+      }
     ],
     [stats, pendingApprovals.length]
   );
@@ -232,7 +231,7 @@ const Organizations = () => {
     () =>
       lastRefresh.toLocaleTimeString("en-US", {
         hour: "2-digit",
-        minute: "2-digit",
+        minute: "2-digit"
       }),
     [lastRefresh]
   );
@@ -261,7 +260,7 @@ const Organizations = () => {
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
                   style={{
                     backgroundColor: THEME.background,
-                    color: THEME.muted,
+                    color: THEME.muted
                   }}
                 >
                   <Clock className="w-4 h-4" />
@@ -273,7 +272,7 @@ const Organizations = () => {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:shadow-md disabled:opacity-50"
                   style={{
                     backgroundColor: THEME.primary,
-                    color: "white",
+                    color: "white"
                   }}
                 >
                   <RefreshCw

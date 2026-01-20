@@ -29,10 +29,9 @@ export const getMonthlyEmployeeReport = async (month, year) => {
   }
 
   try {
-    const response = await apiClient.get(
-      "/reports/monthly/employee-growth",
-      { params: { month, year } }
-    );
+    const response = await apiClient.get("/reports/monthly/employee-growth", {
+      params: { month, year }
+    });
     return response.data.data;
   } catch (error) {
     console.error("Error fetching monthly HR report:", error);
@@ -51,10 +50,9 @@ export const getAnnualEmployeeGrowthReport = async (year) => {
   }
 
   try {
-    const response = await apiClient.get(
-      "/reports/annual/employee-growth",
-      { params: { year } }
-    );
+    const response = await apiClient.get("/reports/annual/employee-growth", {
+      params: { year }
+    });
     return response.data.data;
   } catch (error) {
     console.error("Error fetching annual HR report:", error);
@@ -69,12 +67,9 @@ export const getAnnualEmployeeGrowthReport = async (year) => {
  */
 export const downloadHeadcountReport = async () => {
   try {
-    const response = await apiClient.get(
-      "/reports/headcount/download",
-      {
-        responseType: "blob", // 👈 VERY IMPORTANT
-      }
-    );
+    const response = await apiClient.get("/reports/headcount/download", {
+      responseType: "blob" // 👈 VERY IMPORTANT
+    });
 
     return response.data; // Blob
   } catch (error) {
@@ -84,7 +79,6 @@ export const downloadHeadcountReport = async () => {
     );
   }
 };
-
 
 export default {
   getHeadcountReport,

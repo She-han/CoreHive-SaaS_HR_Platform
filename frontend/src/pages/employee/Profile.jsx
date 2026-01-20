@@ -3,13 +3,13 @@ import React from "react";
 export default function ProfilePage() {
   return (
     <div className="bg-gray-100 min-h-screen">
-
       {/* NAVBAR */}
       <nav className="w-full flex justify-between items-center px-10 py-4 bg-white shadow-sm">
-        
         {/* Left */}
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Employee Portal</h1>
+          <h1 className="text-2xl font-semibold text-gray-800">
+            Employee Portal
+          </h1>
           <p className="text-sm text-gray-500">Welcome back, Sarah!</p>
 
           {/* Menu Tabs */}
@@ -33,8 +33,10 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500">Senior Software Engineer</p>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white w-12 h-12 
-                          rounded-full flex items-center justify-center font-semibold">
+          <div
+            className="bg-gradient-to-br from-blue-700 to-blue-400 text-white w-12 h-12 
+                          rounded-full flex items-center justify-center font-semibold"
+          >
             SJ
           </div>
         </div>
@@ -43,16 +45,16 @@ export default function ProfilePage() {
       {/* MAIN PROFILE CARD */}
       <div className="px-10 mt-10">
         <div className="bg-white p-10 rounded-xl shadow w-full">
-
           <h2 className="text-xl font-semibold mb-8">My Profile</h2>
 
           <div className="flex gap-16">
-
             {/* LEFT SIDE */}
             <div className="w-1/4 text-center">
-              <div className="bg-gradient-to-br from-blue-700 to-blue-400 text-white 
+              <div
+                className="bg-gradient-to-br from-blue-700 to-blue-400 text-white 
                               w-40 h-40 rounded-full flex items-center justify-center 
-                              text-5xl font-semibold mx-auto">
+                              text-5xl font-semibold mx-auto"
+              >
                 SJ
               </div>
 
@@ -63,15 +65,22 @@ export default function ProfilePage() {
 
             {/* RIGHT SIDE */}
             <div className="w-3/4">
-
               {/* Contact Info */}
               <div className="mb-10">
-                <h3 className="text-lg font-semibold mb-3">Contact Information</h3>
+                <h3 className="text-lg font-semibold mb-3">
+                  Contact Information
+                </h3>
 
                 <div className="space-y-3 text-gray-700">
-                  <p><strong>Email:</strong> sarah.johnson@company.com</p>
-                  <p><strong>Phone:</strong> +1 (555) 123-4567</p>
-                  <p><strong>Location:</strong> New York, NY</p>
+                  <p>
+                    <strong>Email:</strong> sarah.johnson@company.com
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> +1 (555) 123-4567
+                  </p>
+                  <p>
+                    <strong>Location:</strong> New York, NY
+                  </p>
                 </div>
               </div>
 
@@ -79,20 +88,23 @@ export default function ProfilePage() {
 
               {/* Employment Info */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Employment Information</h3>
+                <h3 className="text-lg font-semibold mb-3">
+                  Employment Information
+                </h3>
 
                 <div className="space-y-3 text-gray-700">
-                  <p><strong>Department:</strong> Engineering</p>
-                  <p><strong>Position:</strong> Senior Software Engineer</p>
+                  <p>
+                    <strong>Department:</strong> Engineering
+                  </p>
+                  <p>
+                    <strong>Position:</strong> Senior Software Engineer
+                  </p>
                 </div>
               </div>
-
             </div>
           </div>
-
         </div>
       </div>
-
     </div>
   );
 }

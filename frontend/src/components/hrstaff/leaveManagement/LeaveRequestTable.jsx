@@ -10,12 +10,24 @@ export default function LeaveRequestTable({ leaveRequests, reload }) {
           {/* HEADER */}
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-200">
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Employee</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Leave Type</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Schedule</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">Days</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">Status</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                Employee
+              </th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                Leave Type
+              </th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                Schedule
+              </th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">
+                Days
+              </th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center">
+                Status
+              </th>
+              <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                Actions
+              </th>
             </tr>
           </thead>
 
@@ -23,7 +35,10 @@ export default function LeaveRequestTable({ leaveRequests, reload }) {
           <tbody className="divide-y divide-slate-100">
             {leaveRequests.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-6 py-12 text-center text-slate-400 italic font-medium">
+                <td
+                  colSpan="6"
+                  className="px-6 py-12 text-center text-slate-400 italic font-medium"
+                >
                   No pending leave requests found
                 </td>
               </tr>
@@ -74,8 +89,8 @@ export default function LeaveRequestTable({ leaveRequests, reload }) {
                         leave.status === "PENDING"
                           ? "bg-amber-50 text-amber-600 border-amber-200"
                           : leave.status === "APPROVED"
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                          : "bg-rose-50 text-rose-600 border-rose-200"
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                            : "bg-rose-50 text-rose-600 border-rose-200"
                       }`}
                     >
                       {leave.status}
@@ -83,10 +98,7 @@ export default function LeaveRequestTable({ leaveRequests, reload }) {
                   </td>
 
                   <td className="px-6 py-4">
-                    <LeaveActionButtons
-                      leave={leave}
-                      reload={reload}
-                    />
+                    <LeaveActionButtons leave={leave} reload={reload} />
                   </td>
                 </tr>
               ))

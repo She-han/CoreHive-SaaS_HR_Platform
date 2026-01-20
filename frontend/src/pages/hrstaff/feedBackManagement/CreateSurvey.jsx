@@ -4,8 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
 export default function CreateSurvey() {
-
-  const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -14,7 +15,7 @@ export default function CreateSurvey() {
     start_date: "",
     end_date: "",
     is_anonymous: false,
-    questions: [],
+    questions: []
   });
 
   // Add a new question
@@ -27,9 +28,9 @@ export default function CreateSurvey() {
           question_text: "",
           question_type: "TEXT",
           options: [],
-          position: form.questions.length + 1,
-        },
-      ],
+          position: form.questions.length + 1
+        }
+      ]
     });
   };
 
@@ -49,7 +50,8 @@ export default function CreateSurvey() {
     if (key === "question_type") {
       if (value === "TEXT") updated[index].options = [];
       if (value === "MCQ") updated[index].options = [];
-      if (value === "RATING") updated[index].options = ["1", "2", "3", "4", "5"];
+      if (value === "RATING")
+        updated[index].options = ["1", "2", "3", "4", "5"];
     }
 
     setForm({ ...form, questions: updated });
@@ -79,12 +81,15 @@ export default function CreateSurvey() {
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-[#F3F8FA] to-[#E8EEF3]">
-
       {/* HEADER */}
       <div className="p-6 bg-white/90 backdrop-blur-md border-b shadow-sm sticky top-0 z-20 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-[#333333]">Create New Survey</h1>
-          <p className="text-[#9B9B9B]">Build a customized survey with multiple question types.</p>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            Create New Survey
+          </h1>
+          <p className="text-[#9B9B9B]">
+            Build a customized survey with multiple question types.
+          </p>
         </div>
 
         <button
@@ -97,10 +102,11 @@ export default function CreateSurvey() {
 
       {/* SCROLLABLE AREA */}
       <div className="flex-1 overflow-y-auto p-8 space-y-8">
-
         {/* SURVEY DETAILS */}
         <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-          <h2 className="text-xl font-bold text-[#0D2847] mb-4">Survey Details</h2>
+          <h2 className="text-xl font-bold text-[#0D2847] mb-4">
+            Survey Details
+          </h2>
           <div className="space-y-4">
             <input
               type="text"
@@ -113,29 +119,39 @@ export default function CreateSurvey() {
               placeholder="Enter survey description..."
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
             />
 
             <div className="grid grid-cols-2 gap-4">
               {/* Start Date */}
               <div className="flex flex-col">
-                <label className="mb-1 text-sm font-medium text-gray-600">Start Date</label>
+                <label className="mb-1 text-sm font-medium text-gray-600">
+                  Start Date
+                </label>
                 <input
                   type="date"
                   className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
                   value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, start_date: e.target.value })
+                  }
                 />
               </div>
 
               {/* End Date */}
               <div className="flex flex-col">
-                <label className="mb-1 text-sm font-medium text-gray-600">End Date</label>
+                <label className="mb-1 text-sm font-medium text-gray-600">
+                  End Date
+                </label>
                 <input
                   type="date"
                   className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
                   value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, end_date: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -144,7 +160,9 @@ export default function CreateSurvey() {
               <input
                 type="checkbox"
                 checked={form.is_anonymous}
-                onChange={(e) => setForm({ ...form, is_anonymous: e.target.checked })}
+                onChange={(e) =>
+                  setForm({ ...form, is_anonymous: e.target.checked })
+                }
                 className="h-5 w-5"
               />
               Allow Anonymous Responses
@@ -162,7 +180,9 @@ export default function CreateSurvey() {
               className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-6 hover:shadow-2xl transition-all"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-[#0D2847]">Question {index + 1}</h3>
+                <h3 className="text-lg font-semibold text-[#0D2847]">
+                  Question {index + 1}
+                </h3>
                 <button
                   className="text-red-600 hover:text-red-800 transition"
                   onClick={() => removeQuestion(index)}
@@ -176,13 +196,17 @@ export default function CreateSurvey() {
                 placeholder="Type your question here..."
                 className="w-full p-3 border rounded-lg shadow-sm mb-3"
                 value={q.question_text}
-                onChange={(e) => updateQuestion(index, "question_text", e.target.value)}
+                onChange={(e) =>
+                  updateQuestion(index, "question_text", e.target.value)
+                }
               />
 
               <select
                 className="w-full p-3 border rounded-lg shadow-sm mb-3"
                 value={q.question_type}
-                onChange={(e) => updateQuestion(index, "question_type", e.target.value)}
+                onChange={(e) =>
+                  updateQuestion(index, "question_type", e.target.value)
+                }
               >
                 <option value="TEXT">Text Answer</option>
                 <option value="MCQ">Multiple Choice</option>

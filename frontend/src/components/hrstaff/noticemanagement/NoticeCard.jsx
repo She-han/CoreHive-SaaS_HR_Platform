@@ -1,40 +1,48 @@
 // components/hrstaff/notices/NoticeCard.jsx
-import { FiEdit3, FiTrash2, FiCalendar, FiClock, FiAlertCircle } from "react-icons/fi";
+import {
+  FiEdit3,
+  FiTrash2,
+  FiCalendar,
+  FiClock,
+  FiAlertCircle
+} from "react-icons/fi";
 
 export default function NoticeCard({ notice, onEdit, onDelete }) {
-  
   /* ================= Custom Palette Mapping ================= */
   // Primary Blue: #0C397A | Primary Teal: #02C39A | Vibrant Green: #1ED292
   // Neutral Dark: #333333 | Neutral Gray: #9B9B9B | BG Mint: #F1FDF9
-  
+
   const priorityStyles = {
     HIGH: "bg-[#0C397A] text-white", // High contrast for high priority
     MEDIUM: "bg-[#05668D] text-white",
-    LOW: "bg-[#02C39A] text-white",
+    LOW: "bg-[#02C39A] text-white"
   };
 
   const statusStyles = {
     DRAFT: "bg-gray-100 text-[#333333] border-gray-200",
     PUBLISHED: "bg-[#F1FDF9] text-[#02C39A] border-[#1ED292]/30",
-    EXPIRED: "bg-red-50 text-red-600 border-red-100",
+    EXPIRED: "bg-red-50 text-red-600 border-red-100"
   };
 
   return (
     <div className="group relative bg-[#FFFFFF] border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-[#05668D]/10 hover:-translate-y-1 flex flex-col h-full">
-      
       {/* ================= Header & Priority ================= */}
       <div className="flex justify-between items-start gap-4 mb-3">
         <h3 className="font-bold text-[#333333] text-lg leading-tight group-hover:text-[#0C397A] transition-colors">
           {notice.title}
         </h3>
-        <span className={`text-[10px] uppercase tracking-[0.05em] px-2.5 py-1 rounded-md font-bold shrink-0 ${priorityStyles[notice.priority]}`}>
+        <span
+          className={`text-[10px] uppercase tracking-[0.05em] px-2.5 py-1 rounded-md font-bold shrink-0 ${priorityStyles[notice.priority]}`}
+        >
           {notice.priority}
         </span>
       </div>
 
       {/* ================= Status Badge ================= */}
       <div className="mb-4">
-        <span className={`text-[11px] px-3 py-0.5 rounded-full border font-semibold ${statusStyles[notice.status]}`}>
+        <span
+          className={`text-[11px] px-3 py-0.5 rounded-full border font-semibold ${statusStyles[notice.status]}`}
+        >
           {notice.status}
         </span>
       </div>
@@ -52,15 +60,17 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
           <div className="flex items-center gap-2 text-[#9B9B9B]">
             <FiCalendar size={14} className="text-[#02C39A]" />
             <span className="text-xs font-medium">
-              <span className="opacity-70">Pub:</span> {new Date(notice.publishAt).toLocaleDateString()}
+              <span className="opacity-70">Pub:</span>{" "}
+              {new Date(notice.publishAt).toLocaleDateString()}
             </span>
           </div>
-          
+
           {notice.expireAt && (
             <div className="flex items-center gap-2 text-[#9B9B9B]">
               <FiClock size={14} className="text-[#05668D]" />
               <span className="text-xs font-medium">
-                <span className="opacity-70">Exp:</span> {new Date(notice.expireAt).toLocaleDateString()}
+                <span className="opacity-70">Exp:</span>{" "}
+                {new Date(notice.expireAt).toLocaleDateString()}
               </span>
             </div>
           )}

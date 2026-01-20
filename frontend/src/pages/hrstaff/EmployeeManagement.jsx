@@ -9,13 +9,16 @@ export default function EmployeeManagement() {
   const [filterBy, setFilterBy] = useState("name");
 
   return (
-     <div  style={{ backgroundColor: '#F1FDF9' }} className="w-full h-screen bg-white shadow-md flex flex-col p-8">
-       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
+    <div
+      style={{ backgroundColor: "#F1FDF9" }}
+      className="w-full h-screen bg-white shadow-md flex flex-col p-8"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-[#333333]">Employee Management</h1>
-          <p className="text-[#9B9B9B] font-medium">
-            Employees’ Information
-          </p>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            Employee Management
+          </h1>
+          <p className="text-[#9B9B9B] font-medium">Employees’ Information</p>
         </div>
         <div className="flex gap-3 mt-4 md:mt-0">
           <input
@@ -36,18 +39,19 @@ export default function EmployeeManagement() {
             <option value="department">Department</option>
             <option value="status">Status</option>
           </select>
-          <Link to="/hr_staff/employeemanagement/addemployee" className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]">
+          <Link
+            to="/hr_staff/employeemanagement/addemployee"
+            className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292]"
+          >
             <FaPlus /> Add Employee
           </Link>
         </div>
       </div>
 
-       {/* Scrollable Employee Table */}
+      {/* Scrollable Employee Table */}
       <div className="flex-1 overflow-y-auto">
         <EmployeeTable search={search} filterBy={filterBy} />
       </div>
-
-      
     </div>
   );
 }

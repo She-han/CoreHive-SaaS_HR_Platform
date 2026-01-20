@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { getAllDepartments   } from "../../../api/departmentApi";
+import { getAllDepartments } from "../../../api/departmentApi";
 import { createJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
- import { selectUser } from "../../../store/slices/authSlice";
+import { selectUser } from "../../../store/slices/authSlice";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export default function AddJobForm() {
     postedDate: "",
     closingDate: "",
     availableVacancies: 1,
-    description: "",
+    description: ""
   });
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -30,19 +30,17 @@ export default function AddJobForm() {
   const user = useSelector(selectUser); // get token from Redux
   const token = user?.token;
 
-useEffect(() => {
-  if (token) {
-    console.log("Fetching departments with token:", token);
-    getAllDepartments(token)
-      .then(res => {
-        console.log("Departments API response:", res);
-        setDepartments(res.data || []);
-      })
-      .catch(err => console.error("Error loading departments", err));
-  }
-}, [token]);
-
-
+  useEffect(() => {
+    if (token) {
+      console.log("Fetching departments with token:", token);
+      getAllDepartments(token)
+        .then((res) => {
+          console.log("Departments API response:", res);
+          setDepartments(res.data || []);
+        })
+        .catch((err) => console.error("Error loading departments", err));
+    }
+  }, [token]);
 
   function handleInput(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -55,128 +53,127 @@ useEffect(() => {
 
   // Simple email validation
   function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Validate required fields using SweetAlert
-  if (!form.title.trim()) {
-    Swal.fire("Required!", "Job title is required.", "warning");
-    return;
+    // Validate required fields using SweetAlert
+    if (!form.title.trim()) {
+      Swal.fire("Required!", "Job title is required.", "warning");
+      return;
+    }
+    if (!form.department) {
+      Swal.fire("Required!", "Please select a department.", "warning");
+      return;
+    }
+    if (!form.employmentType) {
+      Swal.fire("Required!", "Please select an employment type.", "warning");
+      return;
+    }
+    if (!form.postedDate) {
+      Swal.fire("Required!", "Posted date is required.", "warning");
+      return;
+    }
+    if (!form.closingDate) {
+      Swal.fire("Required!", "Closing date is required.", "warning");
+      return;
+    }
+    if (!form.status) {
+      Swal.fire("Required!", "Please select a status.", "warning");
+      return;
+    }
+    if (!form.availableVacancies || form.availableVacancies < 1) {
+      Swal.fire(
+        "Required!",
+        "Available vacancies must be at least 1.",
+        "warning"
+      );
+      return;
+    }
+    if (!form.description.trim()) {
+      Swal.fire("Required!", "Job description is required.", "warning");
+      return;
+    }
+
+    if (!form.contactEmail.trim()) {
+      Swal.fire("Required!", "Contact email is required.", "warning");
+      return;
+    }
+
+    if (!isValidEmail(form.contactEmail)) {
+      Swal.fire(
+        "Invalid Email!",
+        "Please enter a valid email address.",
+        "warning"
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Transform department field to departmentId if needed
+      const payload = {
+        ...form,
+        departmentId: form.department // map selected department
+      };
+
+      await createJobPosting(payload, token);
+
+      Swal.fire({
+        title: "Success!",
+        text: "Job posting created successfully",
+        icon: "success",
+        confirmButtonColor: "#02C39A"
+      }).then(() => {
+        navigate("/hr_staff/HiringManagement");
+      });
+    } catch (error) {
+      console.error("Error creating job posting:", error);
+
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to create job posting",
+        icon: "error",
+        confirmButtonColor: "#d33"
+      });
+    } finally {
+      setLoading(false);
+    }
   }
-  if (!form.department) {
-    Swal.fire("Required!", "Please select a department.", "warning");
-    return;
-  }
-  if (!form.employmentType) {
-    Swal.fire("Required!", "Please select an employment type.", "warning");
-    return;
-  }
-  if (!form.postedDate) {
-    Swal.fire("Required!", "Posted date is required.", "warning");
-    return;
-  }
-  if (!form.closingDate) {
-    Swal.fire("Required!", "Closing date is required.", "warning");
-    return;
-  }
-  if (!form.status) {
-    Swal.fire("Required!", "Please select a status.", "warning");
-    return;
-  }
-  if (!form.availableVacancies || form.availableVacancies < 1) {
-    Swal.fire("Required!", "Available vacancies must be at least 1.", "warning");
-    return;
-  }
-  if (!form.description.trim()) {
-    Swal.fire("Required!", "Job description is required.", "warning");
-    return;
-  }
 
-  if (!form.contactEmail.trim()) {
-  Swal.fire("Required!", "Contact email is required.", "warning");
-  return;
-}
+  // async function handleSubmit(e) {
+  //   e.preventDefault();
+  //   setLoading(true);
 
-if (!isValidEmail(form.contactEmail)) {
-  Swal.fire("Invalid Email!", "Please enter a valid email address.", "warning");
-  return;
-}
+  //   try {
+  //     const payload = {
+  //       ...form,
+  //       departmentId: form.department // ensure DTO field matches backend
+  //     };
 
+  //     await createJobPosting(payload, token);
 
-  setLoading(true);
+  //     Swal.fire({
+  //       title: "Success!",
+  //       text: "Job posting created successfully",
+  //       icon: "success",
+  //       confirmButtonColor: "#02C39A"
+  //     }).then(() => navigate("/hr_staff/HiringManagement"));
 
-  try {
-   // Transform department field to departmentId if needed
-    const payload = {
-      ...form,
-      departmentId: form.department// map selected department
-    };
-
-    await createJobPosting(payload , token);
-
-    Swal.fire({
-      title: "Success!",
-      text: "Job posting created successfully",
-      icon: "success",
-      confirmButtonColor: "#02C39A",
-    }).then(() => {
-      navigate("/hr_staff/HiringManagement");
-    });
-
-
-  } catch (error) {
-    console.error("Error creating job posting:", error);
-
-    Swal.fire({
-      title: "Error!",
-      text: "Failed to create job posting",
-      icon: "error",
-      confirmButtonColor: "#d33",
-    });
-
-  } finally {
-    setLoading(false);
-  }
-}
-
-// async function handleSubmit(e) {
-//   e.preventDefault();
-//   setLoading(true);
-
-//   try {
-//     const payload = {
-//       ...form,
-//       departmentId: form.department // ensure DTO field matches backend
-//     };
-
-//     await createJobPosting(payload, token);
-
-//     Swal.fire({
-//       title: "Success!",
-//       text: "Job posting created successfully",
-//       icon: "success",
-//       confirmButtonColor: "#02C39A"
-//     }).then(() => navigate("/hr_staff/HiringManagement"));
-
-//   } catch (error) {
-//     console.error("Error creating job posting:", error);
-//     Swal.fire("Error", "Failed to create job posting", "error");
-//   } finally {
-//     setLoading(false);
-//   }
-// }
-
-
-   
+  //   } catch (error) {
+  //     console.error("Error creating job posting:", error);
+  //     Swal.fire("Error", "Failed to create job posting", "error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   return (
-     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
-        
         {/* HEADER */}
         <div className="px-8 py-8 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#0C397A]">
@@ -188,18 +185,18 @@ if (!isValidEmail(form.contactEmail)) {
         </div>
 
         {/* FORM BODY */}
-       <form
-        onSubmit={handleSubmit}
-        className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
-        style={{ maxHeight: "70vh" }}
+        <form
+          onSubmit={handleSubmit}
+          className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
+          style={{ maxHeight: "70vh" }}
         >
-
-
           {/* LEFT SIDE */}
           <div className="space-y-6">
             {/* Job Title */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Title</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Title
+              </label>
               <input
                 name="title"
                 value={form.title}
@@ -226,11 +223,11 @@ if (!isValidEmail(form.contactEmail)) {
               />
             </div>
 
-
-
             {/* Department */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Department</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Department
+              </label>
               <select
                 name="department"
                 value={form.department}
@@ -238,17 +235,19 @@ if (!isValidEmail(form.contactEmail)) {
                 className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
               >
                 <option value="">Select department</option>
-                {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                    </option>
-                    ))}
+                {departments.map((dep) => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             {/* Employment Type */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Employment Type</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Employment Type
+              </label>
               <select
                 name="employmentType"
                 value={form.employmentType}
@@ -264,7 +263,9 @@ if (!isValidEmail(form.contactEmail)) {
 
             {/* Posted Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Posted Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Posted Date
+              </label>
               <input
                 type="date"
                 name="postedDate"
@@ -274,9 +275,11 @@ if (!isValidEmail(form.contactEmail)) {
               />
             </div>
 
-             {/* Closing Date */}
+            {/* Closing Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Closing Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Closing Date
+              </label>
               <input
                 type="date"
                 name="closingDate"
@@ -288,7 +291,9 @@ if (!isValidEmail(form.contactEmail)) {
 
             {/* Status */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Status</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Status
+              </label>
               <select
                 name="status"
                 value={form.status}
@@ -306,7 +311,9 @@ if (!isValidEmail(form.contactEmail)) {
           <div className="space-y-6">
             {/* Vacancies */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Available Vacancies</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Available Vacancies
+              </label>
               <input
                 type="number"
                 name="availableVacancies"
@@ -319,7 +326,9 @@ if (!isValidEmail(form.contactEmail)) {
 
             {/* Job Description */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Description</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Description
+              </label>
               <textarea
                 name="description"
                 rows="6"
@@ -329,7 +338,6 @@ if (!isValidEmail(form.contactEmail)) {
                 className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
               />
             </div>
-
 
             {/* Avatar Upload */}
             {/* <div>

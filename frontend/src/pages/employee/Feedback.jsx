@@ -1,12 +1,12 @@
-import React from 'react'
-import DashboardLayout from '../../components/layout/DashboardLayout'
+import React from "react";
+import DashboardLayout from "../../components/layout/DashboardLayout";
 
 const Feedback = () => {
   return (
     <DashboardLayout>
-    <div>Feedback</div>
+      <div>Feedback</div>
     </DashboardLayout>
-  )
-}
+  );
+};
 
-export default Feedback
+export default Feedback;

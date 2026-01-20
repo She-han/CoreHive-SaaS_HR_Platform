@@ -11,12 +11,19 @@ const AttendanceMarking = () => {
   const token = user?.token;
 
   return (
-    <div style={{ backgroundColor: '#F1FDF9' }} className="w-full h-screen shadow-md flex flex-col p-8">
+    <div
+      style={{ backgroundColor: "#F1FDF9" }}
+      className="w-full h-screen shadow-md flex flex-col p-8"
+    >
       {/* HEADER MATCHING EMPLOYEE MANAGEMENT */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold text-[#333333]">Attendance Manual Marking</h1>
-          <p className="text-[#9B9B9B] font-medium">Record daily staff entry and exit times manually</p>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            Attendance Manual Marking
+          </h1>
+          <p className="text-[#9B9B9B] font-medium">
+            Record daily staff entry and exit times manually
+          </p>
         </div>
 
         {/* TAB SWITCHER */}
@@ -46,7 +53,11 @@ const AttendanceMarking = () => {
 
       {/* SCROLLABLE CONTENT AREA */}
       <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 p-4">
-        {activeTab === "checkin" ? <CheckInTab token={token} /> : <CheckOutTab token={token} />}
+        {activeTab === "checkin" ? (
+          <CheckInTab token={token} />
+        ) : (
+          <CheckOutTab token={token} />
+        )}
       </div>
     </div>
   );

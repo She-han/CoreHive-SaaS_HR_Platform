@@ -109,7 +109,7 @@ export default function NoticeGrid() {
               <FiChevronRight size={20} />
             </button>
           </div>
-          
+
           {/* Subtle total indicator */}
           <p className="text-[10px] text-[#9B9B9B] font-bold uppercase tracking-[0.2em]">
             Showing {notices.length} Notices

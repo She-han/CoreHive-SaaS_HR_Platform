@@ -1,4 +1,4 @@
-import apiClient from './axios';
+import apiClient from "./axios";
 
 /**
  * Dashboard API Service
@@ -10,10 +10,10 @@ import apiClient from './axios';
  */
 export const getDashboardData = async () => {
   try {
-    const response = await apiClient.get('/dashboard');
+    const response = await apiClient.get("/dashboard");
     return response.data;
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error("Error fetching dashboard data:", error);
     throw error;
   }
 };
@@ -23,10 +23,10 @@ export const getDashboardData = async () => {
  */
 export const getDashboardStats = async () => {
   try {
-    const response = await apiClient.get('/dashboard/stats');
+    const response = await apiClient.get("/dashboard/stats");
     return response.data;
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error("Error fetching dashboard stats:", error);
     throw error;
   }
 };

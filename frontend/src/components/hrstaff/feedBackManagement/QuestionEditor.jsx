@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { getSurveyQuestions, updateSurveyQuestions } from "../../../api/feedbackService";
+import {
+  getSurveyQuestions,
+  updateSurveyQuestions
+} from "../../../api/feedbackService";
 
 export default function QuestionEditor({ surveyId, onSaved }) {
-  const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
   const [questions, setQuestions] = useState([]);
   const [text, setText] = useState("");
   const [type, setType] = useState("TEXT");
@@ -15,9 +20,9 @@ export default function QuestionEditor({ surveyId, onSaved }) {
       .then((res) => {
         const mapped = res.map((q) => ({
           id: q.id,
-          question_text: q.questionText, 
+          question_text: q.questionText,
           question_type: q.questionType,
-          options: q.options ? JSON.parse(q.options) : [],
+          options: q.options ? JSON.parse(q.options) : []
         }));
         setQuestions(mapped);
       })
@@ -30,11 +35,19 @@ export default function QuestionEditor({ surveyId, onSaved }) {
     const q = {
       question_text: text,
       question_type: type,
-      options: type === "MCQ" ? opts.split("|").map(s => s.trim()).filter(Boolean) : type === "RATING" ? ["1","2","3","4","5"] : [],
+      options:
+        type === "MCQ"
+          ? opts
+              .split("|")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : type === "RATING"
+            ? ["1", "2", "3", "4", "5"]
+            : [],
       id: null
     };
     setQuestions([...questions, q]);
-    setText(""); 
+    setText("");
     setOpts("");
   };
 
@@ -70,7 +83,11 @@ export default function QuestionEditor({ surveyId, onSaved }) {
       />
 
       <div className="flex gap-2 items-center">
-        <select value={type} onChange={(e) => setType(e.target.value)} className="p-2 border rounded">
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value)}
+          className="p-2 border rounded"
+        >
           <option value="TEXT">Text</option>
           <option value="RATING">Rating (1-5)</option>
           <option value="MCQ">Multiple Choice</option>
@@ -85,7 +102,11 @@ export default function QuestionEditor({ surveyId, onSaved }) {
           />
         )}
 
-        <button type="button" onClick={handleAdd} className="bg-[#02C39A] text-white px-3 py-1 rounded">
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="bg-[#02C39A] text-white px-3 py-1 rounded"
+        >
           Add
         </button>
       </div>
@@ -95,18 +116,26 @@ export default function QuestionEditor({ surveyId, onSaved }) {
         {questions.map((q, i) => (
           <div key={i} className="flex justify-between py-1">
             <div>
-              <div className="text-sm font-medium">{i + 1}. {q.question_text}</div>
+              <div className="text-sm font-medium">
+                {i + 1}. {q.question_text}
+              </div>
               <div className="text-xs text-[#9B9B9B]">
-                {q.question_type}{q.options?.length ? ` • ${q.options.join(", ")}` : ""}
+                {q.question_type}
+                {q.options?.length ? ` • ${q.options.join(", ")}` : ""}
               </div>
             </div>
-            <button onClick={() => handleRemove(i)} className="text-red-600">Remove</button>
+            <button onClick={() => handleRemove(i)} className="text-red-600">
+              Remove
+            </button>
           </div>
         ))}
       </div>
 
       {/* Save Button */}
-      <button onClick={handleSave} className="mt-3 w-full bg-[#05668D] text-white p-2 rounded">
+      <button
+        onClick={handleSave}
+        className="mt-3 w-full bg-[#05668D] text-white p-2 rounded"
+      >
         Save Questions
       </button>
     </div>

@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 /**
  * UI Slice
@@ -7,103 +7,103 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   // Global loading state
   isGlobalLoading: false,
-  
+
   // Notification state
   notifications: [],
-  
+
   // Modal states
   modals: {
     moduleConfig: false,
     userProfile: false,
-    confirmDelete: false,
+    confirmDelete: false
   },
-  
+
   // Sidebar state (for dashboard layouts)
   sidebarOpen: false,
-  
+
   // Theme and preferences
-  theme: 'light',
-  
+  theme: "light",
+
   // Error boundary
   hasError: false,
-  errorMessage: null,
+  errorMessage: null
 };
 
 const uiSlice = createSlice({
-  name: 'ui',
+  name: "ui",
   initialState,
   reducers: {
     // Global loading
     setGlobalLoading: (state, action) => {
       state.isGlobalLoading = action.payload;
     },
-    
+
     // Notifications
     addNotification: (state, action) => {
       const notification = {
         id: Date.now() + Math.random(),
-        type: 'info',
-        title: '',
-        message: '',
+        type: "info",
+        title: "",
+        message: "",
         autoClose: true,
         duration: 5000,
-        ...action.payload,
+        ...action.payload
       };
       state.notifications.push(notification);
     },
-    
+
     removeNotification: (state, action) => {
       state.notifications = state.notifications.filter(
-        notification => notification.id !== action.payload
+        (notification) => notification.id !== action.payload
       );
     },
-    
+
     clearAllNotifications: (state) => {
       state.notifications = [];
     },
-    
+
     // Modals
     openModal: (state, action) => {
       const { modalName, data } = action.payload;
       state.modals[modalName] = { open: true, data };
     },
-    
+
     closeModal: (state, action) => {
       const modalName = action.payload;
       state.modals[modalName] = { open: false, data: null };
     },
-    
+
     closeAllModals: (state) => {
-      Object.keys(state.modals).forEach(modalName => {
+      Object.keys(state.modals).forEach((modalName) => {
         state.modals[modalName] = { open: false, data: null };
       });
     },
-    
+
     // Sidebar
     toggleSidebar: (state) => {
       state.sidebarOpen = !state.sidebarOpen;
     },
-    
+
     setSidebarOpen: (state, action) => {
       state.sidebarOpen = action.payload;
     },
-    
+
     // Theme
     setTheme: (state, action) => {
       state.theme = action.payload;
     },
-    
+
     // Error boundary
     setError: (state, action) => {
       state.hasError = true;
       state.errorMessage = action.payload;
     },
-    
+
     clearError: (state) => {
       state.hasError = false;
       state.errorMessage = null;
-    },
-  },
+    }
+  }
 });
 
 // Export actions
@@ -119,7 +119,7 @@ export const {
   setSidebarOpen,
   setTheme,
   setError,
-  clearError,
+  clearError
 } = uiSlice.actions;
 
 // Export selectors

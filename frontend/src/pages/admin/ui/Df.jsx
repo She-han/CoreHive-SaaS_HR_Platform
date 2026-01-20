@@ -5,7 +5,7 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  Legend,
+  Legend
 } from "recharts";
 import {
   UserPlus,
@@ -13,7 +13,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  Star,
+  Star
 } from "lucide-react";
 
 const ModuleUsageChart = memo(() => {
@@ -22,7 +22,7 @@ const ModuleUsageChart = memo(() => {
     { name: "Payroll", value: 95, color: "#82ca9d" },
     { name: "Leave", value: 102, color: "#ffc658" },
     { name: "Attendance", value: 87, color: "#ff7300" },
-    { name: "Performance", value: 64, color: "#0088fe" },
+    { name: "Performance", value: 64, color: "#0088fe" }
   ];
 
   const CustomTooltip = ({ active, payload }) => {
@@ -34,7 +34,7 @@ const ModuleUsageChart = memo(() => {
             padding: "10px",
             border: "1px solid #ddd",
             borderRadius: "4px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
           }}
         >
           <p style={{ margin: 0, fontWeight: "bold" }}>{payload[0].name}</p>
@@ -57,16 +57,17 @@ const ModuleUsageChart = memo(() => {
         borderRadius: "16px",
         boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
         border: "1px solid #f3f4f6",
-        height: "100%",
+        height: "100%"
       }}
     >
       <div
         style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}
       >
-       
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Module Usage by Tenants</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-4">
+          Module Usage by Tenants
+        </h3>
       </div>
-      <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>
+      <p style={{ marginBottom: "20px", color: "#666", fontSize: "14px" }}>
         Active module subscriptions
       </p>
 
@@ -102,7 +103,14 @@ const ModuleUsageChart = memo(() => {
           </ResponsiveContainer>
         </div>
 
-        <div style={{ flex: 1, paddingLeft: "20px", paddingBottom: "20px", margin: "1px" }}>
+        <div
+          style={{
+            flex: 1,
+            paddingLeft: "20px",
+            paddingBottom: "20px",
+            margin: "1px"
+          }}
+        >
           <div style={{ marginBottom: "20px" }}>
             <h4
               style={{ marginBottom: "15px", color: "#333", fontSize: "14px" }}
@@ -117,7 +125,7 @@ const ModuleUsageChart = memo(() => {
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "10px 0",
-                  borderBottom: "1px solid #f0f0f0",
+                  borderBottom: "1px solid #f0f0f0"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center" }}>
@@ -127,7 +135,7 @@ const ModuleUsageChart = memo(() => {
                       height: "12px",
                       borderRadius: "2px",
                       backgroundColor: module.color,
-                      marginRight: "10px",
+                      marginRight: "10px"
                     }}
                   />
                   <span style={{ color: "#333" }}>{module.name}</span>
@@ -135,7 +143,7 @@ const ModuleUsageChart = memo(() => {
                 <span
                   style={{
                     fontWeight: "bold",
-                    color: "#333",
+                    color: "#333"
                   }}
                 >
                   {module.value}
@@ -143,14 +151,12 @@ const ModuleUsageChart = memo(() => {
               </div>
             ))}
           </div>
-
-          
         </div>
       </div>
     </div>
   );
 });
 
-ModuleUsageChart.displayName = 'ModuleUsageChart';
+ModuleUsageChart.displayName = "ModuleUsageChart";
 
 export default ModuleUsageChart;

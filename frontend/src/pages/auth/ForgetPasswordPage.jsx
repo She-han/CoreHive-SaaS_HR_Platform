@@ -1,66 +1,66 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, KeyRound } from 'lucide-react';
-import { apiPost } from '../../api/axios'; // Ensure this path is correct
+import React, { useState, useRef } from "react";
+import { Link } from "react-router-dom";
+import { Mail, ArrowLeft, KeyRound } from "lucide-react";
+import { apiPost } from "../../api/axios"; // Ensure this path is correct
 
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Card from '../../components/common/Card';
-import Alert from '../../components/common/Alert';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
-import ReCaptcha from '../../components/common/ReCaptcha';
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Card from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
+import ReCaptcha from "../../components/common/ReCaptcha";
 
 export const ForgetPasswordPage = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: '', message: '' });
+  const [status, setStatus] = useState({ type: "", message: "" });
   const [recaptchaToken, setRecaptchaToken] = useState(null);
-  const [recaptchaError, setRecaptchaError] = useState('');
+  const [recaptchaError, setRecaptchaError] = useState("");
   const recaptchaRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus({ type: '', message: '' });
-    setRecaptchaError('');
+    setStatus({ type: "", message: "" });
+    setRecaptchaError("");
 
     if (!email) {
-      setStatus({ type: 'error', message: 'Please enter your email address' });
+      setStatus({ type: "error", message: "Please enter your email address" });
       return;
     }
 
     if (!recaptchaToken) {
-      setRecaptchaError('Please complete the reCAPTCHA verification');
+      setRecaptchaError("Please complete the reCAPTCHA verification");
       return;
     }
 
     setLoading(true);
     try {
-      const response = await apiPost('/auth/forgot-password', { 
+      const response = await apiPost("/auth/forgot-password", {
         email,
-        recaptchaToken 
+        recaptchaToken
       });
 
       if (response.success) {
-        setStatus({ 
-          type: 'success', 
-          message: 'Success! Check your email for the temporary password.' 
+        setStatus({
+          type: "success",
+          message: "Success! Check your email for the temporary password."
         });
-        setEmail(''); // Clear input
+        setEmail(""); // Clear input
         recaptchaRef.current?.reset();
         setRecaptchaToken(null);
       } else {
-        setStatus({ 
-          type: 'error', 
-          message: response.message || 'Failed to reset password.' 
+        setStatus({
+          type: "error",
+          message: response.message || "Failed to reset password."
         });
         recaptchaRef.current?.reset();
         setRecaptchaToken(null);
       }
     } catch (err) {
-      setStatus({ 
-        type: 'error', 
-        message: 'An error occurred. Please try again later.' 
+      setStatus({
+        type: "error",
+        message: "An error occurred. Please try again later."
       });
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
@@ -79,18 +79,21 @@ export const ForgetPasswordPage = () => {
               <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <KeyRound className="w-6 h-6 text-blue-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Forgot Password?</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Forgot Password?
+              </h2>
               <p className="text-gray-600 mt-2 text-sm">
-                Enter your registered email address and we'll send you a temporary password.
+                Enter your registered email address and we'll send you a
+                temporary password.
               </p>
             </div>
 
             {status.message && (
-              <Alert 
-                type={status.type} 
-                message={status.message} 
+              <Alert
+                type={status.type}
+                message={status.message}
                 isOpen={!!status.message}
-                onClose={() => setStatus({ type: '', message: '' })}
+                onClose={() => setStatus({ type: "", message: "" })}
                 className="mb-6"
               />
             )}
@@ -105,28 +108,30 @@ export const ForgetPasswordPage = () => {
                 required
                 icon={Mail}
               />
-              
+
               <div className="space-y-2">
                 <ReCaptcha
                   ref={recaptchaRef}
                   onChange={(token) => {
                     setRecaptchaToken(token);
-                    setRecaptchaError('');
+                    setRecaptchaError("");
                   }}
                   onExpired={() => {
                     setRecaptchaToken(null);
-                    setRecaptchaError('reCAPTCHA expired. Please verify again.');
+                    setRecaptchaError(
+                      "reCAPTCHA expired. Please verify again."
+                    );
                   }}
                   onError={() => {
                     setRecaptchaToken(null);
-                    setRecaptchaError('reCAPTCHA error. Please try again.');
+                    setRecaptchaError("reCAPTCHA error. Please try again.");
                   }}
                 />
                 {recaptchaError && (
                   <p className="text-sm text-red-600">{recaptchaError}</p>
                 )}
               </div>
-              
+
               <Button
                 type="submit"
                 variant="primary"
@@ -137,8 +142,8 @@ export const ForgetPasswordPage = () => {
               </Button>
 
               <div className="text-center mt-4">
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -149,7 +154,7 @@ export const ForgetPasswordPage = () => {
           </Card>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </>
   );
 };

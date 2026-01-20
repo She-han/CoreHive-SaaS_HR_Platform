@@ -1,23 +1,23 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { Lock, CheckCircle } from 'lucide-react';
-import { selectUser } from '../../store/slices/authSlice';
-import { apiPost } from '../../api/axios'; // Your axios helper
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Lock, CheckCircle } from "lucide-react";
+import { selectUser } from "../../store/slices/authSlice";
+import { apiPost } from "../../api/axios"; // Your axios helper
 
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Card from '../../components/common/Card';
-import Alert from '../../components/common/Alert';
-import Navbar from '../../components/layout/Navbar';
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Card from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
+import Navbar from "../../components/layout/Navbar";
 
 export const ChangePasswordPage = () => {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
-  
+
   const [passwords, setPasswords] = useState({
-    newPassword: '',
-    confirmPassword: ''
+    newPassword: "",
+    confirmPassword: ""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -39,7 +39,7 @@ export const ChangePasswordPage = () => {
     setLoading(true);
     try {
       // API call to change password
-      const response = await apiPost('/auth/change-password', {
+      const response = await apiPost("/auth/change-password", {
         userId: user.userId, // Send User ID
         newPassword: passwords.newPassword
       });
@@ -47,12 +47,12 @@ export const ChangePasswordPage = () => {
       if (response.success) {
         // Success! Redirect to dashboard based on role
         // ඔයාගේ LoginPage.jsx එකේ තියෙන logic එකම මෙතන use කරන්න පුළුවන්
-        if (user.role === 'ORG_ADMIN') {
-             navigate('/org_admin/dashboard');
-        } else if (user.role === 'HR_STAFF') {
-             navigate('/hr_staff/dashboard');
+        if (user.role === "ORG_ADMIN") {
+          navigate("/org_admin/dashboard");
+        } else if (user.role === "HR_STAFF") {
+          navigate("/hr_staff/dashboard");
         } else {
-             navigate('/employee/profile');
+          navigate("/employee/profile");
         }
       } else {
         setError(response.message || "Failed to change password");
@@ -74,7 +74,9 @@ export const ChangePasswordPage = () => {
               <div className="mx-auto w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
                 <Lock className="w-6 h-6 text-yellow-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">Set New Password</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Set New Password
+              </h2>
               <p className="text-gray-600 mt-2">
                 For security reasons, please update your temporary password.
               </p>
@@ -87,7 +89,9 @@ export const ChangePasswordPage = () => {
                 label="New Password"
                 type="password"
                 value={passwords.newPassword}
-                onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})}
+                onChange={(e) =>
+                  setPasswords({ ...passwords, newPassword: e.target.value })
+                }
                 required
                 icon={Lock}
               />
@@ -95,7 +99,12 @@ export const ChangePasswordPage = () => {
                 label="Confirm Password"
                 type="password"
                 value={passwords.confirmPassword}
-                onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})}
+                onChange={(e) =>
+                  setPasswords({
+                    ...passwords,
+                    confirmPassword: e.target.value
+                  })
+                }
                 required
                 icon={CheckCircle}
               />
@@ -114,4 +123,3 @@ export const ChangePasswordPage = () => {
     </>
   );
 };
-

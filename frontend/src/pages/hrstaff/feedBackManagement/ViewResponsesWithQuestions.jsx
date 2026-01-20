@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getSurveyDetails, getResponseDetails } from "../../../api/feedbackService";
+import {
+  getSurveyDetails,
+  getResponseDetails
+} from "../../../api/feedbackService";
 import { FiArrowLeft, FiUser, FiHelpCircle } from "react-icons/fi";
 
 export default function ViewResponsesWithQuestions() {
- const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
   const { id } = useParams(); // surveyId from route params
 
   const [survey, setSurvey] = useState(null);
@@ -42,7 +47,9 @@ export default function ViewResponsesWithQuestions() {
           <FiArrowLeft size={18} /> Back
         </Link>
 
-        <h1 className="text-3xl font-extrabold mt-4 text-[#333333]">{survey.title}</h1>
+        <h1 className="text-3xl font-extrabold mt-4 text-[#333333]">
+          {survey.title}
+        </h1>
         <p className="text-[#6B7280] text-sm mt-1">{survey.description}</p>
 
         <h2 className="text-xl font-semibold mt-4 text-[#333333]">
@@ -67,7 +74,9 @@ export default function ViewResponsesWithQuestions() {
             <div className="flex items-center gap-2 mb-4">
               <FiUser className="text-[#05668D] text-lg" />
               <p className="font-medium text-[#333333] text-lg">
-                {resp.employeeId ? `Employee ${resp.employeeId}` : "Anonymous User"}
+                {resp.employeeId
+                  ? `Employee ${resp.employeeId}`
+                  : "Anonymous User"}
               </p>
             </div>
 
@@ -103,19 +112,23 @@ export default function ViewResponsesWithQuestions() {
                     {/* TEXT ANSWER */}
                     {q.questionType === "TEXT" && answer?.answerText && (
                       <p className="mt-2 text-[#333333]">
-                        <span className="font-medium">Answer:</span> {answer.answerText}
+                        <span className="font-medium">Answer:</span>{" "}
+                        {answer.answerText}
                       </p>
                     )}
 
                     {/* MCQ */}
                     {q.questionType === "MCQ" && answer?.selectedOption && (
                       <p className="mt-2 text-[#333333]">
-                        <span className="font-medium">Selected:</span> {answer.selectedOption}
+                        <span className="font-medium">Selected:</span>{" "}
+                        {answer.selectedOption}
                       </p>
                     )}
 
                     {/* NOT ANSWERED */}
-                    {!answer && <p className="mt-2 text-red-500 italic">Not answered</p>}
+                    {!answer && (
+                      <p className="mt-2 text-red-500 italic">Not answered</p>
+                    )}
                   </div>
                 );
               })}

@@ -1,4 +1,4 @@
-import apiClient from './axios';
+import apiClient from "./axios";
 
 /**
  * Designation API Service
@@ -10,10 +10,10 @@ import apiClient from './axios';
  */
 export const getAllDesignations = async () => {
   try {
-    const response = await apiClient.get('/org-admin/designations');
+    const response = await apiClient.get("/org-admin/designations");
     return response.data;
   } catch (error) {
-    console.error('Error fetching designations:', error);
+    console.error("Error fetching designations:", error);
     throw error;
   }
 };
@@ -26,7 +26,7 @@ export const getDesignationById = async (id) => {
     const response = await apiClient.get(`/org-admin/designations/${id}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching designation:', error);
+    console.error("Error fetching designation:", error);
     throw error;
   }
 };
@@ -36,10 +36,13 @@ export const getDesignationById = async (id) => {
  */
 export const createDesignation = async (designationData) => {
   try {
-    const response = await apiClient.post('/org-admin/designations', designationData);
+    const response = await apiClient.post(
+      "/org-admin/designations",
+      designationData
+    );
     return response.data;
   } catch (error) {
-    console.error('Error creating designation:', error);
+    console.error("Error creating designation:", error);
     throw error;
   }
 };
@@ -49,10 +52,13 @@ export const createDesignation = async (designationData) => {
  */
 export const updateDesignation = async (id, designationData) => {
   try {
-    const response = await apiClient.put(`/org-admin/designations/${id}`, designationData);
+    const response = await apiClient.put(
+      `/org-admin/designations/${id}`,
+      designationData
+    );
     return response.data;
   } catch (error) {
-    console.error('Error updating designation:', error);
+    console.error("Error updating designation:", error);
     throw error;
   }
 };
@@ -65,7 +71,7 @@ export const deleteDesignation = async (id) => {
     const response = await apiClient.delete(`/org-admin/designations/${id}`);
     return response.data;
   } catch (error) {
-    console.error('Error deleting designation:', error);
+    console.error("Error deleting designation:", error);
     throw error;
   }
 };

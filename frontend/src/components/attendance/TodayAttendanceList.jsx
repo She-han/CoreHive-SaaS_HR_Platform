@@ -13,13 +13,10 @@ const formatTime = (dateTime) => {
 const TodayAttendanceList = ({ title, data, mode }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      
       {/* HEADER */}
       <div
         className={`px-6 py-4 flex items-center ${
-          mode === "checkin"
-            ? "bg-[#02C39A]"
-            : "bg-[#05668D]"
+          mode === "checkin" ? "bg-[#02C39A]" : "bg-[#05668D]"
         }`}
       >
         <UserCheck className="text-white mr-2" />
@@ -31,9 +28,7 @@ const TodayAttendanceList = ({ title, data, mode }) => {
       {/* LIST */}
       <div className="p-4 space-y-3 max-h-[420px] overflow-y-auto">
         {data.length === 0 ? (
-          <p className="text-center text-gray-500 py-10">
-            No records found
-          </p>
+          <p className="text-center text-gray-500 py-10">No records found</p>
         ) : (
           data.map((item, index) => (
             <div

@@ -213,7 +213,10 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
 
         {alert.show && (
           <div className="p-4">
-            <Alert {...alert} onClose={() => setAlert({ ...alert, show: false })} />
+            <Alert
+              {...alert}
+              onClose={() => setAlert({ ...alert, show: false })}
+            />
           </div>
         )}
 
@@ -233,7 +236,11 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization }) => {
               label="Users"
               value={`${organization.userCount || 0}`}
             />
-            <InfoCard icon={CreditCard} label="Plan" value={organization.plan} />
+            <InfoCard
+              icon={CreditCard}
+              label="Plan"
+              value={organization.plan}
+            />
             <InfoCard
               icon={Calendar}
               label="Created"

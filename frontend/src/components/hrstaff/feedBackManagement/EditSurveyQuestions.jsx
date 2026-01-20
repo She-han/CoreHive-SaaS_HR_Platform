@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getSurveyQuestions, updateSurveyQuestions } from "../../../api/feedbackService";
+import {
+  getSurveyQuestions,
+  updateSurveyQuestions
+} from "../../../api/feedbackService";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 
@@ -8,9 +11,11 @@ export default function EditSurveyQuestions() {
   const navigate = useNavigate();
 
   const [questions, setQuestions] = useState([]);
-  const token = localStorage.getItem('corehive_token') || sessionStorage.getItem('corehive_token');
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
 
-    // Load survey questions
+  // Load survey questions
   useEffect(() => {
     if (!token) return; // prevent call if token not available
     getSurveyQuestions(id, token)
@@ -20,7 +25,7 @@ export default function EditSurveyQuestions() {
           questionText: q.questionText,
           questionType: q.questionType,
           options: q.options ? JSON.parse(q.options) : [],
-          position: q.position,
+          position: q.position
         }));
         setQuestions(mapped);
       })
@@ -38,8 +43,8 @@ export default function EditSurveyQuestions() {
         questionText: "",
         questionType: "TEXT",
         options: [],
-        position: questions.length + 1,
-      },
+        position: questions.length + 1
+      }
     ]);
   };
 
@@ -90,7 +95,6 @@ export default function EditSurveyQuestions() {
 
   return (
     <div className="flex flex-col h-screen bg-[#F7FAFC]">
-
       {/* HEADER */}
       <div className="p-6 bg-white border-b shadow-sm flex items-center gap-3 sticky top-0 z-20">
         <button
@@ -107,7 +111,6 @@ export default function EditSurveyQuestions() {
 
       {/* SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto p-6">
-
         {questions.map((q, index) => (
           <div
             key={index}
@@ -131,14 +134,18 @@ export default function EditSurveyQuestions() {
               placeholder="Edit question..."
               className="w-full p-3 border rounded-lg mb-3 shadow-sm"
               value={q.questionText}
-              onChange={(e) => updateField(index, "questionText", e.target.value)}
+              onChange={(e) =>
+                updateField(index, "questionText", e.target.value)
+              }
             />
 
             {/* Question Type */}
             <select
               className="w-full p-3 border rounded-lg mb-3 shadow-sm"
               value={q.questionType}
-              onChange={(e) => updateField(index, "questionType", e.target.value)}
+              onChange={(e) =>
+                updateField(index, "questionType", e.target.value)
+              }
             >
               <option value="TEXT">Text Answer</option>
               <option value="MCQ">Multiple Choice</option>
@@ -153,7 +160,11 @@ export default function EditSurveyQuestions() {
                 className="w-full p-3 border rounded-lg shadow-sm"
                 value={q.options.join(", ")}
                 onChange={(e) =>
-                  updateField(index, "options", e.target.value.split(",").map((o) => o.trim()))
+                  updateField(
+                    index,
+                    "options",
+                    e.target.value.split(",").map((o) => o.trim())
+                  )
                 }
               />
             )}

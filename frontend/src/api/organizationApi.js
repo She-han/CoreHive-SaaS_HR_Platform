@@ -1,11 +1,11 @@
-import { apiGet, apiPut } from './axios';
+import { apiGet, apiPut } from "./axios";
 
 /**
  * Organization Management API
  * For System Admin organization operations
  */
 const ORG_ENDPOINTS = {
-  ALL_ORGANIZATIONS: '/sys_admin/organizations',
+  ALL_ORGANIZATIONS: "/sys_admin/organizations",
   ORGANIZATION_DETAILS: (uuid) => `/sys_admin/organizations/${uuid}`,
   CHANGE_STATUS: (uuid) => `/sys_admin/organizations/${uuid}/status`,
   APPROVE: (uuid) => `/sys_admin/organizations/${uuid}/approve`,
@@ -19,13 +19,13 @@ const ORG_ENDPOINTS = {
  */
 export const getAllOrganizations = async (params = {}) => {
   try {
-    console.log('📋 Fetching organizations with params:', params);
+    console.log("📋 Fetching organizations with params:", params);
 
     const queryParams = new URLSearchParams({
       page: params.page ?? 0,
       size: params.size ?? 10,
-      sortBy: params.sortBy ?? 'createdAt',
-      sortDir: params.sortDir ?? 'desc',
+      sortBy: params.sortBy ?? "createdAt",
+      sortDir: params.sortDir ?? "desc",
       ...params
     });
 
@@ -41,7 +41,7 @@ export const getAllOrganizations = async (params = {}) => {
 
     return response;
   } catch (error) {
-    console.error('❌ Failed to fetch organizations:', error);
+    console.error("❌ Failed to fetch organizations:", error);
     throw error;
   }
 };
@@ -53,19 +53,19 @@ export const getAllOrganizations = async (params = {}) => {
  */
 export const getOrganizationDetails = async (organizationUuid) => {
   try {
-    console.log('🔍 Fetching organization details:', organizationUuid);
+    console.log("🔍 Fetching organization details:", organizationUuid);
 
     const response = await apiGet(
       ORG_ENDPOINTS.ORGANIZATION_DETAILS(organizationUuid)
     );
 
     if (response?.success) {
-      console.log('✅ Organization details retrieved');
+      console.log("✅ Organization details retrieved");
     }
 
     return response;
   } catch (error) {
-    console.error('❌ Failed to fetch organization details:', error);
+    console.error("❌ Failed to fetch organization details:", error);
     throw error;
   }
 };
@@ -76,26 +76,21 @@ export const getOrganizationDetails = async (organizationUuid) => {
  * @param {string} newStatus - New status
  * @returns {Promise} API response
  */
-export const changeOrganizationStatus = async (
-  organizationUuid,
-  newStatus
-) => {
+export const changeOrganizationStatus = async (organizationUuid, newStatus) => {
   try {
-    console.log(
-      `🔄 Changing status for ${organizationUuid} to ${newStatus}`
-    );
+    console.log(`🔄 Changing status for ${organizationUuid} to ${newStatus}`);
 
     const response = await apiPut(
       `${ORG_ENDPOINTS.CHANGE_STATUS(organizationUuid)}?status=${newStatus}`
     );
 
     if (response?.success) {
-      console.log('✅ Status changed successfully');
+      console.log("✅ Status changed successfully");
     }
 
     return response;
   } catch (error) {
-    console.error('❌ Failed to change status:', error);
+    console.error("❌ Failed to change status:", error);
     throw error;
   }
 };
@@ -107,19 +102,17 @@ export const changeOrganizationStatus = async (
  */
 export const approveOrganization = async (organizationUuid) => {
   try {
-    console.log('✅ Approving organization:', organizationUuid);
+    console.log("✅ Approving organization:", organizationUuid);
 
-    const response = await apiPut(
-      ORG_ENDPOINTS.APPROVE(organizationUuid)
-    );
+    const response = await apiPut(ORG_ENDPOINTS.APPROVE(organizationUuid));
 
     if (response?.success) {
-      console.log('✅ Organization approved successfully');
+      console.log("✅ Organization approved successfully");
     }
 
     return response;
   } catch (error) {
-    console.error('❌ Failed to approve organization:', error);
+    console.error("❌ Failed to approve organization:", error);
     throw error;
   }
 };
@@ -131,19 +124,17 @@ export const approveOrganization = async (organizationUuid) => {
  */
 export const rejectOrganization = async (organizationUuid) => {
   try {
-    console.log('❌ Rejecting organization:', organizationUuid);
+    console.log("❌ Rejecting organization:", organizationUuid);
 
-    const response = await apiPut(
-      ORG_ENDPOINTS.REJECT(organizationUuid)
-    );
+    const response = await apiPut(ORG_ENDPOINTS.REJECT(organizationUuid));
 
     if (response?.success) {
-      console.log('✅ Organization rejected successfully');
+      console.log("✅ Organization rejected successfully");
     }
 
     return response;
   } catch (error) {
-    console.error('❌ Failed to reject organization:', error);
+    console.error("❌ Failed to reject organization:", error);
     throw error;
   }
 };

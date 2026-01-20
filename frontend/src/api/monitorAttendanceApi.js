@@ -8,9 +8,9 @@ const BASE = "http://localhost:8080/api/attendance";
 export const getAttendanceSummary = async (date, token) => {
   return axios
     .get(`${BASE}/summary?date=${date}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data);
+    .then((res) => res.data.data);
 };
 
 /**
@@ -19,7 +19,7 @@ export const getAttendanceSummary = async (date, token) => {
 export const getAttendanceByDate = async (date, token) => {
   return axios
     .get(`${BASE}?date=${date}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data || []);
+    .then((res) => res.data.data || []);
 };

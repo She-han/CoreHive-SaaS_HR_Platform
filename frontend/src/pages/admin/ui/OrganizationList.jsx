@@ -69,9 +69,7 @@ const OrganizationRow = memo(({ org, onViewDetails }) => (
       </span>
     </td>
 
-    <td className="text-center">
-      {org.billing || "$0/mo"}
-    </td>
+    <td className="text-center">{org.billing || "$0/mo"}</td>
 
     <td className="text-center">
       <div className="flex items-center justify-center gap-1">
@@ -153,8 +151,7 @@ export default function OrganizationList() {
       org.name?.toLowerCase().includes(search.toLowerCase()) ||
       org.email?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || org.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || org.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });

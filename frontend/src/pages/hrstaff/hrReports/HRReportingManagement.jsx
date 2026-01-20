@@ -26,9 +26,7 @@ export default function HRReportingManagement() {
     >
       {/* Header */}
       <div className="mb-6 shrink-0">
-        <h1 className="text-2xl font-bold text-[#333333]">
-          HR Reports
-        </h1>
+        <h1 className="text-2xl font-bold text-[#333333]">HR Reports</h1>
         <p className="text-[#9B9B9B] font-medium">
           Workforce insights & analytics
         </p>
@@ -39,7 +37,7 @@ export default function HRReportingManagement() {
         {[
           { key: "headcount", label: "Headcount Report" },
           { key: "monthly", label: "Monthly Report" },
-          { key: "annual", label: "Annual Report" },
+          { key: "annual", label: "Annual Report" }
         ].map((tab) => (
           <button
             key={tab.key}
@@ -59,9 +57,7 @@ export default function HRReportingManagement() {
       </div>
 
       {/* Report Content (Scrollable like EmployeeManagement) */}
-      <div className="flex-1 overflow-y-auto">
-        {renderActiveReport()}
-      </div>
+      <div className="flex-1 overflow-y-auto">{renderActiveReport()}</div>
     </div>
   );
 }

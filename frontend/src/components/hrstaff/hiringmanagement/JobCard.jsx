@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Briefcase, Users, Edit3, Trash2 , Mail } from "lucide-react";
+import { Calendar, Briefcase, Users, Edit3, Trash2, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const JobCard = ({
@@ -14,16 +14,16 @@ const JobCard = ({
   postedDate,
   closingDate,
   contactEmail,
-  onDelete,
+  onDelete
 }) => {
   const statusStyles = {
     Open: "bg-[#1ED292]/20 text-[#1ED292] border border-[#1ED292]/40",
     Draft: "bg-[#9B9B9B]/15 text-[#9B9B9B] border border-[#9B9B9B]/30",
-    Closed: "bg-[#333333]/15 text-[#333333] border border-[#333333]/30",
+    Closed: "bg-[#333333]/15 text-[#333333] border border-[#333333]/30"
   };
 
   return (
-   <div className="relative bg-white border border-[#02C39A]/30 rounded-2xl shadow-[0_4px_15px_rgba(2,195,154,0.1)] hover:shadow-[0_6px_20px_rgba(2,195,154,0.2)] hover:-translate-y-[3px] transition-all duration-300 ease-out p-5 flex flex-col gap-4 overflow-hidden">
+    <div className="relative bg-white border border-[#02C39A]/30 rounded-2xl shadow-[0_4px_15px_rgba(2,195,154,0.1)] hover:shadow-[0_6px_20px_rgba(2,195,154,0.2)] hover:-translate-y-[3px] transition-all duration-300 ease-out p-5 flex flex-col gap-4 overflow-hidden">
       {/* Top-right decorative corner */}
       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-[#02C39A]/15 to-transparent rounded-bl-[100px]" />
 
@@ -37,7 +37,9 @@ const JobCard = ({
             <h2 className="text-[#0C397A] font-semibold text-lg leading-snug tracking-tight">
               {title}
             </h2>
-            <p className="text-[#666666] text-xs mt-1 max-w-[220px]">{description}</p>
+            <p className="text-[#666666] text-xs mt-1 max-w-[220px]">
+              {description}
+            </p>
           </div>
         </div>
 
@@ -59,29 +61,29 @@ const JobCard = ({
             <Briefcase size={16} className="text-[#05668D]" />
           </div>
           <div>
-            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">Department</p>
+            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">
+              Department
+            </p>
             <p className="font-semibold text-[#05668D]">{department}</p>
           </div>
         </div>
 
         {/* CONTACT EMAIL */}
         {contactEmail && (
-            <div className="flex items-center justify-center">
-              <a
-                href={`mailto:${contactEmail}`}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl 
+          <div className="flex items-center justify-center">
+            <a
+              href={`mailto:${contactEmail}`}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl 
                           bg-[#05668D]/10 text-[#05668D] 
                           hover:bg-[#05668D]/20 transition-all duration-200"
-              >
-                <Mail size={16} />
-                <span className="text-xs font-medium truncate max-w-[180px]">
-                  {contactEmail}
-                </span>
-              </a>
-            </div>
-          )}
-
-
+            >
+              <Mail size={16} />
+              <span className="text-xs font-medium truncate max-w-[180px]">
+                {contactEmail}
+              </span>
+            </a>
+          </div>
+        )}
 
         {/* Vacancies */}
         <div className="flex items-center gap-2.5">
@@ -89,7 +91,9 @@ const JobCard = ({
             <Users size={16} className="text-[#1ED292]" />
           </div>
           <div>
-            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">Vacancies</p>
+            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">
+              Vacancies
+            </p>
             <p className="font-semibold text-[#02C39A]">{vacancies}</p>
           </div>
         </div>
@@ -100,7 +104,9 @@ const JobCard = ({
             <Calendar size={16} className="text-[#0C397A]" />
           </div>
           <div>
-            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">Posted</p>
+            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">
+              Posted
+            </p>
             <p className="text-[#333333] font-semibold">{postedDate}</p>
           </div>
         </div>
@@ -111,7 +117,9 @@ const JobCard = ({
             <Calendar size={16} className="text-[#333333]" />
           </div>
           <div>
-            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">Closing</p>
+            <p className="text-[#9B9B9B] uppercase font-semibold tracking-wide">
+              Closing
+            </p>
             <p className="text-[#E63946] font-semibold">{closingDate}</p>
           </div>
         </div>

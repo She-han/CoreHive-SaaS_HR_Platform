@@ -6,9 +6,7 @@ import apiClient from "./axios";
  */
 export const getAllNotices = async (page = 0, size = 10) => {
   try {
-    const res = await apiClient.get(
-      `/notices?page=${page}&size=${size}`
-    );
+    const res = await apiClient.get(`/notices?page=${page}&size=${size}`);
     return res.data.data; // Page<NoticeResponseDTO>
   } catch (err) {
     console.error("Error fetching notices", err);

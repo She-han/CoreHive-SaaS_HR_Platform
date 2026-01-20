@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode"; // The library for QR code scanning using camera
 import { LogIn, LogOut, Camera, Play, Square, Check, X, ShieldCheck } from "lucide-react";
 import TodayAttendanceList from "../../components/attendance/TodayAttendanceList";
 
@@ -12,18 +12,26 @@ const getAuthToken = () =>
   sessionStorage.getItem("corehive_token");
 
 const QrAttendanceMarking = () => {
-  const scannerRef = useRef(null);
-  const scannedOnceRef = useRef(false);
+  const scannerRef = useRef(null); // Reference to the Html5Qrcode scanner instance
+  const scannedOnceRef = useRef(false); // To prevent multiple scans of one QR code
 
-  const [activeTab, setActiveTab] = useState("checkin");
-  const [isScanning, setIsScanning] = useState(false);
-  const [result, setResult] = useState(null);
-  const [todayAttendance, setTodayAttendance] = useState([]);
+  // ================= STATE VARIABLES =================
+  const [activeTab, setActiveTab] = useState("checkin"); //Current active tab (checkin / checkout)
+  const [isScanning, setIsScanning] = useState(false);// Whether the camera is currently scanning or not
+  const [result, setResult] = useState(null);//QR scan result (success / error message)
+  const [todayAttendance, setTodayAttendance] = useState([]); //// Today's attendance records
+  const [showDownloadModal, setShowDownloadModal] = useState(false); // Download QR modal visibility
+  const [employeeCode, setEmployeeCode] = useState(""); // Employee code for QR download
+  const [downloading, setDownloading] = useState(false); // Downloading state for QR code
 
+
+  //================= EFFECTS =================
+  // Fetch today's attendance when component mounts
   useEffect(() => {
     fetchTodayAttendance();
   }, []);
 
+  // Cleanup when page leaving 
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
@@ -33,6 +41,15 @@ const QrAttendanceMarking = () => {
     };
   }, []);
 
+  // Open download modal when Download tab is selected
+useEffect(() => {
+  if (activeTab === "download") {
+    setShowDownloadModal(true);
+  }
+}, [activeTab]);
+
+
+  // Fetch today's attendance records from the server
   const fetchTodayAttendance = async () => {
     const token = getAuthToken();
     if (!token) return;
@@ -47,27 +64,30 @@ const QrAttendanceMarking = () => {
     }
   };
 
+  // Start the QR code scanning process using the device camera ON
   const startScanning = async () => {
     if (isScanning) return;
     setResult(null);
     scannedOnceRef.current = false;
     setIsScanning(true);
 
-    const qr = new Html5Qrcode("qr-reader");
+    const qr = new Html5Qrcode("qr-reader"); // Create scanner instance
     scannerRef.current = qr;
 
     try {
       await qr.start(
-        { facingMode: "environment" },
-        { fps: 15, qrbox: { width: 280, height: 280 } },
+        { facingMode: "environment" }, // Use rear camera if available
+        { fps: 15, qrbox: { width: 280, height: 280 } }, // Camera and QR code box settings(fps= frames per second)
         async (decodedText) => {
-          if (scannedOnceRef.current) return;
-          scannedOnceRef.current = true;
+          if (scannedOnceRef.current) return; // Prevent multiple scans
+          scannedOnceRef.current = true; // Mark as scanned
+
+          // Stop the scanner after a successful scan
           await qr.stop();
           await qr.clear();
-          scannerRef.current = null;
-          setIsScanning(false);
-          submitQr(decodedText);
+          scannerRef.current = null; // Clear scanner reference
+          setIsScanning(false); // Update scanning state
+          submitQr(decodedText); // Submit the scanned QR code for attendance marking
         },
         () => {}
       );
@@ -77,6 +97,7 @@ const QrAttendanceMarking = () => {
     }
   };
 
+  // Stop the QR code scanning process manually
   const stopScanning = async () => {
     try {
       if (scannerRef.current) {
@@ -91,6 +112,7 @@ const QrAttendanceMarking = () => {
     setIsScanning(false);
   };
 
+  // Submit the scanned QR code to the server for attendance marking
   const submitQr = async (qrToken) => {
     try {
       const token = getAuthToken();
@@ -102,7 +124,7 @@ const QrAttendanceMarking = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ qrToken })
+        body: JSON.stringify({ qrToken }) // Send the scanned QR token
       });
 
       const data = await res.json();
@@ -136,20 +158,66 @@ const QrAttendanceMarking = () => {
       });
     }
   };
+// Download employee QR by employee code
+const downloadEmployeeQr = async () => {
+  if (!employeeCode) return;
 
+  try {
+    setDownloading(true);
+    const token = getAuthToken();
+
+    const res = await fetch(
+      `${API_BASE}/employees/qr/by-code/${employeeCode}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("QR download failed");
+    }
+
+    // Convert response to PNG blob
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    // Trigger browser download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `QR-${employeeCode}.png`;
+    document.body.appendChild(a);
+    a.click();
+
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // Close modal after download
+    setShowDownloadModal(false);
+    setEmployeeCode("");
+    setActiveTab("checkin");
+
+  } catch (err) {
+    alert("QR download failed. Check employee code.");
+    console.error(err);
+  } finally {
+    setDownloading(false);
+  }
+};
+
+
+
+  // Filter today's attendance into check-in and check-out lists
   const checkInList = todayAttendance.filter(a => a.checkInTime);
   const checkOutList = todayAttendance.filter(a => a.checkOutTime);
 
 
-  // ================= DOWNLOAD QR STATES =================
-const [searchTerm, setSearchTerm] = useState("");
-const [employees, setEmployees] = useState([]);
-const [loadingEmployees, setLoadingEmployees] = useState(false);
-
-
   return (
-    <div className="w-full min-h-screen flex flex-col p-6 lg:p-10 bg-[#F1FDF9] text-[#333333]">
-      
+    <div className="w-full min-h-screen flex flex-col p-6 lg:p-10 bg-[#F1FDF9] text-[#333333]"> 
+       {/* Main page container with full height and responsive padding */}
+
       {/* HEADER SECTION */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -180,11 +248,22 @@ const [loadingEmployees, setLoadingEmployees] = useState(false);
           >
             <LogOut size={18} /> Check-Out
           </button>
+          <button
+              onClick={() => setActiveTab("download")}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+                activeTab === "download"
+                  ? "bg-[#0C397A] text-white shadow-md"
+                  : "text-[#9B9B9B] hover:bg-[#F1FDF9]"
+              }`}
+            >
+              <ShieldCheck size={18} /> Download QR
+            </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
-        
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+    {activeTab !== "download" && (
+      <>
         {/* SCANNER VIEWPORT (COL-8) */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="bg-white rounded-3xl shadow-xl border border-[#9B9B9B]/10 overflow-hidden flex flex-col h-full">
@@ -274,10 +353,54 @@ const [loadingEmployees, setLoadingEmployees] = useState(false);
             </div>
           </div>
         </div>
+      </>
+    )}
+
+    {activeTab === "download" && showDownloadModal && (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+        
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in duration-300">
+          
+          <h2 className="text-xl font-bold text-[#333333] mb-4">
+            Download Employee QR
+          </h2>
+
+          {/* Employee Code Input */}
+          <input
+            type="text"
+            placeholder="Enter Employee Code"
+            value={employeeCode}
+            onChange={(e) => setEmployeeCode(e.target.value)}
+            className="w-full border border-gray-300 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-[#02C39A]"
+          />
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => {
+                setShowDownloadModal(false);
+                setActiveTab("checkin");
+                setEmployeeCode("");
+              }}
+              className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={downloadEmployeeQr}
+              disabled={!employeeCode || downloading}
+              className="px-5 py-2 rounded-lg bg-[#02C39A] text-white font-bold hover:bg-[#1ED292] disabled:opacity-50"
+            >
+              {downloading ? "Downloading..." : "Download"}
+            </button>
+          </div>
+        </div>
 
       </div>
-      
-    </div>
+    )}
+  </div>
+</div>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from 'react'
 import DashboardLayout from '../../components/layout/DashboardLayout'
+import HeadcountTrendChart from './components/charts/HeadcountTrendChart';
 
 const THEME = {
   primary: "#02C39A",
@@ -32,6 +33,7 @@ const SystemAnalytics = () => {
               </div>
             </div>
           </div>
+          <HeadcountTrendChart />
         </div>
         </DashboardLayout>
     </div>

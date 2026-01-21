@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
@@ -219,5 +220,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     GROUP BY MONTH(e.dateOfJoining)
 """)
     List<Object[]> yearlyEmployeeGrowth(String orgUuid, int year);
+
+    //Count new-hires for specific month
+    @Query(value = "SELECT DATE_FORMAT(created_at, '%b') as month, COUNT(*) as count " +
+            "FROM employees " +
+            "GROUP BY DATE_FORMAT(created_at, '%b') " +
+            "ORDER BY created_at ASC", nativeQuery = true)
+    List<Map<String, Object>> getMonthlyHeadcount();
 
 }

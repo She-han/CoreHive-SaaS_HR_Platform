@@ -14,7 +14,13 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "subscription")
+@Table(name = "subscription",
+       indexes = {
+           @Index(name = "idx_org_uuid", columnList = "organization_uuid")
+       },
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_org_subscription", columnNames = "organization_uuid")
+       })
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -69,6 +75,10 @@ public class Subscription {
     @Column(name = "payment_gateway", length = 50)
     private String paymentGateway = "PAYHERE";
 
+    // PayHere recurring subscription ID (returned after first successful payment)
+    @Column(name = "payhere_subscription_id", length = 100)
+    private String payhereSubscriptionId;
+
     @Column(name = "active_user_count")
     private Integer activeUserCount = 0;
 
@@ -79,12 +89,6 @@ public class Subscription {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    // Relationship
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_uuid", referencedColumnName = "organization_uuid",
-            insertable = false, updatable = false)
-    private Organization organization;
 
     // Business methods
     public boolean isActive() {

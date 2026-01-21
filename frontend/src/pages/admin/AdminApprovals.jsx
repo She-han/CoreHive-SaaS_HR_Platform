@@ -1,10 +1,19 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import { getPendingApprovals } from '../../api/adminApi';
-import { PendingApprovalItem } from './AdminDashboard'; // Import the item
+import { getPendingApprovals, getPlatformStatistics } from '../../api/adminApi';
+import { PendingApprovalItem } from './AdminDashboard';
 import OrganizationReviewModal from '../../components/admin/OrganizationReviewModal';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { 
+  AlertCircle, 
+  CheckCircle, 
+  Clock, 
+  Search, 
+  Filter, 
+  RefreshCw,
+  Building2,
+  Inbox
+} from 'lucide-react';
 
 const THEME = {
   primary: "#02C39A",
@@ -18,96 +27,127 @@ const THEME = {
 
 const AdminApprovals = () => {
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
-  // Modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState(null);
 
-  const loadApprovals = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await getPendingApprovals();
-      if (response.success) {
-        setPendingApprovals(response.data || []);
-      }
+      const [approvalsRes, statsRes] = await Promise.all([
+        getPendingApprovals(),
+        getPlatformStatistics()
+      ]);
+      
+      if (approvalsRes.success) setPendingApprovals(approvalsRes.data || []);
+      if (statsRes.success) setStats(statsRes.data);
     } catch (err) {
-      setError('Failed to load pending approvals.');
+      setError('Failed to refresh data.');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadApprovals();
-  }, [loadApprovals]);
+    fetchData();
+  }, [fetchData]);
 
-  const handleOrganizationReview = useCallback((org) => {
+  const filteredApprovals = useMemo(() => {
+    return pendingApprovals.filter(org => 
+      org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      org.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [pendingApprovals, searchTerm]);
+
+  const handleReview = useCallback((org) => {
     setSelectedOrganization(org);
     setIsReviewModalOpen(true);
   }, []);
 
-  const handleModalClose = () => {
+  const handleActionComplete = () => {
     setIsReviewModalOpen(false);
     setSelectedOrganization(null);
-  };
-
-  const handleActionSuccess = () => {
-    handleModalClose();
-    loadApprovals(); // Refresh list after approval/rejection
+    fetchData();
   };
 
   return (
-    <DashboardLayout title="Reviews & Approvals">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: THEME.dark }}>
-            Reviews & Approvals
-          </h1>
-          <p className="mt-1" style={{ color: THEME.muted }}>
-            Review and approve all tenant requests and changes
-          </p>
+    <DashboardLayout title="Tenant Approvals">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Header with Stats */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+          <div>
+            <h1 className="text-3xl font-extrabold" style={{ color: THEME.dark }}>
+              Review Requests
+            </h1>
+            <p className="mt-2 text-lg" style={{ color: THEME.muted }}>
+              Manage and verify new organization sign-ups.
+            </p>
+          </div>
+
+          
         </div>
 
-        {/* Content Area */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="lg" text="Fetching pending requests..." />
-            </div>
-          ) : error ? (
-            <div className="p-4 rounded-xl bg-red-50 text-red-600 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" /> {error}
-            </div>
-          ) : pendingApprovals.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <p className="text-lg font-medium" style={{ color: THEME.dark }}>All caught up!</p>
-              <p style={{ color: THEME.muted }}>There are no pending organization approvals.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {pendingApprovals.map((org) => (
-                <PendingApprovalItem 
-                  key={org.organizationUuid} 
-                  org={org} 
-                  onReview={handleOrganizationReview} 
-                />
-              ))}
-            </div>
-          )}
+        {/* Action Bar */}
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input 
+              type="text"
+              placeholder="Search by organization name or email..."
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-100 focus:ring-2 focus:ring-[#02C39A] focus:border-transparent outline-none transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={fetchData}
+            className="p-3 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Refresh list"
+          >
+            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+
+        {/* List Section */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 font-medium text-gray-500">Scanning for new requests...</p>
+          </div>
+        ) : filteredApprovals.length > 0 ? (
+          <div className="grid gap-4">
+            {filteredApprovals.map((org) => (
+              <PendingApprovalItem 
+                key={org.organizationUuid} 
+                org={org} 
+                onReview={handleReview} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl border-2 border-dashed border-gray-100 py-20 text-center">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Inbox className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800">No pending requests</h3>
+            <p className="text-gray-500 mt-2 max-w-xs mx-auto">
+              Everything is up to date! New organization sign-ups will appear here for your review.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Review Modal */}
       <OrganizationReviewModal
         isOpen={isReviewModalOpen}
-        onClose={handleModalClose}
+        onClose={() => setIsReviewModalOpen(false)}
         organization={selectedOrganization}
-        onApprove={handleActionSuccess}
-        onReject={handleActionSuccess}
+        onApprove={handleActionComplete}
+        onReject={handleActionComplete}
       />
     </DashboardLayout>
   );

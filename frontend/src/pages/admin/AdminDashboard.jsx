@@ -112,7 +112,7 @@ const StatCard = memo(({ stat, index }) => {
 StatCard.displayName = 'StatCard';
 
 // Memoized Pending Approval Item
-const PendingApprovalItem = memo(({ org, onReview }) => (
+export const PendingApprovalItem = memo(({ org, onReview }) => (
   <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200 group">
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div 

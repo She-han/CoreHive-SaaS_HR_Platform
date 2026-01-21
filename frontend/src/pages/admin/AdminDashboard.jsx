@@ -133,7 +133,7 @@ export const PendingApprovalItem = memo(({ org, onReview }) => (
         </div>
         
         <p className="text-sm font-medium" style={{ color: THEME.muted }}>
-          {org.email} • {org.phone || 'No phone provided'}
+          {org.email}      • {org.phone || 'No phone provided'}
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mt-2">

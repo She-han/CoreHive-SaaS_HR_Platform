@@ -215,5 +215,10 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/statistics/headcount-trend")
+    public ResponseEntity<?> getHeadcountTrend() {
+        return ResponseEntity.ok(employeeService.getHeadcountTrend());
+    }
+
 
 }

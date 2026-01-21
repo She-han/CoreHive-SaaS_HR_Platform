@@ -71,6 +71,12 @@ public class SecurityConfig {
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 
+                        // Payment endpoints (for both checking and initiating payments)
+                        .requestMatchers("/api/payment/**").hasRole("ORG_ADMIN")
+                        
+                        // Subscription management endpoints (ORG_ADMIN only)
+                        .requestMatchers("/api/subscription/**").hasRole("ORG_ADMIN")
+
                         // Admin-only endpoints
                         .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
 

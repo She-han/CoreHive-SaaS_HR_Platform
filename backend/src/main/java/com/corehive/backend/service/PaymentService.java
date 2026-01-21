@@ -36,8 +36,8 @@ public class PaymentService {
 
     /**
      * Initiate payment for subscription
+     * Note: Not using @Transactional here to allow partial commits
      */
-    @Transactional
     public ApiResponse<PaymentInitResponse> initiateSubscriptionPayment(
             String organizationUuid, String userEmail) {
 
@@ -54,59 +54,17 @@ public class PaymentService {
                     .findByOrganizationUuid(organizationUuid)
                     .orElse(null);
 
-            if (existingSubscription != null && existingSubscription.isActive()) {
-                return ApiResponse.error("Organization already has an active subscription");
+            if (existingSubscription != null) {
+                log.info("Using existing subscription for organization: {}", organizationUuid);
+                // Use existing subscription instead of creating new one
+                return buildPaymentResponse(existingSubscription, organization, userEmail);
             }
 
             // Create new subscription (Trial mode)
             Subscription subscription = createTrialSubscription(organization);
-
-            // Generate unique order ID
-            String orderId = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-
-            // For trial period, amount is 0 (Free first month)
-            BigDecimal amount = BigDecimal.ZERO;
-
-            // Create payment transaction record
-            PaymentTransaction transaction = PaymentTransaction.builder()
-                    .transactionUuid(UUID.randomUUID().toString())
-                    .organizationUuid(organizationUuid)
-                    .subscriptionId(subscription.getId())
-                    .amount(amount)
-                    .currency(payHereConfig.getCurrency())
-                    .transactionType(TransactionType.SUBSCRIPTION)
-                    .paymentGateway("PAYHERE")
-                    .gatewayOrderId(orderId)
-                    .status(PaymentStatus.PENDING)
-                    .billingEmail(userEmail)
-                    .build();
-
-            paymentTransactionRepository.save(transaction);
-
-            // Generate PayHere payment details
-            Map<String, String> paymentData = buildPayHerePaymentData(
-                    orderId, amount, organization, userEmail, transaction.getTransactionUuid()
-            );
-
-            // Calculate hash
-            String hash = generatePayHereHash(paymentData);
-            paymentData.put("hash", hash);
-
-            // Build response
-            PaymentInitResponse response = PaymentInitResponse.builder()
-                    .orderId(orderId)
-                    .transactionUuid(transaction.getTransactionUuid())
-                    .amount(amount)
-                    .currency(payHereConfig.getCurrency())
-                    .paymentGateway("PAYHERE")
-                    .paymentUrl(payHereConfig.getPaymentUrl())
-                    .paymentData(paymentData)
-                    .message("Free trial - Payment gateway for card verification")
-                    .isTrial(true)
-                    .build();
-
-            log.info("Payment initiated successfully for order: {}", orderId);
-            return ApiResponse.success(response, "Payment initiated successfully");
+            
+            // Return payment response
+            return buildPaymentResponse(subscription, organization, userEmail);
 
         } catch (Exception e) {
             log.error("Error initiating payment", e);
@@ -116,26 +74,58 @@ public class PaymentService {
 
     /**
      * Create trial subscription
+     * IMPORTANT: Only creates if one doesn't exist for the organization
      */
     private Subscription createTrialSubscription(Organization organization) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime trialEnd = now.plusMonths(1);
+        try {
+            // 🔒 Check if subscription already exists (prevent duplicates)
+            Subscription existing = subscriptionRepository
+                    .findByOrganizationUuid(organization.getOrganizationUuid())
+                    .orElse(null);
+            
+            if (existing != null) {
+                log.info("Subscription already exists for organization: {}, returning existing", 
+                        organization.getOrganizationUuid());
+                return existing;
+            }
 
-        Subscription subscription = Subscription.builder()
-                .subscriptionUuid(UUID.randomUUID().toString())
-                .organizationUuid(organization.getOrganizationUuid())
-                .planName(organization.getBillingPlan())
-                .planPrice(organization.getBillingPricePerUserPerMonth())
-                .billingCycle(BillingCycle.MONTHLY)
-                .status(SubscriptionStatus.TRIAL)
-                .trialStartDate(now)
-                .trialEndDate(trialEnd)
-                .isTrial(true)
-                .nextBillingDate(trialEnd)
-                .activeUserCount(1) // Initial admin user
-                .build();
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime trialEnd = now.plusMonths(1);
 
-        return subscriptionRepository.save(subscription);
+            log.info("Creating NEW trial subscription for organization: {}", organization.getOrganizationUuid());
+
+            // Handle nullable billing plan and price
+            String planName = organization.getBillingPlan() != null 
+                ? organization.getBillingPlan() 
+                : "Standard Plan";
+            
+            BigDecimal planPrice = organization.getBillingPricePerUserPerMonth() != null
+                ? organization.getBillingPricePerUserPerMonth()
+                : BigDecimal.valueOf(500); // Default LKR 500 per user
+
+            Subscription subscription = Subscription.builder()
+                    .subscriptionUuid(UUID.randomUUID().toString())
+                    .organizationUuid(organization.getOrganizationUuid())
+                    .planName(planName)
+                    .planPrice(planPrice)
+                    .billingCycle(BillingCycle.MONTHLY)
+                    .status(SubscriptionStatus.TRIAL)
+                    .trialStartDate(now)
+                    .trialEndDate(trialEnd)
+                    .isTrial(true)
+                    .nextBillingDate(trialEnd)
+                    .activeUserCount(1) // Initial admin user
+                    .build();
+
+            Subscription saved = subscriptionRepository.save(subscription);
+            log.info("Trial subscription created successfully with ID: {}", saved.getId());
+            return saved;
+
+        } catch (Exception e) {
+            log.error("Failed to create trial subscription for organization: {}", 
+                    organization.getOrganizationUuid(), e);
+            throw new RuntimeException("Failed to create trial subscription: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -143,7 +133,7 @@ public class PaymentService {
      */
     private Map<String, String> buildPayHerePaymentData(
             String orderId, BigDecimal amount, Organization organization,
-            String email, String transactionUuid) {
+            String email, String transactionUuid, Subscription subscription) {
 
         Map<String, String> data = new HashMap<>();
         data.put("merchant_id", payHereConfig.getMerchantId());
@@ -152,9 +142,10 @@ public class PaymentService {
         data.put("notify_url", payHereConfig.getNotifyUrl());
 
         data.put("order_id", orderId);
-        data.put("items", "CoreHive HR - " + organization.getBillingPlan() + " Plan (Trial)");
+        data.put("items", "CoreHive HR - " + subscription.getPlanName() + " Plan (Trial)");
         data.put("currency", payHereConfig.getCurrency());
-        data.put("amount", amount.toString());
+        // Format amount with 2 decimal places as required by PayHere
+        data.put("amount", String.format("%.2f", amount));
 
         // Customer details
         data.put("first_name", organization.getName());
@@ -169,11 +160,17 @@ public class PaymentService {
         data.put("custom_1", organization.getOrganizationUuid());
         data.put("custom_2", transactionUuid);
 
+        // 🔄 Enable recurring payments (Monthly subscription)
+        // Documentation: https://support.payhere.lk/api-&-mobile-sdk/recurring-api
+        data.put("recurrence", "1 Month"); // Charge every month
+        data.put("duration", "Forever");   // Continue until cancelled
+
         return data;
     }
 
     /**
      * Generate PayHere MD5 hash
+     * Formula: uppercase(md5(merchant_id + order_id + amount + currency + uppercase(md5(merchant_secret))))
      */
     private String generatePayHereHash(Map<String, String> data) {
         try {
@@ -183,10 +180,18 @@ public class PaymentService {
             String currency = data.get("currency");
             String merchantSecret = payHereConfig.getMerchantSecret();
 
-            String hashString = merchantId + orderId + amount + currency +
-                    getMd5Hash(merchantSecret);
+            // First: Hash merchant secret and convert to uppercase
+            String merchantSecretHash = getMd5Hash(merchantSecret).toUpperCase();
+            
+            // Second: Concatenate and hash again
+            String hashString = merchantId + orderId + amount + currency + merchantSecretHash;
+            String finalHash = getMd5Hash(hashString).toUpperCase();
+            
+            log.debug("Hash generation - Merchant ID: {}, Order ID: {}, Amount: {}, Currency: {}", 
+                    merchantId, orderId, amount, currency);
+            log.debug("Generated hash: {}", finalHash);
 
-            return getMd5Hash(hashString).toUpperCase();
+            return finalHash;
 
         } catch (Exception e) {
             log.error("Error generating PayHere hash", e);
@@ -252,6 +257,15 @@ public class PaymentService {
                 subscription.setStatus(SubscriptionStatus.TRIAL);
                 subscription.setLastPaymentDate(LocalDateTime.now());
                 subscription.setLastPaymentAmount(transaction.getAmount());
+                
+                // 🔄 Store PayHere subscription ID for recurring payments
+                String payhereSubscriptionId = params.get("subscription_id");
+                if (payhereSubscriptionId != null && !payhereSubscriptionId.isEmpty()) {
+                    subscription.setPayhereSubscriptionId(payhereSubscriptionId);
+                    log.info("PayHere subscription ID captured: {} for subscription: {}", 
+                            payhereSubscriptionId, subscription.getId());
+                }
+                
                 subscriptionRepository.save(subscription);
 
                 // Update organization status to ACTIVE
@@ -335,6 +349,122 @@ public class PaymentService {
         } catch (Exception e) {
             log.error("Error getting subscription status", e);
             return ApiResponse.error("Failed to get subscription status");
+        }
+    }
+
+    /**
+     * Build payment response for existing or new subscription
+     * IMPORTANT: Reuses pending transaction if exists, prevents duplicates
+     */
+    private ApiResponse<PaymentInitResponse> buildPaymentResponse(
+            Subscription subscription, Organization organization, String userEmail) {
+
+        try {
+            // 🔒 Check if there's already a PENDING transaction for this subscription
+            PaymentTransaction existingTransaction = paymentTransactionRepository
+                    .findBySubscriptionIdAndStatus(subscription.getId(), PaymentStatus.PENDING)
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+
+            if (existingTransaction != null) {
+                log.info("Reusing existing PENDING transaction: {} for subscription: {}", 
+                        existingTransaction.getGatewayOrderId(), subscription.getId());
+                
+                // Rebuild payment data with existing transaction
+                Map<String, String> paymentData = buildPayHerePaymentData(
+                        existingTransaction.getGatewayOrderId(), 
+                        existingTransaction.getAmount(), 
+                        organization, 
+                        userEmail, 
+                        existingTransaction.getTransactionUuid(), 
+                        subscription
+                );
+
+                String hash = generatePayHereHash(paymentData);
+                paymentData.put("hash", hash);
+
+                PaymentInitResponse response = PaymentInitResponse.builder()
+                        .orderId(existingTransaction.getGatewayOrderId())
+                        .transactionUuid(existingTransaction.getTransactionUuid())
+                        .amount(existingTransaction.getAmount())
+                        .currency(payHereConfig.getCurrency())
+                        .paymentGateway("PAYHERE")
+                        .paymentUrl(payHereConfig.getPaymentUrl())
+                        .paymentData(paymentData)
+                        .message("Free trial - Payment gateway for card verification")
+                        .isTrial(true)
+                        .planName(subscription.getPlanName())
+                        .planPrice(subscription.getPlanPrice())
+                        .billingCycle(subscription.getBillingCycle().toString())
+                        .build();
+
+                return ApiResponse.success(response, "Payment initiated successfully (existing)");
+            }
+
+            // No pending transaction found, create new one
+            // Generate unique order ID
+            String orderId = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+            // Use subscription plan price for card verification during trial
+            // PayHere requires non-zero amount to show payment form
+            BigDecimal amount = subscription.getPlanPrice();
+
+            log.info("Creating NEW payment transaction for subscription ID: {}", subscription.getId());
+
+            // Create payment transaction record
+            PaymentTransaction transaction = PaymentTransaction.builder()
+                    .transactionUuid(UUID.randomUUID().toString())
+                    .organizationUuid(organization.getOrganizationUuid())
+                    .subscriptionId(subscription.getId())
+                    .amount(amount)
+                    .currency(payHereConfig.getCurrency())
+                    .transactionType(TransactionType.SUBSCRIPTION)
+                    .paymentGateway("PAYHERE")
+                    .gatewayOrderId(orderId)
+                    .status(PaymentStatus.PENDING)
+                    .billingEmail(userEmail)
+                    .build();
+
+            PaymentTransaction savedTransaction = paymentTransactionRepository.save(transaction);
+            log.info("Payment transaction created with UUID: {}", savedTransaction.getTransactionUuid());
+
+            // Generate PayHere payment details
+            Map<String, String> paymentData = buildPayHerePaymentData(
+                    orderId, amount, organization, userEmail, savedTransaction.getTransactionUuid(), subscription
+            );
+
+            // Calculate hash
+            String hash = generatePayHereHash(paymentData);
+            paymentData.put("hash", hash);
+            
+            // Debug log for PayHere data
+            log.info("PayHere Payment Data: {}", paymentData);
+            log.info("PayHere Form URL: {}", payHereConfig.getPaymentUrl());
+
+            // Build response
+            PaymentInitResponse response = PaymentInitResponse.builder()
+                    .orderId(orderId)
+                    .transactionUuid(savedTransaction.getTransactionUuid())
+                    .amount(amount)
+                    .currency(payHereConfig.getCurrency())
+                    .paymentGateway("PAYHERE")
+                    .paymentUrl(payHereConfig.getPaymentUrl())
+                    .paymentData(paymentData)
+                    .message("Free trial - Payment gateway for card verification")
+                    .isTrial(true)
+                    .planName(subscription.getPlanName())
+                    .planPrice(subscription.getPlanPrice())
+                    .billingCycle(subscription.getBillingCycle().toString())
+                    .build();
+
+            log.info("Payment response built successfully for order: {}", orderId);
+            return ApiResponse.success(response, "Payment initiated successfully");
+
+        } catch (Exception e) {
+            log.error("Error building payment response for subscription ID: {}", 
+                    subscription.getId(), e);
+            throw new RuntimeException("Failed to build payment response: " + e.getMessage(), e);
         }
     }
 }

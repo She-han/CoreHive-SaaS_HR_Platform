@@ -23,4 +23,9 @@ public class PaymentInitResponse {
     private Map<String, String> paymentData;
     private String message;
     private Boolean isTrial;
+    
+    // Additional subscription details for UI
+    private String planName;
+    private BigDecimal planPrice;
+    private String billingCycle;
 }

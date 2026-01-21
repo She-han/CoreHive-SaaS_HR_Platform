@@ -1,3 +1,4 @@
+// File: backend/src/main/java/com/corehive/backend/model/PaymentTransaction.java
 
 package com.corehive.backend.model;
 
@@ -7,11 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Entity
 @Table(name = "payment_transaction")
@@ -69,7 +68,7 @@ public class PaymentTransaction {
     @Column(name = "billing_email", length = 255)
     private String billingEmail;
 
-    @Column(name = "metadata", columnDefinition = "JSON")
+    @Column(name = "metadata", columnDefinition = "TEXT")
     private String metadata;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
@@ -82,13 +81,5 @@ public class PaymentTransaction {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    // Relationships
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_uuid", referencedColumnName = "organization_uuid",
-            insertable = false, updatable = false)
-    private Organization organization;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", insertable = false, updatable = false)
-    private Subscription subscription;
 }

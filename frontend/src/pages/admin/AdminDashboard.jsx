@@ -112,48 +112,62 @@ const StatCard = memo(({ stat, index }) => {
 StatCard.displayName = 'StatCard';
 
 // Memoized Pending Approval Item
-const PendingApprovalItem = memo(({ org, onReview }) => (
-  <div className="flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200 group">
-    <div className="flex items-center gap-4 flex-1 min-w-0">
+export const PendingApprovalItem = memo(({ org, onReview }) => (
+  <div className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-white rounded-xl border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 group gap-4">
+    <div className="flex items-start md:items-center gap-4 flex-1 min-w-0">
       <div 
-        className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+        className="w-14 h-14 rounded-xl flex items-center justify-center shadow-sm shrink-0"
         style={{ background: `linear-gradient(135deg, ${THEME.secondary} 0%, ${THEME.dark} 100%)` }}
       >
-        <Building className="w-6 h-6 text-white" />
+        <Building className="w-7 h-7 text-white" />
       </div>
       
       <div className="flex-1 min-w-0">
-        <h4 className="font-semibold truncate" style={{ color: THEME.dark }}>
-          {org.name}
-        </h4>
-        <p className="text-sm truncate" style={{ color: THEME.muted }}>
-          {org.email}
+        <div className="flex flex-wrap items-center gap-2">
+          <h4 className="font-bold text-lg truncate" style={{ color: THEME.dark }}>
+            {org.name}
+          </h4>
+          <span className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 font-bold uppercase tracking-wider">
+            ID: {org.organizationUuid?.slice(0, 8)}
+          </span>
+        </div>
+        
+        <p className="text-sm font-medium" style={{ color: THEME.muted }}>
+          {org.email}      • {org.phone || 'No phone provided'}
         </p>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-            {org.employeeCountRange || '1-50'} employees
-          </span>
-          <span className="text-xs" style={{ color: THEME.muted }}>
-            {new Date(org.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
+
+        <div className="flex flex-wrap items-center gap-3 mt-2">
+          <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">
+            <Users className="w-3 h-3" />
+            {org.employeeCountRange || '1-50'} Staff
+          </div>
+          <div className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-semibold border border-blue-100">
+            <Database className="w-3 h-3" />
+            {org.industry || 'General Business'}
+          </div>
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <Clock className="w-3 h-3" />
+            Requested: {new Date(org.createdAt).toLocaleDateString()}
+          </div>
         </div>
       </div>
     </div>
     
-    <button 
-      onClick={() => onReview(org)}
-      className="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 hover:shadow-md"
-      style={{ 
-        backgroundColor: THEME.primary,
-        color: 'white'
-      }}
-    >
-      <Eye className="w-4 h-4" />
-      Review
-    </button>
+    <div className="flex items-center gap-3 self-end md:self-center">
+      <button 
+        onClick={() => onReview(org)}
+        className="px-6 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all duration-200 hover:brightness-110 active:scale-95 shadow-sm"
+        style={{ 
+          backgroundColor: THEME.primary,
+          color: 'white'
+        }}
+      >
+        <FileCheck className="w-4 h-4" />
+        Review Request
+      </button>
+    </div>
   </div>
 ));
-PendingApprovalItem.displayName = 'PendingApprovalItem';
 
 // Memoized Quick Action Button
 const QuickActionButton = memo(({ action }) => {

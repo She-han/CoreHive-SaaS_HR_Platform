@@ -135,7 +135,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/sys_admin/users")
           },
           {
-            name: "Billing & Plans",
+            name: 'Modules',
+            icon: Cog6ToothIcon,
+            path: '/sys_admin/Modules',
+            current: location.pathname.startsWith('/sys_admin/Modules')
+          },
+          {
+            name: 'Billing & Plans',
             icon: TbDeviceAirpodsCase,
             path: "/sys_admin/billing",
             current: location.pathname.startsWith("/sys_admin/billing")
@@ -143,8 +149,8 @@ const Sidebar = ({ isCollapsed = false }) => {
           {
             name: "Audit Logs",
             icon: AiOutlineAudit,
-            path: '/sys_admin/modules',
-            current: location.pathname.startsWith('/sys_admin/modules')
+            path: '/sys_admin/audits',
+            current: location.pathname.startsWith('/sys_admin/audits')
           },
           {
             name: "Support",

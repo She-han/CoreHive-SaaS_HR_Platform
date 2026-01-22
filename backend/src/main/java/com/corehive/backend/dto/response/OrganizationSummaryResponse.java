@@ -27,6 +27,7 @@ public class OrganizationSummaryResponse {
     private String businessRegistrationDocument;
     private String plan;
     private String billing;
+    private Double billingPrice;
     private Integer userCount;
     private Boolean moduleQrAttendanceMarking;
     private Boolean moduleFaceRecognitionAttendanceMarking;

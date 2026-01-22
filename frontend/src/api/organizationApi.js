@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from './axios';
+import { apiGet, apiPut, apiDelete } from './axios';
 
 /**
  * Organization Management API
@@ -9,7 +9,8 @@ const ORG_ENDPOINTS = {
   ORGANIZATION_DETAILS: (uuid) => `/sys_admin/organizations/${uuid}`,
   CHANGE_STATUS: (uuid) => `/sys_admin/organizations/${uuid}/status`,
   APPROVE: (uuid) => `/sys_admin/organizations/${uuid}/approve`,
-  REJECT: (uuid) => `/sys_admin/organizations/${uuid}/reject`
+  REJECT: (uuid) => `/sys_admin/organizations/${uuid}/reject`,
+  DELETE: (uuid) => `/sys_admin/organizations/${uuid}`
 };
 
 /**
@@ -148,10 +149,35 @@ export const rejectOrganization = async (organizationUuid) => {
   }
 };
 
+/**
+ * Delete Organization Permanently
+ * @param {string} organizationUuid - Organization UUID
+ * @returns {Promise} API response
+ */
+export const deleteOrganization = async (organizationUuid) => {
+  try {
+    console.log('🗑️ Deleting organization:', organizationUuid);
+
+    const response = await apiDelete(
+      ORG_ENDPOINTS.DELETE(organizationUuid)
+    );
+
+    if (response?.success) {
+      console.log('✅ Organization deleted successfully');
+    }
+
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to delete organization:', error);
+    throw error;
+  }
+};
+
 export default {
   getAllOrganizations,
   getOrganizationDetails,
   changeOrganizationStatus,
   approveOrganization,
-  rejectOrganization
+  rejectOrganization,
+  deleteOrganization
 };

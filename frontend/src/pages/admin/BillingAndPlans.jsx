@@ -9,10 +9,14 @@ import {
   DollarSign,
   Users,
   AlertCircle,
-} from "lucide-react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
-import Button from "../../components/common/Button";
-import Card from "../../components/common/Card";
+  Edit,
+  Package
+} from 'lucide-react';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
+import apiClient from '../../api/axios';
+import { getActiveModules } from '../../api/extendedModulesApi';
 
 const BillingAndPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -20,6 +24,7 @@ const BillingAndPlans = () => {
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [availableModules, setAvailableModules] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -27,44 +32,40 @@ const BillingAndPlans = () => {
     description: "",
     employees: "",
     features: [],
-    popular: false,
+    moduleIds: [],
+    popular: false
   });
-  const [featureInput, setFeatureInput] = useState("");
+  const [featureInput, setFeatureInput] = useState('');
+  const [editingFeatureIndex, setEditingFeatureIndex] = useState(null);
+  const [editingFeatureText, setEditingFeatureText] = useState('');
 
-  // Backend API URL
-  const API_BASE_URL = "http://localhost:8080";
-
-  // Fetch plans on component mount
+  // Fetch plans and modules on component mount
   useEffect(() => {
     fetchPlans();
+    fetchAvailableModules();
   }, []);
+
+  const fetchAvailableModules = async () => {
+    try {
+      const response = await getActiveModules();
+      if (response.success && Array.isArray(response.data)) {
+        setAvailableModules(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching modules:', err);
+    }
+  };
 
   const fetchPlans = async () => {
     try {
       setLoading(true);
       setError(null);
-
-   
-      const token = localStorage.getItem("corehive_token"); 
-
-      const response = await fetch(`${API_BASE_URL}/api/billing-plans`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, 
-        },
-      });
-
-      console.log("Fetch response status:", response.status);
-      if (!response.ok)
-        throw new Error(
-          `Failed to fetch plans: ${response.status} ${response.statusText}`
-        );
-      const data = await response.json();
-      setPlans(data);
+      const response = await apiClient.get('/billing-plans');
+      console.log('Fetch response:', response.status);
+      setPlans(response.data);
     } catch (err) {
-      setError(err.message);
-      console.error("Error fetching plans:", err);
+      setError(err.response?.data?.message || err.message || 'Failed to fetch plans');
+      console.error('Error fetching plans:', err);
     } finally {
       setLoading(false);
     }
@@ -79,8 +80,9 @@ const BillingAndPlans = () => {
         period: plan.period,
         description: plan.description,
         employees: plan.employees,
-        features: [...plan.features],
-        popular: plan.popular,
+        features: Array.isArray(plan.features) ? [...plan.features] : [],
+        moduleIds: Array.isArray(plan.moduleIds) ? [...plan.moduleIds] : [],
+        popular: plan.popular
       });
     } else {
       setEditingPlan(null);
@@ -91,17 +93,22 @@ const BillingAndPlans = () => {
         description: "",
         employees: "",
         features: [],
-        popular: false,
+        moduleIds: [],
+        popular: false
       });
     }
-    setFeatureInput("");
+    setFeatureInput('');
+    setEditingFeatureIndex(null);
+    setEditingFeatureText('');
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingPlan(null);
-    setFeatureInput("");
+    setFeatureInput('');
+    setEditingFeatureIndex(null);
+    setEditingFeatureText('');
   };
 
   const handleInputChange = (e) => {
@@ -123,9 +130,41 @@ const BillingAndPlans = () => {
   };
 
   const handleRemoveFeature = (index) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      features: prev.features.filter((_, i) => i !== index),
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleEditFeature = (index) => {
+    setEditingFeatureIndex(index);
+    setEditingFeatureText(formData.features[index]);
+  };
+
+  const handleSaveFeature = () => {
+    if (editingFeatureText.trim() && editingFeatureIndex !== null) {
+      setFormData(prev => ({
+        ...prev,
+        features: prev.features.map((feat, i) => 
+          i === editingFeatureIndex ? editingFeatureText.trim() : feat
+        )
+      }));
+      setEditingFeatureIndex(null);
+      setEditingFeatureText('');
+    }
+  };
+
+  const handleCancelEditFeature = () => {
+    setEditingFeatureIndex(null);
+    setEditingFeatureText('');
+  };
+
+  const handleModuleToggle = (moduleId) => {
+    setFormData(prev => ({
+      ...prev,
+      moduleIds: prev.moduleIds.includes(moduleId)
+        ? prev.moduleIds.filter(id => id !== moduleId)
+        : [...prev.moduleIds, moduleId]
     }));
   };
 
@@ -149,35 +188,20 @@ const BillingAndPlans = () => {
 
     try {
       setError(null);
-      const url = editingPlan
-        ? `${API_BASE_URL}/api/billing-plans/${editingPlan.id}`
-        : `${API_BASE_URL}/api/billing-plans`;
-      const method = editingPlan ? "PUT" : "POST";
-
-      console.log(`${method} request to:`, url);
-
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("corehive_token")}`, 
-        },
-        body: JSON.stringify(formData),
-      });
+      console.log(`${editingPlan ? 'PUT' : 'POST'} request with data:`, formData);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to save plan: ${response.status} - ${errorText}`
-        );
+      if (editingPlan) {
+        await apiClient.put(`/billing-plans/${editingPlan.id}`, formData);
+      } else {
+        await apiClient.post('/billing-plans', formData);
       }
 
       await fetchPlans();
       handleCloseModal();
     } catch (err) {
-      setError(err.message);
-      console.error("Error saving plan:", err);
+      setError(err.response?.data?.message || err.message || 'Failed to save plan');
+      console.error('Error saving plan:', err);
     }
   };
 
@@ -186,28 +210,11 @@ const BillingAndPlans = () => {
 
     try {
       setError(null);
-      console.log(`DELETE request to: ${API_BASE_URL}/api/billing-plans/${id}`);
-
-      
-      const response = await fetch(`${API_BASE_URL}/api/billing-plans/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("corehive_token")}`, 
-        },
-      });
-
-      if (!response.ok) {
-        
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to delete plan: ${response.status} - ${errorText}`
-        );
-      }
-
+      await apiClient.delete(`/billing-plans/${id}`);
       await fetchPlans();
     } catch (err) {
-      setError(err.message);
-      console.error("Error deleting plan:", err);
+      setError(err.response?.data?.message || err.message || 'Failed to delete plan');
+      console.error('Error deleting plan:', err);
     }
   };
 
@@ -252,18 +259,16 @@ const BillingAndPlans = () => {
 
           {/* Error Alert */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
+            <div
               className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3"
               role="alert"
             >
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-red-900">Error</h3>
                 <p className="text-red-700 text-sm">{error}</p>
               </div>
-            </motion.div>
+            </div>
           )}
         </motion.div>
 
@@ -276,36 +281,26 @@ const BillingAndPlans = () => {
           </div>
         ) : (
           /* Plans Grid */
-          <motion.div
-            className="grid md:grid-cols-3 gap-8 mb-12"
-            variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
-            initial="hidden"
-            animate="visible"
-          >
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
             {plans.map((plan, index) => (
-              <motion.div
+              <div
                 key={plan.id}
-                variants={fadeInUpVariants}
-                whileHover={{ y: -8 }}
+                className="transition-transform hover:-translate-y-2"
               >
                 <Card
-                  className={`relative h-full flex flex-col ${
+                  className={`relative h-full flex flex-col bg-white ${
                     plan.popular
-                      ? "ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5"
-                      : "hover:shadow-lg"
+                      ? 'ring-2 ring-[#02C39A] shadow-xl bg-gradient-to-br from-[#02C39A]/5 to-[#05668D]/5'
+                      : 'shadow-lg'
                   } transition-all duration-300`}
                 >
                   {/* Popular Badge */}
                   {plan.popular && (
-                    <motion.div
-                      initial={{ scale: 0, y: -10 }}
-                      animate={{ scale: 1, y: 0 }}
-                      className="absolute -top-3 left-1/2 transform -translate-x-1/2"
-                    >
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                       <span className="bg-[#02C39A] text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
                         Most Popular
                       </span>
-                    </motion.div>
+                    </div>
                   )}
 
                   {/* Header */}
@@ -320,78 +315,100 @@ const BillingAndPlans = () => {
                       <span className="text-4xl font-bold text-text-primary">
                         LKR {plan.price}
                       </span>
-                      <span className="text-text-secondary text-sm">
-                        {plan.period}
-                      </span>
+                      
                     </div>
                     <div className="flex items-center gap-2 text-text-secondary text-sm">
                       <Users className="w-4 h-4" />
-                      {plan.employees}
+                      {plan.period}
                     </div>
                   </div>
 
                   {/* Features List */}
                   <div className="flex-grow mb-6">
-                    <ul className="space-y-3">
+                    <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-[#1ED292]" />
+                      Plan Features
+                    </h4>
+                    <ul className="space-y-2 mb-4">
                       {plan.features.map((feature, featureIndex) => (
-                        <motion.li
+                        <li
                           key={featureIndex}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: featureIndex * 0.05 }}
-                          className="flex items-start gap-3"
+                          className="flex items-start gap-2"
                         >
-                          <CheckCircle className="w-5 h-5 text-[#1ED292] flex-shrink-0 mt-0.5" />
+                          <CheckCircle className="w-4 h-4 text-[#1ED292] shrink-0 mt-0.5" />
                           <span className="text-text-primary text-sm">
                             {feature}
                           </span>
-                        </motion.li>
+                        </li>
                       ))}
                     </ul>
+                    
+                    {/* Extended Modules Features */}
+                    {plan.moduleIds && plan.moduleIds.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-2">
+                          <Package className="w-4 h-4 text-[#02C39A]" />
+                          Extended Modules ({plan.moduleIds.length})
+                        </h4>
+                        <div className="space-y-2.5">
+                          {plan.moduleIds.map((moduleId, idx) => {
+                            const module = availableModules.find(m => m.id === moduleId || m.moduleId === moduleId);
+                            return module ? (
+                              <div
+                                key={idx}
+                                className="flex items-start gap-2 bg-[#02C39A]/10 p-2 rounded-lg"
+                              >
+                                <Package className="w-4 h-4 text-[#02C39A] shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                  <span className="text-text-primary text-sm font-semibold block">
+                                    {module.name}
+                                  </span>
+                                  {module.description && (
+                                    <p className="text-text-secondary text-xs mt-1 leading-relaxed">
+                                      {module.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null;
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-6 border-t border-gray-200">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => handleOpenModal(plan)}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#02C39A]/10 hover:bg-[#02C39A] text-[#02C39A] hover:text-white rounded-lg transition-colors duration-200 font-medium"
                       aria-label={`Edit ${plan.name} plan`}
                     >
                       <Edit2 className="w-4 h-4" />
                       Edit
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
+                    </button>
+                    <button
                       onClick={() => handleDeletePlan(plan.id)}
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white rounded-lg transition-colors duration-200 font-medium"
                       aria-label={`Delete ${plan.name} plan`}
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete
-                    </motion.button>
+                    </button>
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             ))}
-          </motion.div>
+          </div>
         )}
 
         {/* Modal */}
         {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={handleCloseModal}
           >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+            <div
               className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
@@ -402,14 +419,13 @@ const BillingAndPlans = () => {
                     ? `Edit ${editingPlan.name} Plan`
                     : "Create New Plan"}
                 </h2>
-                <motion.button
-                  whileHover={{ rotate: 90 }}
+                <button
                   onClick={handleCloseModal}
-                  className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                   aria-label="Close modal"
                 >
                   <X className="w-6 h-6" />
-                </motion.button>
+                </button>
               </div>
 
               {/* Modal Body */}
@@ -497,7 +513,7 @@ const BillingAndPlans = () => {
 
                 {/* Features */}
                 <div>
-                  <label className="block text-sm font-semibold text-text-primary mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Features *
                   </label>
                   <div className="flex gap-2 mb-3">
@@ -510,42 +526,136 @@ const BillingAndPlans = () => {
                         (e.preventDefault(), handleAddFeature())
                       }
                       placeholder="Add a feature and press Enter"
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+                      className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
-                    <Button
+                    <motion.button
                       type="button"
-                      variant="primary"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={handleAddFeature}
+                      className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                     >
                       Add
-                    </Button>
+                    </motion.button>
                   </div>
 
                   {/* Features List */}
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {formData.features.map((feature, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        className="flex items-center justify-between bg-[#02C39A]/10 rounded-lg p-3"
-                      >
-                        <span className="text-text-primary text-sm">
-                          {feature}
-                        </span>
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => handleRemoveFeature(index)}
-                          className="text-red-600 hover:text-red-700 transition-colors"
-                          aria-label={`Remove ${feature}`}
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    {formData.features.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4">No features added yet</p>
+                    ) : (
+                      formData.features.map((feature, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 20 }}
+                          className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
                         >
-                          <X className="w-4 h-4" />
-                        </motion.button>
-                      </motion.div>
-                    ))}
+                          {editingFeatureIndex === index ? (
+                            <>
+                              <input
+                                type="text"
+                                value={editingFeatureText}
+                                onChange={(e) => setEditingFeatureText(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSaveFeature()}
+                                className="flex-1 px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                              <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={handleSaveFeature}
+                                className="text-green-600 hover:text-green-700 p-1 hover:bg-green-50 rounded transition-colors"
+                                title="Save"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={handleCancelEditFeature}
+                                className="text-gray-600 hover:text-gray-700 p-1 hover:bg-gray-100 rounded transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="w-4 h-4" />
+                              </motion.button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 flex-1">
+                                <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                                <span className="text-gray-900 text-sm">{feature}</span>
+                              </div>
+                              <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleEditFeature(index)}
+                                className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded transition-colors"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </motion.button>
+                              <motion.button
+                                type="button"
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleRemoveFeature(index)}
+                                className="text-red-600 hover:text-red-700 p-1 hover:bg-red-50 rounded transition-colors"
+                                title="Remove"
+                              >
+                                <X className="w-4 h-4" />
+                              </motion.button>
+                            </>
+                          )}
+                        </motion.div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Module Selection */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <Package className="w-4 h-4 inline mr-1" />
+                    Included Modules
+                  </label>
+                  <p className="text-xs text-gray-500 mb-3">Select which modules are included in this plan</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    {availableModules.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4 col-span-2">No modules available</p>
+                    ) : (
+                      availableModules.map((module) => (
+                        <motion.label
+                          key={module.moduleId}
+                          whileHover={{ scale: 1.02 }}
+                          className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                            formData.moduleIds.includes(module.moduleId)
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 bg-white hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.moduleIds.includes(module.moduleId)}
+                            onChange={() => handleModuleToggle(module.moduleId)}
+                            className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm">{module.name}</p>
+                            {module.description && (
+                              <p className="text-xs text-gray-500 mt-0.5">{module.description}</p>
+                            )}
+                            {module.price > 0 && (
+                              <p className="text-xs text-blue-600 mt-1 font-medium">LKR {module.price}</p>
+                            )}
+                          </div>
+                        </motion.label>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -571,7 +681,7 @@ const BillingAndPlans = () => {
 
                 {/* Submit Buttons */}
                 <div className="flex gap-3 pt-6 border-t border-gray-200">
-                  <motion.div className="flex-1">
+                  <div className="flex-1">
                     <Button
                       type="button"
                       variant="outline"
@@ -581,8 +691,8 @@ const BillingAndPlans = () => {
                     >
                       Cancel
                     </Button>
-                  </motion.div>
-                  <motion.div className="flex-1">
+                  </div>
+                  <div className="flex-1">
                     <Button
                       type="submit"
                       variant="primary"
@@ -591,11 +701,11 @@ const BillingAndPlans = () => {
                     >
                       {editingPlan ? "Update Plan" : "Create Plan"}
                     </Button>
-                  </motion.div>
+                  </div>
                 </div>
               </form>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
       </div>
     </DashboardLayout>

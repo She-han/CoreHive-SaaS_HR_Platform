@@ -12,3 +12,5 @@ public interface LeaveRepository extends JpaRepository <LeaveRequest , Long> {
     // Get leaves by status (PENDING, APPROVED, REJECTED)
     List<LeaveRequest> findByStatus(LeaveRequest.LeaveStatus status);
 }
+
+

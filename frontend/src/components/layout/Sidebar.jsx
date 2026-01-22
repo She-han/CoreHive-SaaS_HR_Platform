@@ -27,7 +27,8 @@ import {
   MessageSquare, 
   UserPlus,
   Briefcase,
-  DollarSign
+  DollarSign,
+  CreditCard
 } from 'lucide-react';
 import * as moduleApi from '../../api/moduleApi';
 
@@ -130,6 +131,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/sys_admin/users')
           },
           {
+            name: 'Modules',
+            icon: Cog6ToothIcon,
+            path: '/sys_admin/Modules',
+            current: location.pathname.startsWith('/sys_admin/Modules')
+          },
+          {
             name: 'Billing & Plans',
             icon: TbDeviceAirpodsCase,
             path: '/sys_admin/billing',
@@ -168,6 +175,19 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: HomeIcon,
             path: '/org_admin/dashboard',
             current: location.pathname === '/org_admin/dashboard'
+          },
+          {
+            name: 'Payment Gateway',
+            icon: DollarSign,
+            path: '/org_admin/payment-gateway',
+            current: location.pathname === '/org_admin/payment-gateway',
+            testingMode: true
+          },
+          {
+            name: 'Subscription Management',
+            icon: CreditCard,
+            path: '/org_admin/subscription-management',
+            current: location.pathname.startsWith('/org_admin/subscription-management')
           },
           {
             name: 'HR Staff Management',
@@ -413,6 +433,11 @@ const Sidebar = ({ isCollapsed = false }) => {
           {!isCollapsed && item.moduleEnabled && (
             <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
               EXT
+            </span>
+          )}
+          {!isCollapsed && item.testingMode && (
+            <span className="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+              TEST
             </span>
           )}
         </Link>

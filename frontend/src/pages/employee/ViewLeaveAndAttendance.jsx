@@ -9,7 +9,7 @@ export default function ViewLeaveAndAttendance() {
   const [summary, setSummary] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); 
 
   useEffect(() => {
     const loadData = async () => {

@@ -80,7 +80,7 @@ export const ChangePasswordPage = () => {
               </p>
             </div>
 
-            {error && <Alert type="error" message={error} className="mb-4" />}
+            
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input

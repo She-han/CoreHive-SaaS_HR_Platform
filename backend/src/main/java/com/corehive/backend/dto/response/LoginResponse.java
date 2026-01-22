@@ -26,4 +26,9 @@ public class LoginResponse {
     private boolean isPasswordChangeRequired;
     private Boolean modulesConfigured; // First-time login check
     private Map<String, Boolean> moduleConfig; // Available modules
+
+    private Boolean requiresPayment;
+    private Boolean hasActiveSubscription;
+    private String subscriptionStatus;
+    private String trialEndDate;
 }

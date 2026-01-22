@@ -18,6 +18,7 @@ public class BillingPlanDTO {
     private String description;
     private String employees;
     private List<String> features = new ArrayList<>();
+    private List<Long> moduleIds = new ArrayList<>();
     private boolean popular;
     private boolean active;
 }

@@ -62,6 +62,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll() // Health check
                         .requestMatchers("/api/public/").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
+                        .requestMatchers("/api/billing-plans", "/api/billing-plans/**").permitAll() // Billing plans for signup
+                        .requestMatchers("/api/modules/active").permitAll() // Active modules for signup
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/error").permitAll()
 
@@ -69,10 +71,15 @@ public class SecurityConfig {
                         // Protected auth endpoints (requires valid JWT token)
                         .requestMatchers("/api/auth/configure-modules", "/api/auth/me", "/api/auth/logout").authenticated()
 
+                        // Payment endpoints (for both checking and initiating payments)
+                        .requestMatchers("/api/payment/**").hasRole("ORG_ADMIN")
+                        
+                        // Subscription management endpoints (ORG_ADMIN only)
+                        .requestMatchers("/api/subscription/**").hasRole("ORG_ADMIN")
+
                         // Admin-only endpoints
-                        .requestMatchers("/api/admin/").hasRole("SYS_ADMIN")
-                        .requestMatchers("/api/billing-plans/").hasRole("SYS_ADMIN")
-                        .requestMatchers("/api/sys-admin/auditlogs").hasRole("SYS_ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
+
 
                         // Employees - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/employees", "/api/employees/**").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
@@ -88,10 +95,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
 
                         .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+                        .requestMatchers("/api/leave-requests").hasAnyRole("HR_STAFF", "ORG_ADMIN")
 
                         // Organization-level endpoints
                         .requestMatchers("/api/org/").hasAnyRole("ORG_ADMIN", "HR_STAFF", "EMPLOYEE")
-                        .requestMatchers("/api/employee/").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/employee/**").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/employee/employee-feedback").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/employee/leave-types/").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/employee/leave-request/").hasRole("EMPLOYEE")
                         .requestMatchers("/api/hr/").hasAnyRole("ORG_ADMIN", "HR_STAFF")
                         .requestMatchers("/api/payroll/").hasRole("ORG_ADMIN")
                         .requestMatchers("/api/dashboard").authenticated() // Dashboard requires authentication

@@ -49,7 +49,7 @@ public class DepartmentController {
             // Return DTOs
             List<DepartmentDTO> departmentsDTO = departmentService.getDepartmentsDTOByOrganization(organizationUuid);
 
-            return ResponseEntity.ok(ApiResponse.success("Departments retrieved successfully", departmentsDTO));
+            return ResponseEntity.ok(ApiResponse.success(departmentsDTO, "Departments retrieved successfully"));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -68,7 +68,7 @@ public class DepartmentController {
 
             Department createdDept = departmentService.createDepartment(organizationUuid, request);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Department created successfully", createdDept)
+                    .body(ApiResponse.success(createdDept, "Department created successfully")
             );
 
         } catch (Exception e) {

@@ -25,9 +25,6 @@ public class SystemUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 50)
-    private String userName;
-
     @Column(unique = true, nullable = false, length = 200)
     private String email;
 
@@ -40,8 +37,8 @@ public class SystemUser {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @Column(name = "last_active_at")
-    private LocalDateTime lastActiveAt;
+    @Column(name = "is_password_change_required")
+    private Boolean isPasswordChangeRequired = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

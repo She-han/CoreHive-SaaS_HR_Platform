@@ -43,7 +43,7 @@ public class DesignationController {
 
             List<Designation> designations = designationService.getDesignationsByOrganization(organizationUuid);
 
-            return ResponseEntity.ok(ApiResponse.success("Designations retrieved successfully", designations));
+            return ResponseEntity.ok(ApiResponse.success(designations, "Designations retrieved successfully"));
 
         } catch (Exception e) {
             log.error("Error getting designations", e);
@@ -62,7 +62,7 @@ public class DesignationController {
 
             Designation createdDesignation = designationService.createDesignation(organizationUuid, request);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Designation created successfully", createdDesignation)
+                    .body(ApiResponse.success(createdDesignation, "Designation created successfully")
                     );
 
         } catch (Exception e) {

@@ -23,11 +23,21 @@ public class ApiResponse<T> {
     private LocalDateTime timestamp;
 
     // Helper method to create success response
-    public static <T> ApiResponse<T> success(String message, T data) {
+    public static <T> ApiResponse<T> success(T data, String message) {
         return ApiResponse.<T>builder()
                 .success(true)
                 .message(message)
                 .data(data)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Overloaded method for success response with just message
+    public static <T> ApiResponse<T> success(String message) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .message(message)
+                .data(null)
                 .timestamp(LocalDateTime.now())
                 .build();
     }

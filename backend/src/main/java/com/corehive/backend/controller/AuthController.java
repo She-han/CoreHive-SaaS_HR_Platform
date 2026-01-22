@@ -218,7 +218,7 @@ public class AuthController {
 
         // No server-side action needed for JWT stateless
         // Just tell frontend to clear token
-        ApiResponse<String> response = ApiResponse.success("Logout successful. Please clear your token.", null);
+        ApiResponse<String> response = ApiResponse.success(null, "Logout successful. Please clear your token.");
         return ResponseEntity.ok(response);
     }
 

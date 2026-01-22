@@ -63,7 +63,7 @@ public class HRStaffService {
             );
 
             log.info("Found {} HR staff members for organization: {}", hrStaffResponses.size(), organizationUuid);
-            return ApiResponse.success("HR staff retrieved successfully", responsePage);
+            return ApiResponse.success(responsePage, "HR staff retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching HR staff for organization: {}", organizationUuid, e);
@@ -85,7 +85,7 @@ public class HRStaffService {
                     .collect(Collectors.toList());
 
             log.info("Found {} HR staff members for organization: {}", hrStaffResponses.size(), organizationUuid);
-            return ApiResponse.success("HR staff retrieved successfully", hrStaffResponses);
+            return ApiResponse.success(hrStaffResponses, "HR staff retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching HR staff for organization: {}", organizationUuid, e);
@@ -127,7 +127,7 @@ public class HRStaffService {
             HRStaffResponse response = convertToHRStaffResponse(employee);
 
             log.info("HR staff retrieved successfully: {}", hrStaffId);
-            return ApiResponse.success("HR staff retrieved successfully", response);
+            return ApiResponse.success(response, "HR staff retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching HR staff with ID: {}", hrStaffId, e);
@@ -247,7 +247,7 @@ public class HRStaffService {
             );
 
             log.info("HR staff created successfully with ID: {}", savedEmployee.getId());
-            return ApiResponse.success("HR staff created successfully", response);
+            return ApiResponse.success(response, "HR staff created successfully");
 
         } catch (Exception e) {
             log.error("Error creating HR staff for organization: {} - {}", organizationUuid, e.getMessage(), e);
@@ -322,7 +322,7 @@ public class HRStaffService {
             HRStaffResponse response = convertToHRStaffResponse(savedEmployee);
 
             log.info("HR staff updated successfully with ID: {}", request.getId());
-            return ApiResponse.success("HR staff updated successfully", response);
+            return ApiResponse.success(response, "HR staff updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating HR staff with ID: {}", request.getId(), e);
@@ -366,7 +366,7 @@ public class HRStaffService {
             employeeRepository.delete(employee);
 
             log.info("HR staff deleted successfully with ID: {}", hrStaffId);
-            return ApiResponse.success("HR staff deleted successfully", null);
+            return ApiResponse.success(null, "HR staff deleted successfully");
 
         } catch (Exception e) {
             log.error("Error deleting HR staff with ID: {}", hrStaffId, e);
@@ -394,7 +394,7 @@ public class HRStaffService {
             );
 
             log.info("Found {} HR staff members matching search term: {}", hrStaffResponses.size(), searchTerm);
-            return ApiResponse.success("HR staff search completed", responsePage);
+            return ApiResponse.success(responsePage, "HR staff search completed");
 
         } catch (Exception e) {
             log.error("Error searching HR staff for organization: {}", organizationUuid, e);
@@ -412,7 +412,7 @@ public class HRStaffService {
             Long count = employeeRepository.countHRStaffByOrganizationUuid(organizationUuid);
 
             log.info("HR staff count for organization {}: {}", organizationUuid, count);
-            return ApiResponse.success("HR staff count retrieved successfully", count);
+            return ApiResponse.success(count, "HR staff count retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error getting HR staff count for organization: {}", organizationUuid, e);

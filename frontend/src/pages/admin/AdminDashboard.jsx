@@ -465,12 +465,8 @@ const AdminDashboard = () => {
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1
-                className="text-2xl lg:text-3xl font-bold"
-                style={{ color: THEME.dark }}
-              >
-                Welcome back,{" "}
-                <span style={{ color: THEME.primary }}>{userName}</span>! 👋
+              <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: THEME.dark }}>
+                Welcome back, <span style={{ color: THEME.primary }}>{userName}</span>! 
               </h1>
               <p className="mt-1" style={{ color: THEME.muted }}>
                 Here's what's happening on your platform today
@@ -585,10 +581,10 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingApprovals.slice(0, 4).map((org) => (
-                      <PendingApprovalItem
-                        key={org.organizationUuid}
-                        org={org}
+                    {pendingApprovals.slice(0, 2).map((org) => (
+                      <PendingApprovalItem 
+                        key={org.organizationUuid} 
+                        org={org} 
                         onReview={handleOrganizationReview}
                       />
                     ))}
@@ -614,7 +610,7 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            {/* System Health */}
+            {/* System Health 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                 <div
@@ -640,6 +636,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </div>
+            */}
           </div>
         </div>
 

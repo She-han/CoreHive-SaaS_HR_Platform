@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
-import ReCaptcha from "../../components/common/ReCaptcha";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  Building2,
-  Mail,
-  FileText,
-  Users,
-  ArrowRight,
+import React, { useState, useEffect , useRef} from 'react';
+import ReCaptcha from '../../components/common/ReCaptcha';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { getAllBillingPlans } from '../../api/billingPlansApi';
+import { getActiveModules } from '../../api/extendedModulesApi';
+import { 
+  Building2, 
+  Mail, 
+  FileText, 
+  Users, 
+  ArrowRight, 
   CheckCircle,
-  Info
-} from "lucide-react";
+  Info,
+  Package
+} from 'lucide-react';
 
 import {
   signupOrganization,
@@ -63,12 +66,20 @@ const SignupPage = () => {
     adminEmail: "",
     businessRegistrationNumber: "",
     businessRegistrationDocument: null,
-    employeeCountRange: "",
-    modulePerformanceTracking: false,
-    moduleEmployeeFeedback: false,
-    moduleHiringManagement: false
+    employeeCountRange: '',
+    selectedPlanId: null,
+    selectedPlanName: '',
+    selectedPlanPrice: 0,
+    customModules: [] // Array of module IDs for custom plan
   });
-
+  
+  // Plans and modules state
+  const [billingPlans, setBillingPlans] = useState([]);
+  const [extendedModules, setExtendedModules] = useState([]);
+  const [allModules, setAllModules] = useState([]); // All modules for mapping
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+  
   const [formErrors, setFormErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -114,7 +125,65 @@ const SignupPage = () => {
       dispatch(clearError());
     };
   }, [dispatch]);
-
+  
+  // Fetch billing plans when moving to step 2
+  useEffect(() => {
+    if (currentStep === 2 && billingPlans.length === 0) {
+      fetchBillingPlans();
+      fetchAllModules(); // Also fetch modules for display
+    }
+  }, [currentStep]);
+  
+  // Fetch extended modules when moving to step 3 (custom plan)
+  useEffect(() => {
+    if (currentStep === 3 && extendedModules.length === 0) {
+      fetchExtendedModules();
+    }
+  }, [currentStep]);
+  
+  // Fetch billing plans
+  const fetchBillingPlans = async () => {
+    setIsLoadingPlans(true);
+    try {
+      const response = await getAllBillingPlans();
+      setBillingPlans(response || []);
+    } catch (error) {
+      console.error('Error fetching billing plans:', error);
+      setFormErrors(prev => ({ ...prev, plans: 'Failed to load billing plans' }));
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
+  
+  // Fetch extended modules
+  const fetchExtendedModules = async () => {
+    setIsLoadingModules(true);
+    try {
+      const response = await getActiveModules();
+      setExtendedModules(response.data || []);
+    } catch (error) {
+      console.error('Error fetching extended modules:', error);
+      setFormErrors(prev => ({ ...prev, modules: 'Failed to load modules' }));
+    } finally {
+      setIsLoadingModules(false);
+    }
+  };
+  
+  // Fetch all modules for plan display
+  const fetchAllModules = async () => {
+    try {
+      const response = await getActiveModules();
+      setAllModules(response.data || []);
+    } catch (error) {
+      console.error('Error fetching modules for plan display:', error);
+    }
+  };
+  
+  // Get module details by ID
+  const getModuleById = (moduleId) => {
+    return allModules.find(m => m.moduleId === moduleId || m.id === moduleId);
+  };
+  
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
@@ -210,73 +279,112 @@ const SignupPage = () => {
 
   // Handle next step
   const handleNextStep = () => {
-    console.log("handleNextStep called");
-    console.log("Current step:", currentStep);
-    console.log("Form data:", formData);
-
     if (currentStep === 1 && validateStep1()) {
-      console.log("Validation passed, moving to step 2");
       setCurrentStep(2);
-    } else {
-      console.log("Validation failed");
+    } else if (currentStep === 2) {
+      // Validate plan selection
+      if (!formData.selectedPlanId) {
+        setFormErrors(prev => ({ ...prev, plan: 'Please select a billing plan' }));
+        return;
+      }
+      
+      // If custom plan is selected, go to step 3
+      if (formData.selectedPlanName.toLowerCase() === 'custom') {
+        setCurrentStep(3);
+      } else {
+        // For non-custom plans, skip to submission (show recaptcha)
+        setCurrentStep(3);
+      }
     }
   };
+  
+  // Handle plan selection
+  const handlePlanSelect = (plan) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedPlanId: plan.id,
+      selectedPlanName: plan.name,
+      selectedPlanPrice: plan.price,
+      customModules: [] // Reset custom modules when changing plan
+    }));
+    setFormErrors(prev => ({ ...prev, plan: null }));
+  };
+  
+  // Handle module toggle for custom plan
+  const handleModuleToggle = (moduleId) => {
+    setFormData(prev => {
+      const isSelected = prev.customModules.includes(moduleId);
+      return {
+        ...prev,
+        customModules: isSelected
+          ? prev.customModules.filter(id => id !== moduleId)
+          : [...prev.customModules, moduleId]
+      };
+    });
+  };
 
+  
   // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!recaptchaToken) {
-      setRecaptchaError("Please complete the reCAPTCHA verification");
-      return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!recaptchaToken) {
+    setRecaptchaError('Please complete the reCAPTCHA verification');
+    return;
+  }
+  
+  // Validate custom modules if custom plan
+  if (formData.selectedPlanName.toLowerCase() === 'custom' && formData.customModules.length === 0) {
+    setFormErrors(prev => ({ ...prev, modules: 'Please select at least one module for custom plan' }));
+    return;
+  }
+  
+  try {
+    const signupFormData = new FormData();
+    signupFormData.append('organizationName', formData.organizationName);
+    signupFormData.append('adminEmail', formData.adminEmail);
+    signupFormData.append('businessRegistrationNumber', formData.businessRegistrationNumber);
+    signupFormData.append('employeeCountRange', formData.employeeCountRange);
+    signupFormData.append('recaptchaToken', recaptchaToken); // Add token
+    
+    if (formData.businessRegistrationDocument) {
+      signupFormData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
     }
-
-    try {
-      const signupFormData = new FormData();
-      signupFormData.append("organizationName", formData.organizationName);
-      signupFormData.append("adminEmail", formData.adminEmail);
-      signupFormData.append(
-        "businessRegistrationNumber",
-        formData.businessRegistrationNumber
-      );
-      signupFormData.append("employeeCountRange", formData.employeeCountRange);
-      signupFormData.append("recaptchaToken", recaptchaToken); // Add token
-
-      if (formData.businessRegistrationDocument) {
-        signupFormData.append(
-          "businessRegistrationDocument",
-          formData.businessRegistrationDocument
-        );
-      }
-
-      signupFormData.append(
-        "modulePerformanceTracking",
-        formData.modulePerformanceTracking
-      );
-      signupFormData.append(
-        "moduleEmployeeFeedback",
-        formData.moduleEmployeeFeedback
-      );
-      signupFormData.append(
-        "moduleHiringManagement",
-        formData.moduleHiringManagement
-      );
-
-      const resultAction = await dispatch(signupOrganization(signupFormData));
-
-      if (signupOrganization.fulfilled.match(resultAction)) {
-        setIsSuccess(true);
-      } else {
-        recaptchaRef.current?.reset();
-        setRecaptchaToken(null);
-      }
-    } catch (error) {
-      console.error("Signup error:", error);
+    
+    // Calculate total price for custom plan
+    let totalPrice = formData.selectedPlanPrice;
+    if (formData.selectedPlanName.toLowerCase() === 'custom') {
+      const modulesTotal = extendedModules
+        .filter(m => formData.customModules.includes(m.moduleId))
+        .reduce((sum, m) => sum + parseFloat(m.price), 0);
+      totalPrice = 319 + modulesTotal;
+    }
+    
+    // Add billing plan information
+    signupFormData.append('selectedPlanId', formData.selectedPlanId);
+    signupFormData.append('selectedPlanName', formData.selectedPlanName);
+    signupFormData.append('selectedPlanPrice', totalPrice);
+    
+    // Add custom modules if custom plan
+    if (formData.selectedPlanName.toLowerCase() === 'custom') {
+      signupFormData.append('customModules', JSON.stringify(formData.customModules));
+    }
+    
+    const resultAction = await dispatch(signupOrganization(signupFormData));
+    
+    if (signupOrganization.fulfilled.match(resultAction)) {
+      setIsSuccess(true);
+    } else {
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
     }
-  };
-
+  } catch (error) {
+    console.error('Signup error:', error);
+    recaptchaRef.current?.reset();
+    setRecaptchaToken(null);
+  }
+};
+  
   // Success view
   if (isSuccess) {
     return (
@@ -313,7 +421,7 @@ const SignupPage = () => {
     <>
       <Navbar />
       <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center items-center space-x-2 mb-6">
@@ -332,39 +440,36 @@ const SignupPage = () => {
 
           {/* Progress indicator */}
           <div className="mb-8">
-            <div className="flex items-center justify-center space-x-4">
-              <div
-                className={`flex items-center ${currentStep >= 1 ? "text-primary-500" : "text-text-secondary"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 1
-                      ? "border-primary-500 bg-primary-500 text-white"
-                      : "border-gray-300"
-                  }`}
-                >
+            <div className="flex items-center justify-center space-x-2 md:space-x-4">
+              <div className={`flex items-center ${currentStep >= 1 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 1 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
                   1
                 </div>
-                <span className="ml-2 font-medium">Company Info</span>
+                <span className="ml-2 font-medium text-sm md:text-base">Company</span>
               </div>
-
-              <div
-                className={`w-12 h-0.5 ${currentStep > 1 ? "bg-primary-500" : "bg-gray-300"}`}
-              ></div>
-
-              <div
-                className={`flex items-center ${currentStep >= 2 ? "text-primary-500" : "text-text-secondary"}`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                    currentStep >= 2
-                      ? "border-primary-500 bg-primary-500 text-white"
-                      : "border-gray-300"
-                  }`}
-                >
+              
+              <div className={`w-8 md:w-12 h-0.5 ${currentStep > 1 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex items-center ${currentStep >= 2 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 2 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
                   2
                 </div>
-                <span className="ml-2 font-medium">Features</span>
+                <span className="ml-2 font-medium text-sm md:text-base">Plan</span>
+              </div>
+              
+              <div className={`w-8 md:w-12 h-0.5 ${currentStep > 2 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex items-center ${currentStep >= 3 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 3 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
+                  3
+                </div>
+                <span className="ml-2 font-medium text-sm md:text-base">Confirm</span>
               </div>
             </div>
           </div>
@@ -521,54 +626,313 @@ const SignupPage = () => {
                   </div>
                 </div>
               )}
-
-              {/* Step 2: Module Selection */}
+              
+              {/* Step 2: Billing Plan Selection */}
               {currentStep === 2 && (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-6 max-w-5xl">
                     <h2 className="text-xl font-semibold text-text-primary mb-2">
-                      Choose Your Features
+                      Choose Your Plan
                     </h2>
                     <p className="text-text-secondary">
-                      Select additional modules for your organization (optional)
+                      Select a billing plan that fits your organization
                     </p>
                   </div>
-
-                  {/* Module selection */}
-                  <div className="space-y-4">
-                    <div
-                      type="info"
-                      title="Basic Features Included"
-                      message="Employee Management, Payroll, Leave Management, Attendance Tracking, and Reports are included in all plans."
-                    />
-
-                    {moduleOptions.map((module) => (
-                      <div
-                        key={module.key}
-                        className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors duration-200"
-                      >
-                        <label className="flex items-start space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            name={module.key}
-                            checked={formData[module.key]}
-                            onChange={handleInputChange}
-                            className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
-                            disabled={isLoading}
-                          />
-                          <div>
-                            <h3 className="font-medium text-text-primary">
-                              {module.name}
-                            </h3>
-                            <p className="text-sm text-text-secondary mt-1">
-                              {module.description}
-                            </p>
+                  
+                  {/* Loading state */}
+                  {isLoadingPlans ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+                      <p className="mt-4 text-text-secondary">Loading plans...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Plans grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {billingPlans.map((plan) => (
+                          <div
+                            key={plan.id}
+                            onClick={() => handlePlanSelect(plan)}
+                            className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 ${
+                              formData.selectedPlanId === plan.id
+                                ? 'border-primary-500 bg-primary-50 shadow-lg'
+                                : 'border-gray-200 hover:border-primary-300 hover:shadow-md'
+                            } ${
+                              plan.popular ? 'ring-2 ring-primary-500' : ''
+                            }`}
+                          >
+                            {/* Popular badge */}
+                            {plan.popular && (
+                              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                <span className="bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                  Most Popular
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Selected indicator */}
+                            {formData.selectedPlanId === plan.id && (
+                              <div className="absolute top-4 right-4">
+                                <CheckCircle className="w-6 h-6 text-primary-500" />
+                              </div>
+                            )}
+                            
+                            {/* Plan header */}
+                            <div className="text-center mb-4">
+                              <h3 className="text-xl font-bold text-text-primary mb-2">
+                                {plan.name}
+                              </h3>
+                              <p className="text-sm text-text-secondary mb-4">
+                                {plan.description}
+                              </p>
+                              <div className="flex items-baseline justify-center gap-1">
+                                <span className="text-3xl font-bold text-text-primary">
+                                  LKR {plan.price}
+                                </span>
+                               
+                              </div>
+                              <p className="text-sm text-text-secondary mt-2">
+                                {plan.period}
+                              </p>
+                            </div>
+                            
+                            {/* Features list */}
+                            <div className="space-y-2 mb-4 border-t border-gray-200 pt-4 mt-4">
+                              <h4 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1">
+                                
+                                Basic Features
+                              </h4>
+                              {plan.features.map((feature, idx) => (
+                                <div key={idx} className="flex items-start gap-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                                  <span className="text-sm text-text-primary">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Extended Modules list */}
+                            {plan.moduleIds && plan.moduleIds.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1">
+                                  
+                                  Extended Features ({plan.moduleIds.length})
+                                </h4>
+                                <div className="space-y-2.5">
+                                  {plan.moduleIds.map((moduleId, idx) => {
+                                    const module = getModuleById(moduleId);
+                                    return module ? (
+                                      <div key={idx} className="flex gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                                        
+                                          <span className="text-sm text-text-primary">{module.name}</span>
+                                        
+                                       
+                                      </div>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </label>
+                        ))}
                       </div>
-                    ))}
+                      
+                      {formErrors.plan && (
+                        <p className="text-sm text-red-600 text-center">
+                          {formErrors.plan}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* Action buttons */}
+                  <div className="flex justify-between space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      disabled={isLoading || isLoadingPlans}
+                    >
+                      Back
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleNextStep}
+                      disabled={isLoading || isLoadingPlans || !formData.selectedPlanId}
+                      icon={ArrowRight}
+                      iconPosition="right"
+                    >
+                      Continue
+                    </Button>
                   </div>
+                </div>
+              )}
+              
+              {/* Step 3: Custom Modules or Confirmation */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  {formData.selectedPlanName.toLowerCase() === 'custom' ? (
+                    <>
+                      {/* Custom Module Selection */}
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-text-primary mb-2">
+                          Customize Your Modules
+                        </h2>
+                        <p className="text-text-secondary">
+                          Select the modules you need for your custom plan
+                        </p>
+                      </div>
+                      
+                      {/* Loading state */}
+                      {isLoadingModules ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+                          <p className="mt-4 text-text-secondary">Loading modules...</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Modules grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {extendedModules.map((module) => (
+                              <div
+                                key={module.moduleId}
+                                onClick={() => handleModuleToggle(module.moduleId)}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                                  formData.customModules.includes(module.moduleId)
+                                    ? 'border-primary-500 bg-primary-50'
+                                    : 'border-gray-200 hover:border-primary-300'
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.customModules.includes(module.moduleId)}
+                                    onChange={() => handleModuleToggle(module.moduleId)}
+                                    className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h3 className="font-semibold text-text-primary">
+                                        {module.name}
+                                      </h3>
+                                      <span className="text-sm font-bold text-primary-500">
+                                        LKR {module.price}/mo
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-text-secondary">
+                                      {module.description}
+                                    </p>
+                                    {module.category && (
+                                      <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
+                                        {module.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Total price */}
+                          {formData.customModules.length > 0 && (
+                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-text-primary font-medium">
+                                  Fixed cost for basic modules:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  319.00 LKR                            
+                                </span>
 
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-text-primary font-medium">
+                                  Cost for selected modules:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  {extendedModules
+                                    .filter(m => formData.customModules.includes(m.moduleId))
+                                    .reduce((sum, m) => sum + parseFloat(m.price), 0)
+                                    .toFixed(2)}
+                                    <t/> LKR
+                                </span>
+
+                              </div>
+                              <p className="text-sm text-text-secondary ">
+                                {formData.customModules.length} module(s) selected
+                              </p>
+                              <div className="flex items-center justify-between mt-3">
+                                <span className="text-text-primary font-medium">
+                                  Total price for one active user/month:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  {(() => {
+                                    const modulesTotal = extendedModules
+                                      .filter(m => formData.customModules.includes(m.moduleId))
+                                      .reduce((sum, m) => sum + parseFloat(m.price), 0);
+                                    return (319 + modulesTotal).toFixed(2);
+                                  })()}
+                                  {' '}LKR
+                                </span>
+
+                              </div>
+                            </div>
+                          )}
+                          
+                          {formErrors.modules && (
+                            <p className="text-sm text-red-600 text-center">
+                              {formErrors.modules}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Confirmation step for non-custom plans */}
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-text-primary mb-2">
+                          Confirm Your Registration
+                        </h2>
+                        <p className="text-text-secondary">
+                          Review your details and complete the registration
+                        </p>
+                      </div>
+                      
+                      {/* Summary */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
+                        <div>
+                          <p className="text-sm text-text-secondary">Organization</p>
+                          <p className="font-semibold text-text-primary">{formData.organizationName}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Admin Email</p>
+                          <p className="font-semibold text-text-primary">{formData.adminEmail}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Employee Count</p>
+                          <p className="font-semibold text-text-primary">{formData.employeeCountRange}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Selected Plan</p>
+                          <p className="font-semibold text-primary-500">{formData.selectedPlanName}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-text-primary font-medium">
+                            Total price for one active user/month:
+                          </span>
+                          <span className="text-2xl font-bold text-primary-500">
+                              {formData.selectedPlanPrice} LKR
+                          </span>
+
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* reCAPTCHA */}
                   <ReCaptcha
                     ref={recaptchaRef}
                     onChange={handleRecaptchaChange}
@@ -582,14 +946,12 @@ const SignupPage = () => {
                     </div>
                   )}
 
-                  {isLoading || !recaptchaToken}
-
                   {/* Action buttons */}
                   <div className="flex justify-between space-x-3">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentStep(1)}
+                      onClick={() => setCurrentStep(2)}
                       disabled={isLoading}
                     >
                       Back
@@ -599,7 +961,7 @@ const SignupPage = () => {
                       type="submit"
                       variant="primary"
                       loading={isLoading}
-                      disabled={isLoading}
+                      disabled={isLoading || !recaptchaToken}
                       icon={ArrowRight}
                       iconPosition="right"
                     >

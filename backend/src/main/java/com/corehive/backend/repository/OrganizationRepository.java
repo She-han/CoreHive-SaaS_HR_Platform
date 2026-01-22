@@ -1,6 +1,7 @@
 package com.corehive.backend.repository;
 
 import com.corehive.backend.model.Organization;
+import com.corehive.backend.model.OrganizationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,7 +34,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Organizations filter according to status 
      * System admin dashboard 
      */
-    Page<Organization> findByStatus(String status, Pageable pageable);
+    Page<Organization> findByStatus(OrganizationStatus status, Pageable pageable);
 
     /**
      * Pending approval organizations list
@@ -46,7 +47,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Count by status
      * Dashboard statistics 
      */
-    long countByStatus(String status);
+    long countByStatus(OrganizationStatus status);
 
     /**
      * Email already registered or not checking 
@@ -57,4 +58,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Business Registration Number duplicate checking
      */
     boolean existsByBusinessRegistrationNumber(String brNumber);
+
+
+
 }

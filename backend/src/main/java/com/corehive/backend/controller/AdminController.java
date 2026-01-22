@@ -218,6 +218,38 @@ public class AdminController {
     }
 
     /**
+     * Delete Organization Permanently
+     * DELETE /api/admin/organizations/{organizationUuid}
+     *
+     * Permanently delete an organization and all its related data
+     */
+    @DeleteMapping("/organizations/{organizationUuid}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteOrganization(
+            @PathVariable String organizationUuid,
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Organization deletion request from admin: {} for org: {}", adminEmail, organizationUuid);
+
+        try {
+            ApiResponse<String> response = organizationService.deleteOrganization(organizationUuid);
+
+            HttpStatus httpStatus = response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+
+            log.info("Organization {} deletion by {}: {}", 
+                    organizationUuid, adminEmail, response.isSuccess() ? "SUCCESS" : "FAILED");
+
+            return ResponseEntity.status(httpStatus).body(response);
+
+        } catch (Exception e) {
+            log.error("Error deleting organization {} by admin: {}", organizationUuid, adminEmail, e);
+            ApiResponse<String> errorResponse = ApiResponse.error("Failed to delete organization");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * Get Platform Statistics
      * GET /api/admin/statistics
      *
@@ -235,7 +267,7 @@ public class AdminController {
             PlatformStatistics stats = organizationService.getPlatformStatistics();
 
             ApiResponse<PlatformStatistics> response =
-                    ApiResponse.success("Platform statistics retrieved successfully", stats);
+                    ApiResponse.success(stats, "Platform statistics retrieved successfully");
 
             log.info("Platform statistics retrieved - Total Orgs: {}, Active: {}, Pending: {}, Employees: {}",
                     stats.getTotalOrganizations(), stats.getActiveOrganizations(), 

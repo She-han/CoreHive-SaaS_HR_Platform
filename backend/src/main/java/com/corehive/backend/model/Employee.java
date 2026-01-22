@@ -86,4 +86,5 @@ public class Employee {
                 MONTHLY,
                 DAILY
         }
+
 }

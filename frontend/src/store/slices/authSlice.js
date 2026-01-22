@@ -194,6 +194,14 @@ const authSlice = createSlice({
       }
     },
 
+    updateSubscriptionStatus: (state, action) => {
+      if (state.user) {
+        state.user.requiresPayment = action.payload.requiresPayment;
+        state.user.hasActiveSubscription = action.payload.hasActiveSubscription;
+        state.user.subscriptionStatus = action.payload.subscriptionStatus;
+      }
+    },
+    
     resetLoadingStates: (state) => {
       state.isLoading = false;
       state.isSignupLoading = false;
@@ -334,8 +342,7 @@ const authSlice = createSlice({
 });
 
 // Export actions
-export const { clearError, logout, updateUser, resetLoadingStates } =
-  authSlice.actions;
+export const { clearError, logout, updateUser, updateSubscriptionStatus, resetLoadingStates } = authSlice.actions;
 
 // Export selectors - ADD MISSING SELECTORS
 export const selectAuth = (state) => state.auth;
@@ -349,6 +356,9 @@ export const selectIsSignupLoading = (state) => state.auth.isSignupLoading; // M
 export const selectIsModuleConfigLoading = (state) =>
   state.auth.isModuleConfigLoading; // MISSING
 export const selectError = (state) => state.auth.error;
+export const selectRequiresPayment = (state) => state.auth.user?.requiresPayment || false;
+export const selectHasActiveSubscription = (state) => state.auth.user?.hasActiveSubscription || false;
+
 
 // Export reducer
 export default authSlice.reducer;

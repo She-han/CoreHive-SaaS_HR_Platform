@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { useDispatch } from "react-redux";
-import {
-  Building2,
-  Mail,
-  Users,
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { 
+  Building2, 
+  Mail, 
+  Users, 
   Calendar,
   FileText,
   CheckCircle,
@@ -18,16 +18,16 @@ import {
   AlertCircle,
   Download,
   Eye,
-  ExternalLink
-} from "lucide-react";
+  ExternalLink,
+  CreditCard,
+  Package
+} from 'lucide-react';
 
-import Modal from "../common/Modal";
-import Button from "../common/Button";
-import Card from "../common/Card";
-import {
-  approveOrganization,
-  rejectOrganization
-} from "../../store/slices/adminSlice";
+import Modal from '../common/Modal';
+import Button from '../common/Button';
+import Card from '../common/Card';
+import { approveOrganization, rejectOrganization } from '../../store/slices/adminSlice';
+import { getOrganizationModules } from '../../api/organizationModulesApi';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
@@ -42,6 +42,36 @@ const OrganizationReviewModal = ({
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingDoc, setIsLoadingDoc] = useState(false);
+  const [organizationModules, setOrganizationModules] = useState([]);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
+
+  // Fetch organization modules when modal opens
+  useEffect(() => {
+    if (organization?.organizationUuid && isOpen) {
+      fetchOrganizationModules();
+    }
+  }, [organization?.organizationUuid, isOpen]);
+
+  const fetchOrganizationModules = async () => {
+    if (!organization?.organizationUuid) return;
+    
+    setIsLoadingModules(true);
+    try {
+      console.log('[OrganizationReviewModal] Fetching modules for:', organization.organizationUuid);
+      const response = await getOrganizationModules(organization.organizationUuid);
+      console.log('[OrganizationReviewModal] API Response:', response);
+      
+      if (response.success) {
+        console.log('[OrganizationReviewModal] Modules data:', response.data);
+        setOrganizationModules(response.data || []);
+      }
+    } catch (error) {
+      console.error('[OrganizationReviewModal] Failed to fetch organization modules:', error);
+      setOrganizationModules([]);
+    } finally {
+      setIsLoadingModules(false);
+    }
+  };
 
   const getDocumentUrl = useCallback((documentPath) => {
     if (!documentPath) return null;
@@ -241,33 +271,78 @@ const OrganizationReviewModal = ({
     });
   }, []);
 
-  const statusConfig = useMemo(
-    () => ({
-      PENDING_APPROVAL: {
-        color: "bg-yellow-50 text-yellow-700 border-yellow-200",
-        icon: Clock,
-        label: "Pending Approval"
-      },
-      ACTIVE: {
-        color: "bg-green-50 text-green-700 border-green-200",
-        icon: CheckCircle,
-        label: "Active"
-      },
-      SUSPENDED: {
-        color: "bg-red-50 text-red-700 border-red-200",
-        icon: XCircle,
-        label: "Suspended"
-      },
-      DORMANT: {
-        color: "bg-gray-50 text-gray-700 border-gray-200",
-        icon: AlertCircle,
-        label: "Dormant"
-      }
-    }),
-    []
-  );
+  const statusConfig = useMemo(() => ({
+    'PENDING_APPROVAL': {
+      color: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      icon: Clock,
+      label: 'Pending Approval'
+    },
+    'ACTIVE': {
+      color: 'bg-green-50 text-green-700 border-green-200',
+      icon: CheckCircle,
+      label: 'Active'
+    },
+    'SUSPENDED': {
+      color: 'bg-red-50 text-red-700 border-red-200',
+      icon: XCircle,
+      label: 'Suspended'
+    },
+    'DORMANT': {
+      color: 'bg-gray-50 text-gray-700 border-gray-200',
+      icon: AlertCircle,
+      label: 'Dormant'
+    }
+  }), []);
+
+  // Helper function to get icon based on module key
+  const getModuleIcon = (moduleKey) => {
+    const iconMap = {
+      'moduleQrAttendanceMarking': TrendingUp,
+      'moduleFaceRecognitionAttendanceMarking': UserPlus,
+      'moduleEmployeeFeedback': MessageSquare,
+      'moduleHiringManagement': Users,
+      'modulePerformanceReviews': Shield,
+    };
+    return iconMap[moduleKey] || Package;
+  };
+
+  // Helper function to get color based on module key
+  const getModuleColor = (moduleKey) => {
+    const colorMap = {
+      'moduleQrAttendanceMarking': 'text-purple-500',
+      'moduleFaceRecognitionAttendanceMarking': 'text-blue-500',
+      'moduleEmployeeFeedback': 'text-green-500',
+      'moduleHiringManagement': 'text-orange-500',
+      'modulePerformanceReviews': 'text-indigo-500',
+    };
+    return colorMap[moduleKey] || 'text-gray-500';
+  };
 
   const selectedModules = useMemo(() => {
+    // Use organization_modules data if available, otherwise fall back to flags
+    console.log('[OrganizationReviewModal] Computing selectedModules, organizationModules:', organizationModules);
+    
+    if (organizationModules && organizationModules.length > 0) {
+      const mapped = organizationModules.map(om => {
+        const moduleKey = om.extendedModule?.moduleKey || '';
+        console.log('[OrganizationReviewModal] Mapping module:', {
+          moduleName: om.extendedModule?.name,
+          moduleKey: moduleKey,
+          isEnabled: om.isEnabled,
+          fullModule: om
+        });
+        return {
+          name: om.extendedModule?.name || 'Unknown Module',
+          icon: getModuleIcon(moduleKey),
+          enabled: om.isEnabled,
+          color: getModuleColor(moduleKey)
+        };
+      });
+      console.log('[OrganizationReviewModal] Mapped modules:', mapped);
+      return mapped;
+    }
+    
+    // Fallback to legacy module flags
     if (!organization) return [];
     return [
       {
@@ -295,7 +370,7 @@ const OrganizationReviewModal = ({
         color: "text-orange-500"
       }
     ];
-  }, [organization]);
+  }, [organization, organizationModules]);
 
   const enabledModulesCount = useMemo(
     () => selectedModules.filter((m) => m.enabled).length,
@@ -381,13 +456,19 @@ const OrganizationReviewModal = ({
             value={organization.employeeCountRange}
             iconColor="text-green-500"
           />
+          <InfoCard 
+            icon={CreditCard} 
+            label="Billing Plan" 
+            value={organization.billingPlan || organization.plan || 'Not Set'}
+            iconColor="text-purple-500"
+          />
           {organization.businessRegistrationNumber && (
             <InfoCard
               icon={FileText}
               label="Registration Number"
               value={organization.businessRegistrationNumber}
               iconColor="text-purple-500"
-              fullWidth={!organization.businessRegistrationNumber}
+              fullWidth={false}
             />
           )}
         </div>
@@ -473,12 +554,22 @@ const OrganizationReviewModal = ({
                 {enabledModulesCount}/{selectedModules.length} Active
               </div>
             </div>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {selectedModules.map((module, index) => (
-                <ModuleCard key={index} module={module} />
-              ))}
-            </div>
+            
+            {isLoadingModules ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : selectedModules.length > 0 ? (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {selectedModules.map((module, index) => (
+                  <ModuleCard key={index} module={module} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No modules configured
+              </div>
+            )}
           </div>
         </Card>
 

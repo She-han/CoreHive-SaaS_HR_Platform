@@ -67,7 +67,7 @@ public class DashboardController {
             ));
 
             ApiResponse<Map<String, Object>> response =
-                    ApiResponse.success("Dashboard data retrieved successfully", dashboardData);
+                    ApiResponse.success(dashboardData, "Dashboard data retrieved successfully");
 
             return ResponseEntity.ok(response);
 

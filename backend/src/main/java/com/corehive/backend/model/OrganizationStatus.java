@@ -6,7 +6,9 @@ package com.corehive.backend.model;
  */
 public enum OrganizationStatus {
     PENDING_APPROVAL("Pending Approval", "Registration submitted, waiting for admin approval"),
+    APPROVED_PENDING_PAYMENT("Approved - Pending Payment", "Approved by admin, waiting for payment confirmation"),
     ACTIVE("Active", "Organization is active and operational"),
+    TRIAL("Trial Period", "Organization in free trial period"),
     DORMANT("Dormant", "Temporarily inactive due to payment or other issues"),
     SUSPENDED("Suspended", "Suspended by system administrator");
 
@@ -28,7 +30,7 @@ public enum OrganizationStatus {
 
     // Check if status allows login
     public boolean allowsLogin() {
-        return this == ACTIVE;
+        return this == ACTIVE || this == TRIAL;
     }
 
     // Check if status can be changed to target status

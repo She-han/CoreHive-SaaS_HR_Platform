@@ -126,30 +126,45 @@ const LoginPage = () => {
         console.log("Login successful");
 
         const userData = resultAction.payload;
-        const needsPasswordChange =
-          userData.isPasswordChangeRequired || userData.passwordChangeRequired;
-
-        if (needsPasswordChange) {
-          navigate("/change-password", { replace: true });
+        
+        // System Admin - direct redirect without any checks
+        if (userData.userType === 'SYSTEM' && userData.role === 'SYS_ADMIN') {
+          console.log('System admin login - redirecting to admin dashboard');
+          navigate('/sys_admin/dashboard', { replace: true });
           return;
         }
 
-        if (
-          userData.userType === "SYSTEM_ADMIN" &&
-          userData.role === "SYS_ADMIN"
-        ) {
-          navigate("/sys_admin/dashboard", { replace: true });
-        } else if (userData.userType === "ORG_USER") {
-          if (userData.role === "ORG_ADMIN") {
+        // Organization Users - check password change, payment, modules
+        if (userData.userType === 'ORG_USER') {
+          const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
+
+          if (needsPasswordChange) {
+            navigate('/change-password', { replace: true });
+            return;
+          }
+
+          if (userData.role === 'ORG_ADMIN') {
+            // 🚧 TESTING MODE: Skip payment check for testing
+            // TODO: Re-enable payment check after testing
+            /*
+            if (userData.requiresPayment) {
+              navigate('/payment-gateway', { replace: true });
+              console.log('Redirecting to payment gateway...');
+              return;
+            }
+            */
+            
             if (!userData.modulesConfigured) {
               navigate("/configure-modules", { replace: true });
             } else {
               navigate("/org_admin/dashboard", { replace: true });
             }
-          } else if (userData.role === "HR_STAFF") {
-            navigate("/hr_staff/dashboard", { replace: true });
-          } else if (userData.role === "EMPLOYEE") {
-            navigate("/employee/profile", { replace: true });
+          }
+          else if (userData.role === 'HR_STAFF') {
+            navigate('/hr_staff/dashboard', { replace: true });
+          } 
+          else if (userData.role === 'EMPLOYEE') {
+            navigate('/employee/profile', { replace: true });
           }
         }
       } else {

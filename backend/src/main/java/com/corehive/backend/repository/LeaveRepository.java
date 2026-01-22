@@ -15,3 +15,5 @@ public interface LeaveRepository extends JpaRepository <LeaveRequest , Long> {
     //Count leave requests per organization
     int countByOrganizationUuid(String organizationUuid);
 }
+
+

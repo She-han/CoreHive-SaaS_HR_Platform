@@ -145,8 +145,8 @@ const Sidebar = ({ isCollapsed = false }) => {
           {
             name: 'Audit Logs',
             icon: AiOutlineAudit,
-            path: '/sys_admin/modules',
-            current: location.pathname.startsWith('/sys_admin/modules')
+            path: '/sys_admin/audits',
+            current: location.pathname.startsWith('/sys_admin/audits')
           },
           {
             name: 'Support',

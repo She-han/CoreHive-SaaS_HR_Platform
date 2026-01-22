@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getTodayAttendance, manualCheckOut } from "../../api/manualAttendanceService";
+import {
+  getTodayAttendance,
+  manualCheckOut
+} from "../../api/manualAttendanceService";
 import { Clock, CheckCircle } from "lucide-react";
 
 // Professional Status Styles Configuration
@@ -42,7 +45,6 @@ const STATUS_STYLES = {
   }
 };
 
-
 const CheckOutTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,9 @@ const CheckOutTab = ({ token }) => {
     try {
       const data = await getTodayAttendance(token);
       // Filter out those who shouldn't be in the manual checkout list
-      const filtered = data.filter(emp => emp.status !== "ABSENT" && emp.status !== "ON_LEAVE");
+      const filtered = data.filter(
+        (emp) => emp.status !== "ABSENT" && emp.status !== "ON_LEAVE"
+      );
       setEmployees(filtered);
     } catch (err) {
       console.error("Error fetching attendance:", err);
@@ -81,11 +85,21 @@ const CheckOutTab = ({ token }) => {
       <table className="min-w-full divide-y divide-gray-200 text-sm">
         <thead className="bg-[#F1FDF9]">
           <tr>
-            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">Employee Information</th>
-            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">Check-In</th>
-            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">Check-Out</th>
-            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">Status</th>
-            <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">Actions</th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Employee Information
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Check-In
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Check-Out
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Status
+            </th>
+            <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -94,23 +108,32 @@ const CheckOutTab = ({ token }) => {
               <td colSpan="5" className="text-center p-12">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-8 h-8 border-4 border-[#02C39A] border-t-transparent rounded-full animate-spin"></div>
-                  <span className="text-[#9B9B9B] font-medium">Fetching records...</span>
+                  <span className="text-[#9B9B9B] font-medium">
+                    Fetching records...
+                  </span>
                 </div>
               </td>
             </tr>
           ) : employees.length === 0 ? (
             <tr>
-              <td colSpan="5" className="text-center p-12 text-[#9B9B9B]">No active attendance records found today.</td>
+              <td colSpan="5" className="text-center p-12 text-[#9B9B9B]">
+                No active attendance records found today.
+              </td>
             </tr>
           ) : (
-            employees.map(emp => {
+            employees.map((emp) => {
               const style = STATUS_STYLES[emp.status] || STATUS_STYLES.DEFAULT;
-              
+
               return (
-                <tr key={emp.employeeId} className="hover:bg-[#F1FDF9]/30 transition-colors">
+                <tr
+                  key={emp.employeeId}
+                  className="hover:bg-[#F1FDF9]/30 transition-colors"
+                >
                   {/* Info Column */}
                   <td className="p-4">
-                    <div className="font-bold text-[#333333] leading-tight">{emp.employeeName}</div>
+                    <div className="font-bold text-[#333333] leading-tight">
+                      {emp.employeeName}
+                    </div>
                     <div className="text-[10px] text-[#9B9B9B] font-bold uppercase tracking-widest mt-1">
                       {emp.employeeCode}
                     </div>
@@ -121,9 +144,11 @@ const CheckOutTab = ({ token }) => {
                     <div className="flex items-center gap-2 font-medium">
                       <Clock size={14} className="text-[#02C39A]" />
                       {emp.checkInTime
-                        ? new Date(emp.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : "--:--"
-                      }
+                        ? new Date(emp.checkInTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                          })
+                        : "--:--"}
                     </div>
                   </td>
 
@@ -132,20 +157,29 @@ const CheckOutTab = ({ token }) => {
                     {emp.checkOutTime ? (
                       <div className="flex items-center gap-2 text-[#05668D] font-bold">
                         <CheckCircle size={14} className="text-[#05668D]" />
-                        {new Date(emp.checkOutTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(emp.checkOutTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
                       </div>
                     ) : (
-                      <span className="text-[#9B9B9B] italic text-xs bg-gray-50 px-2 py-1 rounded">Pending...</span>
+                      <span className="text-[#9B9B9B] italic text-xs bg-gray-50 px-2 py-1 rounded">
+                        Pending...
+                      </span>
                     )}
                   </td>
 
                   {/* Status Column with Professional Badge */}
                   <td className="p-4">
-                    <span className={`
+                    <span
+                      className={`
                       inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border
                       ${style.bg} ${style.text} ${style.border}
-                    `}>
-                      <span className={`w-1.5 h-1.5 rounded-full mr-2 ${style.dot} ${emp.status === 'PRESENT' ? 'animate-pulse' : ''}`}></span>
+                    `}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full mr-2 ${style.dot} ${emp.status === "PRESENT" ? "animate-pulse" : ""}`}
+                      ></span>
                       {style.label}
                     </span>
                   </td>
@@ -157,9 +191,11 @@ const CheckOutTab = ({ token }) => {
                       disabled={!!emp.checkOutTime}
                       className={`
                         group relative inline-flex items-center justify-center gap-2 w-36 h-9 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all duration-200
-                        ${emp.checkOutTime
-                          ? "bg-gray-50 border-gray-200 text-[#9B9B9B] cursor-not-allowed"
-                          : "bg-white border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white hover:shadow-md active:scale-95"}
+                        ${
+                          emp.checkOutTime
+                            ? "bg-gray-50 border-gray-200 text-[#9B9B9B] cursor-not-allowed"
+                            : "bg-white border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white hover:shadow-md active:scale-95"
+                        }
                       `}
                     >
                       {emp.checkOutTime ? (

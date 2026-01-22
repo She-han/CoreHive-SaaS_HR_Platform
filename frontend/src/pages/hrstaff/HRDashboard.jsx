@@ -65,7 +65,6 @@ const StatCard = memo(({ title, value, icon: IconComponent, color, trend }) => {
 StatCard.displayName = 'StatCard';
 
 function HRDashboard() {
-
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [totalActiveEmployees, setTotalActiveEmployees] = useState(0);
   const [totalOnLeaveEmployees, setTotalOnLeaveEmployees] = useState(0);
@@ -92,7 +91,7 @@ function HRDashboard() {
         const count = await getTotalEmployeesCount();
         setTotalEmployees(count);
       } catch (error) {
-        console.error('Error fetching total employees:', error);
+        console.error("Error fetching total employees:", error);
       } finally {
         setLoading(false);
       }
@@ -107,7 +106,7 @@ function HRDashboard() {
         const count = await getTotalActiveEmployeesCount();
         setTotalActiveEmployees(count);
       } catch (error) {
-        console.error('Error fetching total active employees:', error);
+        console.error("Error fetching total active employees:", error);
       } finally {
         setLoading(false);
       }
@@ -122,7 +121,7 @@ function HRDashboard() {
         const count = await getTotalOnLeaveCount();
         setTotalOnLeaveEmployees(count);
       } catch (error) {
-        console.error('Error fetching total on-leave employees:', error);
+        console.error("Error fetching total on-leave employees:", error);
       } finally {
         setLoading(false);
       }
@@ -281,7 +280,6 @@ function HRDashboard() {
       </div>
     </div>
   );
-
 }
 
 export default HRDashboard;

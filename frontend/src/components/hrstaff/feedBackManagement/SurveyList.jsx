@@ -10,7 +10,6 @@ export default function SurveyList({ surveys = [], onDelete }) {
       </div>
     );
 
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {surveys.map((s) => (
@@ -35,7 +34,6 @@ export default function SurveyList({ surveys = [], onDelete }) {
 
           {/* BUTTON GROUP */}
           <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-
             {/* VIEW RESPONSES */}
             <Link
               to={`/hr_staff/feedback/${s.id}/responses`}
@@ -79,7 +77,6 @@ export default function SurveyList({ surveys = [], onDelete }) {
               <FiTrash2 size={16} />
               Delete Survey
             </button>
-
           </div>
         </div>
       ))}

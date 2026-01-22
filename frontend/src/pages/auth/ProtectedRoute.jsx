@@ -10,16 +10,16 @@ import {
   selectRequiresPayment
 } from '../../store/slices/authSlice';
 
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 const ProtectedRoute = ({ 
   children, 
   requiredRole = null, 
   requiredUserType = null,
-  requireModulesConfigured = false 
+  requireModulesConfigured = false
 }) => {
   const location = useLocation();
-  
+
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectUser);
   const isLoading = useSelector(selectIsLoading);
@@ -29,17 +29,17 @@ const ProtectedRoute = ({
   if (isLoading) {
     return <LoadingSpinner centerScreen text="Checking authentication..." />;
   }
-  
+
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  
+
   // Check user type requirement
   if (requiredUserType && user?.userType !== requiredUserType) {
     return <Navigate to="/unauthorized" replace />;
   }
-  
+
   // Check role requirement
   if (requiredRole && user?.role !== requiredRole) {
     return <Navigate to="/unauthorized" replace />;
@@ -74,8 +74,10 @@ const ProtectedRoute = ({
     }
     
     // If on config page but modules already configured, go to dashboard
-    if (user?.modulesConfigured && location.pathname === '/configure-modules') {
-      console.log('Modules already configured, redirecting to org_admin dashboard...');
+    if (user?.modulesConfigured && location.pathname === "/configure-modules") {
+      console.log(
+        "Modules already configured, redirecting to org_admin dashboard..."
+      );
       return <Navigate to="/org_admin/dashboard" replace />;
     }
   }

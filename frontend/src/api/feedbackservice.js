@@ -16,10 +16,10 @@ const BASE = "http://localhost:8080/api/orgs/surveys";
 export const listSurveys = async (token) => {
   return axios
     .get(`${BASE}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -33,10 +33,10 @@ export const listSurveys = async (token) => {
 export const getSurveyDetails = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -50,10 +50,10 @@ export const getSurveyDetails = async (surveyId, token) => {
 export const createSurvey = async (surveyData, token) => {
   return axios
     .post(`${BASE}`, surveyData, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -67,10 +67,10 @@ export const createSurvey = async (surveyData, token) => {
 export const deleteSurvey = async (surveyId, token) => {
   return axios
     .delete(`${BASE}/${surveyId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data)
-    .catch(err => {
+    .then((res) => res.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -88,10 +88,10 @@ export const deleteSurvey = async (surveyId, token) => {
 export const getSurveyQuestions = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}/questions`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -106,10 +106,10 @@ export const getSurveyQuestions = async (surveyId, token) => {
 export const updateSurveyQuestions = async (surveyId, dto, token) => {
   return axios
     .put(`${BASE}/${surveyId}/questions`, dto, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -127,10 +127,10 @@ export const updateSurveyQuestions = async (surveyId, dto, token) => {
 export const getSurveyResponses = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}/responses`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -144,10 +144,10 @@ export const getSurveyResponses = async (surveyId, token) => {
 export const getAllResponsesForSurvey = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}/responses/all`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
@@ -161,10 +161,10 @@ export const getAllResponsesForSurvey = async (surveyId, token) => {
 export const getResponseDetails = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}/responses/details`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
-    .then(res => res.data.data)
-    .catch(err => {
+    .then((res) => res.data.data)
+    .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };

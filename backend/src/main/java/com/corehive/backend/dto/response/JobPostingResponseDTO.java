@@ -29,6 +29,8 @@ public class JobPostingResponseDTO {
 
     private Long department;
 
+    private String contactEmail;
+
     private EmploymentType employmentType;
 
     private Status status;

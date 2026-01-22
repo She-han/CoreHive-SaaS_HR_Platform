@@ -6,26 +6,25 @@ import {
   BarChart3,
   MessageSquare,
   Briefcase,
+  Bell
 } from "lucide-react"; // ✅ importing icons
-import EmployeeManagement from "../../pages/hrstaff/EmployeeManagement.jsx";
-import LeaveManagement from "../../pages/hrstaff/LeaveManagement.jsx";
-import HiringManagement from "../../pages/hrstaff/HiringManagement.jsx";
-import HRReportingManagement from "../../pages/hrstaff/HRReportingManagement.jsx";
-import FeedBackManagement from "../../pages/hrstaff/feedBackManagement/FeedBackManagement.jsx";
-import AttendanceManagement from "../../pages/AttendaceManagement/AttendanceManagement.jsx";
-import Dashboard from "../../pages/hrstaff/HRDashboard.jsx";
 
 export default function Sidebar() {
   return (
-    <div className="bg-[#0C397A] text-white w-64 p-5 hidden md:block"> 
+    <div className="bg-[#0C397A] text-white w-64 p-5 hidden md:block">
       {/* Header */}
-      <div className="flex flex-col items-center mb-10"> 
-        <div className="w-16 h-16 bg-blue-300 rounded-full mb-3"></div> {/* The circle’s width and height are 4rem each. */}
-        <Link to="/hr_staff/Dashboard"><h2 className="text-xl font-semibold">HR Panel</h2></Link>
+      <div className="flex flex-col items-center mb-10">
+        <div className="w-16 h-16 bg-blue-300 rounded-full mb-3"></div>{" "}
+        {/* The circle’s width and height are 4rem each. */}
+        <Link to="/hr_staff/Dashboard">
+          <h2 className="text-xl font-semibold">HR Panel</h2>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="space-y-2"> {/* Adds vertical space (0.5rem) between each link */}
+      <nav className="space-y-2">
+        {" "}
+        {/* Adds vertical space (0.5rem) between each link */}
         {/* Employee Management */}
         <NavLink
           to="/hr_staff/EmployeeManagement"
@@ -38,7 +37,6 @@ export default function Sidebar() {
           <Users className="w-5 h-5" />
           Employee Management
         </NavLink>
-
         {/* Leave Management */}
         <NavLink
           to="/hr_staff/LeaveManagement"
@@ -51,7 +49,6 @@ export default function Sidebar() {
           <Calendar className="w-5 h-5" />
           Leave Management
         </NavLink>
-
         {/* Attendance Management */}
         <NavLink
           to="/hr_staff/AttendanceManagement"
@@ -64,11 +61,10 @@ export default function Sidebar() {
           <Clock className="w-5 h-5" />
           Attendance Management
         </NavLink>
-
         {/* HR Reporting */}
         <NavLink
           to="/hr_staff/HRReportingManagement"
-         className={({ isActive }) =>
+          className={({ isActive }) =>
             `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
               isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
             }`
@@ -77,7 +73,18 @@ export default function Sidebar() {
           <BarChart3 className="w-5 h-5" />
           HR Reporting
         </NavLink>
-
+        {/* Notice Management */}
+        <NavLink
+          to="/hr_staff/NoticeManagement"
+          className={({ isActive }) =>
+            `flex items-center gap-3 p-2 rounded-lg transition-all duration-200 ${
+              isActive ? "bg-[#05668D]" : "hover:bg-[#1ED292]"
+            }`
+          }
+        >
+          <Bell className="w-5 h-5" />
+          Notice Management
+        </NavLink>
         {/* Employee Feedback */}
         <NavLink
           to="/hr_staff/FeedBackManagement"
@@ -90,7 +97,6 @@ export default function Sidebar() {
           <MessageSquare className="w-5 h-5" />
           Employee Feedback
         </NavLink>
-
         {/* Hiring Management */}
         <NavLink
           to="/hr_staff/HiringManagement"

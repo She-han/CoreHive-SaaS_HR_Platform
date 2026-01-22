@@ -1,12 +1,12 @@
-import apiClient from './axios';
+import apiClient from "./axios";
 
 // Get current module configuration (ORG_ADMIN only)
 export const getModuleConfig = async () => {
   try {
-    const response = await apiClient.get('/org-admin/modules');
+    const response = await apiClient.get("/org-admin/modules");
     return response.data;
   } catch (error) {
-    console.error('Error fetching module config:', error);
+    console.error("Error fetching module config:", error);
     throw error;
   }
 };
@@ -14,10 +14,10 @@ export const getModuleConfig = async () => {
 // Update module configuration (ORG_ADMIN only)
 export const updateModuleConfig = async (config) => {
   try {
-    const response = await apiClient.put('/org-admin/modules', config);
+    const response = await apiClient.put("/org-admin/modules", config);
     return response.data;
   } catch (error) {
-    console.error('Error updating module config:', error);
+    console.error("Error updating module config:", error);
     throw error;
   }
 };
@@ -25,10 +25,10 @@ export const updateModuleConfig = async (config) => {
 // Get organization modules status (HR_STAFF and ORG_ADMIN can access)
 export const getOrganizationModules = async () => {
   try {
-    const response = await apiClient.get('/hr-staff/modules/status');
+    const response = await apiClient.get("/hr-staff/modules/status");
     return response.data;
   } catch (error) {
-    console.error('Error fetching organization modules:', error);
+    console.error("Error fetching organization modules:", error);
     throw error;
   }
 };

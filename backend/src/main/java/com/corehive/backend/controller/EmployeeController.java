@@ -6,17 +6,20 @@ import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.service.EmployeeService;
+import com.corehive.backend.util.QrCodeUtil;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 
@@ -78,9 +81,9 @@ public class EmployeeController {
             HttpServletRequest httpRequest,
             @PathVariable Long id) {
         String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
-        Employee updatedEmployee = employeeService.toggleEmployeeStatus(orgUuid, id);
+        boolean newStatus = employeeService.toggleEmployeeStatus(orgUuid, id);
         return new ResponseEntity<>(
-                new StandardResponse(200, "Employee status updated successfully", updatedEmployee),
+                new StandardResponse(200, "Employee status updated successfully", Map.of("isActive", newStatus)),
                 HttpStatus.OK
         );
     }
@@ -214,6 +217,28 @@ public class EmployeeController {
         ApiResponse<Employee> response = employeeService.updateEmployeeByEmail(organizationUuid, userEmail, employeeRequest);
         return ResponseEntity.ok(response);
     }
+
+    //*****************************************//
+// Download Employee QR by Employee Code
+//*****************************************//
+    @GetMapping(
+            value = "/qr/by-code/{employeeCode}",
+            produces = MediaType.IMAGE_PNG_VALUE
+    )
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public byte[] downloadEmployeeQrByEmployeeCode(
+            @PathVariable String employeeCode,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        String qrToken = employeeService
+                .generatePermanentQrByEmployeeCode(employeeCode, orgUuid);
+
+        return QrCodeUtil.generateQrImage(qrToken);
+    }
+
+
 
 
 }

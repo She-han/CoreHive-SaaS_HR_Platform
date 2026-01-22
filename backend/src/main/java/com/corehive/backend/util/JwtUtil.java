@@ -84,7 +84,7 @@ public class JwtUtil {
     /**
      * Extract all claims from token - UPDATED VERSION
      */
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()  // Updated method
                 .verifyWith(getSigningKey()) // Updated method
                 .build()
@@ -153,4 +153,5 @@ public class JwtUtil {
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
+
 }

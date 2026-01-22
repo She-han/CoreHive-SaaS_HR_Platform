@@ -8,7 +8,6 @@ import {
   RefreshCw
 } from "lucide-react";
 
-
 const THEME = {
   primary: "#02C39A",
   secondary: "#05668D",
@@ -16,7 +15,7 @@ const THEME = {
   background: "#F1FDF9",
   success: "#1ED292",
   text: "#333333",
-  muted: "#9B9B9B",
+  muted: "#9B9B9B"
 };
 
 const Organizations = () => {
@@ -38,7 +37,7 @@ const Organizations = () => {
     () =>
       lastRefresh.toLocaleTimeString("en-US", {
         hour: "2-digit",
-        minute: "2-digit",
+        minute: "2-digit"
       }),
     [lastRefresh]
   );
@@ -67,7 +66,7 @@ const Organizations = () => {
                   className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
                   style={{
                     backgroundColor: THEME.background,
-                    color: THEME.muted,
+                    color: THEME.muted
                   }}
                 >
                   <Clock className="w-4 h-4" />
@@ -79,7 +78,7 @@ const Organizations = () => {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all hover:shadow-md disabled:opacity-50"
                   style={{
                     backgroundColor: THEME.primary,
-                    color: "white",
+                    color: "white"
                   }}
                 >
                   <RefreshCw

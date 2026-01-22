@@ -35,7 +35,7 @@ const Support = () => {
         </div>
         </DashboardLayout>
     </div>
-  )
-}
+  );
+};
 
-export default Support
+export default Support;

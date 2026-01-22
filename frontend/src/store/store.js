@@ -1,7 +1,7 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import uiSlice from './slices/uiSlice';
-import adminSlice from './slices/adminSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import authSlice from "./slices/authSlice";
+import uiSlice from "./slices/uiSlice";
+import adminSlice from "./slices/adminSlice";
 
 /**
  * Redux Store Configuration
@@ -11,16 +11,16 @@ export const store = configureStore({
   reducer: {
     auth: authSlice,
     ui: uiSlice,
-    admin: adminSlice,
+    admin: adminSlice
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore specific action types for serialization checks
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      },
+        ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"]
+      }
     }),
-  devTools: import.meta.env.DEV, // Redux DevTools in development mode only
+  devTools: import.meta.env.DEV // Redux DevTools in development mode only
 });
 
 export default store;

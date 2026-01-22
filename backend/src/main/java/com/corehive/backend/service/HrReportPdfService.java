@@ -18,20 +18,17 @@ public class HrReportPdfService {
     /**
      * Generate Headcount PDF
      */
-    /**
-     * Generate a professional Headcount Report PDF
-     */
     public byte[] generateHeadcountPdf(
             Map<String, Object> report,
             String organizationName
     ) {
 
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ByteArrayOutputStream out = new ByteArrayOutputStream(); //PDF content is written into RAM, not disk
 
             // Clean A4 layout with balanced margins
             Document document = new Document(PageSize.A4, 48, 48, 60, 60);
-            PdfWriter writer = PdfWriter.getInstance(document, out);
+            PdfWriter writer = PdfWriter.getInstance(document, out); //connect document and the output
 
             // Footer (Confidential | Page X)
             writer.setPageEvent(new PdfFooter());

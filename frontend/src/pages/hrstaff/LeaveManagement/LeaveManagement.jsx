@@ -39,10 +39,7 @@ export default function LeaveManagement() {
 
       {/* TABLE */}
       <div className="flex-1 overflow-y-auto">
-        <LeaveRequestTable
-          leaveRequests={leaveRequests}
-          reload={loadLeaves}
-        />
+        <LeaveRequestTable leaveRequests={leaveRequests} reload={loadLeaves} />
       </div>
     </div>
   );

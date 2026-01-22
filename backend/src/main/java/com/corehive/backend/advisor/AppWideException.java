@@ -23,6 +23,7 @@ import com.corehive.backend.exception.leaveException.InsufficientLeaveBalanceExc
 import com.corehive.backend.exception.leaveException.LeaveRequestNotFoundException;
 import com.corehive.backend.exception.leaveException.LeaveTypeNotFoundException;
 import com.corehive.backend.util.StandardResponse;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -254,5 +255,22 @@ public class AppWideException {
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
     }
+
+    // ********************************************************* //
+
+    public static class ResourceNotFoundException extends RuntimeException {
+
+        public ResourceNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<StandardResponse> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.badRequest().body(
+                new StandardResponse(400, ex.getMessage(), null)
+        );
+    }
+
 
 }

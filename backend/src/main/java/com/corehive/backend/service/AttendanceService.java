@@ -4,6 +4,7 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
@@ -15,8 +16,13 @@ import com.corehive.backend.model.Attendance.VerificationType;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.util.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +43,7 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final JwtUtil jwtUtil;
 
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
@@ -760,5 +767,89 @@ public class AttendanceService {
                 Attendance.AttendanceStatus.ON_LEAVE
         );
     }
+
+    // ***********************************************
+// Mark attendance using PERMANENT QR
+// ***********************************************
+
+    @Transactional
+    public QrAttendanceResponse markAttendanceViaQr(
+            String qrToken,
+            String ip,
+            String deviceInfo
+    ) throws BadRequestException {
+
+        // 1️⃣ Resolve employee using SHORT QR token
+        Employee employee = (Employee) employeeRepository
+                .findByQrToken(qrToken)
+                .orElseThrow(() -> new BadRequestException("Invalid QR"));
+
+        if (!Boolean.TRUE.equals(employee.getIsActive())) {
+            throw new BadRequestException("Employee inactive");
+        }
+
+        Long employeeId = employee.getId();
+        String orgUuid = employee.getOrganizationUuid();
+        LocalDate today = LocalDate.now();
+
+        // 2️⃣ Check existing attendance for today
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndOrganizationUuidAndAttendanceDate(
+                        employeeId, orgUuid, today
+                )
+                .orElse(null);
+
+        String action;
+
+        // ================= FIRST SCAN → CHECK-IN =================
+        if (attendance == null) {
+
+            attendance = Attendance.builder()
+                    .employeeId(employeeId)
+                    .organizationUuid(orgUuid)
+                    .attendanceDate(today)
+                    .checkInTime(LocalDateTime.now())
+                    .status(Attendance.AttendanceStatus.PRESENT)   // ✅ REQUIRED
+                    .verificationType(Attendance.VerificationType.QR_CODE)
+                    .ipAddress(ip)
+                    .deviceInfo(deviceInfo)
+                    .build();
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_IN";
+        }
+
+        // ================= SECOND SCAN → CHECK-OUT =================
+        else if (attendance.getCheckOutTime() == null) {
+
+            attendance.setCheckOutTime(LocalDateTime.now());
+            attendance.setVerificationType(Attendance.VerificationType.QR_CODE);
+            attendance.setIpAddress(ip);
+            attendance.setDeviceInfo(deviceInfo);
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_OUT";
+        }
+
+        // ================= THIRD SCAN → SAFE NO-OP =================
+        else {
+            action = "ALREADY_COMPLETED";
+        }
+
+        // 3️⃣ Response
+        return QrAttendanceResponse.builder()
+                .employeeId(employeeId)
+                .attendanceDate(today)
+                .action(action)
+                .message(
+                        switch (action) {
+                            case "CHECK_IN" -> "Check-in successful";
+                            case "CHECK_OUT" -> "Check-out successful";
+                            default -> "Attendance already completed for today";
+                        }
+                )
+                .build();
+    }
+
 
 }

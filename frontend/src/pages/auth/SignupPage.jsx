@@ -15,19 +15,19 @@ import {
   Package
 } from 'lucide-react';
 
-import { 
-  signupOrganization, 
-  clearError, 
-  selectIsSignupLoading, 
-  selectError 
-} from '../../store/slices/authSlice';
+import {
+  signupOrganization,
+  clearError,
+  selectIsSignupLoading,
+  selectError
+} from "../../store/slices/authSlice";
 
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Card from '../../components/common/Card';
-import Alert from '../../components/common/Alert';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Card from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
 
 /**
  * Signup Page Component
@@ -36,35 +36,35 @@ import Footer from '../../components/layout/Footer';
 const SignupPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const isLoading = useSelector(selectIsSignupLoading);
   const error = useSelector(selectError);
 
   const recaptchaRef = useRef(null);
-const [recaptchaToken, setRecaptchaToken] = useState(null);
-const [recaptchaError, setRecaptchaError] = useState('');
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaError, setRecaptchaError] = useState("");
 
-// Add these handlers:
-const handleRecaptchaChange = (token) => {
-  setRecaptchaToken(token);
-  setRecaptchaError('');
-};
+  // Add these handlers:
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setRecaptchaError("");
+  };
 
-const handleRecaptchaExpired = () => {
-  setRecaptchaToken(null);
-  setRecaptchaError('reCAPTCHA expired. Please verify again.');
-};
+  const handleRecaptchaExpired = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError("reCAPTCHA expired. Please verify again.");
+  };
 
-const handleRecaptchaError = () => {
-  setRecaptchaToken(null);
-  setRecaptchaError('reCAPTCHA error. Please try again.');
-};
-  
+  const handleRecaptchaError = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError("reCAPTCHA error. Please try again.");
+  };
+
   // Form state
   const [formData, setFormData] = useState({
-    organizationName: '',
-    adminEmail: '',
-    businessRegistrationNumber: '',
+    organizationName: "",
+    adminEmail: "",
+    businessRegistrationNumber: "",
     businessRegistrationDocument: null,
     employeeCountRange: '',
     selectedPlanId: null,
@@ -83,40 +83,41 @@ const handleRecaptchaError = () => {
   const [formErrors, setFormErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   // Employee count options
   const employeeCountOptions = [
-    { value: '1-10', label: '1-10 employees' },
-    { value: '11-50', label: '11-50 employees' },
-    { value: '51-200', label: '51-200 employees' },
-    { value: '201-500', label: '201-500 employees' },
-    { value: '500+', label: '500+ employees' }
+    { value: "1-10", label: "1-10 employees" },
+    { value: "11-50", label: "11-50 employees" },
+    { value: "51-200", label: "51-200 employees" },
+    { value: "201-500", label: "201-500 employees" },
+    { value: "500+", label: "500+ employees" }
   ];
-  
+
   // Module options
   const moduleOptions = [
     {
-      key: 'moduleQrAttendance',
-      name: 'QR Attendance Marking',
-      description: 'QR code based attendance tracking for employees'
+      key: "moduleQrAttendance",
+      name: "QR Attendance Marking",
+      description: "QR code based attendance tracking for employees"
     },
     {
-      key: 'moduleFaceRecognitionAttendance',
-      name: 'Face Recognition Attendance Marking',
-      description: 'Face recognition technology for accurate attendance tracking'
+      key: "moduleFaceRecognitionAttendance",
+      name: "Face Recognition Attendance Marking",
+      description:
+        "Face recognition technology for accurate attendance tracking"
     },
     {
-      key: 'moduleEmployeeFeedback',
-      name: 'Employee Feedback',
-      description: 'Surveys, sentiment analysis, and feedback management'
+      key: "moduleEmployeeFeedback",
+      name: "Employee Feedback",
+      description: "Surveys, sentiment analysis, and feedback management"
     },
     {
-      key: 'moduleHiringManagement',
-      name: 'Hiring Management',
-      description: 'Applicant tracking, interview scheduling, and recruitment'
+      key: "moduleHiringManagement",
+      name: "Hiring Management",
+      description: "Applicant tracking, interview scheduling, and recruitment"
     }
   ];
-  
+
   // Clear errors when component mounts
   useEffect(() => {
     dispatch(clearError());
@@ -186,88 +187,96 @@ const handleRecaptchaError = () => {
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-  
-    if (type === 'file') {
-    const file = files[0];
-    
-    // Validate file
+
+    if (type === "file") {
+      const file = files[0];
+
+      // Validate file
       if (file) {
         // Check file size (2MB)
         if (file.size > 2 * 1024 * 1024) {
-          setFormErrors(prev => ({
+          setFormErrors((prev) => ({
             ...prev,
-            businessRegistrationDocument: 'File size must be less than 2MB'
+            businessRegistrationDocument: "File size must be less than 2MB"
           }));
           return;
         }
-        
+
         // Check file type
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        const allowedTypes = [
+          "application/pdf",
+          "image/jpeg",
+          "image/jpg",
+          "image/png"
+        ];
         if (!allowedTypes.includes(file.type)) {
-          setFormErrors(prev => ({
+          setFormErrors((prev) => ({
             ...prev,
-            businessRegistrationDocument: 'Only PDF, JPG, and PNG files are allowed'
+            businessRegistrationDocument:
+              "Only PDF, JPG, and PNG files are allowed"
           }));
           return;
         }
-        
+
         // Clear errors if validation passed
-        setFormErrors(prev => ({
+        setFormErrors((prev) => ({
           ...prev,
           businessRegistrationDocument: null
         }));
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
           ...prev,
           [name]: file
         }));
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === "checkbox" ? checked : value
       }));
     }
-    
+
     // Clear field error
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
         [name]: null
       }));
     }
-};
-  
+  };
+
   // Validate step 1
- const validateStep1 = () => {
-  const errors = {};
-  
-  if (!formData.organizationName.trim()) {
-    errors.organizationName = 'Organization name is required';
-  }
-  
-  if (!formData.adminEmail.trim()) {
-    errors.adminEmail = 'Email is required';
-  } else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) {
-    errors.adminEmail = 'Email is invalid';
-  }
-  
-  if (!formData.businessRegistrationNumber.trim()) {
-    errors.businessRegistrationNumber = 'Business registration number is required';
-  }
-  
-  if (!formData.businessRegistrationDocument) {
-    errors.businessRegistrationDocument = 'Business registration document is required';
-  }
-  
-  if (!formData.employeeCountRange) {
-    errors.employeeCountRange = 'Please select employee count range';
-  }
-  
-  setFormErrors(errors);
-  return Object.keys(errors).length === 0;
-};
-  
+  const validateStep1 = () => {
+    const errors = {};
+
+    if (!formData.organizationName.trim()) {
+      errors.organizationName = "Organization name is required";
+    }
+
+    if (!formData.adminEmail.trim()) {
+      errors.adminEmail = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) {
+      errors.adminEmail = "Email is invalid";
+    }
+
+    if (!formData.businessRegistrationNumber.trim()) {
+      errors.businessRegistrationNumber =
+        "Business registration number is required";
+    }
+
+    if (!formData.businessRegistrationDocument) {
+      errors.businessRegistrationDocument =
+        "Business registration document is required";
+    }
+
+    if (!formData.employeeCountRange) {
+      errors.employeeCountRange = "Please select employee count range";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle next step
   const handleNextStep = () => {
     if (currentStep === 1 && validateStep1()) {
@@ -388,17 +397,15 @@ const handleSubmit = async (e) => {
                 Registration Successful!
               </h2>
               <p className="text-text-secondary">
-                Your organization has been registered successfully. 
-                Please wait for admin approval to start using CoreHive.
+                Your organization has been registered successfully. Please wait
+                for admin approval to start using CoreHive.
               </p>
             </div>
-            
+
             <div className="space-y-4">
-             
-              
               <Button
                 variant="primary"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="w-full"
               >
                 Go to Login
@@ -409,16 +416,15 @@ const handleSubmit = async (e) => {
       </div>
     );
   }
-  
+
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center items-center space-x-2 mb-6">
-              
               <span className="text-4xl font-bold text-text-primary">
                 Core<span className="text-primary-500">Hive</span>
               </span>
@@ -427,10 +433,11 @@ const handleSubmit = async (e) => {
               Register Your Organization
             </h1>
             <p className="text-text-secondary">
-              Join thousands of SMEs already using CoreHive for their HR management
+              Join thousands of SMEs already using CoreHive for their HR
+              management
             </p>
           </div>
-          
+
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-center space-x-2 md:space-x-4">
@@ -466,18 +473,18 @@ const handleSubmit = async (e) => {
               </div>
             </div>
           </div>
-          
+
           <Card className="animate-slide-up bg-white shadow-md">
             {/* API Error Alert */}
             {error && (
-              <Alert 
-                type="error" 
-                message={error} 
+              <Alert
+                type="error"
+                message={error}
                 onClose={() => dispatch(clearError())}
                 className="mb-6"
               />
             )}
-            
+
             <form onSubmit={handleSubmit}>
               {/* Step 1: Company Information */}
               {currentStep === 1 && (
@@ -490,7 +497,7 @@ const handleSubmit = async (e) => {
                       Tell us about your organization
                     </p>
                   </div>
-                  
+
                   {/* Organization name */}
                   <Input
                     label="Organization Name"
@@ -504,7 +511,7 @@ const handleSubmit = async (e) => {
                     required
                     disabled={isLoading}
                   />
-                  
+
                   {/* Admin email */}
                   <Input
                     label="Admin Email Address"
@@ -518,7 +525,7 @@ const handleSubmit = async (e) => {
                     required
                     disabled={isLoading}
                   />
-                  
+
                   {/* Business registration number */}
                   <Input
                     label="Business Registration Number"
@@ -545,26 +552,35 @@ const handleSubmit = async (e) => {
                       onChange={handleInputChange}
                       accept=".pdf,.jpg,.jpeg,.png"
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition ${
-                        formErrors.businessRegistrationDocument ? 'border-red-500' : 'border-gray-300'
+                        formErrors.businessRegistrationDocument
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                     />
                     {formData.businessRegistrationDocument && (
                       <p className="mt-1 text-sm text-green-600">
-                        ✓ {formData.businessRegistrationDocument.name} ({(formData.businessRegistrationDocument.size / 1024).toFixed(2)} KB)
+                        ✓ {formData.businessRegistrationDocument.name} (
+                        {(
+                          formData.businessRegistrationDocument.size / 1024
+                        ).toFixed(2)}{" "}
+                        KB)
                       </p>
                     )}
                     {formErrors.businessRegistrationDocument && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.businessRegistrationDocument}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {formErrors.businessRegistrationDocument}
+                      </p>
                     )}
                     <p className="mt-1 text-xs text-gray-500">
                       Accepted formats: PDF, JPG, PNG (Max 2MB)
                     </p>
                   </div>
-                  
+
                   {/* Employee count range */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-text-primary">
-                      Number of Employees <span className="text-red-500">*</span>
+                      Number of Employees{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -573,12 +589,14 @@ const handleSubmit = async (e) => {
                         value={formData.employeeCountRange}
                         onChange={handleInputChange}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
-                          formErrors.employeeCountRange ? 'border-red-300' : 'border-gray-300'
+                          formErrors.employeeCountRange
+                            ? "border-red-300"
+                            : "border-gray-300"
                         }`}
                         disabled={isLoading}
                       >
                         <option value="">Select employee count range</option>
-                        {employeeCountOptions.map(option => (
+                        {employeeCountOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -592,7 +610,7 @@ const handleSubmit = async (e) => {
                       </p>
                     )}
                   </div>
-                  
+
                   {/* Next button */}
                   <div className="flex justify-end space-x-3">
                     <Button
@@ -938,7 +956,7 @@ const handleSubmit = async (e) => {
                     >
                       Back
                     </Button>
-                    
+
                     <Button
                       type="submit"
                       variant="primary"
@@ -947,19 +965,19 @@ const handleSubmit = async (e) => {
                       icon={ArrowRight}
                       iconPosition="right"
                     >
-                      {isLoading ? 'Registering...' : 'Complete Registration'}
+                      {isLoading ? "Registering..." : "Complete Registration"}
                     </Button>
                   </div>
                 </div>
               )}
             </form>
           </Card>
-          
+
           {/* Login link */}
           <div className="text-center mt-6 ">
             <p className="text-text-secondary">
-              Already have an account?{' '}
-              <Link 
+              Already have an account?{" "}
+              <Link
                 to="/login"
                 className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
               >
@@ -969,7 +987,7 @@ const handleSubmit = async (e) => {
           </div>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </>
   );
 };

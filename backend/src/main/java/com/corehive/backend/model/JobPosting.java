@@ -2,6 +2,9 @@ package com.corehive.backend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,8 +28,10 @@ public class JobPosting {
     @Column(nullable = false, length = 200)
     private String title;
 
-//    @Column(name = "avatar_url" , length = 1000)
-//    private String avatarUrl;
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Contact email is required")
+    @Column(name = "contact_email", nullable = false, length = 255)
+    private String contactEmail;
 
     @Column(columnDefinition = "TEXT")
     private String description;

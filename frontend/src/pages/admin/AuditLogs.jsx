@@ -35,7 +35,7 @@ const AuditLogs = () => {
         </div>
         </DashboardLayout>
     </div>
-  )
-}
+  );
+};
 
-export default AuditLogs
+export default AuditLogs;

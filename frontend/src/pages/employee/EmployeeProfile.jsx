@@ -36,7 +36,7 @@ export default function EmployeeProfile() {
       ? new Date(date).toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
-          day: "numeric",
+          day: "numeric"
         })
       : "N/A";
 
@@ -63,7 +63,6 @@ export default function EmployeeProfile() {
   return (
     <DashboardLayout>
       <div className="p-8 w-full animate-fade-in">
-
         {/* HEADER */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
@@ -93,7 +92,6 @@ export default function EmployeeProfile() {
         "
         >
           <div className="flex flex-col md:flex-row gap-10 items-center">
-
             <div
               className="
               bg-[var(--color-primary-500)]
@@ -131,7 +129,6 @@ export default function EmployeeProfile() {
 
         {/* DETAILS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
           {/* CONTACT INFO */}
           <div
             className="
@@ -177,7 +174,9 @@ export default function EmployeeProfile() {
             <div className="space-y-4 text-gray-700">
               <div>
                 <p className="text-xs text-gray-500">Department</p>
-                <p className="font-medium">{employee.department?.name || "N/A"}</p>
+                <p className="font-medium">
+                  {employee.department?.name || "N/A"}
+                </p>
               </div>
 
               <div>
@@ -187,7 +186,9 @@ export default function EmployeeProfile() {
 
               <div>
                 <p className="text-xs text-gray-500">Date of Joining</p>
-                <p className="font-medium">{formatDate(employee.dateOfJoining)}</p>
+                <p className="font-medium">
+                  {formatDate(employee.dateOfJoining)}
+                </p>
               </div>
 
               <div>
@@ -201,7 +202,6 @@ export default function EmployeeProfile() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </DashboardLayout>

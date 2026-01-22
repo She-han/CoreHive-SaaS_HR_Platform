@@ -10,15 +10,13 @@ const BASE = "http://localhost:8080/api/leave-requests";
 export const getAllLeaveRequests = async (token) => {
   return axios
     .get(`${BASE}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` }
     })
     .then((res) => res.data.data)
     .catch((err) => {
       throw new Error(err.response?.data?.message || err.message);
     });
 };
-
-
 
 /**
  * ============================================
@@ -31,7 +29,7 @@ export const approveLeaveRequest = async (requestId, approve, token) => {
       `${BASE}/${requestId}/approve?approve=${approve}`,
       {},
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       }
     )
     .then((res) => res.data)

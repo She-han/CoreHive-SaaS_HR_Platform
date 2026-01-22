@@ -175,8 +175,7 @@ export default function OrganizationList() {
       org.name?.toLowerCase().includes(search.toLowerCase()) ||
       org.email?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || org.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || org.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });

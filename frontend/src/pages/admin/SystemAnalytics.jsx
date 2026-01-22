@@ -35,7 +35,7 @@ const SystemAnalytics = () => {
         </div>
         </DashboardLayout>
     </div>
-  )
-}
+  );
+};
 
-export default SystemAnalytics
+export default SystemAnalytics;

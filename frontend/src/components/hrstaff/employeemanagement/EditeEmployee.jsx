@@ -4,50 +4,65 @@ import { useNavigate, useParams } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
 import * as designationApi from "../../../api/designationApi";
-import { Camera, RefreshCw, Check, User, X, Plus, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import {
+  Camera,
+  RefreshCw,
+  Check,
+  User,
+  X,
+  Plus,
+  ChevronDown,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
 
 // ===== Face API =====
-const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
+const AI_SERVICE_URL =
+  import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8001";
 
 const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();
-  formData.append('employee_id', String(employeeId));
-  formData.append('organization_uuid', organizationUuid);
-  formData.append('image', imageBlob, 'face.jpg');
+  formData.append("employee_id", String(employeeId));
+  formData.append("organization_uuid", organizationUuid);
+  formData.append("image", imageBlob, "face.jpg");
 
   console.log("Calling face register API:", { employeeId, organizationUuid });
 
   const response = await fetch(`${AI_SERVICE_URL}/api/face/register`, {
-    method: 'POST',
-    body: formData,
+    method: "POST",
+    body: formData
   });
 
   const data = await response.json();
   console.log("Face register response:", data);
-  
-  if (!response.ok) throw new Error(data.detail || 'Face registration failed');
+
+  if (!response.ok) throw new Error(data.detail || "Face registration failed");
   return data;
 };
 
 // Face status check with timeout to prevent blocking UI
-const checkFaceStatusWithTimeout = async (employeeId, organizationUuid, timeoutMs = 5000) => {
+const checkFaceStatusWithTimeout = async (
+  employeeId,
+  organizationUuid,
+  timeoutMs = 5000
+) => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    
+
     const response = await fetch(
       `${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`,
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    
+
     if (!response.ok) return { registered: false };
-    
+
     const data = await response.json();
     console.log("Face status check result:", data);
     return data;
   } catch (error) {
-    if (error.name === 'AbortError') {
+    if (error.name === "AbortError") {
       console.warn("Face status check timed out after", timeoutMs, "ms");
     } else {
       console.error("Face status check failed:", error);
@@ -57,8 +72,8 @@ const checkFaceStatusWithTimeout = async (employeeId, organizationUuid, timeoutM
 };
 
 const base64ToBlob = (base64) => {
-  const byteString = atob(base64.split(',')[1]);
-  const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+  const byteString = atob(base64.split(",")[1]);
+  const mimeString = base64.split(",")[0].split(":")[1].split(";")[0];
   const ab = new ArrayBuffer(byteString.length);
   const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) {
@@ -78,10 +93,10 @@ export default function EditEmployee() {
   const [designations, setDesignations] = useState([]);
   const [organizationUuid, setOrganizationUuid] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   const [filteredDesignations, setFilteredDesignations] = useState([]);
-  
+
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
@@ -101,13 +116,13 @@ export default function EditEmployee() {
     basicSalary: "",
     leaveCount: "",
     dateJoined: "",
-    status: "Active",
+    status: "Active"
   });
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const user = JSON.parse(localStorage.getItem('corehive_user') || '{}');
+        const user = JSON.parse(localStorage.getItem("corehive_user") || "{}");
         const orgUuid = user.organizationUuid;
         setOrganizationUuid(orgUuid);
 
@@ -120,11 +135,11 @@ export default function EditEmployee() {
         ]);
 
         console.log("Employee response:", employeeRes.data);
-        
+
         // Extract employee data from ApiResponse wrapper
         const empData = employeeRes.data.data || employeeRes.data;
         setEmployee(empData);
-        
+
         setFormData({
           firstName: empData.firstName || "",
           lastName: empData.lastName || "",
@@ -133,12 +148,12 @@ export default function EditEmployee() {
           department: empData.departmentId || "",
           email: empData.email || "",
           phone: empData.phone || "",
-          nationalId: empData.nationalId || "", 
+          nationalId: empData.nationalId || "",
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
           leaveCount: empData.leaveCount || "",
           dateJoined: empData.dateOfJoining || "",
-          status: empData.isActive !== false ? "Active" : "NonActive",
+          status: empData.isActive !== false ? "Active" : "NonActive"
         });
 
         // Set departments
@@ -154,7 +169,7 @@ export default function EditEmployee() {
         if (orgUuid && empData.id) {
           // Don't await - let it run in background
           checkFaceStatusWithTimeout(empData.id, orgUuid, 5000)
-            .then(status => {
+            .then((status) => {
               setFaceRegistered(status.registered);
               setCheckingFaceStatus(false);
             })
@@ -165,13 +180,12 @@ export default function EditEmployee() {
         } else {
           setCheckingFaceStatus(false);
         }
-
       } catch (error) {
         console.error("Error loading data:", error);
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'Error', 
-          text: 'Failed to load employee data' 
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "Failed to load employee data"
         });
         setCheckingFaceStatus(false);
       } finally {
@@ -184,26 +198,29 @@ export default function EditEmployee() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (designationInputRef.current && !designationInputRef.current.contains(event.target)) {
+      if (
+        designationInputRef.current &&
+        !designationInputRef.current.contains(event.target)
+      ) {
         setShowDesignationDropdown(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleDesignationChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, designation: value });
-    
+
     if (value.trim()) {
-      const filtered = designations.filter(d =>
+      const filtered = designations.filter((d) =>
         d.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredDesignations(filtered);
@@ -223,23 +240,23 @@ export default function EditEmployee() {
     try {
       const response = await designationApi.createDesignation({ name });
       const newDesignation = response.data.data || response.data;
-      
+
       setDesignations([...designations, newDesignation]);
       setFormData({ ...formData, designation: newDesignation.name });
       setShowDesignationDropdown(false);
-      
+
       Swal.fire({
-        icon: 'success',
-        title: 'Designation Created!',
+        icon: "success",
+        title: "Designation Created!",
         timer: 2000,
         showConfirmButton: false
       });
     } catch (error) {
       console.error("Error creating designation:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to create designation.',
+        icon: "error",
+        title: "Error",
+        text: "Failed to create designation."
       });
     }
   };
@@ -254,9 +271,9 @@ export default function EditEmployee() {
   const confirmFace = () => {
     setShowFaceCapture(false);
     Swal.fire({
-      icon: 'success',
-      title: 'Photo Captured!',
-      text: 'Face will be registered after saving.',
+      icon: "success",
+      title: "Photo Captured!",
+      text: "Face will be registered after saving.",
       timer: 2000,
       showConfirmButton: false
     });
@@ -268,7 +285,7 @@ export default function EditEmployee() {
 
     try {
       const designationExists = designations.some(
-        d => d.name.toLowerCase() === formData.designation.toLowerCase()
+        (d) => d.name.toLowerCase() === formData.designation.toLowerCase()
       );
 
       if (!designationExists && formData.designation.trim()) {
@@ -288,14 +305,14 @@ export default function EditEmployee() {
         basicSalary: formData.basicSalary,
         leaveCount: formData.leaveCount,
         dateOfJoining: formData.dateJoined,
-        status: formData.status,
+        status: formData.status
       };
 
       console.log("Updating employee with data:", employeeData);
 
       const response = await apiClient.put(`/employees/${id}`, employeeData);
       const updatedEmployee = response.data.data || response.data;
-      
+
       console.log("Employee updated:", updatedEmployee);
 
       if (capturedFace && organizationUuid) {
@@ -308,10 +325,10 @@ export default function EditEmployee() {
         } catch (faceError) {
           console.error("Face registration failed:", faceError);
           Swal.fire({
-            icon: 'warning',
-            title: 'Employee Updated',
-            text: 'Employee updated but face registration failed.',
-            confirmButtonColor: "#02C39A",
+            icon: "warning",
+            title: "Employee Updated",
+            text: "Employee updated but face registration failed.",
+            confirmButtonColor: "#02C39A"
           });
           navigate("/hr_staff/employeemanagement");
           return;
@@ -320,22 +337,23 @@ export default function EditEmployee() {
 
       Swal.fire({
         title: "Success!",
-        text: capturedFace 
-          ? "Employee updated and face registered!" 
+        text: capturedFace
+          ? "Employee updated and face registered!"
           : "Employee updated successfully!",
         icon: "success",
-        confirmButtonColor: "#02C39A",
+        confirmButtonColor: "#02C39A"
       }).then(() => {
         navigate("/hr_staff/employeemanagement");
       });
-
     } catch (error) {
       console.error("Error updating employee:", error);
       Swal.fire({
         title: "Error",
-        text: error.response?.data?.message || "Failed to update employee. Please try again.",
+        text:
+          error.response?.data?.message ||
+          "Failed to update employee. Please try again.",
         icon: "error",
-        confirmButtonColor: "#d33",
+        confirmButtonColor: "#d33"
       });
     } finally {
       setIsSubmitting(false);
@@ -356,37 +374,55 @@ export default function EditEmployee() {
   return (
     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
-
         <div className="p-6">
-          <h1 className="text-3xl font-bold text-[#0C397A] text-center">Edit Employee</h1>
+          <h1 className="text-3xl font-bold text-[#0C397A] text-center">
+            Edit Employee
+          </h1>
           <p className="text-gray-500 text-center mt-1">
             {employee?.firstName} {employee?.lastName}
           </p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-          
           <Box title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Employee Code" required>
-               <input
-                name="employeeCode"
-                value={formData.employeeCode}
-                readOnly
-                className="input-box bg-gray-100 cursor-not-allowed"
-              />
+                <input
+                  name="employeeCode"
+                  value={formData.employeeCode}
+                  readOnly
+                  className="input-box bg-gray-100 cursor-not-allowed"
+                />
               </Field>
               <Field label="First Name" required>
-                <input name="firstName" value={formData.firstName} onChange={handleChange} className="input-box" required />
+                <input
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
               <Field label="Last Name" required>
-                <input name="lastName" value={formData.lastName} onChange={handleChange} className="input-box" required />
+                <input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
-              
+
               <Field label="National ID" required>
-                <input name="nationalId" value={formData.nationalId} onChange={handleChange} className="input-box" required />
+                <input
+                  name="nationalId"
+                  value={formData.nationalId}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
-              
+
               <Field label="Designation" required>
                 <div className="relative" ref={designationInputRef}>
                   <input
@@ -400,7 +436,7 @@ export default function EditEmployee() {
                     autoComplete="off"
                   />
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  
+
                   {showDesignationDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredDesignations.length > 0 ? (
@@ -419,34 +455,62 @@ export default function EditEmployee() {
                           No designations found
                         </div>
                       )}
-                      
-                      {formData.designation.trim() && !designations.some(d => d.name.toLowerCase() === formData.designation.toLowerCase()) && (
-                        <div
-                          onClick={() => createNewDesignation(formData.designation)}
-                          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add "{formData.designation}" as new designation
-                        </div>
-                      )}
+
+                      {formData.designation.trim() &&
+                        !designations.some(
+                          (d) =>
+                            d.name.toLowerCase() ===
+                            formData.designation.toLowerCase()
+                        ) && (
+                          <div
+                            onClick={() =>
+                              createNewDesignation(formData.designation)
+                            }
+                            className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add "{formData.designation}" as new designation
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
               </Field>
-              
+
               <Field label="Department" required>
-                <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                >
                   <option value="">Select Department</option>
                   {departments.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
                   ))}
                 </select>
               </Field>
               <Field label="Email" required>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className="input-box" required />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
               <Field label="Phone" required>
-                <input name="phone" value={formData.phone} onChange={handleChange} className="input-box" required />
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
             </div>
           </Box>
@@ -454,26 +518,59 @@ export default function EditEmployee() {
           <Box title="Job & Salary Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Salary Type" required>
-                <select name="salaryType" value={formData.salaryType} onChange={handleChange} className="input-box" required>
+                <select
+                  name="salaryType"
+                  value={formData.salaryType}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                >
                   <option value="MONTHLY">Monthly</option>
                   <option value="DAILY">Daily</option>
                 </select>
               </Field>
               <Field label="Basic Salary" required>
-                <input type="number" name="basicSalary" value={formData.basicSalary} onChange={handleChange} className="input-box" required />
+                <input
+                  type="number"
+                  name="basicSalary"
+                  value={formData.basicSalary}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
               <Field label="Leave Count" required>
-                <input type="number" name="leaveCount" value={formData.leaveCount} onChange={handleChange} className="input-box" required />
+                <input
+                  type="number"
+                  name="leaveCount"
+                  value={formData.leaveCount}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
               <Field label="Date Joined" required>
-                <input type="date" name="dateJoined" value={formData.dateJoined} onChange={handleChange} className="input-box" required />
+                <input
+                  type="date"
+                  name="dateJoined"
+                  value={formData.dateJoined}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                />
               </Field>
             </div>
           </Box>
 
           <Box title="Employment Status">
             <Field label="Status" required>
-              <select name="status" value={formData.status} onChange={handleChange} className="input-box" required>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="input-box"
+                required
+              >
                 <option value="Active">Active</option>
                 <option value="NonActive">Inactive</option>
               </select>
@@ -492,13 +589,23 @@ export default function EditEmployee() {
                   <span>Checking status...</span>
                 </div>
               ) : (
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg w-fit ${
-                  faceRegistered ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'
-                }`}>
+                <div
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg w-fit ${
+                    faceRegistered
+                      ? "bg-green-50 text-green-700"
+                      : "bg-yellow-50 text-yellow-700"
+                  }`}
+                >
                   {faceRegistered ? (
-                    <><Check className="w-5 h-5" /><span className="font-medium">Face Registered ✓</span></>
+                    <>
+                      <Check className="w-5 h-5" />
+                      <span className="font-medium">Face Registered ✓</span>
+                    </>
                   ) : (
-                    <><AlertCircle className="w-5 h-5" /><span className="font-medium">Face Not Registered</span></>
+                    <>
+                      <AlertCircle className="w-5 h-5" />
+                      <span className="font-medium">Face Not Registered</span>
+                    </>
                   )}
                 </div>
               )}
@@ -510,7 +617,7 @@ export default function EditEmployee() {
                   className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
                 >
                   <Camera className="w-5 h-5" />
-                  {faceRegistered ? 'Update Face' : 'Register Face'}
+                  {faceRegistered ? "Update Face" : "Register Face"}
                 </button>
               )}
 
@@ -529,10 +636,18 @@ export default function EditEmployee() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button type="button" onClick={capturePhoto} className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700">
+                    <button
+                      type="button"
+                      onClick={capturePhoto}
+                      className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+                    >
                       <Camera className="w-5 h-5" /> Capture
                     </button>
-                    <button type="button" onClick={() => setShowFaceCapture(false)} className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300">
+                    <button
+                      type="button"
+                      onClick={() => setShowFaceCapture(false)}
+                      className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300"
+                    >
                       <X className="w-5 h-5" /> Cancel
                     </button>
                   </div>
@@ -542,16 +657,28 @@ export default function EditEmployee() {
               {capturedFace && (
                 <div className="space-y-4">
                   <div className="relative max-w-md">
-                    <img src={capturedFace} alt="Captured" className="rounded-xl w-full" />
+                    <img
+                      src={capturedFace}
+                      alt="Captured"
+                      className="rounded-xl w-full"
+                    />
                     <div className="absolute top-2 right-2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                       <Check className="w-4 h-4" /> New Photo
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button type="button" onClick={retakePhoto} className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300">
+                    <button
+                      type="button"
+                      onClick={retakePhoto}
+                      className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300"
+                    >
                       <RefreshCw className="w-5 h-5" /> Retake
                     </button>
-                    <button type="button" onClick={confirmFace} className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700">
+                    <button
+                      type="button"
+                      onClick={confirmFace}
+                      className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700"
+                    >
                       <Check className="w-5 h-5" /> Confirm
                     </button>
                   </div>
@@ -561,7 +688,9 @@ export default function EditEmployee() {
               {capturedFace && !showFaceCapture && (
                 <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg w-fit">
                   <User className="w-5 h-5" />
-                  <span className="font-medium">New photo ready - save to register</span>
+                  <span className="font-medium">
+                    New photo ready - save to register
+                  </span>
                 </div>
               )}
             </div>
@@ -569,11 +698,26 @@ export default function EditEmployee() {
         </div>
 
         <div className="p-6 bg-white rounded-b-2xl flex justify-end gap-4 border-t">
-          <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 rounded-xl border border-gray-400 text-gray-700 hover:bg-gray-100" disabled={isSubmitting}>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-6 py-3 rounded-xl border border-gray-400 text-gray-700 hover:bg-gray-100"
+            disabled={isSubmitting}
+          >
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-3 rounded-xl bg-[#02C39A] hover:bg-[#029e7d] text-white font-semibold flex items-center gap-2 disabled:opacity-50">
-            {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : 'Save Changes'}
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="px-6 py-3 rounded-xl bg-[#02C39A] hover:bg-[#029e7d] text-white font-semibold flex items-center gap-2 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" /> Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
           </button>
         </div>
       </div>

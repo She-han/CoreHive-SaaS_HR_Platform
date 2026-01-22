@@ -2,23 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import { getAllDepartments   } from "../../../api/departmentApi";
+import { getAllDepartments } from "../../../api/departmentApi";
 import { createJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
- import { selectUser } from "../../../store/slices/authSlice";
+import { selectUser } from "../../../store/slices/authSlice";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
     title: "",
+    contactEmail: "",
     department: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
     postedDate: "",
     closingDate: "",
     availableVacancies: 1,
-    description: "",
+    description: ""
   });
 
   const [avatarFile, setAvatarFile] = useState(null);
@@ -29,19 +30,17 @@ export default function AddJobForm() {
   const user = useSelector(selectUser); // get token from Redux
   const token = user?.token;
 
-useEffect(() => {
-  if (token) {
-    console.log("Fetching departments with token:", token);
-    getAllDepartments(token)
-      .then(res => {
-        console.log("Departments API response:", res);
-        setDepartments(res.data || []);
-      })
-      .catch(err => console.error("Error loading departments", err));
-  }
-}, [token]);
-
-
+  useEffect(() => {
+    if (token) {
+      console.log("Fetching departments with token:", token);
+      getAllDepartments(token)
+        .then((res) => {
+          console.log("Departments API response:", res);
+          setDepartments(res.data || []);
+        })
+        .catch((err) => console.error("Error loading departments", err));
+    }
+  }, [token]);
 
   function handleInput(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -52,114 +51,129 @@ useEffect(() => {
     setAvatarFile(file || null);
   }
 
+  // Simple email validation
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Validate required fields using SweetAlert
-  if (!form.title.trim()) {
-    Swal.fire("Required!", "Job title is required.", "warning");
-    return;
+    // Validate required fields using SweetAlert
+    if (!form.title.trim()) {
+      Swal.fire("Required!", "Job title is required.", "warning");
+      return;
+    }
+    if (!form.department) {
+      Swal.fire("Required!", "Please select a department.", "warning");
+      return;
+    }
+    if (!form.employmentType) {
+      Swal.fire("Required!", "Please select an employment type.", "warning");
+      return;
+    }
+    if (!form.postedDate) {
+      Swal.fire("Required!", "Posted date is required.", "warning");
+      return;
+    }
+    if (!form.closingDate) {
+      Swal.fire("Required!", "Closing date is required.", "warning");
+      return;
+    }
+    if (!form.status) {
+      Swal.fire("Required!", "Please select a status.", "warning");
+      return;
+    }
+    if (!form.availableVacancies || form.availableVacancies < 1) {
+      Swal.fire(
+        "Required!",
+        "Available vacancies must be at least 1.",
+        "warning"
+      );
+      return;
+    }
+    if (!form.description.trim()) {
+      Swal.fire("Required!", "Job description is required.", "warning");
+      return;
+    }
+
+    if (!form.contactEmail.trim()) {
+      Swal.fire("Required!", "Contact email is required.", "warning");
+      return;
+    }
+
+    if (!isValidEmail(form.contactEmail)) {
+      Swal.fire(
+        "Invalid Email!",
+        "Please enter a valid email address.",
+        "warning"
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Transform department field to departmentId if needed
+      const payload = {
+        ...form,
+        departmentId: form.department // map selected department
+      };
+
+      await createJobPosting(payload, token);
+
+      Swal.fire({
+        title: "Success!",
+        text: "Job posting created successfully",
+        icon: "success",
+        confirmButtonColor: "#02C39A"
+      }).then(() => {
+        navigate("/hr_staff/HiringManagement");
+      });
+    } catch (error) {
+      console.error("Error creating job posting:", error);
+
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to create job posting",
+        icon: "error",
+        confirmButtonColor: "#d33"
+      });
+    } finally {
+      setLoading(false);
+    }
   }
-  if (!form.department) {
-    Swal.fire("Required!", "Please select a department.", "warning");
-    return;
-  }
-  if (!form.employmentType) {
-    Swal.fire("Required!", "Please select an employment type.", "warning");
-    return;
-  }
-  if (!form.postedDate) {
-    Swal.fire("Required!", "Posted date is required.", "warning");
-    return;
-  }
-  if (!form.closingDate) {
-    Swal.fire("Required!", "Closing date is required.", "warning");
-    return;
-  }
-  if (!form.status) {
-    Swal.fire("Required!", "Please select a status.", "warning");
-    return;
-  }
-  if (!form.availableVacancies || form.availableVacancies < 1) {
-    Swal.fire("Required!", "Available vacancies must be at least 1.", "warning");
-    return;
-  }
-  if (!form.description.trim()) {
-    Swal.fire("Required!", "Job description is required.", "warning");
-    return;
-  }
 
-  setLoading(true);
+  // async function handleSubmit(e) {
+  //   e.preventDefault();
+  //   setLoading(true);
 
-  try {
-   // Transform department field to departmentId if needed
-    const payload = {
-      ...form,
-      departmentId: form.department// map selected department
-    };
+  //   try {
+  //     const payload = {
+  //       ...form,
+  //       departmentId: form.department // ensure DTO field matches backend
+  //     };
 
-    await createJobPosting(payload , token);
+  //     await createJobPosting(payload, token);
 
-    Swal.fire({
-      title: "Success!",
-      text: "Job posting created successfully",
-      icon: "success",
-      confirmButtonColor: "#02C39A",
-    }).then(() => {
-      navigate("/hr_staff/HiringManagement");
-    });
+  //     Swal.fire({
+  //       title: "Success!",
+  //       text: "Job posting created successfully",
+  //       icon: "success",
+  //       confirmButtonColor: "#02C39A"
+  //     }).then(() => navigate("/hr_staff/HiringManagement"));
 
-
-  } catch (error) {
-    console.error("Error creating job posting:", error);
-
-    Swal.fire({
-      title: "Error!",
-      text: "Failed to create job posting",
-      icon: "error",
-      confirmButtonColor: "#d33",
-    });
-
-  } finally {
-    setLoading(false);
-  }
-}
-
-// async function handleSubmit(e) {
-//   e.preventDefault();
-//   setLoading(true);
-
-//   try {
-//     const payload = {
-//       ...form,
-//       departmentId: form.department // ensure DTO field matches backend
-//     };
-
-//     await createJobPosting(payload, token);
-
-//     Swal.fire({
-//       title: "Success!",
-//       text: "Job posting created successfully",
-//       icon: "success",
-//       confirmButtonColor: "#02C39A"
-//     }).then(() => navigate("/hr_staff/HiringManagement"));
-
-//   } catch (error) {
-//     console.error("Error creating job posting:", error);
-//     Swal.fire("Error", "Failed to create job posting", "error");
-//   } finally {
-//     setLoading(false);
-//   }
-// }
-
-
-   
+  //   } catch (error) {
+  //     console.error("Error creating job posting:", error);
+  //     Swal.fire("Error", "Failed to create job posting", "error");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
 
   return (
-     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
-        
         {/* HEADER */}
         <div className="px-8 py-8 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#0C397A]">
@@ -171,18 +185,18 @@ useEffect(() => {
         </div>
 
         {/* FORM BODY */}
-       <form
-        onSubmit={handleSubmit}
-        className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
-        style={{ maxHeight: "70vh" }}
+        <form
+          onSubmit={handleSubmit}
+          className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
+          style={{ maxHeight: "70vh" }}
         >
-
-
           {/* LEFT SIDE */}
           <div className="space-y-6">
             {/* Job Title */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Title</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Title
+              </label>
               <input
                 name="title"
                 value={form.title}
@@ -192,10 +206,28 @@ useEffect(() => {
               />
             </div>
 
+            {/* Contact Email */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleInput}
+                placeholder="hr@company.com"
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg 
+                          focus:ring-2 focus:ring-[#02C39A]"
+                required
+              />
+            </div>
 
             {/* Department */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Department</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Department
+              </label>
               <select
                 name="department"
                 value={form.department}
@@ -203,17 +235,19 @@ useEffect(() => {
                 className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
               >
                 <option value="">Select department</option>
-                {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                    </option>
-                    ))}
+                {departments.map((dep) => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             {/* Employment Type */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Employment Type</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Employment Type
+              </label>
               <select
                 name="employmentType"
                 value={form.employmentType}
@@ -229,7 +263,9 @@ useEffect(() => {
 
             {/* Posted Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Posted Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Posted Date
+              </label>
               <input
                 type="date"
                 name="postedDate"
@@ -239,9 +275,11 @@ useEffect(() => {
               />
             </div>
 
-             {/* Closing Date */}
+            {/* Closing Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Closing Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Closing Date
+              </label>
               <input
                 type="date"
                 name="closingDate"
@@ -253,7 +291,9 @@ useEffect(() => {
 
             {/* Status */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Status</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Status
+              </label>
               <select
                 name="status"
                 value={form.status}
@@ -271,7 +311,9 @@ useEffect(() => {
           <div className="space-y-6">
             {/* Vacancies */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Available Vacancies</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Available Vacancies
+              </label>
               <input
                 type="number"
                 name="availableVacancies"
@@ -284,7 +326,9 @@ useEffect(() => {
 
             {/* Job Description */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Description</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Description
+              </label>
               <textarea
                 name="description"
                 rows="6"
@@ -295,9 +339,8 @@ useEffect(() => {
               />
             </div>
 
-
             {/* Avatar Upload */}
-            <div>
+            {/* <div>
               <label className="text-sm font-medium text-[#333333]">Job Avatar</label>
               <input
                 type="file"
@@ -305,7 +348,7 @@ useEffect(() => {
                 onChange={handleFileChange}
                 className="mt-2 w-full text-sm text-[#9B9B9B]"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* ACTION BUTTONS */}

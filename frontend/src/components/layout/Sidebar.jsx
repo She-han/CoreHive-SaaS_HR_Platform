@@ -27,7 +27,8 @@ import {
   MessageSquare, 
   UserPlus,
   Briefcase,
-  DollarSign
+  DollarSign,
+  CreditCard
 } from 'lucide-react';
 import * as moduleApi from '../../api/moduleApi';
 
@@ -175,6 +176,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: '/org_admin/payment-gateway',
             current: location.pathname === '/org_admin/payment-gateway',
             testingMode: true
+          },
+          {
+            name: 'Subscription Management',
+            icon: CreditCard,
+            path: '/org_admin/subscription-management',
+            current: location.pathname.startsWith('/org_admin/subscription-management')
           },
           {
             name: 'HR Staff Management',

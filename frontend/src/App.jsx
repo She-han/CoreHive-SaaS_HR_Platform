@@ -40,6 +40,7 @@ import DepartmentManagement from './pages/org_admin/DepartmentManagement';
 import {DesignationManagement} from './pages/org_admin/DesignationManagement';
 import Reports from './pages/org_admin/Reports';
 import OrgSettings from './pages/org_admin/Settings';
+import SubscriptionManagement from './pages/org_admin/SubscriptionManagement';
 
 import PaymentGateway from './pages/payment/PaymentGateway';
 import PaymentSuccess from './pages/payment/PaymentSuccess';
@@ -299,6 +300,7 @@ const OrgAdminRoutes = () => {
      <Route path="reports" element={<Reports />} />
      <Route path="settings" element={<OrgSettings />} />
      <Route path="payment-gateway" element={<PaymentGateway />} />
+     <Route path="subscription-management" element={<SubscriptionManagement />} />
      <Route path="/payment/success" element={<PaymentSuccess />} />
      <Route path="/payment/cancel" element={<PaymentCancel />} />
      <Route path="" element={<Navigate to="dashboard" replace />} />

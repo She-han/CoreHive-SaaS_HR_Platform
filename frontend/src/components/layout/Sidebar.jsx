@@ -131,6 +131,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith('/sys_admin/users')
           },
           {
+            name: 'Modules',
+            icon: Cog6ToothIcon,
+            path: '/sys_admin/Modules',
+            current: location.pathname.startsWith('/sys_admin/Modules')
+          },
+          {
             name: 'Billing & Plans',
             icon: TbDeviceAirpodsCase,
             path: '/sys_admin/billing',

@@ -40,6 +40,10 @@ public class EmployeeRequestDTO {
     @JsonProperty("nationalId")
     private String nationalId;
 
+    @Size(max = 50, message = "Bank account number must not exceed 50 characters")
+    @JsonProperty("bankAccNo")
+    private String bankAccNo;
+
     @NotBlank(message = "Designation is required")
     @Size(max = 100, message = "Designation must not exceed 100 characters")
     @JsonProperty("designation")

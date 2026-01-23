@@ -39,6 +39,9 @@ public class Employee {
         @Column(name = "email", length = 200 , unique = true)
         private String email;
 
+    @Column(name = "designation", nullable = true, length = 100)
+    private String designation;
+
         @Column(name = "phone", length = 50)
         private String phone;
 
@@ -46,8 +49,8 @@ public class Employee {
         @Column(name = "national_id", length = 50)
         private String nationalId;
 
-        @Column(name = "designation", length = 100)
-        private String designation;
+    @Column(name = "bank_acc_no", length = 50)
+    private String bankAccNo;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "department_id", referencedColumnName = "id", insertable = false, updatable = false)

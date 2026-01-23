@@ -23,6 +23,7 @@ public class EmployeeResponseDTO {
     private String email;
     private String phone;
     private String nationalId;
+    private String bankAccNo;
     private String designation;
     private Long departmentId;
     private BigDecimal basicSalary;

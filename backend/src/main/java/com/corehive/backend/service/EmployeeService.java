@@ -14,6 +14,7 @@ import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.OrganizationRepository;
 import com.corehive.backend.util.mappers.EmployeeMapper;
+import com.corehive.backend.util.RandomTokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -668,5 +669,39 @@ public class EmployeeService {
             log.error("Error updating employee with email: {}", email, e);
             return ApiResponse.error("Failed to update profile: " + e.getMessage());
         }
+    }
+
+    /**
+     * Generate permanent QR token for employee by employee code
+     */
+    @Transactional
+    public String generatePermanentQrByEmployeeCode(String employeeCode, String organizationUuid) {
+        log.info("Generating permanent QR for employee code: {} in organization: {}", employeeCode, organizationUuid);
+
+        // Find employee by employee code and organization UUID
+        Optional<Employee> employeeOpt = employeeRepository.findByEmployeeCodeAndOrganizationUuid(employeeCode, organizationUuid);
+
+        if (employeeOpt.isEmpty()) {
+            log.error("Employee not found with code: {} in organization: {}", employeeCode, organizationUuid);
+            throw new EmployeeNotFoundException("Employee not found with code: " + employeeCode);
+        }
+
+        Employee employee = employeeOpt.get();
+
+        // If QR token already exists, return it
+        if (employee.getQrToken() != null && !employee.getQrToken().isEmpty()) {
+            log.info("Returning existing QR token for employee: {}", employeeCode);
+            return employee.getQrToken();
+        }
+
+        // Generate new QR token
+        String qrToken = RandomTokenUtil.generateEmployeeQrToken();
+        employee.setQrToken(qrToken);
+        employee.setUpdatedAt(LocalDateTime.now());
+
+        employeeRepository.save(employee);
+        log.info("Generated and saved new QR token for employee: {}", employeeCode);
+
+        return qrToken;
     }
 }

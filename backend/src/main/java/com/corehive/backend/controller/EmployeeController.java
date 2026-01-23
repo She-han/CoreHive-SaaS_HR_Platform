@@ -81,9 +81,9 @@ public class EmployeeController {
             HttpServletRequest httpRequest,
             @PathVariable Long id) {
         String orgUuid = (String) httpRequest.getAttribute("organizationUuid");
-        boolean newStatus = employeeService.toggleEmployeeStatus(orgUuid, id);
+        Employee updatedEmployee = employeeService.toggleEmployeeStatus(orgUuid, id);
         return new ResponseEntity<>(
-                new StandardResponse(200, "Employee status updated successfully", Map.of("isActive", newStatus)),
+                new StandardResponse(200, "Employee status updated successfully", Map.of("isActive", updatedEmployee.getIsActive())),
                 HttpStatus.OK
         );
     }

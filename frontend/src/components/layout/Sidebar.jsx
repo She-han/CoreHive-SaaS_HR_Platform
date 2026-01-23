@@ -230,10 +230,10 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/org_admin/reports")
           },
           {
-            name: "Organization Settings",
+            name: "Payroll Configuration",
             icon: Cog6ToothIcon,
-            path: "/org_admin/settings",
-            current: location.pathname.startsWith("/org_admin/settings")
+            path: "/org_admin/payroll-config",
+            current: location.pathname.startsWith("/org_admin/payroll-config")
           }
         ];
 
@@ -293,6 +293,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: BellIcon,
             path: "/hr_staff/noticemanagement",
             current: location.pathname.startsWith("/hr_staff/noticemanagement")
+          },
+          {
+            name: "Payslips Generation",
+            icon: BellIcon,
+            path: "/hr_staff/payslips",
+            current: location.pathname.startsWith("/hr_staff/payslips")
           }
         ];
 

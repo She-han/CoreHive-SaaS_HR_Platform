@@ -50,6 +50,8 @@ import PaymentGateway from './pages/payment/PaymentGateway';
 import PaymentSuccess from './pages/payment/PaymentSuccess';
 import PaymentCancel from './pages/payment/PaymentCancel';
 
+import PayrollConfiguration from "./pages/org_admin/PayrollConfiguration";
+
 
 // HR Staff pages
 
@@ -74,6 +76,7 @@ import AttendanceMarking from "./pages/manualAttendanceMarking/AttendanceMarking
 import LeaveManagement from "./pages/hrstaff/LeaveManagement/LeaveManagement";
 import PayRollManagement from "./pages/hrstaff/payRollManagement/PayRollManagement";
 import NoticeManagement from "./pages/hrstaff/noticeManagement/NoticeManagement";
+import PayslipGeneration from "./pages/hrstaff/payRollManagement/PayslipGeneration";
 
 // Employee Pages
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
@@ -299,6 +302,7 @@ const OrgAdminRoutes = () => {
      <Route path="subscription-management" element={<SubscriptionManagement />} />
      <Route path="/payment/success" element={<PaymentSuccess />} />
      <Route path="/payment/cancel" element={<PaymentCancel />} />
+     <Route path="payroll-config" element={<PayrollConfiguration/>}/>
      <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />
@@ -345,6 +349,8 @@ const HRStaffRoutes = () => {
         <Route path="leavemanagement" element={<LeaveManagement />} />
         <Route path="payrollmanagement" element={<PayRollManagement />} />
         <Route path="noticemanagement" element={<NoticeManagement />} />
+        <Route path="payslips" element={<PayslipGeneration />} />
+        
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
     </Routes>

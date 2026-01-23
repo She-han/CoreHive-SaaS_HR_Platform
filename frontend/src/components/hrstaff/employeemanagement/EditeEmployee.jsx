@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
 import * as designationApi from "../../../api/designationApi";
+import * as leaveTypeApi from "../../../api/leaveTypeApi";
 import {
   Camera,
   RefreshCw,
@@ -91,6 +92,7 @@ export default function EditEmployee() {
   const [employee, setEmployee] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [organizationUuid, setOrganizationUuid] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -112,11 +114,13 @@ export default function EditEmployee() {
     email: "",
     phone: "",
     nationalId: "",
+    bankAccNo: "",
     salaryType: "MONTHLY",
     basicSalary: "",
     leaveCount: "",
     dateJoined: "",
-    status: "Active"
+    status: "Active",
+    leaveBalances: []
   });
 
   useEffect(() => {
@@ -127,11 +131,12 @@ export default function EditEmployee() {
         setOrganizationUuid(orgUuid);
 
         // ========== PARALLEL LOADING - Much faster! ==========
-        // Load employee, departments, and designations simultaneously
-        const [employeeRes, deptRes, designationRes] = await Promise.all([
+        // Load employee, departments, designations, and leave types simultaneously
+        const [employeeRes, deptRes, designationRes, leaveTypesRes] = await Promise.all([
           apiClient.get(`/employees/${id}`),
           apiClient.get("/org-admin/departments"),
-          designationApi.getAllDesignations()
+          designationApi.getAllDesignations(),
+          leaveTypeApi.getActiveLeaveTypes()
         ]);
 
         console.log("Employee response:", employeeRes.data);
@@ -139,6 +144,26 @@ export default function EditEmployee() {
         // Extract employee data from ApiResponse wrapper
         const empData = employeeRes.data.data || employeeRes.data;
         setEmployee(empData);
+
+        // Set leave types
+        const types = leaveTypesRes.data.data || leaveTypesRes.data;
+        setLeaveTypes(types);
+
+        // Merge leave types with existing employee balances
+        const employeeBalances = empData.leaveBalances || [];
+        const mergedBalances = types.map((lt) => {
+          const existingBalance = employeeBalances.find(
+            (eb) => eb.leaveTypeId === lt.id
+          );
+          return {
+            leaveTypeId: lt.id,
+            leaveTypeName: lt.name,
+            leaveTypeCode: lt.code,
+            balance: existingBalance
+              ? existingBalance.balance
+              : lt.defaultDaysPerYear || 0
+          };
+        });
 
         setFormData({
           firstName: empData.firstName || "",
@@ -149,11 +174,13 @@ export default function EditEmployee() {
           email: empData.email || "",
           phone: empData.phone || "",
           nationalId: empData.nationalId || "",
+          bankAccNo: empData.bankAccNo || "",
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
           leaveCount: empData.leaveCount || "",
           dateJoined: empData.dateOfJoining || "",
-          status: empData.isActive !== false ? "Active" : "NonActive"
+          status: empData.isActive !== false ? "Active" : "NonActive",
+          leaveBalances: mergedBalances
         });
 
         // Set departments
@@ -213,6 +240,17 @@ export default function EditEmployee() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLeaveBalanceChange = (leaveTypeId, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      leaveBalances: prev.leaveBalances.map((lb) =>
+        lb.leaveTypeId === leaveTypeId
+          ? { ...lb, balance: parseInt(value) || 0 }
+          : lb
+      )
+    }));
   };
 
   const handleDesignationChange = (e) => {
@@ -301,11 +339,13 @@ export default function EditEmployee() {
         email: formData.email,
         phone: formData.phone,
         nationalId: formData.nationalId,
+        bankAccNo: formData.bankAccNo,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
         leaveCount: formData.leaveCount,
         dateOfJoining: formData.dateJoined,
-        status: formData.status
+        status: formData.status,
+        leaveBalances: formData.leaveBalances
       };
 
       console.log("Updating employee with data:", employeeData);
@@ -420,6 +460,16 @@ export default function EditEmployee() {
                   onChange={handleChange}
                   className="input-box"
                   required
+                />
+              </Field>
+
+              <Field label="Bank Account Number">
+                <input
+                  name="bankAccNo"
+                  value={formData.bankAccNo}
+                  onChange={handleChange}
+                  className="input-box"
+                  placeholder="1234567890"
                 />
               </Field>
 
@@ -559,6 +609,38 @@ export default function EditEmployee() {
                   required
                 />
               </Field>
+            </div>
+          </Box>
+
+          <Box title="Leave Balances">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {formData.leaveBalances.map((leaveBalance) => (
+                <Field
+                  key={leaveBalance.leaveTypeId}
+                  label={`${leaveBalance.leaveTypeName} (${leaveBalance.leaveTypeCode})`}
+                  required
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    value={leaveBalance.balance}
+                    onChange={(e) =>
+                      handleLeaveBalanceChange(
+                        leaveBalance.leaveTypeId,
+                        e.target.value
+                      )
+                    }
+                    className="input-box"
+                    placeholder="0"
+                    required
+                  />
+                </Field>
+              ))}
+              {formData.leaveBalances.length === 0 && (
+                <p className="text-gray-500 col-span-3 text-center py-4">
+                  No leave types available. Please add leave types first.
+                </p>
+              )}
             </div>
           </Box>
 

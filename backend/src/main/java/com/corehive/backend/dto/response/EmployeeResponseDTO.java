@@ -1,5 +1,6 @@
 package com.corehive.backend.dto.response;
 
+import com.corehive.backend.dto.EmployeeLeaveBalanceDTO;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
 import jakarta.persistence.*;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,6 +37,8 @@ public class EmployeeResponseDTO {
     private Employee.SalaryType salaryType = Employee.SalaryType.MONTHLY;
 
     private Integer leaveCount = 0;
+
+    private List<EmployeeLeaveBalanceDTO> leaveBalances;
 
     // ===== Enum for Salary Type =====
     public enum SalaryType {

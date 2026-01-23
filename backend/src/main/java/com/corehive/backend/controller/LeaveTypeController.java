@@ -30,4 +30,19 @@ public class LeaveTypeController {
                 )
         );
     }
+    
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getActiveLeaveTypes(HttpServletRequest request) {
+
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Active leave types loaded",
+                        leaveTypeService.getActiveLeaveTypes(orgUuid)
+                )
+        );
+    }
 }

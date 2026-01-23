@@ -7,10 +7,14 @@ import apiClient from "./axios";
 
 /**
  * Get all employees for the organization
+ * @param {number} page - Page number (default: 0)
+ * @param {number} size - Page size (default: 10)
  */
-export const getAllEmployees = async () => {
+export const getAllEmployees = async (page = 0, size = 10) => {
   try {
-    const response = await apiClient.get("/employees");
+    const response = await apiClient.get("/employees", {
+      params: { page, size }
+    });
     return response.data; // Returns ApiResponse
   } catch (error) {
     console.error("Error fetching employees:", error);

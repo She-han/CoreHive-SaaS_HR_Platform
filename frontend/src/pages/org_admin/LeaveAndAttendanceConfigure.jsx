@@ -4,7 +4,9 @@ import * as leaveTypeApi from '../../api/leaveTypeApi';
 import * as attendanceConfigApi from '../../api/attendanceConfigApi';
 import * as departmentApi from '../../api/departmentApi';
 import * as designationApi from '../../api/designationApi';
-
+import Modal from '../../components/common/Modal';
+import Button from '../../components/common/Button';
+import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const LeaveAndAttendanceConfigure = () => {
@@ -505,83 +507,74 @@ const LeaveAndAttendanceConfigure = () => {
         </div>
 
         {/* Modal for Leave Types Only */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-gradient-to-r from-[#02C39A] to-[#05668D] text-white p-6 rounded-t-lg flex justify-between items-center">
-                <h3 className="text-xl font-bold">
-                  {editingItem ? 'Edit' : 'Add'} Leave Type
-                </h3>
-                <button onClick={() => setShowModal(false)} className="text-white hover:text-gray-200 text-2xl">&times;</button>
-              </div>
-
-              <div className="p-6">
-                <form onSubmit={handleSubmitLeaveType} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type Name</label>
-                    <input
-                      type="text"
-                      value={leaveTypeForm.name}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
-                    <input
-                      type="text"
-                      value={leaveTypeForm.code}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, code: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Default Days Per Year</label>
-                    <input
-                      type="number"
-                      value={leaveTypeForm.defaultDaysPerYear}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, defaultDaysPerYear: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
-                      required
-                      min="0"
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={leaveTypeForm.requiresApproval}
-                      onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, requiresApproval: e.target.checked })}
-                      className="h-4 w-4 text-[#02C39A] focus:ring-[#02C39A] border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-700">Requires Approval</label>
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => setShowModal(false)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex items-center gap-2 bg-[#02C39A] text-white px-4 py-2 rounded-lg hover:bg-[#1ED292] disabled:opacity-50"
-                    >
-                      <FaSave /> {loading ? 'Saving...' : 'Save'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+        <Modal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          title={`${editingItem ? 'Edit' : 'Add'} Leave Type`}
+        >
+          <form onSubmit={handleSubmitLeaveType} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type Name</label>
+              <input
+                type="text"
+                value={leaveTypeForm.name}
+                onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+                required
+              />
             </div>
-          </div>
-        )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
+              <input
+                type="text"
+                value={leaveTypeForm.code}
+                onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, code: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Default Days Per Year</label>
+              <input
+                type="number"
+                value={leaveTypeForm.defaultDaysPerYear}
+                onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, defaultDaysPerYear: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+                required
+                min="0"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={leaveTypeForm.requiresApproval}
+                onChange={(e) => setLeaveTypeForm({ ...leaveTypeForm, requiresApproval: e.target.checked })}
+                className="h-4 w-4 text-[#02C39A] focus:ring-[#02C39A] border-gray-300 rounded"
+              />
+              <label className="ml-2 block text-sm text-gray-700">Requires Approval</label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                type="button"
+                onClick={() => setShowModal(false)}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <FaSave /> {loading ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
       </div>
     </DashboardLayout>
   );

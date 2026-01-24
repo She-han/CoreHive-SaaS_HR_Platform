@@ -78,8 +78,6 @@ public class Employee {
         @Column(name = "salary_type", columnDefinition = "ENUM('MONTHLY','DAILY') DEFAULT 'MONTHLY'")
         private SalaryType salaryType = SalaryType.MONTHLY;
 
-        @Column(name = "leave_count")
-        private Integer leaveCount = 0;
 
         @Column(name = "qr_token", length = 64, unique = true)
         private String qrToken;

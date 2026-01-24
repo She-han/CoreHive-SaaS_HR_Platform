@@ -204,6 +204,7 @@ const OrgDashboard = () => {
     monthlyPayrollTotal: 0,
     attendanceToday: 0,
     absentToday: 0,
+    employeesOnLeave: 0,
     leaveBalance: {},
     checkedInToday: false,
     attendanceThisMonth: { present: 0, absent: 0 }
@@ -282,16 +283,15 @@ const OrgDashboard = () => {
           link: "/hr_staff/attendancemanagement"
         },
         {
-          title: "Leave Requests",
-          value: dashboardData.pendingLeaveRequests || 0,
+          title: "On Leave Today",
+          value: dashboardData.employeesOnLeave || 0,
           icon: Calendar,
           iconColor: "#F59E0B",
           iconColorDark: "#D97706",
-          change: "Pending Approval",
-          changeType:
-            dashboardData.pendingLeaveRequests > 0 ? "warning" : "positive",
-          trend: `${dashboardData.pendingLeaveRequests} New`,
-          link: "/hr_staff/leavemanagement"
+          change: "Employees on Leave",
+          changeType: "positive",
+          trend: `${dashboardData.employeesOnLeave || 0} Today`,
+          link: "/hr_staff/attendancemanagement"
         },
         {
           title: "Monthly Payroll",
@@ -325,15 +325,14 @@ const OrgDashboard = () => {
           link: "/hr_staff/attendancemanagement"
         },
         {
-          title: "Leave Requests",
-          value: dashboardData.pendingLeaveRequests || 0,
+          title: "On Leave Today",
+          value: dashboardData.employeesOnLeave || 0,
           icon: Calendar,
           iconColor: "#F59E0B",
           iconColorDark: "#D97706",
-          change: "Pending Approval",
-          changeType:
-            dashboardData.pendingLeaveRequests > 0 ? "warning" : "positive",
-          link: "/hr_staff/leavemanagement"
+          change: "Employees on Leave",
+          changeType: "positive",
+          link: "/hr_staff/attendancemanagement"
         },
         {
           title: "Late Arrivals",

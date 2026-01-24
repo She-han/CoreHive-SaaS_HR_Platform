@@ -790,6 +790,11 @@ public class AttendanceService {
             workingHours = String.format("%d hrs %d mins", hours, minutes);
         }
 
+        String otHours = null;
+        if (attendance.getOtHours() != null) {
+            otHours = attendance.getOtHours().toString();
+        }
+
         return AttendanceHistoryResponse.builder()
                 .id(attendance.getId())
                 .date(attendance.getAttendanceDate())
@@ -799,6 +804,7 @@ public class AttendanceService {
                 .verificationType(attendance.getVerificationType() != null ?
                         attendance.getVerificationType().name() : null)
                 .workingHours(workingHours)
+                .otHours(otHours)
                 .build();
     }
 

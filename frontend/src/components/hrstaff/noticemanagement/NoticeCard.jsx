@@ -13,7 +13,7 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
   // Neutral Dark: #333333 | Neutral Gray: #9B9B9B | BG Mint: #F1FDF9
 
   const priorityStyles = {
-    HIGH: "bg-[#0C397A] text-white", // High contrast for high priority
+    HIGH: "bg-[#E83D1A] text-white", // High contrast for high priority
     MEDIUM: "bg-[#05668D] text-white",
     LOW: "bg-[#02C39A] text-white"
   };

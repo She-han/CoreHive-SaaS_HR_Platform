@@ -11,6 +11,7 @@ import java.util.List;
 /**
  * DTO for creating and updating employee
  */
+
 @Data
 public class EmployeeRequestDTO {
 
@@ -34,7 +35,6 @@ public class EmployeeRequestDTO {
     @Size(max = 10, message = "Phone number must not exceed 10 characters")
     @JsonProperty("phone")
     private String phone;
-
 
     @NotBlank(message = "National ID is required")
     @Size(max = 12, message = "National ID must not exceed 12 characters")
@@ -81,5 +81,5 @@ public class EmployeeRequestDTO {
 
     @JsonProperty("leaveBalances")
     private List<EmployeeLeaveBalanceDTO> leaveBalances;
-    
+
 }

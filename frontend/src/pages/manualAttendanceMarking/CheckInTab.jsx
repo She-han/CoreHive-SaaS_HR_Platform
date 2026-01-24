@@ -84,7 +84,7 @@ const CheckInTab = ({ token }) => {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [token]); // Add token to dependency array
 
   const handleCheckIn = async (employeeId) => {
     try {
@@ -198,7 +198,8 @@ const CheckInTab = ({ token }) => {
                       {emp.checkInTime
                         ? new Date(emp.checkInTime).toLocaleTimeString([], {
                             hour: "2-digit",
-                            minute: "2-digit"
+                            minute: "2-digit",
+                            hour12: true
                           })
                         : "--:--"}
                     </div>

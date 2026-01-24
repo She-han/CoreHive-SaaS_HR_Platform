@@ -69,7 +69,7 @@ const CheckOutTab = ({ token }) => {
 
   useEffect(() => {
     fetchTodayAttendance();
-  }, [token]);
+  }, [token]); // Add token to dependency array
 
   const handleCheckOut = async (employeeId) => {
     try {
@@ -154,7 +154,8 @@ const CheckOutTab = ({ token }) => {
                       {emp.checkInTime
                         ? new Date(emp.checkInTime).toLocaleTimeString([], {
                             hour: "2-digit",
-                            minute: "2-digit"
+                            minute: "2-digit",
+                            hour12: true
                           })
                         : "--:--"}
                     </div>
@@ -167,7 +168,8 @@ const CheckOutTab = ({ token }) => {
                         <CheckCircle size={14} className="text-[#05668D]" />
                         {new Date(emp.checkOutTime).toLocaleTimeString([], {
                           hour: "2-digit",
-                          minute: "2-digit"
+                          minute: "2-digit",
+                          hour12: true
                         })}
                       </div>
                     ) : (

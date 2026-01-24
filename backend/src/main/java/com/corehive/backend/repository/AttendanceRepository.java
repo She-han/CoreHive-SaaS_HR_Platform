@@ -152,4 +152,29 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
 
     Optional<Attendance> findByEmployeeIdAndOrganizationUuidAndAttendanceDate(Long employeeId, String orgUuid, LocalDate today);
+
+    //=========get attendance report of date range======//
+    List<Attendance> findByOrganizationUuidAndAttendanceDateBetween(
+            String organizationUuid,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    //=====Get employee attendance count by status======//
+    @Query("""
+    SELECT a.status, COUNT(a)
+    FROM Attendance a
+    WHERE a.organizationUuid = :orgUuid
+    AND a.employeeId = :empId
+    AND a.attendanceDate BETWEEN :start AND :end
+    GROUP BY a.status
+    """)
+    List<Object[]> countStatusByEmployee(
+            String orgUuid,
+            Long empId,
+            LocalDate start,
+            LocalDate end
+    );
+
+
 }

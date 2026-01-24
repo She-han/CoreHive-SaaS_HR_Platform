@@ -157,7 +157,7 @@ const DepartmentManagement = () => {
   });
 
   return (
-    <DashboardLayout>
+    <DashboardLayout >
       <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
@@ -191,7 +191,7 @@ const DepartmentManagement = () => {
         )}
 
         {/* Filters */}
-        <Card>
+        <Card className="bg-white">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -228,7 +228,7 @@ const DepartmentManagement = () => {
         </Card>
 
         {/* Departments Table */}
-        <Card>
+        <Card className="bg-white mt-4">
           <div className="overflow-x-auto">
             <table className="w-full table-auto">
               <thead>

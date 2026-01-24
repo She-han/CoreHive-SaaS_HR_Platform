@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,8 @@ public class AttendanceService {
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
     private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
+    private static final long MIN_CHECKOUT_DELAY_MINUTES = 5;
+
 
     //GET ATTENDANCE DETAILS FOR A WEEK/////////////////////////////////////
     private long calculateWorkingMinutes(Attendance attendance) {
@@ -822,7 +825,20 @@ public class AttendanceService {
         // ================= SECOND SCAN → CHECK-OUT =================
         else if (attendance.getCheckOutTime() == null) {
 
-            attendance.setCheckOutTime(LocalDateTime.now());
+            LocalDateTime checkInTime = attendance.getCheckInTime();
+            LocalDateTime now = LocalDateTime.now();
+
+            long minutesBetween = ChronoUnit.MINUTES.between(checkInTime, now);
+
+            if (minutesBetween < MIN_CHECKOUT_DELAY_MINUTES) {
+                throw new BadRequestException(
+                        "Checkout allowed only after "
+                                + MIN_CHECKOUT_DELAY_MINUTES
+                                + " minutes from check-in"
+                );
+            }
+
+            attendance.setCheckOutTime(now);
             attendance.setVerificationType(Attendance.VerificationType.QR_CODE);
             attendance.setIpAddress(ip);
             attendance.setDeviceInfo(deviceInfo);

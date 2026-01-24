@@ -1,6 +1,6 @@
 import { useState } from "react";
 import MonitorAttendance from "./MonitorAttendance";
-import MonthlyReport from "./MonthlyReport";
+import Reports from "./AttendaceReports";
 
 export default function AttendanceManagement() {
   const [activeTab, setActiveTab] = useState("monitor");
@@ -36,13 +36,13 @@ export default function AttendanceManagement() {
 
           <button
             className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "monthly"
+              activeTab === "reports"
                 ? "bg-[#02C39A] text-white"
                 : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
             }`}
-            onClick={() => setActiveTab("monthly")}
+            onClick={() => setActiveTab("reports")}
           >
-            Monthly Report
+            Attendance Reports
           </button>
         </div>
       </div>
@@ -50,7 +50,7 @@ export default function AttendanceManagement() {
       {/* CONTENT */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
-        {activeTab === "monthly" && <MonthlyReport />}
+        {activeTab === "reports" && <Reports />}
       </div>
     </div>
   );

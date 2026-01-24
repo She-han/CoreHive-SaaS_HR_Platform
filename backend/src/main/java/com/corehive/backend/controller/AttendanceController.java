@@ -740,6 +740,7 @@ public class AttendanceController {
         );
     }
 
+    //=========Get Attendance summary excel report for date range===========//
     @GetMapping("/report/summary/excel")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<Resource> downloadSummaryExcel(
@@ -762,6 +763,7 @@ public class AttendanceController {
                 .body(file);
     }
 
+    //=========Get Day-wise attendance details excel report for selected employee
     @GetMapping("/report/details/{employeeId}/excel")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<Resource> downloadDetailExcel(

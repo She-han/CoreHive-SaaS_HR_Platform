@@ -79,7 +79,7 @@ export default function AddEmployee() {
     bankAccNo: "",
     salaryType: "MONTHLY",
     basicSalary: "",
-    leaveCount: "",
+    
     dateJoined: "",
     status: "Active",
     leaveBalances: []
@@ -269,7 +269,7 @@ export default function AddEmployee() {
         bankAccNo: formData.bankAccNo,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
-        leaveCount: formData.leaveCount,
+      
         dateOfJoining: formData.dateJoined,
         status: formData.status,
         leaveBalances: formData.leaveBalances
@@ -527,17 +527,7 @@ export default function AddEmployee() {
                   required
                 />
               </Field>
-              <Field label="Leave Count" required>
-                <input
-                  type="number"
-                  name="leaveCount"
-                  placeholder="12"
-                  value={formData.leaveCount}
-                  onChange={handleChange}
-                  className="input-box"
-                  required
-                />
-              </Field>
+           
               <Field label="Date Joined" required>
                 <input
                   type="date"

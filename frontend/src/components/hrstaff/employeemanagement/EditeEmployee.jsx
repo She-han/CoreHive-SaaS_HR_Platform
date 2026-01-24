@@ -117,7 +117,7 @@ export default function EditEmployee() {
     bankAccNo: "",
     salaryType: "MONTHLY",
     basicSalary: "",
-    leaveCount: "",
+   
     dateJoined: "",
     status: "Active",
     leaveBalances: []
@@ -177,7 +177,7 @@ export default function EditEmployee() {
           bankAccNo: empData.bankAccNo || "",
           salaryType: empData.salaryType || "MONTHLY",
           basicSalary: empData.basicSalary ? String(empData.basicSalary) : "",
-          leaveCount: empData.leaveCount || "",
+        
           dateJoined: empData.dateOfJoining || "",
           status: empData.isActive !== false ? "Active" : "NonActive",
           leaveBalances: mergedBalances
@@ -342,7 +342,7 @@ export default function EditEmployee() {
         bankAccNo: formData.bankAccNo,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
-        leaveCount: formData.leaveCount,
+        
         dateOfJoining: formData.dateJoined,
         status: formData.status,
         leaveBalances: formData.leaveBalances
@@ -589,16 +589,7 @@ export default function EditEmployee() {
                   required
                 />
               </Field>
-              <Field label="Leave Count" required>
-                <input
-                  type="number"
-                  name="leaveCount"
-                  value={formData.leaveCount}
-                  onChange={handleChange}
-                  className="input-box"
-                  required
-                />
-              </Field>
+          
               <Field label="Date Joined" required>
                 <input
                   type="date"

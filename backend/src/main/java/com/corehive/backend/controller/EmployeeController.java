@@ -238,7 +238,25 @@ public class EmployeeController {
         return QrCodeUtil.generateQrImage(qrToken);
     }
 
+    /**
+     * Get leave balances for logged-in employee
+     */
+    @GetMapping("/leave-balances")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getMyLeaveBalances(
+            HttpServletRequest request) {
+        
+        String userEmail = (String) request.getAttribute("userEmail");
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
 
+        if (userEmail == null || organizationUuid == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Authentication information not found"));
+        }
+
+        ApiResponse<List<Map<String, Object>>> response = employeeService.getEmployeeLeaveBalances(organizationUuid, userEmail);
+        return ResponseEntity.ok(response);
+    }
 
 
 }

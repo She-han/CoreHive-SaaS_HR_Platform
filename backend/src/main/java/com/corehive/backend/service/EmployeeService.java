@@ -227,7 +227,7 @@ public class EmployeeService {
         employee.setDesignation(request.getDesignation());
         employee.setDepartmentId(request.getDepartment());
         employee.setBasicSalary(request.getBasicSalary());
-        employee.setLeaveCount(request.getLeaveCount());
+       
         employee.setDateOfJoining(request.getDateOfJoining());
 
         /* ---- SAFE enum conversion ---- */
@@ -563,7 +563,7 @@ public class EmployeeService {
             employee.setNationalId(request.getNationalId());
             employee.setBankAccNo(request.getBankAccNo());
             employee.setDepartmentId(request.getDepartment());
-            employee.setLeaveCount(request.getLeaveCount());
+      
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
@@ -797,5 +797,43 @@ public class EmployeeService {
             
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    /**
+     * Get leave balances for employee by email (for logged-in employee)
+     */
+    public ApiResponse<List<java.util.Map<String, Object>>> getEmployeeLeaveBalances(String organizationUuid, String userEmail) {
+        try {
+            // Find employee by email
+            Employee employee = employeeRepository.findByEmailAndOrganizationUuid(userEmail, organizationUuid)
+                    .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with email: " + userEmail));
+
+            // Get leave balances
+            List<EmployeeLeaveBalance> balances = employeeLeaveBalanceRepository
+                    .findByEmployeeIdAndOrganizationUuid(employee.getId(), organizationUuid);
+
+            // Build response with leave type details
+            List<java.util.Map<String, Object>> result = balances.stream().map(balance -> {
+                java.util.Map<String, Object> balanceData = new java.util.HashMap<>();
+                balanceData.put("leaveTypeId", balance.getLeaveTypeId());
+                balanceData.put("balance", balance.getBalance());
+
+                // Get leave type details
+                leaveTypeRepository.findById(balance.getLeaveTypeId()).ifPresent(leaveType -> {
+                    balanceData.put("leaveTypeName", leaveType.getName());
+                    balanceData.put("leaveTypeCode", leaveType.getCode());
+                });
+
+                return balanceData;
+            }).collect(Collectors.toList());
+
+            return ApiResponse.success(result, "Leave balances fetched successfully");
+        } catch (EmployeeNotFoundException e) {
+            log.error("Employee not found: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error fetching employee leave balances", e);
+            return ApiResponse.error("Failed to fetch leave balances");
+        }
     }
 }

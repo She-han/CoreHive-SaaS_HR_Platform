@@ -65,10 +65,7 @@ public class EmployeeRequestDTO {
     @JsonProperty("salaryType")
     private String salaryType;
 
-    @NotNull(message = "Leave count is required")
-    @Min(value = 0, message = "Leave count must be at least 0")
-    @JsonProperty("leaveCount")
-    private Integer leaveCount;
+   
 
     @NotNull(message = "Date of joining is required")
     @JsonProperty("dateOfJoining")

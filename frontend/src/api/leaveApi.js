@@ -44,8 +44,22 @@ export const getLeaveTypes = async () => {
   }
 };
 
+/**
+ * Get employee leave balances
+ */
+export const getEmployeeLeaveBalances = async () => {
+  try {
+    const response = await apiClient.get('/employees/leave-balances');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching employee leave balances:', error);
+    throw error;
+  }
+};
+
 export default {
   submitLeaveRequest,
   getEmployeeLeaveRequests,
-  getLeaveTypes
+  getLeaveTypes,
+  getEmployeeLeaveBalances
 };

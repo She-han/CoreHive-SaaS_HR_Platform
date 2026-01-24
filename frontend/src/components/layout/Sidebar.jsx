@@ -234,6 +234,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: Cog6ToothIcon,
             path: "/org_admin/payroll-config",
             current: location.pathname.startsWith("/org_admin/payroll-config")
+          },
+          {
+            name: "Attendance Configuration",
+            icon: Cog6ToothIcon,
+            path: "/org_admin/leaveattendance-config",
+            current: location.pathname.startsWith("/org_admin/leaveattendance-config")
           }
         ];
 

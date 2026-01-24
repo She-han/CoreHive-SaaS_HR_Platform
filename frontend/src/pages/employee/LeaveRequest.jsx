@@ -2,12 +2,13 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
-import { submitLeaveRequest, getEmployeeLeaveRequests, getLeaveTypes } from "../../api/leaveApi";
+import { submitLeaveRequest, getEmployeeLeaveRequests, getLeaveTypes, getEmployeeLeaveBalances } from "../../api/leaveApi";
 import Swal from "sweetalert2";
 
 export default function LeaveRequest() {
   const [employeeId, setEmployeeId] = useState(null);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [leaveBalances, setLeaveBalances] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
@@ -32,14 +33,37 @@ export default function LeaveRequest() {
         const empId = profileResponse.data.id;
         setEmployeeId(empId);
         
-        // Fetch leave types and history in parallel
-        const [leaveTypesResponse, historyResponse] = await Promise.all([
+        // Fetch leave types, balances, and history in parallel
+        const [leaveTypesResponse, leaveBalancesResponse, historyResponse] = await Promise.all([
           getLeaveTypes(),
+          getEmployeeLeaveBalances(),
           getEmployeeLeaveRequests(empId)
         ]);
 
         if (leaveTypesResponse.success) {
           setLeaveTypes(leaveTypesResponse.data);
+        }
+
+        // Process leave balances from backend
+        if (leaveBalancesResponse.success && leaveBalancesResponse.data) {
+          const approvedLeaves = historyResponse.success ? 
+            historyResponse.data.filter(leave => leave.status === 'APPROVED') : [];
+          
+          // Map backend balances with leave type info
+          const balances = leaveBalancesResponse.data.map(balanceData => {
+            const usedDays = approvedLeaves
+              .filter(leave => leave.leaveTypeId === balanceData.leaveTypeId)
+              .reduce((sum, leave) => sum + leave.totalDays, 0);
+            
+            return {
+              id: balanceData.leaveTypeId,
+              name: balanceData.leaveTypeName || 'Unknown',
+              assigned: balanceData.balance || 0,
+              used: usedDays,
+              balance: (balanceData.balance || 0) - usedDays
+            };
+          });
+          setLeaveBalances(balances);
         }
 
         if (historyResponse.success) {
@@ -78,6 +102,24 @@ export default function LeaveRequest() {
         icon: 'warning',
         title: 'Invalid Dates',
         text: 'End date cannot be before start date',
+        confirmButtonColor: '#02C39A'
+      });
+      return;
+    }
+
+    // Calculate requested days
+    const startDate = new Date(form.startDate);
+    const endDate = new Date(form.endDate);
+    const diffTime = Math.abs(endDate - startDate);
+    const requestedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+    // Check leave balance
+    const selectedLeaveBalance = leaveBalances.find(lb => lb.id === parseInt(form.leaveTypeId));
+    if (selectedLeaveBalance && requestedDays > selectedLeaveBalance.balance) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Insufficient Leave Balance',
+        text: `You are requesting ${requestedDays} days but only have ${selectedLeaveBalance.balance} days remaining for ${selectedLeaveBalance.name}.`,
         confirmButtonColor: '#02C39A'
       });
       return;
@@ -163,6 +205,49 @@ export default function LeaveRequest() {
         <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">
           Leave Request Portal
         </h1>
+
+        {/* LEAVE BALANCE SUMMARY */}
+        {leaveBalances.length > 0 && (
+          <div className="bg-[var(--color-background-white)] rounded-xl p-6 shadow-[0_10px_15px_-3px_rgba(12,57,122,0.1),0_4px_6px_-2px_rgba(12,57,122,0.05)] border border-[#f1f5f9] animate-slide-up">
+            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
+              Leave Balance Summary
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {leaveBalances.map((balance) => (
+                <div
+                  key={balance.id}
+                  className="bg-gradient-to-br from-[var(--color-primary-50)] to-white p-4 rounded-lg border border-[var(--color-primary-200)] hover:shadow-md transition-shadow"
+                >
+                  <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">
+                    {balance.name}
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div className="text-center">
+                      <p className="text-gray-600 text-xs">Assigned</p>
+                      <p className="font-bold text-[var(--color-primary-600)] text-lg">
+                        {balance.assigned}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-600 text-xs">Used</p>
+                      <p className="font-bold text-orange-600 text-lg">
+                        {balance.used}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-600 text-xs">Balance</p>
+                      <p className={`font-bold text-lg ${
+                        balance.balance > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {balance.balance}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* APPLY FOR LEAVE CARD */}
         <div className="bg-[var(--color-background-white)] rounded-xl p-6 shadow-[0_10px_15px_-3px_rgba(12,57,122,0.1),0_4px_6px_-2px_rgba(12,57,122,0.05)] border border-[#f1f5f9] animate-slide-up">

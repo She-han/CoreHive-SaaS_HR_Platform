@@ -45,15 +45,23 @@ export default function ViewLeaveAndAttendance() {
           }))
         );
 
+        // Get current month's date range
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthHistory = historyData.filter(h => {
+          const recordDate = new Date(h.date);
+          return recordDate >= firstDayOfMonth && recordDate <= now;
+        });
+
         const summaryCalc = {
-          present: historyData.filter((h) => h.status === "PRESENT").length,
-          absent: historyData.filter((h) => h.status === "ABSENT").length,
-          leave: historyData.filter((h) => h.status === "LEAVE").length,
-          totalHours: historyData
+          present: currentMonthHistory.filter((h) => h.status === "PRESENT").length,
+          absent: currentMonthHistory.filter((h) => h.status === "ABSENT").length,
+          leave: currentMonthHistory.filter((h) => h.status === "LEAVE").length,
+          totalOtHours: currentMonthHistory
             .reduce((acc, h) => {
-              if (h.checkInTime && h.checkOutTime) {
-                const diff = new Date(h.checkOutTime) - new Date(h.checkInTime);
-                return acc + diff / (1000 * 60 * 60);
+              // OT hours from backend response
+              if (h.otHours) {
+                return acc + parseFloat(h.otHours);
               }
               return acc;
             }, 0)
@@ -141,8 +149,8 @@ export default function ViewLeaveAndAttendance() {
                 <p className="text-xl font-bold">{summary.leave}</p>
               </div>
               <div className="p-4 rounded-lg bg-blue-50">
-                <p className="text-sm text-gray-600">Total Hours</p>
-                <p className="text-xl font-bold">{summary.totalHours} hrs</p>
+                <p className="text-sm text-gray-600">Total OT Hours</p>
+                <p className="text-xl font-bold">{summary.totalOtHours} hrs</p>
               </div>
             </div>
           </div>

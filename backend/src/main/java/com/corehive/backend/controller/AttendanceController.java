@@ -4,6 +4,7 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.request.ManualTimeRequest;
 import com.corehive.backend.dto.request.QrAttendanceRequest;
 import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.corehive.backend.dto.response.QrAttendanceResponse;
@@ -105,11 +106,13 @@ public class AttendanceController {
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<StandardResponse> manualCheckIn(
             HttpServletRequest request,
-            @PathVariable Long employeeId
+            @PathVariable Long employeeId,
+            @RequestBody(required = false) ManualTimeRequest req
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
+        String manualTime = (req != null) ? req.getManualTime() : null;
 
-        attendanceService.manualCheckIn(orgUuid, employeeId);
+        attendanceService.manualCheckIn(orgUuid, employeeId, manualTime);
 
         return ResponseEntity.ok(
                 new StandardResponse(200, "Check-in successful", null)
@@ -136,11 +139,13 @@ public class AttendanceController {
     @PostMapping("/check-out/{employeeId}")
     public ResponseEntity<StandardResponse> manualCheckOut(
             HttpServletRequest request,
-            @PathVariable Long employeeId
+            @PathVariable Long employeeId,
+            @RequestBody(required = false) ManualTimeRequest req
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
+        String manualTime = (req != null) ? req.getManualTime() : null;
 
-        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId);
+        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId, manualTime);
 
         return ResponseEntity.ok(
                 new StandardResponse(200, "Check-out successful", dto) // ✅ RETURN DATA

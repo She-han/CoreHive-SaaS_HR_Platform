@@ -6,6 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -72,6 +73,9 @@ public class Attendance {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Column(name = "ot_hours", precision = 5, scale = 2)
+    private BigDecimal otHours;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

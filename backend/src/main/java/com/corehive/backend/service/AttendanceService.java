@@ -14,8 +14,10 @@ import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Attendance.AttendanceStatus;
 import com.corehive.backend.model.Attendance.VerificationType;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.LeaveRequest;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.repository.LeaveRequestRepository;
 import com.corehive.backend.util.JwtUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +45,8 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final AttendanceConfigurationService attendanceConfigurationService;
     private final JwtUtil jwtUtil;
 
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
@@ -97,7 +101,14 @@ public class AttendanceService {
 
         row.put("date", attendance.getAttendanceDate());
 
-        row.put("status", attendance.getStatus().name());
+        // Check if employee has approved leave on this date
+        boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(
+                emp.getId(), 
+                attendance.getAttendanceDate()
+        );
+
+        // If employee has approved leave, show ON_LEAVE status
+        row.put("status", hasApprovedLeave ? "ON_LEAVE" : attendance.getStatus().name());
 
         row.put("checkIn", attendance.getCheckInTime());
         row.put("checkOut", attendance.getCheckOutTime());
@@ -145,6 +156,13 @@ public class AttendanceService {
             }
         }
 
+        // Add count of employees with approved leaves on this date
+        List<Long> employeeIdsOnLeave = leaveRequestRepository
+                .findEmployeeIdsWithApprovedLeaveOnDate(orgUuid, targetDate);
+        
+        // Update ON_LEAVE count to include employees with approved leave requests
+        summary.put("ON_LEAVE", summary.get("ON_LEAVE") + employeeIdsOnLeave.size());
+
         return summary;
     }
 
@@ -190,6 +208,9 @@ public class AttendanceService {
                     .findByEmployeeIdAndAttendanceDate(emp.getId(), today)
                     .orElse(null);
 
+            // Check if employee has approved leave on this date
+            boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(emp.getId(), today);
+
             // 4. Build response DTO with attendance status
             return TodayAttendanceDTO.builder()
                     .id(att != null ? att.getId() : null) // Attendance ID
@@ -203,9 +224,11 @@ public class AttendanceService {
                     .checkOutTime(att != null ? att.getCheckOutTime() : null)
 
                     // Status logic:
+                    // - If employee has approved leave → ON_LEAVE
                     // - If attendance exists → show actual status
                     // - If not → NOT_CHECKED_IN
-                    .status(att != null ? att.getStatus().name() : "NOT_CHECKED_IN")
+                    .status(hasApprovedLeave ? "ON_LEAVE" : 
+                            (att != null ? att.getStatus().name() : "NOT_CHECKED_IN"))
 
                     // Attendance is complete only if both check-in & check-out exist
                     .isComplete(att != null && att.isComplete())
@@ -217,7 +240,7 @@ public class AttendanceService {
     // MANUAL CHECK-IN
     // Admin / HR marks check-in for an employee
     // =========================================================
-    public void manualCheckIn(String orgUuid, Long employeeId) {
+    public void manualCheckIn(String orgUuid, Long employeeId, String manualTime) {
 
         // 1. Validate employee exists
         Employee employee = employeeRepository.findById(employeeId)
@@ -243,21 +266,33 @@ public class AttendanceService {
             );
         }
 
-        // 5. Create new attendance record
+        // 5. Get check-in time: manual or current time
+        LocalDateTime checkInDateTime;
+        if (manualTime != null && !manualTime.isEmpty()) {
+            // Parse manual time (HH:mm format) and combine with today's date
+            LocalTime time = LocalTime.parse(manualTime);
+            checkInDateTime = LocalDateTime.of(today, time);
+        } else {
+            // Use current local time
+            checkInDateTime = LocalDateTime.now();
+        }
+        LocalTime checkInTime = checkInDateTime.toLocalTime();
+
+
+        // 6. Determine status based on attendance configuration
+        Attendance.AttendanceStatus status = determineStatusFromConfig(employeeId, orgUuid, checkInTime);
+
+        // 7. Create new attendance record
         Attendance attendance = Attendance.builder()
                 .organizationUuid(orgUuid)
                 .employeeId(employeeId)
                 .attendanceDate(today)
-                .checkInTime(LocalDateTime.now())
-
-                // Manual marking always defaults to PRESENT
-                .status(Attendance.AttendanceStatus.PRESENT)
-
-                // Since this is manual marking
+                .checkInTime(checkInDateTime)
+                .status(status)
                 .verificationType(Attendance.VerificationType.MANUAL)
                 .build();
 
-        // 6. Save attendance
+        // 8. Save attendance
         attendanceRepository.save(attendance);
     }
 
@@ -287,6 +322,9 @@ public class AttendanceService {
                         );
                     }
 
+                    // Check if employee has approved leave on this date
+                    boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(emp.getId(), today);
+
                     return TodayAttendanceDTO.builder()
                             .id(att.getId())
                             .employeeId(emp.getId())
@@ -294,7 +332,7 @@ public class AttendanceService {
                             .employeeCode(emp.getEmployeeCode())
                             .checkInTime(att.getCheckInTime())
                             .checkOutTime(null) // explicitly pending
-                            .status(att.getStatus().name())
+                            .status(hasApprovedLeave ? "ON_LEAVE" : att.getStatus().name())
                             .isComplete(false)
                             .build();
                 })
@@ -306,7 +344,7 @@ public class AttendanceService {
     // MANUAL CHECK-OUT
     // Admin / HR marks check-out for an employee
     // =========================================================
-    public TodayAttendanceDTO manualCheckOut(String orgUuid, Long employeeId) {
+    public TodayAttendanceDTO manualCheckOut(String orgUuid, Long employeeId, String manualTime) {
 
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndAttendanceDate(employeeId, LocalDate.now())
@@ -316,7 +354,30 @@ public class AttendanceService {
             throw new AttendanceAlreadyCheckedInException("Already checked out");
         }
 
-        attendance.setCheckOutTime(LocalDateTime.now());
+        // Set checkout time: manual or current time
+        LocalDateTime checkOutDateTime;
+        if (manualTime != null && !manualTime.isEmpty()) {
+            // Parse manual time (HH:mm format) and combine with today's date
+            LocalTime time = LocalTime.parse(manualTime);
+            checkOutDateTime = LocalDateTime.of(LocalDate.now(), time);
+        } else {
+            // Use current local time
+            checkOutDateTime = LocalDateTime.now();
+        }
+        attendance.setCheckOutTime(checkOutDateTime);
+
+        // Re-evaluate attendance status based on both check-in and check-out times
+        // This handles early departure (HALF_DAY if left before morning threshold)
+        LocalTime checkInTime = attendance.getCheckInTime().toLocalTime();
+        LocalTime checkOutTime = checkOutDateTime.toLocalTime();
+        Attendance.AttendanceStatus updatedStatus = determineStatusFromConfig(
+                employeeId, orgUuid, checkInTime, checkOutTime
+        );
+        attendance.setStatus(updatedStatus);
+
+        // Calculate OT hours based on configuration
+        calculateAndSetOtHours(attendance, employeeId, orgUuid, checkOutTime);
+
         attendanceRepository.save(attendance);
 
         Employee emp = attendance.getEmployee();
@@ -350,7 +411,7 @@ public class AttendanceService {
 
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndAttendanceDate(employeeId, today)
-                .orElse(null); // 👈 important: allow null
+                .orElse(null);
 
         if (attendance == null) {
             // If no record exists, create it
@@ -750,6 +811,115 @@ public class AttendanceService {
         if (hour < 12) return "morning";
         if (hour < 17) return "afternoon";
         return "evening";
+    }
+
+    /**
+     * Determines attendance status based on check-in time and attendance configuration
+     * Applies priority-based configuration (Employee > Designation > Department > Organization)
+     * This version is used during CHECK-IN (no checkout time available yet)
+     */
+    private Attendance.AttendanceStatus determineStatusFromConfig(Long employeeId, String orgUuid, LocalTime checkInTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                // Compare check-in time with configured thresholds
+                if (checkInTime.isAfter(config.getAbsentThreshold())) {
+                    return Attendance.AttendanceStatus.ABSENT;
+                } else if (checkInTime.isAfter(config.getEveningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                } else if (checkInTime.isAfter(config.getLateThreshold())) {
+                    return Attendance.AttendanceStatus.LATE;
+                } else {
+                    return Attendance.AttendanceStatus.PRESENT;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load attendance configuration for employee {}: {}", employeeId, e.getMessage());
+        }
+
+        // Fallback to default logic if no configuration found
+        return determineAttendanceStatus(checkInTime);
+    }
+
+    /**
+     * Re-evaluates attendance status during CHECK-OUT based on both check-in and check-out times
+     * Applies priority-based configuration (Employee > Designation > Department > Organization)
+     * This version checks for early departure (half-day due to early checkout)
+     */
+    private Attendance.AttendanceStatus determineStatusFromConfig(Long employeeId, String orgUuid, LocalTime checkInTime, LocalTime checkOutTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                
+                // First, check if it's an early departure (checked in on time but left early)
+                // This should be checked FIRST as it's a special case
+                if (checkInTime.isBefore(config.getLateThreshold()) && 
+                    checkOutTime.isBefore(config.getMorningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                }
+                
+                // Then check regular check-in based status
+                if (checkInTime.isAfter(config.getAbsentThreshold())) {
+                    return Attendance.AttendanceStatus.ABSENT;
+                } else if (checkInTime.isAfter(config.getEveningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                } else if (checkInTime.isAfter(config.getLateThreshold())) {
+                    return Attendance.AttendanceStatus.LATE;
+                } else {
+                    return Attendance.AttendanceStatus.PRESENT;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load attendance configuration for employee {}: {}", employeeId, e.getMessage());
+        }
+
+        // Fallback to default logic if no configuration found
+        return determineAttendanceStatus(checkInTime);
+    }
+
+    /**
+     * Calculates and sets OT hours based on attendance configuration
+     * OT is calculated only if checkout time is after the configured OT start time
+     */
+    private void calculateAndSetOtHours(Attendance attendance, Long employeeId, String orgUuid, LocalTime checkOutTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                if (config.getOtStartTime() != null) {
+                    // Check if checkout is after OT start time
+                    if (checkOutTime.isAfter(config.getOtStartTime())) {
+                        // Calculate OT hours as difference between checkout and OT start time
+                        Duration otDuration = Duration.between(config.getOtStartTime(), checkOutTime);
+                        double otHours = otDuration.toMinutes() / 60.0;
+
+                        // Set OT hours (rounded to 2 decimal places)
+                        attendance.setOtHours(java.math.BigDecimal.valueOf(otHours)
+                                .setScale(2, java.math.RoundingMode.HALF_UP));
+
+                        log.info("OT hours calculated for employee {}: {} hours", employeeId, otHours);
+                    } else {
+                        // No OT if checkout before OT start time
+                        attendance.setOtHours(java.math.BigDecimal.ZERO);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate OT hours for employee {}: {}", employeeId, e.getMessage());
+            // Don't fail the checkout if OT calculation fails
+            attendance.setOtHours(java.math.BigDecimal.ZERO);
+        }
     }
 
     //Get today on-leave employee count

@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/modules/active").permitAll() // Active modules for signup
                         .requestMatchers("/api/job-postings").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
 
 
                         // Protected auth endpoints (requires valid JWT token)

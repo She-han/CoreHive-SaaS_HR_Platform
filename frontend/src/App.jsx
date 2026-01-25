@@ -19,6 +19,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import { ForgetPasswordPage } from "./pages/auth/ForgetPasswordPage";
+import PublicJobs from "./pages/PublicJobs";
 
 // Middle auth pages
 import ModuleConfigPage from "./pages/auth/ModuleConfigPage";
@@ -106,6 +107,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/careers" element={<PublicJobs />} />
                 <Route
                   path="/forgot-password"
                   element={<ForgetPasswordPage />}

@@ -49,7 +49,11 @@ const Navbar = () => {
       return [
         { name: "Home", href: "/", current: location.pathname === "/" },
         { name: "Features", href: "/#features", current: false },
-        { name: "Pricing", href: "/#pricing", current: false },
+        {
+  name: "Careers",
+  href: "/careers",
+  current: location.pathname === "/careers"
+},
         {
           name: "Contact",
           href: "/contact",

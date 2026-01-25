@@ -99,9 +99,10 @@ const PayslipGeneration = () => {
             return;
           }
           response = await payrollApi.generatePayslipForEmployee(filterValue, month, year);
-          // Convert single payslip to array
-          response = { data: [response.data] };
-          break;
+          // Convert single payslip to array and set directly
+          setPayslips([response.data]);
+          showAlert('success', 'Payslip generated successfully for 1 employee');
+          return; // Return early to avoid calling loadPayslips
         default:
           showAlert('error', 'Invalid filter type');
           return;
@@ -128,6 +129,11 @@ const PayslipGeneration = () => {
         filters.departmentName = dept?.name;
       } else if (filterType === 'designation' && filterValue) {
         filters.designation = filterValue;
+      } else if (filterType === 'employee' && filterValue) {
+        const emp = employees.find(e => e.id === parseInt(filterValue));
+        if (emp) {
+          filters.employeeCode = emp.employeeCode;
+        }
       }
       
       const response = await payrollApi.getPayslips(month, year, filters);
@@ -142,7 +148,21 @@ const PayslipGeneration = () => {
   const handleExportExcel = async () => {
     setLoading(true);
     try {
-      const blob = await payrollApi.exportPayslipsToExcel(month, year);
+      const filters = {};
+      
+      if (filterType === 'department' && filterValue) {
+        const dept = departments.find(d => d.id === parseInt(filterValue));
+        filters.departmentName = dept?.name;
+      } else if (filterType === 'designation' && filterValue) {
+        filters.designation = filterValue;
+      } else if (filterType === 'employee' && filterValue) {
+        const emp = employees.find(e => e.id === parseInt(filterValue));
+        if (emp) {
+          filters.employeeCode = emp.employeeCode;
+        }
+      }
+      
+      const blob = await payrollApi.exportPayslipsToExcel(month, year, filters);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -162,7 +182,21 @@ const PayslipGeneration = () => {
   const handleExportBankTransfer = async () => {
     setLoading(true);
     try {
-      const blob = await payrollApi.exportBankTransferFile(month, year);
+      const filters = {};
+      
+      if (filterType === 'department' && filterValue) {
+        const dept = departments.find(d => d.id === parseInt(filterValue));
+        filters.departmentName = dept?.name;
+      } else if (filterType === 'designation' && filterValue) {
+        filters.designation = filterValue;
+      } else if (filterType === 'employee' && filterValue) {
+        const emp = employees.find(e => e.id === parseInt(filterValue));
+        if (emp) {
+          filters.employeeCode = emp.employeeCode;
+        }
+      }
+      
+      const blob = await payrollApi.exportBankTransferFile(month, year, filters);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -197,7 +231,7 @@ const PayslipGeneration = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont(undefined, 'bold');
-    doc.text('SALARY SLIP', pageWidth / 2, 20, { align: 'center' });
+    doc.text(payslip.companyName || 'Company Name', pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
@@ -266,7 +300,7 @@ const PayslipGeneration = () => {
       styles: { fontSize: 10, cellPadding: 3 },
       columnStyles: {
         0: { cellWidth: 100, fontStyle: 'normal' },
-        1: { cellWidth: 80, halign: 'right', fontStyle: 'bold' }
+        1: { cellWidth: 80, halign: 'right', fontStyle: 'normal' }
       },
       margin: { left: 14, right: 14 }
     });
@@ -276,6 +310,7 @@ const PayslipGeneration = () => {
     // Gross Salary
     doc.setFillColor(232, 245, 241);
     doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+    doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.text('Gross Salary', 14, yPos + 6);
     doc.text(`LKR ${(payslip.grossSalary || 0).toFixed(2)}`, pageWidth - 14, yPos + 6, { align: 'right' });
@@ -319,7 +354,7 @@ const PayslipGeneration = () => {
         styles: { fontSize: 10, cellPadding: 3, textColor: [220, 38, 38] },
         columnStyles: {
           0: { cellWidth: 100, fontStyle: 'normal' },
-          1: { cellWidth: 80, halign: 'right', fontStyle: 'bold' }
+          1: { cellWidth: 80, halign: 'right', fontStyle: 'normal' }
         },
         margin: { left: 14, right: 14 }
       });
@@ -329,6 +364,7 @@ const PayslipGeneration = () => {
     // Total Deductions
     doc.setFillColor(254, 242, 242);
     doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+    doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(220, 38, 38);
     doc.text('Total Deductions', 14, yPos + 6);
@@ -361,16 +397,26 @@ const PayslipGeneration = () => {
         styles: { fontSize: 10, cellPadding: 3, textColor: [59, 130, 246] },
         columnStyles: {
           0: { cellWidth: 100, fontStyle: 'normal' },
-          1: { cellWidth: 80, halign: 'right', fontStyle: 'bold' }
+          1: { cellWidth: 80, halign: 'right', fontStyle: 'normal' }
         },
         margin: { left: 14, right: 14 }
       });
-      yPos = doc.lastAutoTable.finalY + 10;
+      yPos = doc.lastAutoTable.finalY + 5;
     } else {
-      yPos += 10;
+      yPos += 5;
     }
     
-    // Net Salary (highlighted)
+    // Add net salary as a regular row first
+    doc.setFillColor(245, 247, 250);
+    doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Net Salary', 14, yPos + 6);
+    doc.text(`LKR ${(payslip.netSalary || 0).toFixed(2)}`, pageWidth - 14, yPos + 6, { align: 'right' });
+    yPos += 15;
+    
+    // Net Salary (highlighted) - Extra section at bottom
     doc.setFillColor(2, 195, 154);
     doc.rect(10, yPos, pageWidth - 20, 12, 'F');
     doc.setTextColor(255, 255, 255);
@@ -435,7 +481,7 @@ const PayslipGeneration = () => {
         )}
 
       {/* Generation Controls */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 mx-5">
           <h2 className="text-xl font-semibold mb-4" style={{ color: THEME.dark }}>Generate Payslips</h2>
           {/* Month Selection */}
           <div>
@@ -457,7 +503,8 @@ const PayslipGeneration = () => {
             <select
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+              style={{ outlineColor: THEME.primary }}
             >
               {years.map(y => (
                 <option key={y} value={y}>{y}</option>
@@ -474,7 +521,8 @@ const PayslipGeneration = () => {
                 setFilterType(e.target.value);
                 setFilterValue('');
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+              style={{ outlineColor: THEME.primary }}
             >
               <option value="all">All Employees</option>
               <option value="department">By Department</option>
@@ -493,7 +541,8 @@ const PayslipGeneration = () => {
                 <select
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: THEME.primary }}
                 >
                   <option value="">Select Department</option>
                   {departments.map(dept => (
@@ -505,7 +554,8 @@ const PayslipGeneration = () => {
                 <select
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: THEME.primary }}
                 >
                   <option value="">Select Designation</option>
                   {designations.map(designation => (
@@ -517,7 +567,8 @@ const PayslipGeneration = () => {
                 <select
                   value={filterValue}
                   onChange={(e) => setFilterValue(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                  style={{ outlineColor: THEME.primary }}
                 >
                   <option value="">Select Employee</option>
                   {employees.map(emp => (
@@ -531,11 +582,12 @@ const PayslipGeneration = () => {
           )}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 mx-5 justify-end mb-6">
           <button
             onClick={handleGeneratePayslips}
             disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            style={{ backgroundColor: THEME.primary }}
+            className="flex items-center gap-2 text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             <FaCheckCircle /> {loading ? 'Generating...' : 'Generate Payslips'}
           </button>
@@ -543,43 +595,19 @@ const PayslipGeneration = () => {
           <button
             onClick={loadPayslips}
             disabled={loading}
-            className="flex items-center gap-2 bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50"
+            style={{ backgroundColor: THEME.secondary }}
+            className="flex items-center gap-2 text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             <FaSearch /> Load Existing Payslips
           </button>
         </div>
       </div>
 
-      {/* Export Options */}
-      {payslips.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Export Options</h2>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={handleExportExcel}
-              disabled={loading}
-              className="flex items-center gap-2 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              <FaFileExcel /> Export All Payslips (Excel)
-            </button>
-            
-            <button
-              onClick={handleExportBankTransfer}
-              disabled={loading}
-              className="flex items-center gap-2 bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50"
-            >
-              <FaDownload /> Export Bank Transfer File
-            </button>
-          </div>
-          <p className="text-sm text-gray-600 mt-2">
-            Bank transfer file contains employee account numbers and net salaries for direct bank upload.
-          </p>
-        </div>
-      )}
+ 
 
       {/* Payslips Table */}
       {payslips.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mx-8 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">
               Payslips for {months[month - 1]} {year} ({filteredPayslips.length})
@@ -591,7 +619,8 @@ const PayslipGeneration = () => {
                 placeholder="Search payslips..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                style={{ outlineColor: THEME.primary }}
               />
             </div>
           </div>
@@ -611,7 +640,7 @@ const PayslipGeneration = () => {
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Gross</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Deductions</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Net Salary</th>
-                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
+                 
                   <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -639,16 +668,7 @@ const PayslipGeneration = () => {
                     <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: THEME.primary }}>
                       LKR {payslip.netSalary?.toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        payslip.status === 'GENERATED' ? 'bg-green-100 text-green-800' :
-                        payslip.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
-                        payslip.status === 'APPROVED' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {payslip.status}
-                      </span>
-                    </td>
+            
                     <td className="px-4 py-3">
                       <div className="flex gap-2 justify-center">
                         <button
@@ -708,6 +728,35 @@ const PayslipGeneration = () => {
       {payslips.length === 0 && !loading && (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <p className="text-gray-500 text-lg">No payslips found. Generate payslips to view them here.</p>
+        </div>
+      )}
+
+           {/* Export Options */}
+      {payslips.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 mx-8">
+          <h2 className="text-xl font-semibold mb-4">Export Options</h2>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleExportExcel}
+              disabled={loading}
+              style={{ backgroundColor: THEME.success }}
+              className="flex items-center gap-2 text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              <FaFileExcel /> Export Payslips (Excel)
+            </button>
+            
+            <button
+              onClick={handleExportBankTransfer}
+              disabled={loading}
+              style={{ backgroundColor: THEME.secondary }}
+              className="flex items-center gap-2 text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              <FaDownload /> Export Bank Transfer File
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Bank transfer file contains employee account numbers and net salaries for direct bank upload.
+          </p>
         </div>
       )}
 

@@ -93,15 +93,17 @@ export const getPayslips = async (month, year, filters = {}) => {
   return response.data;
 };
 
-export const exportPayslipsToExcel = async (month, year) => {
-  const response = await axios.get(`/hr-staff/payslips/export/excel?month=${month}&year=${year}`, {
+export const exportPayslipsToExcel = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.get(`/hr-staff/payslips/export/excel?${params}`, {
     responseType: 'blob'
   });
   return response.data;
 };
 
-export const exportBankTransferFile = async (month, year) => {
-  const response = await axios.get(`/hr-staff/payslips/export/bank-transfer?month=${month}&year=${year}`, {
+export const exportBankTransferFile = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.get(`/hr-staff/payslips/export/bank-transfer?${params}`, {
     responseType: 'blob'
   });
   return response.data;

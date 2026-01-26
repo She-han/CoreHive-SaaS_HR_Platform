@@ -2,6 +2,7 @@ import { useState } from "react";
 import HeadcountReport from "./HeadcountReport";
 import MonthlyReport from "./MonthlyReport";
 import AnnualReport from "./AnnualReport";
+import EmployeeExcelReport from "./EmployeeDetailsReport";
 
 export default function HRReportingManagement() {
   const [activeTab, setActiveTab] = useState("headcount");
@@ -14,6 +15,8 @@ export default function HRReportingManagement() {
         return <MonthlyReport />;
       case "annual":
         return <AnnualReport />;
+      case "employees":
+      return <EmployeeExcelReport />;
       default:
         return null;
     }
@@ -37,7 +40,9 @@ export default function HRReportingManagement() {
         {[
           { key: "headcount", label: "Headcount Report" },
           { key: "monthly", label: "Monthly Report" },
-          { key: "annual", label: "Annual Report" }
+          { key: "annual", label: "Annual Report" },
+          { key: "employees", label: "Employee Details" }
+
         ].map((tab) => (
           <button
             key={tab.key}

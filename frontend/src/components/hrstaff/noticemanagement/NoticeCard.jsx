@@ -13,9 +13,9 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
   // Neutral Dark: #333333 | Neutral Gray: #9B9B9B | BG Mint: #F1FDF9
 
   const priorityStyles = {
-    HIGH: "bg-[#0C397A] text-white", // High contrast for high priority
-    MEDIUM: "bg-[#05668D] text-white",
-    LOW: "bg-[#02C39A] text-white"
+    HIGH: "bg-red-600 text-white", // High contrast for high priority
+    MEDIUM: "bg-amber-500 text-white",
+    LOW: "bg-green-500 text-white"
   };
 
   const statusStyles = {
@@ -25,7 +25,7 @@ export default function NoticeCard({ notice, onEdit, onDelete }) {
   };
 
   return (
-    <div className="group relative bg-[#FFFFFF] border border-gray-100 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-[#05668D]/10 hover:-translate-y-1 flex flex-col h-full">
+    <div className="group relative bg-[#FFFFFF] border border-gray-200 shadow-md rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-[#05668D]/10 hover:-translate-y-1 flex flex-col h-full">
       {/* ================= Header & Priority ================= */}
       <div className="flex justify-between items-start gap-4 mb-3">
         <h3 className="font-bold text-[#333333] text-lg leading-tight group-hover:text-[#0C397A] transition-colors">

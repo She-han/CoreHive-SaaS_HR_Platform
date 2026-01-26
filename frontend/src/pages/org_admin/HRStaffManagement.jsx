@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
 import {
   PlusIcon,
   PencilIcon,
@@ -22,7 +23,6 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import Alert from "../../components/common/Alert";
 import * as hrStaffApi from "../../api/hrStaffApi";
 import * as departmentApi from "../../api/departmentApi";
 import DashboardLayout from "../../components/layout/DashboardLayout";
@@ -70,7 +70,6 @@ const HRStaffManagement = () => {
     isActive: true
   });
   const [formErrors, setFormErrors] = useState({});
-  const [alert, setAlert] = useState({ show: false, type: "", message: "" });
 
   // Departments state
   const [departments, setDepartments] = useState([]);
@@ -169,10 +168,12 @@ const HRStaffManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching HR staff:", error);
-      showAlert(
-        "error",
-        error.response?.data?.message || "Failed to fetch HR staff data"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Failed to fetch HR staff data",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
@@ -195,9 +196,13 @@ const HRStaffManagement = () => {
     }
   }, [currentPage, searchTerm, filterStatus]);
 
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: "", message: "" }), 5000);
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
   };
 
   const resetForm = () => {
@@ -232,7 +237,14 @@ const HRStaffManagement = () => {
       const response = await hrStaffApi.createHRStaff(apiData);
 
       if (response.success) {
-        showAlert("success", "HR staff member added successfully!");
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "HR staff member added successfully!",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
         setIsAddModalOpen(false);
         resetForm();
         fetchHRStaff();
@@ -241,10 +253,12 @@ const HRStaffManagement = () => {
       }
     } catch (error) {
       console.error("Error adding HR staff:", error);
-      showAlert(
-        "error",
-        error.response?.data?.message || "Failed to add HR staff member"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Failed to add HR staff member",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
@@ -263,7 +277,14 @@ const HRStaffManagement = () => {
       );
 
       if (response.success) {
-        showAlert("success", "HR staff member updated successfully!");
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "HR staff member updated successfully!",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
         setIsEditModalOpen(false);
         resetForm();
         setSelectedStaff(null);
@@ -273,10 +294,12 @@ const HRStaffManagement = () => {
       }
     } catch (error) {
       console.error("Error updating HR staff:", error);
-      showAlert(
-        "error",
-        error.response?.data?.message || "Failed to update HR staff member"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Failed to update HR staff member",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
@@ -285,12 +308,32 @@ const HRStaffManagement = () => {
   const handleDeleteStaff = async () => {
     if (!selectedStaff) return;
 
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: "This HR staff member will be permanently deleted",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#02C39A",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!result.isConfirmed) return;
+
     setLoading(true);
     try {
       const response = await hrStaffApi.deleteHRStaff(selectedStaff.id);
 
       if (response.success) {
-        showAlert("success", "HR staff member deleted successfully!");
+        Swal.fire({
+          icon: "success",
+          title: "Deleted!",
+          text: "HR staff member deleted successfully!",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
         setIsDeleteModalOpen(false);
         setSelectedStaff(null);
         fetchHRStaff();
@@ -299,10 +342,12 @@ const HRStaffManagement = () => {
       }
     } catch (error) {
       console.error("Error deleting HR staff:", error);
-      showAlert(
-        "error",
-        error.response?.data?.message || "Failed to delete HR staff member"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Failed to delete HR staff member",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }

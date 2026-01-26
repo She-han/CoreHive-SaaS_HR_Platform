@@ -261,13 +261,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             )
           },
           {
-            name: "Leave Management",
+            name: "Approve Leaves",
             icon: CalendarDaysIcon,
             path: "/hr_staff/leavemanagement",
             current: location.pathname.startsWith("/hr_staff/leavemanagement")
           },
           {
-            name: "Attendance Management",
+            name: "Monitor Attendance",
             icon: ClockIcon,
             path: "/hr_staff/attendancemanagement",
             current: location.pathname.startsWith(
@@ -282,18 +282,11 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: "Employee Feedbacks",
-            icon: DollarSign,
+            icon: MessageSquare,
             path: "/hr_staff/employeefeedbacks",
             current: location.pathname.startsWith("/hr_staff/employeefeedbacks")
           },
-          {
-            name: "HR Reports",
-            icon: ChartBarIcon,
-            path: "/hr_staff/hrreportingmanagement",
-            current: location.pathname.startsWith(
-              "/hr_staff/hrreportingmanagement"
-            )
-          },
+  
           {
             name: "Notice Management",
             icon: BellIcon,
@@ -302,9 +295,17 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: "Payslips Generation",
-            icon: BellIcon,
+            icon: DollarSign,
             path: "/hr_staff/payslips",
             current: location.pathname.startsWith("/hr_staff/payslips")
+          },
+         {
+            name: "HR Reports",
+            icon: ChartBarIcon,
+            path: "/hr_staff/hrreportingmanagement",
+            current: location.pathname.startsWith(
+              "/hr_staff/hrreportingmanagement"
+            )
           }
         ];
 
@@ -336,7 +337,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         // Add Employee Feedback if enabled
         if (organizationModules.moduleEmployeeFeedback) {
           moduleNavigation.push({
-            name: "Feedback Management",
+            name: "Survey Management",
             icon: MessageSquare,
             path: "/hr_staff/feedbackmanagement",
             current: location.pathname.startsWith(
@@ -349,7 +350,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         // Add Hiring Management if enabled
         if (organizationModules.moduleHiringManagement) {
           moduleNavigation.push({
-            name: "Hiring Management",
+            name: "Job Postings",
             icon: UserPlus,
             path: "/hr_staff/hiringmanagement",
             current: location.pathname.startsWith("/hr_staff/hiringmanagement"),
@@ -371,7 +372,7 @@ const Sidebar = ({ isCollapsed = false }) => {
               location.pathname.startsWith("/employee/profile/edit")
           },
           {
-            name: "Leave & Attendance",
+            name: "Attendance History",
             icon: CalendarDaysIcon,
             path: "/employee/viewleaveandattendance",
             current: location.pathname.startsWith(
@@ -379,7 +380,7 @@ const Sidebar = ({ isCollapsed = false }) => {
             )
           },
           {
-            name: "Leave Request",
+            name: "Apply for leave",
             icon: ClockIcon,
             path: "/employee/leaverequest",
             current: location.pathname.startsWith("/employee/leaverequest")
@@ -398,13 +399,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/employee/surveys")
           },
           {
-            name: "Feedback",
+            name: "Submit Feedback",
             icon: MessageSquare,
             path: "/employee/feedback",
             current: location.pathname.startsWith("/employee/feedback")
           },
           {
-            name: "Notices",
+            name: "View Notices",
             icon: BellIcon,
             path: "/employee/notices",
             current: location.pathname.startsWith("/employee/notices")

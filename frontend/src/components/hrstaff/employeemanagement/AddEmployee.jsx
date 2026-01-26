@@ -408,7 +408,7 @@ export default function AddEmployee() {
   };
 
   return (
-    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full  bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
         <div className="p-6">
           <h1 className="text-3xl font-bold text-[#0C397A] text-center">

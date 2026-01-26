@@ -261,4 +261,81 @@ public class PayslipService {
             organizationUuid, employeeId, month, year
         ).orElseThrow(() -> new RuntimeException("Payslip not found"));
     }
+    
+    /**
+     * Approve a single payslip
+     */
+    @Transactional
+    public Payslip approvePayslip(String organizationUuid, Long payslipId, Long approvedBy) {
+        Payslip payslip = payslipRepository.findById(payslipId)
+            .orElseThrow(() -> new RuntimeException("Payslip not found"));
+        
+        if (!payslip.getOrganizationUuid().equals(organizationUuid)) {
+            throw new RuntimeException("Unauthorized access to payslip");
+        }
+        
+        if (payslip.getStatus() == Payslip.PayslipStatus.APPROVED) {
+            return payslip; // Already approved
+        }
+        
+        payslip.setStatus(Payslip.PayslipStatus.APPROVED);
+        payslip.setApprovedBy(approvedBy);
+        payslip.setApprovedAt(LocalDateTime.now());
+        
+        return payslipRepository.save(payslip);
+    }
+    
+    /**
+     * Approve all payslips for a given period with optional filters
+     */
+    @Transactional
+    public Map<String, Object> approveAllPayslips(String organizationUuid, Integer month, Integer year, 
+                                                    String departmentName, String designation, 
+                                                    String employeeCode, Long approvedBy) {
+        List<Payslip> payslips;
+        
+        // Apply filters
+        if (employeeCode != null && !employeeCode.isEmpty()) {
+            payslips = payslipRepository.findByOrganizationUuidAndMonthAndYear(organizationUuid, month, year)
+                .stream()
+                .filter(p -> employeeCode.equals(p.getEmployeeCode()))
+                .collect(Collectors.toList());
+        } else if (departmentName != null && !departmentName.isEmpty()) {
+            payslips = getPayslipsByDepartment(organizationUuid, departmentName, month, year);
+        } else if (designation != null && !designation.isEmpty()) {
+            payslips = getPayslipsByDesignation(organizationUuid, designation, month, year);
+        } else {
+            payslips = getPayslipsForMonth(organizationUuid, month, year);
+        }
+        
+        // Filter only GENERATED payslips
+        List<Payslip> generatedPayslips = payslips.stream()
+            .filter(p -> p.getStatus() == Payslip.PayslipStatus.GENERATED)
+            .collect(Collectors.toList());
+        
+        // Approve all
+        int approvedCount = 0;
+        for (Payslip payslip : generatedPayslips) {
+            payslip.setStatus(Payslip.PayslipStatus.APPROVED);
+            payslip.setApprovedBy(approvedBy);
+            payslip.setApprovedAt(LocalDateTime.now());
+            payslipRepository.save(payslip);
+            approvedCount++;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("approvedCount", approvedCount);
+        result.put("totalPayslips", payslips.size());
+        
+        return result;
+    }
+    
+    /**
+     * Get approved payslips for an employee (for employee portal)
+     */
+    public List<Payslip> getApprovedPayslipsForEmployee(String organizationUuid, Long employeeId) {
+        return payslipRepository.findByOrganizationUuidAndEmployeeIdAndStatus(
+            organizationUuid, employeeId, Payslip.PayslipStatus.APPROVED
+        );
+    }
 }

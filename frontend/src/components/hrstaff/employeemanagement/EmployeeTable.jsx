@@ -1,4 +1,5 @@
 import { FaEdit, FaBan, FaCheckCircle } from "react-icons/fa";
+import { FiCreditCard } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import EmployeeModal from "./EmployeeModal";
 import Swal from "sweetalert2";
@@ -10,6 +11,7 @@ import {
 } from "../../../api/employeeService";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../store/slices/authSlice";
+import { generateEmployeeIDCard } from "../../../utils/idCardGenerator";
 
 const MySwal = withReactContent(Swal);
 
@@ -32,39 +34,13 @@ export default function EmployeeTable({ search, filterBy }) {
     setLoading(true);
     getAllEmployees(page, size, token)
       .then((data) => {
-        console.log("API returned:", data); // 👈 ADD THIS
+        console.log("API returned:", data);
         setEmployees(data?.items || []);
         setTotalPages(data?.totalPages || 0);
       })
       .catch((err) => console.error("Error for getting employees", err))
       .finally(() => setLoading(false));
   }, [page, size, token]); //refetch whenever page or size changes
-
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      const response = await apiClient.get("/employees");
-
-      // Extract data from ApiResponse wrapper
-      if (response.data.success && Array.isArray(response.data.data)) {
-        setEmployees(response.data.data);
-      } else {
-        console.error("Invalid response format:", response.data);
-        setEmployees([]);
-      }
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-      setEmployees([]);
-      MySwal.fire({
-        title: "Error",
-        text: "Failed to load employees. Please try again.",
-        icon: "error",
-        confirmButtonColor: "#d33"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Filtering Logic
   const filteredEmployees = employees.filter((emp) => {
@@ -100,16 +76,28 @@ export default function EmployeeTable({ search, filterBy }) {
 
   const handleToggleStatus = async (id, currentStatus) => {
     const action = currentStatus ? "deactivate" : "activate";
-    const confirmed = window.confirm(
-      `Are you sure you want to ${action} this employee?`
-    );
-    if (!confirmed) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: currentStatus ? 'Deactivate Employee?' : 'Activate Employee?',
+      text: `Are you sure you want to ${action} this employee?`,
+      showCancelButton: true,
+      confirmButtonColor: currentStatus ? '#d33' : '#02C39A',
+      cancelButtonColor: '#9B9B9B',
+      confirmButtonText: `Yes, ${action}!`,
+      cancelButtonText: 'Cancel'
+    });
+    if (!result.isConfirmed) return;
 
     try {
       const updatedEmployee = await toggleEmployeeStatus(id, token);
-      alert(
-        `Employee ${updatedEmployee.isActive ? "activated" : "deactivated"} successfully!`
-      );
+      await Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `Employee ${updatedEmployee.isActive ? "activated" : "deactivated"} successfully!`,
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
 
       // Update state to reflect change
       setEmployees((prev) =>
@@ -119,7 +107,53 @@ export default function EmployeeTable({ search, filterBy }) {
       );
     } catch (err) {
       console.error(err);
-      alert("Failed to update employee status");
+      await Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: 'Failed to update employee status. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
+    }
+  };
+
+  const handleGenerateIDCard = async (employee) => {
+    try {
+      // Get organization name from user data or use default
+      const organizationName = user?.organizationName || "Organization";
+      
+      // Construct photo path if employee has a photo
+      const photoPath = employee.photoPath || null;
+      
+      // Show loading
+      Swal.fire({
+        title: 'Generating ID Card...',
+        text: 'Please wait while we create the ID card',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Generate ID card
+      await generateEmployeeIDCard(employee, organizationName, photoPath);
+      
+      // Success message
+      Swal.fire({
+        icon: 'success',
+        title: 'ID Card Generated!',
+        text: 'The ID card has been downloaded successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error generating ID card:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Generation Failed',
+        text: 'Failed to generate ID card. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
     }
   };
 
@@ -190,7 +224,7 @@ export default function EmployeeTable({ search, filterBy }) {
 
                   <td className="px-4 py-2">
                     <div className="flex items-center justify-center gap-3 flex-nowrap">
-                      {/* ONE-LINE EDIT ACTION: Uses #05668D, #FFFFFF, and #F1FDF9 */}
+                      {/* EDIT ACTION */}
                       <div className="flex justify-center">
                         <Link
                           to={`/hr_staff/editemployee/${emp.id}`}
@@ -205,7 +239,7 @@ export default function EmployeeTable({ search, filterBy }) {
                         </Link>
                       </div>
 
-                      {/* STATUS TOGGLE ACTION: Uses #02C39A, #333333, #9B9B9B */}
+                      {/* STATUS TOGGLE ACTION */}
                       <div className="flex justify-center">
                         <button
                           onClick={(e) => {
@@ -228,6 +262,23 @@ export default function EmployeeTable({ search, filterBy }) {
                           )}
                           <span>
                             {emp.isActive ? "Deactivate" : "Activate"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* ID CARD GENERATION ACTION */}
+                      <div className="flex justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleGenerateIDCard(emp);
+                          }}
+                          className="flex items-center justify-center gap-2 px-3 h-10 rounded border transition-all duration-300 bg-[#F1FDF9] border-[#02C39A] text-[#02C39A] hover:bg-[#02C39A] hover:text-[#FFFFFF] shadow-sm hover:shadow-md"
+                          title="Generate ID Card"
+                        >
+                          <FiCreditCard size={14} />
+                          <span className="text-[11px] font-bold uppercase tracking-wide">
+                            ID Card
                           </span>
                         </button>
                       </div>

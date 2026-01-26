@@ -109,6 +109,31 @@ export const exportBankTransferFile = async (month, year, filters = {}) => {
   return response.data;
 };
 
+export const approvePayslip = async (payslipId) => {
+  const response = await axios.put(`/hr-staff/payslips/${payslipId}/approve`);
+  return response.data;
+};
+
+export const approveAllPayslips = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.put(`/hr-staff/payslips/approve-all?${params}`);
+  return response.data;
+};
+
+// ==================== EMPLOYEE PAYSLIPS ====================
+
+export const getEmployeePayslips = async () => {
+  const response = await axios.get('/employee/payslips');
+  return response.data;
+};
+
+export const getEmployeePayslipPDF = async (payslipId) => {
+  const response = await axios.get(`/employee/payslips/${payslipId}/pdf`, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
 export default {
   getPayrollConfiguration,
   updatePayrollConfiguration,
@@ -126,5 +151,9 @@ export default {
   generatePayslipForEmployee,
   getPayslips,
   exportPayslipsToExcel,
-  exportBankTransferFile
+  exportBankTransferFile,
+  approvePayslip,
+  approveAllPayslips,
+  getEmployeePayslips,
+  getEmployeePayslipPDF
 };

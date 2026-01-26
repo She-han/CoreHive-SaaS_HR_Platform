@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/hr-staff/payslips")
@@ -187,6 +188,52 @@ public class PayslipController {
         } catch (Exception e) {
             log.error("Error exporting bank transfer file", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    // ==================== HELPER METHODS ====================
+    
+    @PutMapping("/{payslipId}/approve")
+    @PreAuthorize("hasRole('HR_STAFF') or hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<Payslip>> approvePayslip(
+            HttpServletRequest request,
+            @PathVariable Long payslipId) {
+        try {
+            String orgUuid = (String) request.getAttribute("organizationUuid");
+            Long userId = Long.valueOf(request.getAttribute("userId").toString());
+            
+            Payslip approvedPayslip = payslipService.approvePayslip(orgUuid, payslipId, userId);
+            return ResponseEntity.ok(ApiResponse.success(approvedPayslip, "Payslip approved successfully"));
+        } catch (Exception e) {
+            log.error("Error approving payslip", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Failed to approve payslip: " + e.getMessage()));
+        }
+    }
+    
+    @PutMapping("/approve-all")
+    @PreAuthorize("hasRole('HR_STAFF') or hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> approveAllPayslips(
+            HttpServletRequest request,
+            @RequestParam Integer month,
+            @RequestParam Integer year,
+            @RequestParam(required = false) String departmentName,
+            @RequestParam(required = false) String designation,
+            @RequestParam(required = false) String employeeCode) {
+        try {
+            String orgUuid = (String) request.getAttribute("organizationUuid");
+            Long userId = Long.valueOf(request.getAttribute("userId").toString());
+            
+            Map<String, Object> result = payslipService.approveAllPayslips(
+                orgUuid, month, year, departmentName, designation, employeeCode, userId
+            );
+            
+            return ResponseEntity.ok(ApiResponse.success(result, 
+                result.get("approvedCount") + " payslip(s) approved successfully"));
+        } catch (Exception e) {
+            log.error("Error approving all payslips", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("Failed to approve payslips: " + e.getMessage()));
         }
     }
     

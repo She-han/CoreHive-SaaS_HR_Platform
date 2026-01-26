@@ -89,6 +89,33 @@ public class FeedbackSurveyController {
     }
 
     // ============================================================
+    // UPDATE SURVEY STATUS
+    // ============================================================
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> updateSurveyStatus(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestParam String status
+    ) {
+        try {
+            String orgUuid = (String) request.getAttribute("organizationUuid");
+            com.corehive.backend.model.SurveyStatus surveyStatus = 
+                com.corehive.backend.model.SurveyStatus.valueOf(status.toUpperCase());
+            FeedbackSurvey updatedSurvey = surveyService.updateSurveyStatus(id, surveyStatus);
+            return ResponseEntity.ok(new StandardResponse(200, "Survey status updated successfully", updatedSurvey));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                new StandardResponse(400, "Invalid status value. Must be DRAFT, ACTIVE, or CLOSED", null)
+            );
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                new StandardResponse(500, "Failed to update survey status: " + e.getMessage(), null)
+            );
+        }
+    }
+
+    // ============================================================
     // GET ALL RESPONSES FOR A SURVEY (BASIC)
     // ============================================================
     @GetMapping("/{id}/responses")
@@ -125,6 +152,19 @@ public class FeedbackSurveyController {
         var responseDetails = surveyService.getResponseDetails(id);
         return new ResponseEntity<>(
                 new StandardResponse(200, "Detailed responses fetched successfully", responseDetails),
+                HttpStatus.OK
+        );
+    }
+    
+    // ============================================================
+    // GET RESPONSES WITH EMPLOYEE DETAILS
+    // ============================================================
+    @GetMapping("/{id}/responses/with-employees")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getResponsesWithEmployeeDetails(@PathVariable Long id) {
+        var responseDetails = surveyService.getResponsesWithEmployeeDetails(id);
+        return new ResponseEntity<>(
+                new StandardResponse(200, "Responses with employee details fetched successfully", responseDetails),
                 HttpStatus.OK
         );
     }

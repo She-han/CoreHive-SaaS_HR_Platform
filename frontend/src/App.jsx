@@ -75,7 +75,7 @@ import ViewResponsesWithQuestions from "./pages/hrstaff/feedBackManagement/ViewR
 import EditSurveyQuestions from "./components/hrstaff/feedBackManagement/EditSurveyQuestions";
 import AttendanceMarking from "./pages/manualAttendanceMarking/AttendanceMarking";
 import LeaveManagement from "./pages/hrstaff/LeaveManagement/LeaveManagement";
-import PayRollManagement from "./pages/hrstaff/payRollManagement/PayRollManagement";
+import EmployeeFeedbacks from "./pages/hrstaff/EmployeeFeedbacks";
 import NoticeManagement from "./pages/hrstaff/noticeManagement/NoticeManagement";
 import PayslipGeneration from "./pages/hrstaff/payRollManagement/PayslipGeneration";
 
@@ -88,6 +88,8 @@ import Feedback from "./pages/employee/Feedback";
 import Notices from "./pages/employee/Notices";
 import Payslips from "./pages/employee/Payslips";
 import LeaveAndAttendanceConfigure from "./pages/org_admin/LeaveAndAttendanceConfigure";
+import Surveys from "./pages/employee/Surveys";
+
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
@@ -351,7 +353,7 @@ const HRStaffRoutes = () => {
         />
         <Route path="feedback/:id/edit" element={<EditSurveyQuestions />} />
         <Route path="leavemanagement" element={<LeaveManagement />} />
-        <Route path="payrollmanagement" element={<PayRollManagement />} />
+        <Route path="employeefeedbacks" element={<EmployeeFeedbacks />} />
         <Route path="noticemanagement" element={<NoticeManagement />} />
         <Route path="payslips" element={<PayslipGeneration />} />
         
@@ -378,6 +380,7 @@ const EmployeeRoutes = () => {
       <Route path="feedback" element={<Feedback />} />
       <Route path="notices" element={<Notices />} />
       <Route path="payslips" element={<Payslips />} />
+      <Route path="surveys" element={<Surveys />} />
       <Route path="" element={<Navigate to="profile" replace />} />
     </Routes>
   );

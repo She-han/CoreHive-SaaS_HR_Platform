@@ -1,12 +1,12 @@
 import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Mail, ArrowLeft, KeyRound } from "lucide-react";
+import Swal from "sweetalert2";
 import { apiPost } from "../../api/axios"; // Ensure this path is correct
 
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
-import Alert from "../../components/common/Alert";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 import ReCaptcha from "../../components/common/ReCaptcha";
@@ -14,18 +14,37 @@ import ReCaptcha from "../../components/common/ReCaptcha";
 export const ForgetPasswordPage = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState({ type: "", message: "" });
+  const [formErrors, setFormErrors] = useState({});
   const [recaptchaToken, setRecaptchaToken] = useState(null);
   const [recaptchaError, setRecaptchaError] = useState("");
   const recaptchaRef = useRef(null);
 
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    // Clear error when user types
+    if (formErrors.email) {
+      setFormErrors({ ...formErrors, email: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!email.trim()) {
+      errors.email = "Email address is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus({ type: "", message: "" });
     setRecaptchaError("");
 
-    if (!email) {
-      setStatus({ type: "error", message: "Please enter your email address" });
+    if (!validateForm()) {
       return;
     }
 
@@ -42,25 +61,33 @@ export const ForgetPasswordPage = () => {
       });
 
       if (response.success) {
-        setStatus({
-          type: "success",
-          message: "Success! Check your email for the temporary password."
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Check your email for the temporary password',
+          confirmButtonColor: '#02C39A',
+          timer: 3000,
+          showConfirmButton: true
         });
         setEmail(""); // Clear input
         recaptchaRef.current?.reset();
         setRecaptchaToken(null);
       } else {
-        setStatus({
-          type: "error",
-          message: response.message || "Failed to reset password."
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed',
+          text: response.message || 'Failed to reset password',
+          confirmButtonColor: '#02C39A',
         });
         recaptchaRef.current?.reset();
         setRecaptchaToken(null);
       }
     } catch (err) {
-      setStatus({
-        type: "error",
-        message: "An error occurred. Please try again later."
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An error occurred. Please try again later',
+        confirmButtonColor: '#02C39A',
       });
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
@@ -88,23 +115,14 @@ export const ForgetPasswordPage = () => {
               </p>
             </div>
 
-            {status.message && (
-              <Alert
-                type={status.type}
-                message={status.message}
-                isOpen={!!status.message}
-                onClose={() => setStatus({ type: "", message: "" })}
-                className="mb-6"
-              />
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label="Email Address"
                 type="email"
                 placeholder="name@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
+                error={formErrors.email}
                 required
                 icon={Mail}
               />

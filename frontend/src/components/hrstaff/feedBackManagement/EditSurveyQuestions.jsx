@@ -5,6 +5,7 @@ import {
 } from "../../../api/feedbackService";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 export default function EditSurveyQuestions() {
   const { id } = useParams();
@@ -86,10 +87,22 @@ export default function EditSurveyQuestions() {
 
     try {
       await updateSurveyQuestions(id, { questions }, token); // pass token here
-      alert("Survey updated successfully!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Questions updated successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
       navigate("/hr_staff/FeedBackManagement");
     } catch (err) {
-      alert("Failed to save changes: " + err.message);
+      Swal.fire({
+              icon: 'error',
+              title: 'Update Failed',
+              text: 'Check question fields again',
+              confirmButtonColor: '#02C39A',
+            });
     }
   };
 

@@ -93,15 +93,42 @@ export const getPayslips = async (month, year, filters = {}) => {
   return response.data;
 };
 
-export const exportPayslipsToExcel = async (month, year) => {
-  const response = await axios.get(`/hr-staff/payslips/export/excel?month=${month}&year=${year}`, {
+export const exportPayslipsToExcel = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.get(`/hr-staff/payslips/export/excel?${params}`, {
     responseType: 'blob'
   });
   return response.data;
 };
 
-export const exportBankTransferFile = async (month, year) => {
-  const response = await axios.get(`/hr-staff/payslips/export/bank-transfer?month=${month}&year=${year}`, {
+export const exportBankTransferFile = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.get(`/hr-staff/payslips/export/bank-transfer?${params}`, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
+export const approvePayslip = async (payslipId) => {
+  const response = await axios.put(`/hr-staff/payslips/${payslipId}/approve`);
+  return response.data;
+};
+
+export const approveAllPayslips = async (month, year, filters = {}) => {
+  const params = new URLSearchParams({ month, year, ...filters });
+  const response = await axios.put(`/hr-staff/payslips/approve-all?${params}`);
+  return response.data;
+};
+
+// ==================== EMPLOYEE PAYSLIPS ====================
+
+export const getEmployeePayslips = async () => {
+  const response = await axios.get('/employee/payslips');
+  return response.data;
+};
+
+export const getEmployeePayslipPDF = async (payslipId) => {
+  const response = await axios.get(`/employee/payslips/${payslipId}/pdf`, {
     responseType: 'blob'
   });
   return response.data;
@@ -124,5 +151,9 @@ export default {
   generatePayslipForEmployee,
   getPayslips,
   exportPayslipsToExcel,
-  exportBankTransferFile
+  exportBankTransferFile,
+  approvePayslip,
+  approveAllPayslips,
+  getEmployeePayslips,
+  getEmployeePayslipPDF
 };

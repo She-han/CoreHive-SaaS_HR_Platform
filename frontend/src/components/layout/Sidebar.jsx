@@ -281,10 +281,10 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/hr_staff/attendancemarking")
           },
           {
-            name: "Payroll Management",
+            name: "Employee Feedbacks",
             icon: DollarSign,
-            path: "/hr_staff/payrollmanagement",
-            current: location.pathname.startsWith("/hr_staff/payrollmanagement")
+            path: "/hr_staff/employeefeedbacks",
+            current: location.pathname.startsWith("/hr_staff/employeefeedbacks")
           },
           {
             name: "HR Reports",
@@ -384,6 +384,19 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: "/employee/leaverequest",
             current: location.pathname.startsWith("/employee/leaverequest")
           },
+
+          {
+            name: "My Payslips",
+            icon: DocumentTextIcon,
+            path: "/employee/payslips",
+            current: location.pathname.startsWith("/employee/payslips")
+          },
+          {
+            name: "Surveys",
+            icon: DocumentTextIcon,
+            path: "/employee/surveys",
+            current: location.pathname.startsWith("/employee/surveys")
+          },
           {
             name: "Feedback",
             icon: MessageSquare,
@@ -395,12 +408,6 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: BellIcon,
             path: "/employee/notices",
             current: location.pathname.startsWith("/employee/notices")
-          },
-          {
-            name: "My Payslips",
-            icon: DocumentTextIcon,
-            path: "/employee/payslips",
-            current: location.pathname.startsWith("/employee/payslips")
           }
         ];
 

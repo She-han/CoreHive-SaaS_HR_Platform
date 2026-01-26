@@ -1,14 +1,16 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.CreateLeaveRequestDTO;
-import com.corehive.backend.dto.request.LeaveRequestResponseDTO;
+import com.corehive.backend.dto.response.LeaveRequestResponseDTO;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.leaveException.InsufficientLeaveBalanceException;
 import com.corehive.backend.exception.leaveException.LeaveRequestNotFoundException;
 import com.corehive.backend.exception.leaveException.LeaveTypeNotFoundException;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.EmployeeLeaveBalance;
 import com.corehive.backend.model.LeaveRequest;
 import com.corehive.backend.model.LeaveType;
+import com.corehive.backend.repository.EmployeeLeaveBalanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.LeaveRequestRepository;
 import com.corehive.backend.repository.LeaveTypeRepository;
@@ -28,6 +30,7 @@ public class LeaveRequestService {
     private final LeaveRequestRepository leaveRequestRepo;
     private final LeaveTypeRepository leaveTypeRepo;
     private final EmployeeRepository employeeRepo;
+    private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepo;
 
     // CREATE LEAVE REQUEST (For employee part implementation)
     public void createLeaveRequest(String orgUuid, CreateLeaveRequestDTO dto) {
@@ -41,9 +44,18 @@ public class LeaveRequestService {
         int totalDays = (int)
                 ChronoUnit.DAYS.between(dto.getStartDate(), dto.getEndDate()) + 1;
 
-        // Simple leave balance validation (example logic)
-        if (employee.getLeaveCount() < totalDays) {
-            throw new InsufficientLeaveBalanceException("Not enough leave balance");
+        // Get leave balance from EmployeeLeaveBalance table
+        EmployeeLeaveBalance leaveBalance = employeeLeaveBalanceRepo
+                .findByEmployeeIdAndLeaveTypeIdAndOrganizationUuid(
+                        dto.getEmployeeId(), dto.getLeaveTypeId(), orgUuid)
+                .orElseThrow(() -> new InsufficientLeaveBalanceException(
+                        "No leave balance found for this leave type"));
+
+        // Validate leave balance
+        if (leaveBalance.getBalance() < totalDays) {
+            throw new InsufficientLeaveBalanceException(
+                    "Not enough leave balance. Available: " + leaveBalance.getBalance() + 
+                    " days, Requested: " + totalDays + " days");
         }
 
         LeaveRequest request = new LeaveRequest();
@@ -75,10 +87,19 @@ public class LeaveRequestService {
         }
 
 
-        // 3️⃣ Get employee & remaining leaves
+        // 3️⃣ Get employee & remaining leaves from EmployeeLeaveBalance
         Employee employee = request.getEmployee(); // ✅ correct employee
-        int remainingLeaves = employee.getLeaveCount();
+        Long leaveTypeId = request.getLeaveType().getId();
         int requestedDays = request.getTotalDays();
+
+        // Get leave balance for this specific leave type
+        EmployeeLeaveBalance leaveBalance = employeeLeaveBalanceRepo
+                .findByEmployeeIdAndLeaveTypeIdAndOrganizationUuid(
+                        employee.getId(), leaveTypeId, request.getOrganizationUuid())
+                .orElseThrow(() -> new BadRequestException(
+                        "No leave balance found for this leave type"));
+
+        int remainingLeaves = leaveBalance.getBalance();
 
         // 4️⃣ Approve or Reject
         if (approve) {
@@ -90,9 +111,10 @@ public class LeaveRequestService {
                 );
             }
 
-            // 5️⃣ Approve & deduct leaves
+            // 5️⃣ Approve & deduct leaves from EmployeeLeaveBalance
             request.setStatus(LeaveRequest.LeaveStatus.APPROVED);
-            employee.setLeaveCount(remainingLeaves - requestedDays);
+            leaveBalance.setBalance(remainingLeaves - requestedDays);
+            employeeLeaveBalanceRepo.save(leaveBalance);
         } else {
             request.setStatus(LeaveRequest.LeaveStatus.REJECTED);
         }
@@ -123,20 +145,24 @@ public class LeaveRequestService {
         }
 
         return requests.stream()
-                .map(req -> {
-                    LeaveRequestResponseDTO dto = new LeaveRequestResponseDTO();
-                    dto.setRequestId(req.getId());
-                    dto.setEmployeeName(
-                            req.getEmployee().getFirstName() + " " +
-                                    req.getEmployee().getLastName()
-                    );
-                    dto.setLeaveType(req.getLeaveType().getName());
-                    dto.setStartDate(req.getStartDate());
-                    dto.setEndDate(req.getEndDate());
-                    dto.setTotalDays(req.getTotalDays());
-                    dto.setStatus(req.getStatus().name());
-                    return dto;
-                })
+                .map(req -> LeaveRequestResponseDTO.builder()
+                        .id(req.getId())
+                        .employeeId(req.getEmployee().getId())
+                        .employeeName(
+                                req.getEmployee().getFirstName() + " " +
+                                        req.getEmployee().getLastName()
+                        )
+                        .leaveTypeId(req.getLeaveType().getId())
+                        .leaveTypeName(req.getLeaveType().getName())
+                        .startDate(req.getStartDate())
+                        .endDate(req.getEndDate())
+                        .totalDays(req.getTotalDays())
+                        .reason(req.getReason())
+                        .status(req.getStatus())
+                        .approvedAt(req.getApprovedAt())
+                        .createdAt(req.getCreatedAt())
+                        .build()
+                )
                 .toList();
     }
 

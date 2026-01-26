@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { listSurveys, deleteSurvey } from "../../../api/feedbackService.js";
 import SurveyList from "../../../components/hrstaff/feedBackManagement/SurveyList.jsx";
 import { FaPlus } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 export default function FeedBackManagement() {
   const [surveys, setSurveys] = useState([]);
@@ -20,6 +21,12 @@ export default function FeedBackManagement() {
         setSurveys(data || []);
       } catch (err) {
         console.error("Failed to fetch surveys:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load surveys',
+          confirmButtonColor: '#02C39A',
+        });
       } finally {
         setLoading(false);
       }
@@ -29,25 +36,54 @@ export default function FeedBackManagement() {
   }, [token]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this survey?")) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Survey?',
+      text: 'Are you sure you want to delete this survey? This action cannot be undone.',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#02C39A',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (!result.isConfirmed) return;
 
     try {
       await deleteSurvey(id, token);
       setSurveys((prev) => prev.filter((s) => s.id !== id));
-      alert("Survey deleted successfully!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'Survey deleted successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
       console.error("Delete failed:", err);
-      alert("Failed to delete survey: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to delete survey: ' + err.message,
+        confirmButtonColor: '#02C39A',
+      });
     }
   };
 
+  const handleStatusChange = (surveyId, updatedSurvey) => {
+    setSurveys((prev) => 
+      prev.map((s) => s.id === surveyId ? { ...s, status: updatedSurvey.status } : s)
+    );
+  };
+
   return (
-    <div className="w-full h-screen bg-[#F1FDF9] flex flex-col p-8">
+    <div className="w-full min-h-screen bg-[#F1FDF9] p-8">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-[#333333]">
-            Employee Feedback
+            Surveys
           </h1>
           <p className="text-[#9B9B9B]">Create and manage feedback surveys</p>
         </div>
@@ -62,11 +98,15 @@ export default function FeedBackManagement() {
       </div>
 
       {/* SURVEYS LIST */}
-      <div className="flex-1 overflow-y-auto">
+      <div>
         {loading ? (
           <div className="text-[#333333] font-medium">Loading surveys...</div>
         ) : (
-          <SurveyList surveys={surveys} onDelete={handleDelete} />
+          <SurveyList 
+            surveys={surveys} 
+            onDelete={handleDelete} 
+            onStatusChange={handleStatusChange}
+          />
         )}
       </div>
     </div>

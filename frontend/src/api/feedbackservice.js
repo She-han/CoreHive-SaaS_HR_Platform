@@ -75,6 +75,24 @@ export const deleteSurvey = async (surveyId, token) => {
     });
 };
 
+/**
+ * Update survey status (DRAFT, ACTIVE, CLOSED).
+ * @param {string} surveyId - ID of the survey
+ * @param {string} status - New status value
+ * @param {string} token - JWT token
+ * @returns {Object} updated survey
+ */
+export const updateSurveyStatus = async (surveyId, status, token) => {
+  return axios
+    .put(`${BASE}/${surveyId}/status?status=${status}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then((res) => res.data.data)
+    .catch((err) => {
+      throw new Error(err.response?.data?.message || err.message);
+    });
+};
+
 // ============================
 // QUESTIONS
 // ============================
@@ -161,6 +179,23 @@ export const getAllResponsesForSurvey = async (surveyId, token) => {
 export const getResponseDetails = async (surveyId, token) => {
   return axios
     .get(`${BASE}/${surveyId}/responses/details`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then((res) => res.data.data)
+    .catch((err) => {
+      throw new Error(err.response?.data?.message || err.message);
+    });
+};
+
+/**
+ * Get responses with employee details (name, code).
+ * @param {string} surveyId - survey ID
+ * @param {string} token - JWT token
+ * @returns {Array} responses with employee information
+ */
+export const getResponsesWithEmployees = async (surveyId, token) => {
+  return axios
+    .get(`${BASE}/${surveyId}/responses/with-employees`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     .then((res) => res.data.data)

@@ -27,6 +27,9 @@ public interface FeedbackSurveyResponseRepository
     ORDER BY r.employeeId, q.position
 """)
     List<Object[]> fetchSurveyResponsesWithQuestions(Long surveyId);
+    
+    // Check if employee has already responded to a survey
+    boolean existsBySurveyIdAndEmployeeId(Long surveyId, Long employeeId);
 
 }
 

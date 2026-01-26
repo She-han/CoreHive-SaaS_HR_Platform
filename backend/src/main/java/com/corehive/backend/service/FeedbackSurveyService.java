@@ -3,6 +3,7 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.*;
 import com.corehive.backend.exception.feedbackSurveyException.*;
 import com.corehive.backend.model.*;
+import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.FeedbackSurveyQuestionRepository;
 import com.corehive.backend.repository.FeedbackSurveyRepository;
 import com.corehive.backend.repository.FeedbackSurveyResponseRepository;
@@ -29,6 +30,7 @@ public class FeedbackSurveyService {
     private final FeedbackSurveyRepository surveyRepo;
     private final FeedbackSurveyQuestionRepository questionRepo;
     private final FeedbackSurveyResponseRepository responseRepo;
+    private final EmployeeRepository employeeRepo;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -227,9 +229,21 @@ public class FeedbackSurveyService {
     // ============================================================
     public List<FeedbackSurvey> getActiveSurveysForEmployee(String orgUuid) {
         List<FeedbackSurvey> allSurveys = surveyRepo.findByOrganizationUuid(orgUuid);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        
         return allSurveys.stream()
-            .filter(s -> s.getStatus() != SurveyStatus.DRAFT)
-            .filter(s -> s.getEndDate() == null || !s.getEndDate().isBefore(java.time.LocalDate.now()))
+            .filter(s -> s.getStatus() == SurveyStatus.ACTIVE) // Only ACTIVE surveys
+            .filter(s -> {
+                // Check if survey has started
+                if (s.getStartDate() != null && s.getStartDate().isAfter(today)) {
+                    return false; // Not started yet
+                }
+                // Check if survey has expired
+                if (s.getEndDate() != null && s.getEndDate().isBefore(today)) {
+                    return false; // Expired
+                }
+                return true;
+            })
             .toList();
     }
     
@@ -280,5 +294,65 @@ public class FeedbackSurveyService {
     // ============================================================
     public boolean hasEmployeeResponded(Long surveyId, Long employeeId) {
         return responseRepo.existsBySurveyIdAndEmployeeId(surveyId, employeeId);
+    }
+    
+    // ============================================================
+    // UPDATE SURVEY STATUS
+    // ============================================================
+    @Transactional
+    public FeedbackSurvey updateSurveyStatus(Long surveyId, SurveyStatus newStatus) {
+        FeedbackSurvey survey = getSurvey(surveyId);
+        survey.setStatus(newStatus);
+        survey.setUpdatedAt(LocalDateTime.now());
+        return surveyRepo.save(survey);
+    }
+    
+    // ============================================================
+    // GET RESPONSES WITH EMPLOYEE DETAILS
+    // ============================================================
+    public List<SurveyResponseWithEmployeeDTO> getResponsesWithEmployeeDetails(Long surveyId) {
+        FeedbackSurvey survey = getSurvey(surveyId);
+        List<Object[]> rows = responseRepo.fetchSurveyResponsesWithQuestions(surveyId);
+        
+        if (rows == null || rows.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        Map<Long, SurveyResponseWithEmployeeDTO> grouped = new LinkedHashMap<>();
+        
+        for (Object[] row : rows) {
+            Long responseId = (Long) row[0];
+            Long employeeId = (Long) row[1];
+            LocalDateTime submittedAt = (LocalDateTime) row[2];
+            
+            SurveyResponseWithEmployeeDTO dto = grouped.computeIfAbsent(responseId, id -> {
+                SurveyResponseWithEmployeeDTO r = new SurveyResponseWithEmployeeDTO();
+                r.setResponseId(responseId);
+                r.setEmployeeId(employeeId);
+                r.setSubmittedAt(submittedAt);
+                r.setAnswers(new ArrayList<>());
+                
+                // Get employee details only if survey is not anonymous
+                if (!survey.getIsAnonymous() && employeeId != null) {
+                    employeeRepo.findById(employeeId).ifPresent(emp -> {
+                        r.setEmployeeCode(emp.getEmployeeCode());
+                        r.setEmployeeName(emp.getFirstName() + " " + emp.getLastName());
+                    });
+                }
+                
+                return r;
+            });
+            
+            FeedbackSurveyResponseDTO.AnswerDTO ans = new FeedbackSurveyResponseDTO.AnswerDTO();
+            ans.setQuestionId((Long) row[3]);
+            ans.setQuestionText((String) row[4]);
+            ans.setQuestionType(row[5] != null ? row[5].toString() : "UNKNOWN");
+            ans.setAnswerText((String) row[6]);
+            ans.setSelectedOption((String) row[7]);
+            
+            dto.getAnswers().add(ans);
+        }
+        
+        return new ArrayList<>(grouped.values());
     }
 }

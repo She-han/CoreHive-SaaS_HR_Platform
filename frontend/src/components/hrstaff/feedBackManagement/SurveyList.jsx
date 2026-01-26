@@ -1,8 +1,59 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FiEye, FiEdit2, FiTrash2, FiList, FiCalendar } from "react-icons/fi";
+import { updateSurveyStatus } from "../../../api/feedbackService.js";
+import Swal from "sweetalert2";
 
-export default function SurveyList({ surveys = [], onDelete }) {
+export default function SurveyList({ surveys = [], onDelete, onStatusChange }) {
+  const [updatingStatus, setUpdatingStatus] = useState({});
+  
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
+
+  const getStatusBadgeColor = (status) => {
+    switch (status) {
+      case 'DRAFT':
+        return 'bg-gray-200 text-gray-700';
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-700';
+      case 'CLOSED':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-gray-200 text-gray-700';
+    }
+  };
+
+  const handleStatusChange = async (surveyId, newStatus) => {
+    try {
+      setUpdatingStatus(prev => ({ ...prev, [surveyId]: true }));
+      const updatedSurvey = await updateSurveyStatus(surveyId, newStatus, token);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Survey status updated successfully!',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
+      // Update the survey in parent component's state
+      if (onStatusChange) {
+        onStatusChange(surveyId, updatedSurvey);
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'Failed to update survey status',
+        confirmButtonColor: '#02C39A',
+      });
+    } finally {
+      setUpdatingStatus(prev => ({ ...prev, [surveyId]: false }));
+    }
+  };
+
   if (!surveys.length)
     return (
       <div className="text-[#9B9B9B] text-center py-8 text-lg">
@@ -20,8 +71,30 @@ export default function SurveyList({ surveys = [], onDelete }) {
         >
           {/* HEADER */}
           <div className="space-y-1">
-            <h3 className="text-xl font-semibold text-[#333333]">{s.title}</h3>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-xl font-semibold text-[#333333]">{s.title}</h3>
+              <div className="flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(s.status)}`}>
+                  {s.status}
+                </span>
+              </div>
+            </div>
             <p className="text-sm text-[#9B9B9B]">{s.description}</p>
+          </div>
+
+          {/* STATUS DROPDOWN */}
+          <div className="mt-4">
+            <label className="block text-xs text-[#9B9B9B] mb-1">Change Status:</label>
+            <select
+              value={s.status}
+              onChange={(e) => handleStatusChange(s.id, e.target.value)}
+              disabled={updatingStatus[s.id]}
+              className="w-full px-3 py-2 border border-[#E5E7EB] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#02C39A] disabled:opacity-50"
+            >
+              <option value="DRAFT">DRAFT</option>
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="CLOSED">CLOSED</option>
+            </select>
           </div>
 
           {/* DATE RANGE */}

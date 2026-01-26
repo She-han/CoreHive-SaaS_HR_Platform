@@ -2,12 +2,19 @@ import React, { useState } from "react";
 import { createSurvey } from "../../../api/feedbackService.js"; // ✅ token-based API
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 export default function CreateSurvey() {
   const token =
     localStorage.getItem("corehive_token") ||
     sessionStorage.getItem("corehive_token");
   const navigate = useNavigate();
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
 
   const [form, setForm] = useState({
     title: "",
@@ -64,18 +71,129 @@ export default function CreateSurvey() {
     setForm({ ...form, questions: updated });
   };
 
+  // Validate form
+  const validateForm = () => {
+    // Title validation
+    if (!form.title.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Title Required',
+        text: 'Please enter a survey title',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Description validation
+    if (!form.description.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Description Required',
+        text: 'Please enter a survey description',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Start date validation
+    if (!form.start_date) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Start Date Required',
+        text: 'Please select a start date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // End date validation
+    if (!form.end_date) {
+      Swal.fire({
+        icon: 'error',
+        title: 'End Date Required',
+        text: 'Please select an end date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // End date should be after start date
+    if (new Date(form.end_date) < new Date(form.start_date)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Date Range',
+        text: 'End date must be after or equal to start date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Questions validation
+    if (form.questions.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No Questions',
+        text: 'Please add at least one question to the survey',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Validate each question
+    for (let i = 0; i < form.questions.length; i++) {
+      const q = form.questions[i];
+      
+      if (!q.question_text.trim()) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Question Required',
+          text: `Question ${i + 1} text is required`,
+          confirmButtonColor: '#02C39A',
+        });
+        return false;
+      }
+
+      if (q.question_type === 'MCQ' && (!q.options || q.options.length === 0)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Options Required',
+          text: `Question ${i + 1}: Multiple choice questions must have options`,
+          confirmButtonColor: '#02C39A',
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   // Submit survey (token-based)
   const handleSubmit = async () => {
-    if (!form.title.trim()) return alert("Survey title is required");
-    if (form.questions.length === 0)
-      return alert("Please add at least one question.");
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
 
     try {
       await createSurvey(form, token); // ✅ token passed here
-      alert("Survey created successfully!");
-      navigate("/hr_staff/FeedBackManagement");
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Survey created successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      setTimeout(() => {
+        navigate("/hr_staff/FeedBackManagement");
+      }, 2000);
     } catch (err) {
-      alert("Failed to create survey: " + err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: err.message || 'Failed to create survey',
+        confirmButtonColor: '#02C39A',
+      });
     }
   };
 
@@ -110,48 +228,54 @@ export default function CreateSurvey() {
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="Enter survey title..."
+              placeholder="Enter survey title... *"
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
             />
             <textarea
-              placeholder="Enter survey description..."
+              placeholder="Enter survey description... *"
               className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
+              required
             />
 
             <div className="grid grid-cols-2 gap-4">
               {/* Start Date */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-medium text-gray-600">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
                   value={form.start_date}
+                  min={getTodayDate()}
                   onChange={(e) =>
                     setForm({ ...form, start_date: e.target.value })
                   }
+                  required
                 />
               </div>
 
               {/* End Date */}
               <div className="flex flex-col">
                 <label className="mb-1 text-sm font-medium text-gray-600">
-                  End Date
+                  End Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
                   value={form.end_date}
+                  min={form.start_date || getTodayDate()}
                   onChange={(e) =>
                     setForm({ ...form, end_date: e.target.value })
                   }
+                  required
                 />
               </div>
             </div>
@@ -193,12 +317,13 @@ export default function CreateSurvey() {
 
               <input
                 type="text"
-                placeholder="Type your question here..."
+                placeholder="Type your question here... *"
                 className="w-full p-3 border rounded-lg shadow-sm mb-3"
                 value={q.question_text}
                 onChange={(e) =>
                   updateQuestion(index, "question_text", e.target.value)
                 }
+                required
               />
 
               <select
@@ -216,10 +341,11 @@ export default function CreateSurvey() {
               {q.question_type === "MCQ" && (
                 <input
                   type="text"
-                  placeholder="Enter options (comma separated)"
+                  placeholder="Enter options (comma separated) *"
                   className="w-full p-3 border rounded-lg shadow-sm"
                   value={q.options.join(", ")}
                   onChange={(e) => updateOptions(index, e.target.value)}
+                  required
                 />
               )}
 

@@ -156,6 +156,132 @@ export default function ViewLeaveAndAttendance() {
           </div>
         )}
 
+        {/* MONTHLY CALENDAR */}
+        <div className="bg-[var(--color-background-white)] rounded-xl p-6 shadow border border-[#f1f5f9]">
+          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-5">
+            Attendance Calendar
+          </h2>
+          
+          {/* Calendar Grid */}
+          <div className="space-y-4">
+            {/* Weekday Headers */}
+            <div className="grid grid-cols-7 gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="text-center text-sm font-bold text-gray-600 py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 gap-2">
+              {(() => {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                
+                // Get first day of month and total days
+                const firstDay = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                
+                // Create calendar grid
+                const calendarDays = [];
+                
+                // Empty cells before month starts
+                for (let i = 0; i < firstDay; i++) {
+                  calendarDays.push(
+                    <div key={`empty-${i}`} className="aspect-square" />
+                  );
+                }
+                
+                // Actual days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const dateStr = new Date(year, month, day).toLocaleDateString();
+                  const dayRecord = history.find(h => h.date === dateStr);
+                  const status = dayRecord?.status || null;
+                  const isToday = day === now.getDate();
+                  
+                  // Determine background color based on status
+                  let bgColor = 'bg-white hover:bg-gray-50';
+                  let textColor = 'text-gray-700';
+                  let borderColor = 'border-gray-200';
+                  
+                  if (status === 'PRESENT') {
+                    bgColor = 'bg-[var(--color-primary-50)] hover:bg-green-100';
+                    textColor = 'text-green-700';
+                    borderColor = 'border-green-200';
+                  } else if (status === 'ABSENT') {
+                    bgColor = 'bg-red-50 hover:bg-red-100';
+                    textColor = 'text-red-700';
+                    borderColor = 'border-red-200';
+                  } else if (status === 'LEAVE' || status === 'ON_LEAVE') {
+                    bgColor = 'bg-yellow-50 hover:bg-yellow-100';
+                    textColor = 'text-yellow-700';
+                    borderColor = 'border-yellow-200';
+                  } else if (status === 'LATE') {
+                    bgColor = 'bg-orange-50 hover:bg-orange-100';
+                    textColor = 'text-orange-700';
+                    borderColor = 'border-orange-200';
+                  } else if (status === 'HALF_DAY') {
+                    bgColor = 'bg-blue-50 hover:bg-blue-100';
+                    textColor = 'text-blue-700';
+                    borderColor = 'border-blue-200';
+                  }
+                  
+                  calendarDays.push(
+                    <div
+                      key={day}
+                      className={`aspect-square border ${borderColor} rounded-lg ${bgColor} flex flex-col items-center justify-center transition-all ${
+                        isToday ? 'ring-2 ring-[#02C39A] ring-offset-1' : ''
+                      }`}
+                      title={dayRecord ? `${status} - ${dayRecord.checkIn} to ${dayRecord.checkOut}` : 'No record'}
+                    >
+                      <span className={`text-sm font-semibold ${textColor}`}>
+                        {day}
+                      </span>
+                      {status && (
+                        <span className="text-[8px] font-bold uppercase mt-0.5 opacity-70">
+                          {status === 'PRESENT' ? 'P' : status === 'ABSENT' ? 'A' : status === 'LEAVE' || status === 'ON_LEAVE' ? 'L' : status === 'LATE' ? 'LT' : status === 'HALF_DAY' ? 'HD' : ''}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }
+                
+                return calendarDays;
+              })()}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-4 justify-center pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-[var(--color-primary-50)] border border-green-200"></div>
+                <span className="text-xs text-gray-600">Present</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-red-50 border border-red-200"></div>
+                <span className="text-xs text-gray-600">Absent</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-yellow-50 border border-yellow-200"></div>
+                <span className="text-xs text-gray-600">Leave</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-orange-50 border border-orange-200"></div>
+                <span className="text-xs text-gray-600">Late</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-blue-50 border border-blue-200"></div>
+                <span className="text-xs text-gray-600">Half Day</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded border-2 border-[#02C39A]"></div>
+                <span className="text-xs text-gray-600">Today</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ATTENDANCE HISTORY */}
         <div className="bg-[var(--color-background-white)] rounded-xl p-6 shadow border border-[#f1f5f9]">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-5">

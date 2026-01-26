@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { FaFileExcel, FaFileCsv, FaDownload, FaSearch, FaCheckCircle, FaFilePdf, FaEye } from 'react-icons/fa';
+import { FaFileExcel, FaFileCsv, FaDownload, FaSearch, FaCheckCircle, FaFilePdf, FaEye, FaCheck } from 'react-icons/fa';
 import * as payrollApi from '../../../api/payrollApi';
 import departmentApi from '../../../api/departmentApi';
 import employeeApi from '../../../api/employeeApi';
 import Modal from '../../../components/common/Modal';
 import Button from '../../../components/common/Button';
-import Alert from '../../../components/common/Alert';
 import DashboardLayout from '../../../components/layout/DashboardLayout';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import Swal from 'sweetalert2';
 
 const PayslipGeneration = () => {
   const currentDate = new Date();
@@ -21,7 +21,6 @@ const PayslipGeneration = () => {
   const [employees, setEmployees] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
@@ -56,18 +55,23 @@ const PayslipGeneration = () => {
       const uniqueDesignations = [...new Set(empData.map(e => e.designation).filter(Boolean))];
       setDesignations(uniqueDesignations);
     } catch (error) {
-      showAlert('error', 'Failed to load reference data');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load reference data',
+        confirmButtonColor: THEME.primary
+      });
     }
-  };
-
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
   };
 
   const handleGeneratePayslips = async () => {
     if (!month || !year) {
-      showAlert('error', 'Please select month and year');
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Information',
+        text: 'Please select month and year',
+        confirmButtonColor: THEME.primary
+      });
       return;
     }
 
@@ -81,37 +85,72 @@ const PayslipGeneration = () => {
           break;
         case 'department':
           if (!filterValue) {
-            showAlert('error', 'Please select a department');
+            Swal.fire({
+              icon: 'warning',
+              title: 'Missing Information',
+              text: 'Please select a department',
+              confirmButtonColor: THEME.primary
+            });
             return;
           }
           response = await payrollApi.generatePayslipsByDepartment(filterValue, month, year);
           break;
         case 'designation':
           if (!filterValue) {
-            showAlert('error', 'Please select a designation');
+            Swal.fire({
+              icon: 'warning',
+              title: 'Missing Information',
+              text: 'Please select a designation',
+              confirmButtonColor: THEME.primary
+            });
             return;
           }
           response = await payrollApi.generatePayslipsByDesignation(filterValue, month, year);
           break;
         case 'employee':
           if (!filterValue) {
-            showAlert('error', 'Please select an employee');
+            Swal.fire({
+              icon: 'warning',
+              title: 'Missing Information',
+              text: 'Please select an employee',
+              confirmButtonColor: THEME.primary
+            });
             return;
           }
           response = await payrollApi.generatePayslipForEmployee(filterValue, month, year);
           // Convert single payslip to array and set directly
           setPayslips([response.data]);
-          showAlert('success', 'Payslip generated successfully for 1 employee');
+          Swal.fire({
+            icon: 'success',
+            title: 'Success',
+            text: 'Payslip generated successfully for 1 employee',
+            confirmButtonColor: THEME.primary
+          });
           return; // Return early to avoid calling loadPayslips
         default:
-          showAlert('error', 'Invalid filter type');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Invalid filter type',
+            confirmButtonColor: THEME.primary
+          });
           return;
       }
 
-      showAlert('success', `Payslips generated successfully for ${response.data.length} employee(s)`);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: `Payslips generated successfully for ${response.data.length} employee(s)`,
+        confirmButtonColor: THEME.primary
+      });
       loadPayslips();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to generate payslips');
+      Swal.fire({
+        icon: 'error',
+        title: 'Generation Failed',
+        text: error.response?.data?.message || 'Failed to generate payslips',
+        confirmButtonColor: THEME.primary
+      });
     } finally {
       setLoading(false);
     }
@@ -139,7 +178,12 @@ const PayslipGeneration = () => {
       const response = await payrollApi.getPayslips(month, year, filters);
       setPayslips(response.data);
     } catch (error) {
-      showAlert('error', 'Failed to load payslips');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load payslips',
+        confirmButtonColor: THEME.primary
+      });
     } finally {
       setLoading(false);
     }
@@ -171,9 +215,19 @@ const PayslipGeneration = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showAlert('success', 'Payslips exported to Excel successfully');
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Payslips exported to Excel successfully',
+        confirmButtonColor: THEME.primary
+      });
     } catch (error) {
-      showAlert('error', 'Failed to export to Excel');
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: 'Failed to export to Excel',
+        confirmButtonColor: THEME.primary
+      });
     } finally {
       setLoading(false);
     }
@@ -205,9 +259,19 @@ const PayslipGeneration = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showAlert('success', 'Bank transfer file exported successfully');
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Bank transfer file exported successfully',
+        confirmButtonColor: THEME.primary
+      });
     } catch (error) {
-      showAlert('error', 'Failed to export bank transfer file');
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Failed',
+        text: 'Failed to export bank transfer file',
+        confirmButtonColor: THEME.primary
+      });
     } finally {
       setLoading(false);
     }
@@ -216,6 +280,68 @@ const PayslipGeneration = () => {
   const handleViewPayslip = (payslip) => {
     setSelectedPayslip(payslip);
     setIsViewModalOpen(true);
+  };
+
+  const handleApprovePayslip = async (payslipId) => {
+    try {
+      setLoading(true);
+      await payrollApi.approvePayslip(payslipId);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: 'Payslip approved successfully',
+        confirmButtonColor: THEME.primary
+      });
+      // Refresh payslips
+      await loadPayslips();
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Approval Failed',
+        text: error.response?.data?.message || 'Failed to approve payslip',
+        confirmButtonColor: THEME.primary
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveAll = async () => {
+    try {
+      setLoading(true);
+      const filters = {};
+      
+      if (filterType === 'department' && filterValue) {
+        const dept = departments.find(d => d.id === parseInt(filterValue));
+        filters.departmentName = dept?.name;
+      } else if (filterType === 'designation' && filterValue) {
+        filters.designation = filterValue;
+      } else if (filterType === 'employee' && filterValue) {
+        const emp = employees.find(e => e.id === parseInt(filterValue));
+        if (emp) {
+          filters.employeeCode = emp.employeeCode;
+        }
+      }
+      
+      const result = await payrollApi.approveAllPayslips(month, year, filters);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: `${result.data.approvedCount || 'All'} payslip(s) approved successfully`,
+        confirmButtonColor: THEME.primary
+      });
+      // Refresh payslips
+      await loadPayslips();
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Approval Failed',
+        text: error.response?.data?.message || 'Failed to approve payslips',
+        confirmButtonColor: THEME.primary
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const generatePayslipPDF = (payslip) => {
@@ -435,7 +561,14 @@ const PayslipGeneration = () => {
     
     // Save the PDF
     doc.save(`Payslip_${payslip.employeeCode}_${months[month - 1]}_${year}.pdf`);
-    showAlert('success', 'Payslip downloaded successfully');
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: 'Payslip downloaded successfully',
+      confirmButtonColor: THEME.primary,
+      timer: 2000,
+      showConfirmButton: false
+    });
   };
 
   const filteredPayslips = payslips.filter(payslip => {
@@ -471,14 +604,6 @@ const PayslipGeneration = () => {
           </div>
         </div>
 
-        {/* Alert */}
-        {alert.show && (
-          <Alert
-            type={alert.type}
-            message={alert.message}
-            onClose={() => setAlert({ show: false, type: '', message: '' })}
-          />
-        )}
 
       {/* Generation Controls */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 mx-5">
@@ -640,7 +765,7 @@ const PayslipGeneration = () => {
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Gross</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Deductions</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Net Salary</th>
-                 
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -668,7 +793,16 @@ const PayslipGeneration = () => {
                     <td className="px-4 py-3 text-sm text-right font-bold" style={{ color: THEME.primary }}>
                       LKR {payslip.netSalary?.toFixed(2)}
                     </td>
-            
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        payslip.status === 'GENERATED' ? 'bg-green-100 text-green-800' :
+                        payslip.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                        payslip.status === 'APPROVED' ? 'bg-blue-100 text-blue-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {payslip.status}
+                      </span>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2 justify-center">
                         <button
@@ -688,6 +822,16 @@ const PayslipGeneration = () => {
                         >
                           <FaFilePdf size={18} />
                         </button>
+                        {payslip.status === 'GENERATED' && (
+                          <button
+                            onClick={() => handleApprovePayslip(payslip.id)}
+                            className="p-1 text-green-600 hover:text-green-800"
+                            title="Approve Payslip"
+                            disabled={loading}
+                          >
+                            <FaCheck size={18} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -722,6 +866,20 @@ const PayslipGeneration = () => {
               </tfoot>
             </table>
           </div>
+          
+          {/* Approve All Button */}
+          {filteredPayslips.some(p => p.status === 'GENERATED') && (
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleApproveAll}
+                disabled={loading}
+                style={{ backgroundColor: THEME.success }}
+                className="flex items-center gap-2 text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                <FaCheckCircle /> {loading ? 'Approving...' : 'Approve All Generated Payslips'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

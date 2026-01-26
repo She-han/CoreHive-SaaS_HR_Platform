@@ -221,4 +221,64 @@ public class FeedbackSurveyService {
 
         return surveyRepo.save(survey);
     }
+    
+    // ============================================================
+    // GET ACTIVE SURVEYS FOR EMPLOYEE
+    // ============================================================
+    public List<FeedbackSurvey> getActiveSurveysForEmployee(String orgUuid) {
+        List<FeedbackSurvey> allSurveys = surveyRepo.findByOrganizationUuid(orgUuid);
+        return allSurveys.stream()
+            .filter(s -> s.getStatus() != SurveyStatus.DRAFT)
+            .filter(s -> s.getEndDate() == null || !s.getEndDate().isBefore(java.time.LocalDate.now()))
+            .toList();
+    }
+    
+    // ============================================================
+    // SUBMIT SURVEY RESPONSE
+    // ============================================================
+    @Transactional
+    public FeedbackSurveyResponse submitSurveyResponse(
+            Long surveyId, 
+            Long employeeId, 
+            SubmitSurveyResponseRequest request) {
+        
+        FeedbackSurvey survey = getSurvey(surveyId);
+        
+        // Check if already responded
+        if (hasEmployeeResponded(surveyId, employeeId)) {
+            throw new RuntimeException("You have already responded to this survey");
+        }
+        
+        // Create response
+        FeedbackSurveyResponse response = FeedbackSurveyResponse.builder()
+            .survey(survey)
+            .employeeId(employeeId)
+            .submittedAt(LocalDateTime.now())
+            .answers(new ArrayList<>())
+            .build();
+        
+        // Add answers
+        for (SubmitSurveyResponseRequest.AnswerData ansData : request.getAnswers()) {
+            FeedbackSurveyQuestion question = questionRepo.findById(ansData.getQuestionId())
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+            
+            FeedbackSurveyAnswer answer = FeedbackSurveyAnswer.builder()
+                .response(response)
+                .question(question)
+                .answerText(ansData.getAnswerText())
+                .selectedOption(ansData.getSelectedOption())
+                .build();
+            
+            response.getAnswers().add(answer);
+        }
+        
+        return responseRepo.save(response);
+    }
+    
+    // ============================================================
+    // CHECK IF EMPLOYEE HAS RESPONDED
+    // ============================================================
+    public boolean hasEmployeeResponded(Long surveyId, Long employeeId) {
+        return responseRepo.existsBySurveyIdAndEmployeeId(surveyId, employeeId);
+    }
 }

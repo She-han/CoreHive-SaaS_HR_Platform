@@ -1,7 +1,7 @@
 package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.CreateLeaveRequestDTO;
-import com.corehive.backend.dto.request.LeaveRequestResponseDTO;
+import com.corehive.backend.dto.response.LeaveRequestResponseDTO;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.leaveException.InsufficientLeaveBalanceException;
 import com.corehive.backend.exception.leaveException.LeaveRequestNotFoundException;
@@ -145,20 +145,24 @@ public class LeaveRequestService {
         }
 
         return requests.stream()
-                .map(req -> {
-                    LeaveRequestResponseDTO dto = new LeaveRequestResponseDTO();
-                    dto.setRequestId(req.getId());
-                    dto.setEmployeeName(
-                            req.getEmployee().getFirstName() + " " +
-                                    req.getEmployee().getLastName()
-                    );
-                    dto.setLeaveType(req.getLeaveType().getName());
-                    dto.setStartDate(req.getStartDate());
-                    dto.setEndDate(req.getEndDate());
-                    dto.setTotalDays(req.getTotalDays());
-                    dto.setStatus(req.getStatus().name());
-                    return dto;
-                })
+                .map(req -> LeaveRequestResponseDTO.builder()
+                        .id(req.getId())
+                        .employeeId(req.getEmployee().getId())
+                        .employeeName(
+                                req.getEmployee().getFirstName() + " " +
+                                        req.getEmployee().getLastName()
+                        )
+                        .leaveTypeId(req.getLeaveType().getId())
+                        .leaveTypeName(req.getLeaveType().getName())
+                        .startDate(req.getStartDate())
+                        .endDate(req.getEndDate())
+                        .totalDays(req.getTotalDays())
+                        .reason(req.getReason())
+                        .status(req.getStatus())
+                        .approvedAt(req.getApprovedAt())
+                        .createdAt(req.getCreatedAt())
+                        .build()
+                )
                 .toList();
     }
 

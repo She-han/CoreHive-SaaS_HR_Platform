@@ -2,16 +2,21 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import { getCurrentEmployeeProfile } from "../../api/employeeApi";
-import apiClient from "../../api/axios";
+import * as feedbackApi from "../../api/feedbackApi";
 import Swal from "sweetalert2";
+
+const THEME = {
+  primary: '#02C39A',
+  secondary: '#05668D',
+  dark: '#0C397A',
+};
 
 const Feedback = () => {
   const { user } = useSelector((state) => state.auth);
 
-  const [employeeId, setEmployeeId] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [feedbacksLoading, setFeedbacksLoading] = useState(true);
 
   /* ---------------- FEEDBACK FORM ---------------- */
   const [feedbackForm, setFeedbackForm] = useState({
@@ -20,67 +25,22 @@ const Feedback = () => {
     message: "",
   });
 
-  /* ---------------- SURVEY ---------------- */
-  const [selectedSurvey, setSelectedSurvey] = useState(null);
-  const [surveyAnswers, setSurveyAnswers] = useState({});
-
-  // 🔹 MOCK SURVEYS (replace with API)
-  const surveys = [
-    {
-      id: 1,
-      title: "Workplace Satisfaction Survey",
-      expiresAt: "2025-02-10",
-      questions: [
-        {
-          id: 1,
-          type: "MCQ",
-          question: "How satisfied are you with your work-life balance?",
-          options: ["Very Satisfied", "Satisfied", "Neutral", "Unsatisfied"],
-        },
-        {
-          id: 2,
-          type: "TEXT",
-          question: "What improvements would you suggest?",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "HR System Feedback Survey",
-      expiresAt: "2025-01-15",
-      questions: [
-        {
-          id: 3,
-          type: "MCQ",
-          question: "How easy is the HR system to use?",
-          options: ["Very Easy", "Easy", "Average", "Difficult"],
-        },
-      ],
-    },
-  ];
-
-  /* ---------------- FETCH EMPLOYEE ---------------- */
+  /* ---------------- FETCH FEEDBACKS ---------------- */
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setProfileLoading(true);
-        const res = await getCurrentEmployeeProfile();
-        if (res.success) setEmployeeId(res.data.id);
-        else throw new Error();
-      } catch {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "Unable to load employee profile",
-          confirmButtonColor: "#02C39A",
-        });
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-
-    fetchProfile();
+    loadFeedbacks();
   }, []);
+
+  const loadFeedbacks = async () => {
+    try {
+      setFeedbacksLoading(true);
+      const response = await feedbackApi.getOwnFeedbacks();
+      setFeedbacks(response.data || []);
+    } catch (error) {
+      console.error("Error loading feedbacks:", error);
+    } finally {
+      setFeedbacksLoading(false);
+    }
+  };
 
   /* ---------------- FEEDBACK ---------------- */
   const handleFeedbackChange = (e) => {
@@ -92,8 +52,7 @@ const Feedback = () => {
     setLoading(true);
 
     try {
-      await apiClient.post("/employee/employee-feedback", {
-        employeeId,
+      await feedbackApi.submitFeedback({
         ...feedbackForm,
         rating: Number(feedbackForm.rating),
       });
@@ -101,155 +60,196 @@ const Feedback = () => {
       Swal.fire({
         icon: "success",
         title: "Feedback Submitted",
-        confirmButtonColor: "#02C39A",
+        text: "Your feedback has been submitted successfully",
+        confirmButtonColor: THEME.primary,
       });
 
       setFeedbackForm({ feedbackType: "", rating: "", message: "" });
-    } catch {
+      loadFeedbacks(); // Reload feedbacks
+    } catch (error) {
       Swal.fire({
         icon: "error",
         title: "Submission Failed",
-        confirmButtonColor: "#02C39A",
+        text: error.response?.data?.message || "Failed to submit feedback",
+        confirmButtonColor: THEME.primary,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------- SURVEY ---------------- */
-  const handleSurveyChange = (qid, value) => {
-    setSurveyAnswers({ ...surveyAnswers, [qid]: value });
+  const getFeedbackTypeColor = (type) => {
+    switch (type) {
+      case 'COMPLAINT': return 'bg-red-100 text-red-700';
+      case 'APPRECIATION': return 'bg-green-100 text-green-700';
+      case 'WORK_ENVIRONMENT': return 'bg-blue-100 text-blue-700';
+      case 'MANAGEMENT': return 'bg-purple-100 text-purple-700';
+      case 'SYSTEM_ISSUE': return 'bg-orange-100 text-orange-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
   };
 
-  const submitSurvey = () => {
-    Swal.fire({
-      icon: "success",
-      title: "Survey Submitted",
-      confirmButtonColor: "#02C39A",
-    });
-
-    console.log("Survey Answers:", surveyAnswers);
-    setSelectedSurvey(null);
-    setSurveyAnswers({});
+  const formatFeedbackType = (type) => {
+    return type?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const isExpired = selectedSurvey
-    ? new Date(selectedSurvey.expiresAt) < new Date()
-    : false;
-
-  if (profileLoading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center min-h-screen">
-          <LoadingSpinner />
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const getRatingText = (rating) => {
+    const ratings = {
+      1: 'Very Poor',
+      2: 'Poor',
+      3: 'Average',
+      4: 'Good',
+      5: 'Excellent'
+    };
+    return ratings[rating] || 'N/A';
+  };
 
   return (
     <DashboardLayout>
-      <div className="p-8 max-w-5xl mx-auto space-y-10 animate-fade-in">
+      <div className="p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
 
-        {/* ================= FEEDBACK ================= */}
-        <div className="bg-white rounded-xl p-8 shadow border border-[#f1f5f9]">
-          <h1 className="text-2xl font-semibold mb-6">Employee Feedback</h1>
+        {/* ================= FEEDBACK FORM ================= */}
+        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+          <h1 className="text-2xl font-semibold mb-2" style={{ color: THEME.dark }}>
+            Submit Feedback
+          </h1>
+          <p className="text-sm text-gray-500 mb-6">
+            You can submit up to 3 feedbacks per month. Share your thoughts with us!
+          </p>
 
           <form onSubmit={submitFeedback} className="space-y-5">
-            <select name="feedbackType" value={feedbackForm.feedbackType} onChange={handleFeedbackChange} required className="w-full px-4 py-3 border rounded-lg">
-              <option value="">Select Feedback Type</option>
-              <option value="COMPLAINT">Complaint</option>
-              <option value="APPRECIATION">Appreciation</option>
-              <option value="MANAGEMENT">Management</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Feedback Type <span className="text-red-500">*</span>
+              </label>
+              <select 
+                name="feedbackType" 
+                value={feedbackForm.feedbackType} 
+                onChange={handleFeedbackChange} 
+                required 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+              >
+                <option value="">Select Feedback Type</option>
+                <option value="COMPLAINT">Complaint</option>
+                <option value="APPRECIATION">Appreciation</option>
+                <option value="WORK_ENVIRONMENT">Work Environment</option>
+                <option value="MANAGEMENT">Management</option>
+                <option value="SYSTEM_ISSUE">System Issue</option>
+              </select>
+            </div>
 
-            <select name="rating" value={feedbackForm.rating} onChange={handleFeedbackChange} required className="w-full px-4 py-3 border rounded-lg">
-              <option value="">Rating</option>
-              <option value="1">Very Bad</option>
-              <option value="5">Excellent</option>
-            </select>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rating <span className="text-red-500">*</span>
+              </label>
+              <select 
+                name="rating" 
+                value={feedbackForm.rating} 
+                onChange={handleFeedbackChange} 
+                required 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
+              >
+                <option value="">Select Rating</option>
+                <option value="1">Very Poor</option>
+                <option value="2">Poor</option>
+                <option value="3">Average</option>
+                <option value="4">Good</option>
+                <option value="5">Excellent</option>
+              </select>
+            </div>
 
-            <textarea name="message" value={feedbackForm.message} onChange={handleFeedbackChange} rows="4" required className="w-full px-4 py-3 border rounded-lg" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Message <span className="text-red-500">*</span>
+              </label>
+              <textarea 
+                name="message" 
+                value={feedbackForm.message} 
+                onChange={handleFeedbackChange} 
+                rows="5" 
+                required 
+                placeholder="Share your feedback here..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#02C39A] focus:border-transparent resize-none"
+              />
+            </div>
 
             <div className="flex justify-end">
-              <button disabled={loading} className="bg-[var(--color-primary-500)] text-white px-8 py-3 rounded-lg">
-                Submit Feedback
+              <button 
+                type="submit"
+                disabled={loading} 
+                className="px-8 py-3 text-white rounded-lg font-medium transition-all hover:opacity-90 disabled:opacity-50"
+                style={{ backgroundColor: THEME.primary }}
+              >
+                {loading ? "Submitting..." : "Submit Feedback"}
               </button>
             </div>
           </form>
         </div>
 
-        {/* ================= SURVEY LIST ================= */}
-        {!selectedSurvey && (
-          <div className="bg-white rounded-xl p-8 shadow border border-[#f1f5f9]">
-            <h2 className="text-xl font-semibold mb-6">HR Surveys</h2>
+        {/* ================= LATEST FEEDBACKS ================= */}
+        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+          <h2 className="text-xl font-semibold mb-6" style={{ color: THEME.dark }}>
+            My Feedback History
+          </h2>
 
-            {surveys.map((survey) => {
-              const expired = new Date(survey.expiresAt) < new Date();
-              return (
-                <div
-                  key={survey.id}
-                  onClick={() => setSelectedSurvey(survey)}
-                  className="flex justify-between items-center p-4 mb-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition"
+          {feedbacksLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No feedbacks submitted yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feedbacks.map((feedback) => (
+                <div 
+                  key={feedback.id} 
+                  className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
                 >
-                  <div>
-                    <p className="font-medium">{survey.title}</p>
-                    <p className="text-xs text-gray-500">
-                      Expires on {new Date(survey.expiresAt).toLocaleDateString()}
-                    </p>
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getFeedbackTypeColor(feedback.feedbackType)}`}>
+                        {formatFeedbackType(feedback.feedbackType)}
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        {getRatingText(feedback.rating)}
+                      </span>
+                      {feedback.markedAsRead && (
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          ✓ Read by Admin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </span>
                   </div>
 
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${expired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                    {expired ? "Expired" : "Active"}
-                  </span>
+                  <p className="text-gray-700 mb-3">{feedback.message}</p>
+
+                  {feedback.reply && (
+                    <div className="mt-4 p-4 rounded-lg border-l-4 border-[#02C39A]" style={{ backgroundColor: '#f0fdf9' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium" style={{ color: THEME.dark }}>
+                          Admin Reply:
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {feedback.repliedByName} • {new Date(feedback.repliedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-700">{feedback.reply}</p>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ================= SURVEY DETAILS ================= */}
-        {selectedSurvey && (
-          <div className="bg-white rounded-xl p-8 shadow border border-[#f1f5f9] animate-slide-up">
-            <button onClick={() => setSelectedSurvey(null)} className="text-sm text-blue-600 mb-4">
-              ← Back to surveys
-            </button>
-
-            <h2 className="text-xl font-semibold mb-2">{selectedSurvey.title}</h2>
-            <p className="text-xs text-gray-500 mb-6">
-              Expires on {new Date(selectedSurvey.expiresAt).toLocaleDateString()}
-            </p>
-
-            {selectedSurvey.questions.map((q, idx) => (
-              <div key={q.id} className="mb-6">
-                <p className="font-medium mb-2">{idx + 1}. {q.question}</p>
-
-                {q.type === "MCQ" ? (
-                  q.options.map((opt, i) => (
-                    <label key={i} className="flex gap-2 mb-2">
-                      <input type="radio" disabled={isExpired} onChange={() => handleSurveyChange(q.id, opt)} />
-                      {opt}
-                    </label>
-                  ))
-                ) : (
-                  <textarea rows="3" disabled={isExpired} onChange={(e) => handleSurveyChange(q.id, e.target.value)} className="w-full px-4 py-3 border rounded-lg" />
-                )}
-              </div>
-            ))}
-
-            <div className="flex justify-end">
-              <button disabled={isExpired} onClick={submitSurvey} className="bg-[var(--color-primary-500)] text-white px-8 py-3 rounded-lg disabled:opacity-50">
-                Submit Survey
-              </button>
+              ))}
             </div>
-
-            {isExpired && (
-              <div className="mt-4 bg-red-50 border border-red-200 p-4 rounded text-sm text-red-700">
-                This survey has expired.
-              </div>
-            )}
-          </div>
-        )}
+          )}
+        </div>
 
       </div>
     </DashboardLayout>

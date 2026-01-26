@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Mail, Lock, ArrowRight, Building2, AlertCircle } from "lucide-react";
+import Swal from "sweetalert2";
 
 import {
   loginUser,
@@ -123,14 +124,23 @@ const LoginPage = () => {
       const resultAction = await dispatch(loginUser(loginData));
 
       if (loginUser.fulfilled.match(resultAction)) {
-        console.log("Login successful");
-
         const userData = resultAction.payload;
+        
+        // Show success message
+        Swal.fire({
+          icon: 'success',
+          title: 'Login Successful!',
+          text: 'Welcome back to CoreHive',
+          confirmButtonColor: '#02C39A',
+          timer: 1500,
+          showConfirmButton: false
+        });
         
         // System Admin - direct redirect without any checks
         if (userData.userType === 'SYSTEM' && userData.role === 'SYS_ADMIN') {
-          console.log('System admin login - redirecting to admin dashboard');
-          navigate('/sys_admin/dashboard', { replace: true });
+          setTimeout(() => {
+            navigate('/sys_admin/dashboard', { replace: true });
+          }, 1500);
           return;
         }
 
@@ -139,7 +149,9 @@ const LoginPage = () => {
           const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
 
           if (needsPasswordChange) {
-            navigate('/change-password', { replace: true });
+            setTimeout(() => {
+              navigate('/change-password', { replace: true });
+            }, 1500);
             return;
           }
 
@@ -154,25 +166,44 @@ const LoginPage = () => {
             }
             */
             
-            if (!userData.modulesConfigured) {
-              navigate("/configure-modules", { replace: true });
-            } else {
-              navigate("/org_admin/dashboard", { replace: true });
-            }
+            setTimeout(() => {
+              if (!userData.modulesConfigured) {
+                navigate("/configure-modules", { replace: true });
+              } else {
+                navigate("/org_admin/dashboard", { replace: true });
+              }
+            }, 1500);
           }
           else if (userData.role === 'HR_STAFF') {
-            navigate('/hr_staff/dashboard', { replace: true });
+            setTimeout(() => {
+              navigate('/hr_staff/dashboard', { replace: true });
+            }, 1500);
           } 
           else if (userData.role === 'EMPLOYEE') {
-            navigate('/employee/profile', { replace: true });
+            setTimeout(() => {
+              navigate('/employee/profile', { replace: true });
+            }, 1500);
           }
         }
       } else {
+        // Login failed
+        Swal.fire({
+          icon: 'error',
+          title: 'Login Failed',
+          text: resultAction.error?.message || 'Invalid email or password',
+          confirmButtonColor: '#02C39A',
+        });
         recaptchaRef.current?.reset();
         setRecaptchaToken(null);
       }
     } catch (error) {
       console.error("Login error:", error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Login Error',
+        text: error.message || 'An error occurred during login',
+        confirmButtonColor: '#02C39A',
+      });
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
     }

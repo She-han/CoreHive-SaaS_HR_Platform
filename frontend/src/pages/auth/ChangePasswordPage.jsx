@@ -2,13 +2,13 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Lock, CheckCircle } from "lucide-react";
+import Swal from "sweetalert2";
 import { selectUser } from "../../store/slices/authSlice";
 import { apiPost } from "../../api/axios"; // Your axios helper
 
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
-import Alert from "../../components/common/Alert";
 import Navbar from "../../components/layout/Navbar";
 
 export const ChangePasswordPage = () => {
@@ -19,20 +19,42 @@ export const ChangePasswordPage = () => {
     newPassword: "",
     confirmPassword: ""
   });
+  const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setPasswords({ ...passwords, [name]: value });
+    
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!passwords.newPassword) {
+      errors.newPassword = "New password is required";
+    } else if (passwords.newPassword.length < 6) {
+      errors.newPassword = "Password must be at least 6 characters";
+    }
+
+    if (!passwords.confirmPassword) {
+      errors.confirmPassword = "Please confirm your password";
+    } else if (passwords.newPassword !== passwords.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
 
-    if (passwords.newPassword !== passwords.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (passwords.newPassword.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (!validateForm()) {
       return;
     }
 
@@ -45,20 +67,40 @@ export const ChangePasswordPage = () => {
       });
 
       if (response.success) {
-        // Success! Redirect to dashboard based on role
-        // ඔයාගේ LoginPage.jsx එකේ තියෙන logic එකම මෙතන use කරන්න පුළුවන්
-        if (user.role === "ORG_ADMIN") {
-          navigate("/org_admin/dashboard");
-        } else if (user.role === "HR_STAFF") {
-          navigate("/hr_staff/dashboard");
-        } else {
-          navigate("/employee/profile");
-        }
+        // Success! Show SweetAlert and redirect
+        Swal.fire({
+          icon: 'success',
+          title: 'Password Changed!',
+          text: 'Your password has been updated successfully',
+          confirmButtonColor: '#02C39A',
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        setTimeout(() => {
+          if (user.role === "ORG_ADMIN") {
+            navigate("/org_admin/dashboard");
+          } else if (user.role === "HR_STAFF") {
+            navigate("/hr_staff/dashboard");
+          } else {
+            navigate("/employee/profile");
+          }
+        }, 2000);
       } else {
-        setError(response.message || "Failed to change password");
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed',
+          text: response.message || 'Failed to change password',
+          confirmButtonColor: '#02C39A',
+        });
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An error occurred. Please try again',
+        confirmButtonColor: '#02C39A',
+      });
     } finally {
       setLoading(false);
     }
@@ -82,31 +124,28 @@ export const ChangePasswordPage = () => {
               </p>
             </div>
 
-            
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label="New Password"
                 type="password"
+                name="newPassword"
                 value={passwords.newPassword}
-                onChange={(e) =>
-                  setPasswords({ ...passwords, newPassword: e.target.value })
-                }
+                onChange={handleInputChange}
+                error={formErrors.newPassword}
                 required
                 icon={Lock}
+                showPasswordToggle={true}
               />
               <Input
                 label="Confirm Password"
                 type="password"
+                name="confirmPassword"
                 value={passwords.confirmPassword}
-                onChange={(e) =>
-                  setPasswords({
-                    ...passwords,
-                    confirmPassword: e.target.value
-                  })
-                }
+                onChange={handleInputChange}
+                error={formErrors.confirmPassword}
                 required
                 icon={CheckCircle}
+                showPasswordToggle={true}
               />
               <Button
                 type="submit"

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import {
   PlusIcon,
   PencilIcon,
@@ -13,7 +14,6 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import Alert from "../../components/common/Alert";
 import * as designationApi from "../../api/designationApi";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 
@@ -33,7 +33,6 @@ export const DesignationManagement = () => {
   // Form state
   const [formData, setFormData] = useState({ name: "", isActive: true });
   const [formErrors, setFormErrors] = useState({});
-  const [alert, setAlert] = useState({ show: false, type: "", message: "" });
 
   useEffect(() => {
     fetchDesignations();
@@ -47,15 +46,15 @@ export const DesignationManagement = () => {
         setDesignations(response.data);
       }
     } catch (error) {
-      showAlert("error", "Failed to fetch designations");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to fetch designations",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: "", message: "" }), 5000);
   };
 
   const validateForm = () => {
@@ -65,6 +64,15 @@ export const DesignationManagement = () => {
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -78,31 +86,75 @@ export const DesignationManagement = () => {
           selectedDesignation.id,
           formData
         );
-        showAlert("success", "Designation updated successfully");
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Designation updated successfully",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
       } else {
         await designationApi.createDesignation(formData);
-        showAlert("success", "Designation created successfully");
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Designation created successfully",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
       setIsModalOpen(false);
       fetchDesignations();
       resetForm();
     } catch (error) {
-      showAlert("error", error.response?.data?.message || "Operation failed");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Operation failed",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: "This designation will be permanently deleted",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#02C39A",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!result.isConfirmed) return;
+
     setLoading(true);
     try {
       await designationApi.deleteDesignation(selectedDesignation.id);
-      showAlert("success", "Designation deleted successfully");
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Designation deleted successfully",
+        confirmButtonColor: "#02C39A",
+        timer: 2000,
+        showConfirmButton: false
+      });
       setIsDeleteModalOpen(false);
       setSelectedDesignation(null);
       fetchDesignations();
     } catch (error) {
-      showAlert("error", "Failed to delete designation");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to delete designation",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }

@@ -95,6 +95,7 @@ export default function AddEmployee() {
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const [organizationUuid, setOrganizationUuid] = useState(null);
   const designationInputRef = useRef(null);
@@ -160,8 +161,14 @@ export default function AddEmployee() {
     fetchNextCode();
   }, [organizationUuid]);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
+  };
 
   const handleLeaveBalanceChange = (leaveTypeId, value) => {
     setFormData((prev) => ({
@@ -177,6 +184,11 @@ export default function AddEmployee() {
   const handleDesignationChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, designation: value });
+    
+    // Clear error when user types
+    if (formErrors.designation) {
+      setFormErrors({ ...formErrors, designation: "" });
+    }
 
     if (value.trim()) {
       const filtered = designations.filter((d) =>
@@ -238,13 +250,70 @@ export default function AddEmployee() {
       icon: "success",
       title: "Photo Captured!",
       text: "Face photo will be registered after saving employee.",
+      confirmButtonColor: "#02C39A",
       timer: 2000,
       showConfirmButton: false
     });
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required";
+    } else if (formData.firstName.length < 2) {
+      errors.firstName = "First name must be at least 2 characters";
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required";
+    } else if (formData.lastName.length < 2) {
+      errors.lastName = "Last name must be at least 2 characters";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+      errors.phone = "Please enter a valid phone number";
+    }
+
+    if (!formData.nationalId.trim()) {
+      errors.nationalId = "National ID is required";
+    }
+
+    if (!formData.designation.trim()) {
+      errors.designation = "Designation is required";
+    }
+
+    if (!formData.department) {
+      errors.department = "Department is required";
+    }
+
+    if (!formData.basicSalary || formData.basicSalary <= 0) {
+      errors.basicSalary = "Please enter a valid salary amount";
+    }
+
+    if (!formData.dateJoined) {
+      errors.dateJoined = "Date joined is required";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return; // Don't show alert, just highlight errors
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -368,9 +437,16 @@ export default function AddEmployee() {
                   placeholder="John"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.firstName ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.firstName && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.firstName}
+                  </p>
+                )}
               </Field>
               <Field label="Last Name" required>
                 <input
@@ -378,9 +454,16 @@ export default function AddEmployee() {
                   placeholder="Doe"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.lastName ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.lastName && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.lastName}
+                  </p>
+                )}
               </Field>
 
               {/* National ID Field */}
@@ -390,9 +473,16 @@ export default function AddEmployee() {
                   placeholder="199812345678"
                   value={formData.nationalId}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.nationalId ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.nationalId && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.nationalId}
+                  </p>
+                )}
               </Field>
 
               {/* Bank Account Number Field */}
@@ -415,7 +505,9 @@ export default function AddEmployee() {
                     value={formData.designation}
                     onChange={handleDesignationChange}
                     onFocus={() => setShowDesignationDropdown(true)}
-                    className="input-box pr-10"
+                    className={`input-box pr-10 ${
+                      formErrors.designation ? "border-red-500" : ""
+                    }`}
                     required
                     autoComplete="off"
                   />
@@ -459,6 +551,11 @@ export default function AddEmployee() {
                     </div>
                   )}
                 </div>
+                {formErrors.designation && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.designation}
+                  </p>
+                )}
               </Field>
 
               <Field label="Department" required>
@@ -466,7 +563,9 @@ export default function AddEmployee() {
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.department ? "border-red-500" : ""
+                  }`}
                   required
                 >
                   <option value="">Select Department</option>
@@ -476,6 +575,11 @@ export default function AddEmployee() {
                     </option>
                   ))}
                 </select>
+                {formErrors.department && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.department}
+                  </p>
+                )}
               </Field>
               <Field label="Email" required>
                 <input
@@ -484,9 +588,14 @@ export default function AddEmployee() {
                   placeholder="example@mail.com"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.email ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.email && (
+                  <p className="text-red-600 text-sm mt-1">{formErrors.email}</p>
+                )}
               </Field>
               <Field label="Phone Number" required>
                 <input
@@ -494,9 +603,14 @@ export default function AddEmployee() {
                   placeholder="0771234567"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.phone ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.phone && (
+                  <p className="text-red-600 text-sm mt-1">{formErrors.phone}</p>
+                )}
               </Field>
             </div>
           </Box>
@@ -523,9 +637,16 @@ export default function AddEmployee() {
                   placeholder="50000"
                   value={formData.basicSalary}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.basicSalary ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.basicSalary && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.basicSalary}
+                  </p>
+                )}
               </Field>
            
               <Field label="Date Joined" required>
@@ -534,9 +655,16 @@ export default function AddEmployee() {
                   name="dateJoined"
                   value={formData.dateJoined}
                   onChange={handleChange}
-                  className="input-box"
+                  className={`input-box ${
+                    formErrors.dateJoined ? "border-red-500" : ""
+                  }`}
                   required
                 />
+                {formErrors.dateJoined && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.dateJoined}
+                  </p>
+                )}
               </Field>
             </div>
           </Box>

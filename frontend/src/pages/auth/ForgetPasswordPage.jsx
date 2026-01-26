@@ -115,23 +115,14 @@ export const ForgetPasswordPage = () => {
               </p>
             </div>
 
-            {status.message && (
-              <Alert
-                type={status.type}
-                message={status.message}
-                isOpen={!!status.message}
-                onClose={() => setStatus({ type: "", message: "" })}
-                className="mb-6"
-              />
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label="Email Address"
                 type="email"
                 placeholder="name@company.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={handleEmailChange}
+                error={formErrors.email}
                 required
                 icon={Mail}
               />

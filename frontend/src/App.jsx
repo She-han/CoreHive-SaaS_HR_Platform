@@ -87,6 +87,7 @@ import LeaveRequest from "./pages/employee/LeaveRequest";
 import Feedback from "./pages/employee/Feedback";
 import Notices from "./pages/employee/Notices";
 import Payslips from "./pages/employee/Payslips";
+import LeaveAndAttendanceConfigure from "./pages/org_admin/LeaveAndAttendanceConfigure";
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
@@ -305,6 +306,7 @@ const OrgAdminRoutes = () => {
      <Route path="/payment/success" element={<PaymentSuccess />} />
      <Route path="/payment/cancel" element={<PaymentCancel />} />
      <Route path="payroll-config" element={<PayrollConfiguration/>}/>
+     <Route path="leaveattendance-config" element={<LeaveAndAttendanceConfigure/>}/>
      <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />

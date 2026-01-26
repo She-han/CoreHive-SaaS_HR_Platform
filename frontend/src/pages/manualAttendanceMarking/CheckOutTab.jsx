@@ -48,6 +48,7 @@ const STATUS_STYLES = {
 const CheckOutTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [manualTimes, setManualTimes] = useState({});
 
   const fetchTodayAttendance = async () => {
     if (!token) return;
@@ -68,11 +69,18 @@ const CheckOutTab = ({ token }) => {
 
   useEffect(() => {
     fetchTodayAttendance();
-  }, [token]);
+  }, [token]); // Add token to dependency array
 
   const handleCheckOut = async (employeeId) => {
     try {
-      await manualCheckOut(employeeId, token);
+      const selectedTime = manualTimes[employeeId];
+      await manualCheckOut(employeeId, token, selectedTime);
+      // Clear the manual time after check-out
+      setManualTimes(prev => {
+        const updated = { ...prev };
+        delete updated[employeeId];
+        return updated;
+      });
       // Refresh the list to show updated checkout times and status
       fetchTodayAttendance();
     } catch (err) {
@@ -146,7 +154,8 @@ const CheckOutTab = ({ token }) => {
                       {emp.checkInTime
                         ? new Date(emp.checkInTime).toLocaleTimeString([], {
                             hour: "2-digit",
-                            minute: "2-digit"
+                            minute: "2-digit",
+                            hour12: true
                           })
                         : "--:--"}
                     </div>
@@ -159,13 +168,18 @@ const CheckOutTab = ({ token }) => {
                         <CheckCircle size={14} className="text-[#05668D]" />
                         {new Date(emp.checkOutTime).toLocaleTimeString([], {
                           hour: "2-digit",
-                          minute: "2-digit"
+                          minute: "2-digit",
+                          hour12: true
                         })}
                       </div>
                     ) : (
-                      <span className="text-[#9B9B9B] italic text-xs bg-gray-50 px-2 py-1 rounded">
-                        Pending...
-                      </span>
+                      <input
+                        type="time"
+                        value={manualTimes[emp.employeeId] || ''}
+                        onChange={(e) => setManualTimes({ ...manualTimes, [emp.employeeId]: e.target.value })}
+                        className="px-3 py-1 border border-[#05668D] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#05668D]"
+                        placeholder="Select time"
+                      />
                     )}
                   </td>
 

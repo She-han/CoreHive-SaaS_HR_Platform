@@ -1,5 +1,6 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.EmployeeLeaveBalanceDTO;
 import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.ApiResponse;
@@ -9,10 +10,7 @@ import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundEx
 import com.corehive.backend.exception.employeeCustomException.InvalidEmployeeDataException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.*;
-import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.DepartmentRepository;
-import com.corehive.backend.repository.EmployeeRepository;
-import com.corehive.backend.repository.OrganizationRepository;
+import com.corehive.backend.repository.*;
 import com.corehive.backend.util.mappers.EmployeeMapper;
 import com.corehive.backend.util.RandomTokenUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +25,11 @@ import org.springframework.dao.DataAccessException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -43,19 +43,27 @@ public class EmployeeService {
     private final AppUserRepository appUserRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository;
+    private final LeaveTypeRepository leaveTypeRepository;
 
 
 
-    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, DepartmentRepository departmentRepository, OrganizationRepository organizationRepository, DepartmentService departmentService, AppUserRepository appUserRepository, EmailService emailService, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository, EmployeeMapper employeeMapper, 
+                          DepartmentRepository departmentRepository, OrganizationRepository organizationRepository, 
+                          DepartmentService departmentService, AppUserRepository appUserRepository, 
+                          EmailService emailService, PasswordEncoder passwordEncoder,
+                          EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository,
+                          LeaveTypeRepository leaveTypeRepository) {
         this.employeeRepository = employeeRepository;
         this.employeeMapper = employeeMapper;
         this.departmentRepository = departmentRepository;
-
         this.organizationRepository = organizationRepository;
         this.departmentService = departmentService;
         this.appUserRepository = appUserRepository;
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
+        this.employeeLeaveBalanceRepository = employeeLeaveBalanceRepository;
+        this.leaveTypeRepository = leaveTypeRepository;
     }
 
     //************************************************//
@@ -215,10 +223,11 @@ public class EmployeeService {
         employee.setEmail(request.getEmail());
         employee.setPhone(request.getPhone());
         employee.setNationalId(request.getNationalId());
+        employee.setBankAccNo(request.getBankAccNo());
         employee.setDesignation(request.getDesignation());
         employee.setDepartmentId(request.getDepartment());
         employee.setBasicSalary(request.getBasicSalary());
-        employee.setLeaveCount(request.getLeaveCount());
+       
         employee.setDateOfJoining(request.getDateOfJoining());
 
         /* ---- SAFE enum conversion ---- */
@@ -254,6 +263,30 @@ public class EmployeeService {
          * ------------------------------------------------- */
         EmployeeResponseDTO responseDto =
                 employeeMapper.toDto(savedEmployee);
+
+        /* -------------------------------------------------
+         * 1️⃣1️⃣ Save leave balances for each leave type
+         * ------------------------------------------------- */
+        if (request.getLeaveBalances() != null && !request.getLeaveBalances().isEmpty()) {
+            log.info("Saving {} leave balances for employee {}", 
+                    request.getLeaveBalances().size(), savedEmployee.getId());
+            
+            for (EmployeeLeaveBalanceDTO balanceDTO : request.getLeaveBalances()) {
+                EmployeeLeaveBalance balance = new EmployeeLeaveBalance();
+                balance.setOrganizationUuid(organizationUuid);
+                balance.setEmployeeId(savedEmployee.getId());
+                balance.setLeaveTypeId(balanceDTO.getLeaveTypeId());
+                balance.setBalance(balanceDTO.getBalance());
+                balance.setCreatedAt(LocalDateTime.now());
+                balance.setUpdatedAt(LocalDateTime.now());
+                
+                employeeLeaveBalanceRepository.save(balance);
+            }
+            
+            List<EmployeeLeaveBalanceDTO> savedBalances = getEmployeeLeaveBalances(
+                    savedEmployee.getId(), organizationUuid);
+            responseDto.setLeaveBalances(savedBalances);
+        }
 
         return ApiResponse.success(responseDto, "Employee created successfully");
     }
@@ -472,7 +505,13 @@ public class EmployeeService {
 
 
         // 3) Map entity → DTO
-        return employeeMapper.toDto(employee);
+        EmployeeResponseDTO responseDto = employeeMapper.toDto(employee);
+        
+        // 4) Load leave balances
+        List<EmployeeLeaveBalanceDTO> leaveBalances = getEmployeeLeaveBalances(id, organizationUuid);
+        responseDto.setLeaveBalances(leaveBalances);
+        
+        return responseDto;
 
     }
 
@@ -522,8 +561,9 @@ public class EmployeeService {
             employee.setEmail(request.getEmail());
             employee.setPhone(request.getPhone());
             employee.setNationalId(request.getNationalId());
+            employee.setBankAccNo(request.getBankAccNo());
             employee.setDepartmentId(request.getDepartment());
-            employee.setLeaveCount(request.getLeaveCount());
+      
             employee.setSalaryType(Employee.SalaryType.valueOf(request.getSalaryType().toUpperCase()));
             employee.setBasicSalary(request.getBasicSalary());
             employee.setDateOfJoining(request.getDateOfJoining());
@@ -531,6 +571,34 @@ public class EmployeeService {
             employee.setUpdatedAt(LocalDateTime.now());
 
             Employee savedEmployee = employeeRepository.save(employee);
+
+            // Update leave balances
+            if (request.getLeaveBalances() != null && !request.getLeaveBalances().isEmpty()) {
+                log.info("Updating {} leave balances for employee {}", 
+                        request.getLeaveBalances().size(), savedEmployee.getId());
+                
+                for (EmployeeLeaveBalanceDTO balanceDTO : request.getLeaveBalances()) {
+                    Optional<EmployeeLeaveBalance> existingBalance = 
+                            employeeLeaveBalanceRepository.findByEmployeeIdAndLeaveTypeIdAndOrganizationUuid(
+                                    savedEmployee.getId(), balanceDTO.getLeaveTypeId(), organizationUuid);
+                    
+                    if (existingBalance.isPresent()) {
+                        EmployeeLeaveBalance balance = existingBalance.get();
+                        balance.setBalance(balanceDTO.getBalance());
+                        balance.setUpdatedAt(LocalDateTime.now());
+                        employeeLeaveBalanceRepository.save(balance);
+                    } else {
+                        EmployeeLeaveBalance balance = new EmployeeLeaveBalance();
+                        balance.setOrganizationUuid(organizationUuid);
+                        balance.setEmployeeId(savedEmployee.getId());
+                        balance.setLeaveTypeId(balanceDTO.getLeaveTypeId());
+                        balance.setBalance(balanceDTO.getBalance());
+                        balance.setCreatedAt(LocalDateTime.now());
+                        balance.setUpdatedAt(LocalDateTime.now());
+                        employeeLeaveBalanceRepository.save(balance);
+                    }
+                }
+            }
 
             // Update AppUser if linked
             if (savedEmployee.getAppUserId() != null) {
@@ -547,6 +615,11 @@ public class EmployeeService {
 
             log.info("Employee updated successfully with ID: {}", id);
             EmployeeResponseDTO dto = employeeMapper.toDto(savedEmployee);
+            
+            List<EmployeeLeaveBalanceDTO> leaveBalances = getEmployeeLeaveBalances(
+                    savedEmployee.getId(), organizationUuid);
+            dto.setLeaveBalances(leaveBalances);
+            
             return ApiResponse.success(dto, "Employee updated successfully");
 
 
@@ -703,5 +776,64 @@ public class EmployeeService {
         log.info("Generated and saved new QR token for employee: {}", employeeCode);
 
         return qrToken;
+    }
+    
+    /**
+     * Get employee leave balances with leave type details
+     */
+    private List<EmployeeLeaveBalanceDTO> getEmployeeLeaveBalances(Long employeeId, String organizationUuid) {
+        List<EmployeeLeaveBalance> balances = employeeLeaveBalanceRepository
+                .findByEmployeeIdAndOrganizationUuid(employeeId, organizationUuid);
+        
+        return balances.stream().map(balance -> {
+            EmployeeLeaveBalanceDTO dto = new EmployeeLeaveBalanceDTO();
+            dto.setLeaveTypeId(balance.getLeaveTypeId());
+            dto.setBalance(balance.getBalance());
+            
+            leaveTypeRepository.findById(balance.getLeaveTypeId()).ifPresent(leaveType -> {
+                dto.setLeaveTypeName(leaveType.getName());
+                dto.setLeaveTypeCode(leaveType.getCode());
+            });
+            
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Get leave balances for employee by email (for logged-in employee)
+     */
+    public ApiResponse<List<java.util.Map<String, Object>>> getEmployeeLeaveBalances(String organizationUuid, String userEmail) {
+        try {
+            // Find employee by email
+            Employee employee = employeeRepository.findByEmailAndOrganizationUuid(userEmail, organizationUuid)
+                    .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with email: " + userEmail));
+
+            // Get leave balances
+            List<EmployeeLeaveBalance> balances = employeeLeaveBalanceRepository
+                    .findByEmployeeIdAndOrganizationUuid(employee.getId(), organizationUuid);
+
+            // Build response with leave type details
+            List<java.util.Map<String, Object>> result = balances.stream().map(balance -> {
+                java.util.Map<String, Object> balanceData = new java.util.HashMap<>();
+                balanceData.put("leaveTypeId", balance.getLeaveTypeId());
+                balanceData.put("balance", balance.getBalance());
+
+                // Get leave type details
+                leaveTypeRepository.findById(balance.getLeaveTypeId()).ifPresent(leaveType -> {
+                    balanceData.put("leaveTypeName", leaveType.getName());
+                    balanceData.put("leaveTypeCode", leaveType.getCode());
+                });
+
+                return balanceData;
+            }).collect(Collectors.toList());
+
+            return ApiResponse.success(result, "Leave balances fetched successfully");
+        } catch (EmployeeNotFoundException e) {
+            log.error("Employee not found: {}", e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error fetching employee leave balances", e);
+            return ApiResponse.error("Failed to fetch leave balances");
+        }
     }
 }

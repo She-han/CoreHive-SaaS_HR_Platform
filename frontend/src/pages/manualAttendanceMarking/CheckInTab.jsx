@@ -10,6 +10,7 @@ const CheckInTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [manualTimes, setManualTimes] = useState({});
 
   const canCheckIn = (emp) =>
     emp.status !== "ABSENT" &&
@@ -83,11 +84,18 @@ const CheckInTab = ({ token }) => {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [token]); // Add token to dependency array
 
   const handleCheckIn = async (employeeId) => {
     try {
-      await manualCheckIn(employeeId, token);
+      const selectedTime = manualTimes[employeeId];
+      await manualCheckIn(employeeId, token, selectedTime);
+      // Clear the manual time after check-in
+      setManualTimes(prev => {
+        const updated = { ...prev };
+        delete updated[employeeId];
+        return updated;
+      });
       fetchEmployees();
     } catch (err) {
       alert(err.message);
@@ -176,15 +184,26 @@ const CheckInTab = ({ token }) => {
                 </td>
 
                 <td className="p-4">
-                  <div className="flex items-center gap-2 text-[#333333] font-medium text-xs">
-                    <Clock size={14} className="text-[#02C39A]" />
-                    {emp.checkInTime
-                      ? new Date(emp.checkInTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit"
-                        })
-                      : "--:--"}
-                  </div>
+                  {emp.status === "NOT_CHECKED_IN" ? (
+                    <input
+                      type="time"
+                      value={manualTimes[emp.employeeId] || ''}
+                      onChange={(e) => setManualTimes({ ...manualTimes, [emp.employeeId]: e.target.value })}
+                      className="px-3 py-1 border border-[#02C39A] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#02C39A]"
+                      placeholder="Select time"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-2 text-[#333333] font-medium text-xs">
+                      <Clock size={14} className="text-[#02C39A]" />
+                      {emp.checkInTime
+                        ? new Date(emp.checkInTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true
+                          })
+                        : "--:--"}
+                    </div>
+                  )}
                 </td>
 
                 <td className="p-4 text-center">

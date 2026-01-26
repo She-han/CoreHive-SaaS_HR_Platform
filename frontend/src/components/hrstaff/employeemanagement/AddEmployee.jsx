@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import apiClient from "../../../api/axios";
 import * as designationApi from "../../../api/designationApi";
+import * as leaveTypeApi from "../../../api/leaveTypeApi";
 import {
   Camera,
   RefreshCw,
@@ -74,16 +75,19 @@ export default function AddEmployee() {
     department: "",
     email: "",
     phone: "",
-    nationalId: "", // ADD THIS
+    nationalId: "",
+    bankAccNo: "",
     salaryType: "MONTHLY",
     basicSalary: "",
-    leaveCount: "",
+    
     dateJoined: "",
-    status: "Active"
+    status: "Active",
+    leaveBalances: []
   });
 
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   const [filteredDesignations, setFilteredDesignations] = useState([]);
 
@@ -115,6 +119,24 @@ export default function AddEmployee() {
         setFilteredDesignations(res.data.data || res.data);
       })
       .catch((err) => console.error("Error loading designations", err));
+
+    leaveTypeApi
+      .getActiveLeaveTypes()
+      .then((res) => {
+        console.log("Leave types loaded:", res.data);
+        const types = res.data.data || res.data;
+        setLeaveTypes(types);
+        setFormData((prev) => ({
+          ...prev,
+          leaveBalances: types.map((lt) => ({
+            leaveTypeId: lt.id,
+            leaveTypeName: lt.name,
+            leaveTypeCode: lt.code,
+            balance: lt.defaultDaysPerYear || 0
+          }))
+        }));
+      })
+      .catch((err) => console.error("Error loading leave types", err));
   }, []);
 
   // ===== Fetch next auto-generated employee code =====
@@ -140,6 +162,17 @@ export default function AddEmployee() {
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleLeaveBalanceChange = (leaveTypeId, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      leaveBalances: prev.leaveBalances.map((lb) =>
+        lb.leaveTypeId === leaveTypeId
+          ? { ...lb, balance: parseInt(value) || 0 }
+          : lb
+      )
+    }));
+  };
 
   const handleDesignationChange = (e) => {
     const value = e.target.value;
@@ -232,12 +265,14 @@ export default function AddEmployee() {
         department: formData.department,
         email: formData.email,
         phone: formData.phone,
-        nationalId: formData.nationalId, // ADD THIS
+        nationalId: formData.nationalId,
+        bankAccNo: formData.bankAccNo,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
-        leaveCount: formData.leaveCount,
+      
         dateOfJoining: formData.dateJoined,
-        status: formData.status
+        status: formData.status,
+        leaveBalances: formData.leaveBalances
       };
 
       console.log("Sending employee data:", employeeData);
@@ -348,7 +383,7 @@ export default function AddEmployee() {
                 />
               </Field>
 
-              {/* National ID Field - ADD THIS */}
+              {/* National ID Field */}
               <Field label="National ID" required>
                 <input
                   name="nationalId"
@@ -357,6 +392,17 @@ export default function AddEmployee() {
                   onChange={handleChange}
                   className="input-box"
                   required
+                />
+              </Field>
+
+              {/* Bank Account Number Field */}
+              <Field label="Bank Account Number">
+                <input
+                  name="bankAccNo"
+                  placeholder="1234567890"
+                  value={formData.bankAccNo}
+                  onChange={handleChange}
+                  className="input-box"
                 />
               </Field>
 
@@ -481,17 +527,7 @@ export default function AddEmployee() {
                   required
                 />
               </Field>
-              <Field label="Leave Count" required>
-                <input
-                  type="number"
-                  name="leaveCount"
-                  placeholder="12"
-                  value={formData.leaveCount}
-                  onChange={handleChange}
-                  className="input-box"
-                  required
-                />
-              </Field>
+           
               <Field label="Date Joined" required>
                 <input
                   type="date"
@@ -502,6 +538,39 @@ export default function AddEmployee() {
                   required
                 />
               </Field>
+            </div>
+          </Box>
+
+          {/* LEAVE BALANCES */}
+          <Box title="Leave Balances">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {formData.leaveBalances.map((leaveBalance) => (
+                <Field
+                  key={leaveBalance.leaveTypeId}
+                  label={`${leaveBalance.leaveTypeName} (${leaveBalance.leaveTypeCode})`}
+                  required
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    value={leaveBalance.balance}
+                    onChange={(e) =>
+                      handleLeaveBalanceChange(
+                        leaveBalance.leaveTypeId,
+                        e.target.value
+                      )
+                    }
+                    className="input-box"
+                    placeholder="0"
+                    required
+                  />
+                </Field>
+              ))}
+              {formData.leaveBalances.length === 0 && (
+                <p className="text-gray-500 col-span-3 text-center py-4">
+                  No leave types available. Please add leave types first.
+                </p>
+              )}
             </div>
           </Box>
 

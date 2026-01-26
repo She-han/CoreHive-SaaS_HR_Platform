@@ -374,7 +374,7 @@ const HRStaffManagement = () => {
         )}
 
         {/* Filters */}
-        <Card>
+        <Card className="bg-white">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -411,7 +411,7 @@ const HRStaffManagement = () => {
         </Card>
 
         {/* HR Staff Table */}
-        <Card>
+        <Card className="bg-white mt-4">
           <div className="overflow-x-auto">
             <table className="w-full table-auto">
               <thead>

@@ -14,11 +14,12 @@ export const getCheckInList = async (token) => {
     });
 };
 
-export const manualCheckIn = async (employeeId, token) => {
+export const manualCheckIn = async (employeeId, token, manualTime = null) => {
+  const payload = manualTime ? { manualTime } : {};
   return axios
     .post(
       `${BASE}/check-in/${employeeId}`,
-      {},
+      payload,
       {
         headers: { Authorization: `Bearer ${token}` }
       }
@@ -40,11 +41,12 @@ export const getPendingCheckouts = async (token) => {
     });
 };
 
-export const manualCheckOut = async (employeeId, token) => {
+export const manualCheckOut = async (employeeId, token, manualTime = null) => {
+  const payload = manualTime ? { manualTime } : {};
   return axios
     .post(
       `${BASE}/check-out/${employeeId}`,
-      {},
+      payload,
       { headers: { Authorization: `Bearer ${token}` } }
     )
     .then((res) => res.data.data); // ✅ RETURN DTO ONLY

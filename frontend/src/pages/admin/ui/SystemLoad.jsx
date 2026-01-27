@@ -11,7 +11,7 @@ const SystemLoad = memo(() => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Spring Boot API URL එක මෙතනට දෙන්න
+        
         const response = await axios.get('http://localhost:8080/api/system/stats-history');
         setSystemData(response.data);
       } catch (error) {
@@ -20,7 +20,7 @@ const SystemLoad = memo(() => {
     };
 
     fetchData();
-    // සෑම විනාඩි 5කට වරක් අලුත් දත්ත ලබා ගැනීමට (optional)
+    // this for get data every 5 minutes
     const interval = setInterval(fetchData, 300000); 
     return () => clearInterval(interval);
   }, []);

@@ -8,12 +8,12 @@ const SystemLoad = memo(() => {
   const [systemData, setSystemData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // localStorage එකෙන් ටෝකන් එක ලබා ගැනීම
+  
   const token = localStorage.getItem("corehive_token");
 
   const fetchData = async () => {
     try {
-      // Header එක සමඟ රික්වෙස්ට් එක යැවීම
+      
       const response = await axios.get('http://localhost:8080/api/admin/system/stats-history', {
         headers: {
           "Content-Type": "application/json",
@@ -32,11 +32,11 @@ const SystemLoad = memo(() => {
   useEffect(() => {
     fetchData();
 
-    // සෑම තත්පර 10කට වරක් දත්ත අලුත් කිරීම
+    // insert interval to fetch data every 10 minute
     const interval = setInterval(fetchData, 60000); 
     
     return () => clearInterval(interval); 
-  }, [token]); // token එක වෙනස් වුවහොත් නැවත ක්‍රියාත්මක වේ
+  }, [token]); 
 
   return (
     <div style={{ 

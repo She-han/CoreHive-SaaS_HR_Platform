@@ -18,14 +18,14 @@ public class SystemStatScheduler {
 
     // මෙම Method එක සෑම තත්පර 10කට වරක් ස්වයංක්‍රීයව වැඩ කරයි.
     // පැය 24ක graph එකක් සඳහා ඔබට මෙය විනාඩි 15කට වරක් (900000ms) ලෙස වෙනස් කළ හැකියි.
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 60000)
     public void captureSystemMetrics() {
 
         // 1. Operating System එකේ තොරතුරු ගන්නා Bean එකක් සාදා ගැනීම
         OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
 
         // 2. CPU භාවිතය ලබා ගැනීම (මෙය 0.0 සිට 1.0 දක්වා අගයක් දෙයි, එය 100න් වැඩි කළ යුතුය)
-        double cpuLoad = osBean.getSystemCpuLoad() * 100;
+        double cpuLoad = osBean.getCpuLoad() * 100;
 
         // 3. Memory (RAM) භාවිතය ලබා ගැනීම
         double totalMemory = osBean.getTotalPhysicalMemorySize();

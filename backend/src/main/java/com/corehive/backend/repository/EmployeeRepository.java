@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -228,4 +229,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             "ORDER BY created_at ASC", nativeQuery = true)
     List<Map<String, Object>> getMonthlyHeadcount();
 
+
+    // get count of employees end of the month
+    @Query("SELECT COUNT(e) FROM Employee e WHERE e.createdAt <= :endDate")
+    long countTotalUsersBefore(@Param("endDate") LocalDateTime endDate);
 }

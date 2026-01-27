@@ -13,7 +13,7 @@ public class TenantGrowthDTO {
         this.newTenants = newTenants;
     }
 
-    // Getters and Setters 
+    // Getters and Setters
     public String getMonth() { return month; }
     public void setMonth(String month) { this.month = month; }
 

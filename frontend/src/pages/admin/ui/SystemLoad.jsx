@@ -1,95 +1,57 @@
-import React, { memo } from 'react'
+import React, { memo, useState, useEffect } from 'react';
+import axios from 'axios';
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Area,
-  AreaChart
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 
 const SystemLoad = memo(() => {
+  // දත්ත තබා ගැනීමට state එකක් හදන්න
+  const [systemData, setSystemData] = useState([]);
 
-const systemData = [
-    { time: '00:00', cpu: 35, memory: 45 },
-    { time: '04:00', cpu: 28, memory: 40 },
-    { time: '08:00', cpu: 65, memory: 55 },
-    { time: '12:00', cpu: 85, memory: 75 },
-    { time: '16:00', cpu: 72, memory: 68 },
-    { time: '20:00', cpu: 45, memory: 52 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Spring Boot API URL එක මෙතනට දෙන්න
+        const response = await axios.get('http://localhost:8080/api/system/stats-history');
+        setSystemData(response.data);
+      } catch (error) {
+        console.error("Error fetching system stats:", error);
+      }
+    };
+
+    fetchData();
+    // සෑම විනාඩි 5කට වරක් අලුත් දත්ත ලබා ගැනීමට (optional)
+    const interval = setInterval(fetchData, 300000); 
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-     <div style={{ 
-      backgroundColor: 'white', 
-      padding: '20px', 
-      borderRadius: '16px',
-      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-      border: '1px solid #f3f4f6',
-      height: '100%'
+    <div style={{ 
+      backgroundColor: 'white', padding: '20px', borderRadius: '16px',
+      boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)', border: '1px solid #f3f4f6', height: '100%'
     }}>
       <h3 className="text-xl font-bold text-gray-800 mb-4">System Load</h3>
       <p style={{ marginBottom: '20px', color: '#666', fontSize: '14px' }}>CPU and memory usage over 24 hours</p>
       
       <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={systemData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea
-" />
-          <XAxis 
-            dataKey="time" 
-            tick={{ fill: '#666' }}
-            axisLine={{ stroke: '#ddd' }}
-          />
-          <YAxis 
-            domain={[0, 100]}
-            tick={{ fill: '#666' }}
-            axisLine={{ stroke: '#ddd' }}
-            label={{ 
-              value: 'Usage (%)', 
-              angle: -90, 
-              position: 'insideLeft',
-              offset: -10,
-              style: { fill: '#666' }
-            }}
-          />
-          <Tooltip 
-            formatter={(value) => [`${value}%`, '']}
-            labelStyle={{ color: '#333' }}
-          />
-          <Legend />
-          <Area 
-            type="monotone" 
-            dataKey="cpu" 
-            name="CPU Usage" 
-            stroke="#ff7300" 
-            fill="#fff" 
-            fillOpacity={0.3}
-            strokeWidth={2}
-          />
-          <Area 
-            type="monotone" 
-            dataKey="memory" 
-            name="Memory Usage" 
-            stroke="#387908" 
-            fill="#fff" 
-            fillOpacity={0.3}
-            strokeWidth={2}
-          />
-        </AreaChart>
+        {/* show chart if data is available */}
+        {systemData.length > 0 ? (
+          <AreaChart data={systemData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea" />
+            <XAxis dataKey="time" tick={{ fill: '#666' }} />
+            <YAxis domain={[0, 100]} tick={{ fill: '#666' }} />
+            <Tooltip formatter={(value) => [`${value}%`, '']} />
+            <Legend />
+            <Area type="monotone" dataKey="cpu" name="CPU Usage" stroke="#ff7300" fill="#ff7300" fillOpacity={0.1} strokeWidth={2} />
+            <Area type="monotone" dataKey="memory" name="Memory Usage" stroke="#387908" fill="#387908" fillOpacity={0.1} strokeWidth={2} />
+          </AreaChart>
+        ) : (
+          <p>Loading data...</p>
+        )}
       </ResponsiveContainer>
     </div>
-  )
+  );
 });
 
 SystemLoad.displayName = 'SystemLoad';
-
-export default SystemLoad
-
-  
-
+export default SystemLoad;

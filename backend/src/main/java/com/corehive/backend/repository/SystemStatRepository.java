@@ -10,5 +10,5 @@ import java.util.List;
 public interface SystemStatRepository extends JpaRepository<SystemStat, Long> {
 
     // වැදගත්ම කොටස: Database එකේ තියෙන අන්තිම දත්ත 24 (Latest 24 records) ලබා ගැනීම
-    List<SystemStat> findTop24ByOrderByIdDesc();
+    List<SystemStat> findTop72ByOrderByIdDesc();
 }

@@ -5,14 +5,22 @@ import {
 } from 'recharts';
 
 const SystemLoad = memo(() => {
-  // 1. දත්ත තබා ගැනීමට State එකක් සාදාගන්න
   const [systemData, setSystemData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 2. API එකෙන් දත්ත ලබාගන්නා Function එක
+  // localStorage එකෙන් ටෝකන් එක ලබා ගැනීම
+  const token = localStorage.getItem("corehive_token");
+
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/api/system/stats-history');
+      // Header එක සමඟ රික්වෙස්ට් එක යැවීම
+      const response = await axios.get('http://localhost:8080/api/admin/system/stats-history', {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
       setSystemData(response.data);
       setLoading(false);
     } catch (error) {
@@ -21,15 +29,14 @@ const SystemLoad = memo(() => {
     }
   };
 
-  // 3. Component එක Load වන විට සහ වරින් වර දත්ත ලබාගැනීම
   useEffect(() => {
-    fetchData(); // මුලින්ම දත්ත ගන්න
+    fetchData();
 
-    // සෑම තත්පර 10කට වරක් Graph එක Update කරන්න (Scheduler එකේ වෙලාවට අනුව)
-    const interval = setInterval(fetchData, 10000); 
+    // සෑම තත්පර 10කට වරක් දත්ත අලුත් කිරීම
+    const interval = setInterval(fetchData, 60000); 
     
-    return () => clearInterval(interval); // Component එක අයින් කරන විට මෙය නවත්වන්න
-  }, []);
+    return () => clearInterval(interval); 
+  }, [token]); // token එක වෙනස් වුවහොත් නැවත ක්‍රියාත්මක වේ
 
   return (
     <div style={{ 
@@ -41,7 +48,7 @@ const SystemLoad = memo(() => {
       
       <ResponsiveContainer width="100%" height={300}>
         {loading ? (
-          <p>Loading System Stats...</p>
+          <p className="flex items-center justify-center h-full">Loading System Stats...</p>
         ) : (
           <AreaChart data={systemData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eaeaea" />
@@ -56,24 +63,22 @@ const SystemLoad = memo(() => {
             />
             <Tooltip formatter={(value) => [`${value}%`, '']} />
             <Legend />
-            {/* CPU Usage Area */}
             <Area 
               type="monotone" 
               dataKey="cpu" 
               name="CPU Usage" 
               stroke="#ff7300" 
               fill="#ff7300" 
-              fillOpacity={0.2}
+              fillOpacity={0.1}
               strokeWidth={2}
             />
-            {/* Memory Usage Area */}
             <Area 
               type="monotone" 
               dataKey="memory" 
               name="Memory Usage" 
               stroke="#387908" 
               fill="#387908" 
-              fillOpacity={0.2}
+              fillOpacity={0.1}
               strokeWidth={2}
             />
           </AreaChart>

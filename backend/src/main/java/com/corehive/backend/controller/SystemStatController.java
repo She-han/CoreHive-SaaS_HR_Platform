@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/system")
+@RequestMapping("/api/admin/system")
 @CrossOrigin(origins = "http://localhost:3000") // React port එකට අවසර දීම
 public class SystemStatController {
 
@@ -23,7 +23,7 @@ public class SystemStatController {
     @GetMapping("/stats-history")
     public List<SystemStat> getStatsHistory() {
         // අන්තිම දත්ත 24 ලබා ගැනීම
-        List<SystemStat> stats = repository.findTop24ByOrderByIdDesc();
+        List<SystemStat> stats = repository.findTop72ByOrderByIdDesc();
 
         // අලුත්ම දත්ත අන්තිමට එන ලෙස (Graph එකේ වමේ සිට දකුණට) සකස් කිරීම
         Collections.reverse(stats);

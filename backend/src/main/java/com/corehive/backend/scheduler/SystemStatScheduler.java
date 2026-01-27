@@ -18,7 +18,7 @@ public class SystemStatScheduler {
 
     // මෙම Method එක සෑම තත්පර 10කට වරක් ස්වයංක්‍රීයව වැඩ කරයි.
     // පැය 24ක graph එකක් සඳහා ඔබට මෙය විනාඩි 15කට වරක් (900000ms) ලෙස වෙනස් කළ හැකියි.
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 600000)
     public void captureSystemMetrics() {
 
         // 1. Operating System එකේ තොරතුරු ගන්නා Bean එකක් සාදා ගැනීම

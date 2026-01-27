@@ -183,8 +183,9 @@ public class LeaveRequestService {
         
         while (!currentDate.isAfter(endDate)) {
             // Check if attendance record already exists for this date
+            final LocalDate dateToCheck = currentDate;
             attendanceRepository.findByEmployeeIdAndAttendanceDateAndOrganizationUuid(
-                employeeId, currentDate, orgUuid
+                employeeId, dateToCheck, orgUuid
             ).ifPresentOrElse(
                 // Update existing record
                 existingAttendance -> {
@@ -197,7 +198,7 @@ public class LeaveRequestService {
                     Attendance newAttendance = Attendance.builder()
                         .employeeId(employeeId)
                         .organizationUuid(orgUuid)
-                        .attendanceDate(currentDate)
+                        .attendanceDate(dateToCheck)
                         .status(Attendance.AttendanceStatus.ON_LEAVE)
                         .verificationType(Attendance.VerificationType.MANUAL)
                         .notes("Leave approved")

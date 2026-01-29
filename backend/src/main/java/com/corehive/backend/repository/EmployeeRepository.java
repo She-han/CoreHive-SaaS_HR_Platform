@@ -224,9 +224,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     //Count new-hires for specific month
     @Query(value = "SELECT DATE_FORMAT(created_at, '%b') as month, COUNT(*) as count " +
-            "FROM employees " +
-            "GROUP BY DATE_FORMAT(created_at, '%b') " +
-            "ORDER BY created_at ASC", nativeQuery = true)
+            "FROM employee " +
+            "GROUP BY month, DATE_FORMAT(created_at, '%m') " + // month නම සහ මාසයේ අංකය අනුව group කිරීම
+            "ORDER BY DATE_FORMAT(created_at, '%m') ASC", nativeQuery = true)
     List<Map<String, Object>> getMonthlyHeadcount();
 
 

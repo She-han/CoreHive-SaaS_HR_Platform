@@ -497,8 +497,16 @@ public class AuthService {
     @Transactional
     public ApiResponse<String> changePassword(Long userId, String newPassword) {
         try {
+            log.info("Changing password for userId: {}", userId);
+            
+            if (userId == null) {
+                log.error("UserId is null in changePassword");
+                return ApiResponse.error("User ID is required");
+            }
+            
             Optional<AppUser> userOpt = appUserRepository.findById(userId);
             if (userOpt.isEmpty()) {
+                log.error("User not found with id: {}", userId);
                 return ApiResponse.error("User not found");
             }
 
@@ -510,10 +518,41 @@ public class AuthService {
 
             appUserRepository.save(user);
 
+            log.info("Password changed successfully for user: {}", user.getEmail());
             return ApiResponse.success(null, "Password changed successfully");
         } catch (Exception e) {
             log.error("Error changing password", e);
             return ApiResponse.error("Failed to change password");
+        }
+    }
+
+    /**
+     * Change password by email (fallback when userId is not available)
+     */
+    @Transactional
+    public ApiResponse<String> changePasswordByEmail(String email, String newPassword) {
+        try {
+            log.info("Changing password by email: {}", email);
+            
+            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                log.error("User not found with email: {}", email);
+                return ApiResponse.error("User not found");
+            }
+
+            AppUser user = userOpt.get();
+
+            // Update password
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            user.setIsPasswordChangeRequired(false);
+
+            appUserRepository.save(user);
+
+            log.info("Password changed successfully for user: {}", user.getEmail());
+            return ApiResponse.success(null, "Password changed successfully");
+        } catch (Exception e) {
+            log.error("Error changing password by email", e);
+            return ApiResponse.error("Failed to change password: " + e.getMessage());
         }
     }
 

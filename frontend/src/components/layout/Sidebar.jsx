@@ -123,19 +123,14 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/sys_admin/organizations")
           },
           {
-            name: "Admin Approvals",
-            icon: Cog6ToothIcon,
+            name: "Registration Requests",
+            icon: AiOutlineAudit,
             path: "/sys_admin/approvals",
             current: location.pathname.startsWith("/sys_admin/approvals")
           },
+ 
           {
-            name: "Users",
-            icon: FiUsers,
-            path: "/sys_admin/users",
-            current: location.pathname.startsWith("/sys_admin/users")
-          },
-          {
-            name: 'Modules',
+            name: 'Extended Modules',
             icon: Cog6ToothIcon,
             path: '/sys_admin/Modules',
             current: location.pathname.startsWith('/sys_admin/Modules')
@@ -146,29 +141,18 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: "/sys_admin/billing",
             current: location.pathname.startsWith("/sys_admin/billing")
           },
-          {
-            name: "Audit Logs",
-            icon: AiOutlineAudit,
-            path: '/sys_admin/audits',
-            current: location.pathname.startsWith('/sys_admin/audits')
-          },
+
           {
             name: "Support",
             icon: FiHeadphones,
-            path: "/sys_admin/support",
-            current: location.pathname.startsWith("/sys_admin/support")
+            path: "/sys_admin/supportlist",
+            current: location.pathname.startsWith("/sys_admin/supportlist")
           },
           {
             name: "System Analytics",
             icon: MdQueryStats,
             path: "/sys_admin/analytics",
             current: location.pathname.startsWith("/sys_admin/analytics")
-          },
-          {
-            name: "Settings",
-            icon: Cog6ToothIcon,
-            path: "/sys_admin/settings",
-            current: location.pathname.startsWith("/sys_admin/settings")
           }
         ];
 
@@ -240,6 +224,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: Cog6ToothIcon,
             path: "/org_admin/leaveattendance-config",
             current: location.pathname.startsWith("/org_admin/leaveattendance-config")
+          },
+          {
+            name: "Support",
+            icon: Cog6ToothIcon,
+            path: "/org_admin/support",
+            current: location.pathname.startsWith("/org_admin/support")
           }
         ];
 
@@ -306,6 +296,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith(
               "/hr_staff/hrreportingmanagement"
             )
+          },
+          {
+            name: "Support",
+            icon: Cog6ToothIcon,
+            path: "/hr_staff/support",
+            current: location.pathname.startsWith("/hr_staff/support")
           }
         ];
 
@@ -409,6 +405,12 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: BellIcon,
             path: "/employee/notices",
             current: location.pathname.startsWith("/employee/notices")
+          },
+          {
+            name: "Support",
+            icon: Cog6ToothIcon,
+            path: "/employee/support",
+            current: location.pathname.startsWith("/employee/support")
           }
         ];
 

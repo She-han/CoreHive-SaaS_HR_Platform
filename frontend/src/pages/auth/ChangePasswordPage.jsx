@@ -58,6 +58,21 @@ export const ChangePasswordPage = () => {
       return;
     }
 
+    // Debug: Check user object
+    console.log("👤 Current user object:", user);
+    console.log("🔑 User ID:", user?.userId);
+
+    if (!user || !user.userId) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'User session invalid. Please login again.',
+        confirmButtonColor: '#02C39A',
+      });
+      navigate("/login");
+      return;
+    }
+
     setLoading(true);
     try {
       // API call to change password
@@ -65,6 +80,8 @@ export const ChangePasswordPage = () => {
         userId: user.userId, // Send User ID
         newPassword: passwords.newPassword
       });
+
+      console.log("📨 Change password response:", response);
 
       if (response.success) {
         // Success! Show SweetAlert and redirect
@@ -95,10 +112,11 @@ export const ChangePasswordPage = () => {
         });
       }
     } catch (err) {
+      console.error("❌ Change password error:", err);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'An error occurred. Please try again',
+        text: err.response?.data?.message || 'An error occurred. Please try again',
         confirmButtonColor: '#02C39A',
       });
     } finally {

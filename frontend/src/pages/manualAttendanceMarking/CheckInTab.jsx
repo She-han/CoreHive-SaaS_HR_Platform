@@ -2,15 +2,18 @@ import React, { useEffect, useState } from "react";
 import {
   getCheckInList,
   manualCheckIn,
-  updateAttendanceStatus
+  updateAttendanceStatus,
+  updateAttendanceRecord
 } from "../../api/manualAttendanceService";
-import { Search, CheckCircle2, Clock, ChevronDown } from "lucide-react";
+import { Search, CheckCircle2, Clock, ChevronDown, Edit } from "lucide-react";
+import EditAttendanceModal from "../../components/attendance/EditAttendanceModal";
 
-const CheckInTab = ({ token }) => {
+const CheckInTab = ({ token, selectedDate }) => {
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [manualTimes, setManualTimes] = useState({});
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   const canCheckIn = (emp) =>
     emp.status !== "ABSENT" &&
@@ -70,10 +73,10 @@ const CheckInTab = ({ token }) => {
   };
 
   const fetchEmployees = async () => {
-    if (!token) return;
+    if (!token || !selectedDate) return;
     setLoading(true);
     try {
-      const data = await getCheckInList(token);
+      const data = await getCheckInList(token, selectedDate);
       setEmployees(data);
     } catch (err) {
       console.error(err);
@@ -84,12 +87,12 @@ const CheckInTab = ({ token }) => {
 
   useEffect(() => {
     fetchEmployees();
-  }, [token]); // Add token to dependency array
+  }, [token, selectedDate]); // Add selectedDate to dependency array
 
   const handleCheckIn = async (employeeId) => {
     try {
       const selectedTime = manualTimes[employeeId];
-      await manualCheckIn(employeeId, token, selectedTime);
+      await manualCheckIn(employeeId, token, selectedTime, selectedDate);
       // Clear the manual time after check-in
       setManualTimes(prev => {
         const updated = { ...prev };
@@ -99,6 +102,24 @@ const CheckInTab = ({ token }) => {
       fetchEmployees();
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const handleSaveEdit = async (data) => {
+    try {
+      await updateAttendanceRecord(
+        data.employeeId,
+        data.date,
+        data.checkInTime,
+        data.checkOutTime,
+        data.status,
+        token
+      );
+      setEditingEmployee(null);
+      fetchEmployees();
+      alert("Attendance updated successfully!");
+    } catch (err) {
+      alert(err.message || "Failed to update attendance");
     }
   };
 
@@ -132,6 +153,7 @@ const CheckInTab = ({ token }) => {
               <th className="p-4 text-left">Attendance Update</th>
               <th className="p-4 text-left">Time</th>
               <th className="p-4 text-center">Action</th>
+              <th className="p-4 text-center">Edit</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#9B9B9B]/10">
@@ -223,11 +245,32 @@ const CheckInTab = ({ token }) => {
                     </div>
                   )}
                 </td>
+                
+                {/* Edit Button Column */}
+                <td className="p-4 text-center">
+                  <button
+                    onClick={() => setEditingEmployee(emp)}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white transition-all text-xs font-medium"
+                  >
+                    <Edit size={14} />
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Attendance Modal */}
+      {editingEmployee && (
+        <EditAttendanceModal
+          employee={editingEmployee}
+          selectedDate={selectedDate}
+          onClose={() => setEditingEmployee(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 };

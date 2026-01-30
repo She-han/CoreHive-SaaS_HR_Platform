@@ -37,6 +37,8 @@ public class EmployeeResponseDTO {
     private Employee.SalaryType salaryType = Employee.SalaryType.MONTHLY;
 
     private Integer leaveCount = 0;
+    
+    private String profileImage;
 
     private List<EmployeeLeaveBalanceDTO> leaveBalances;
 

@@ -39,6 +39,9 @@ public interface SupportTicketRepository extends JpaRepository<SupportTicket, Lo
             String organizationUuid, 
             Pageable pageable
     );
+    
+    // Delete by organization UUID (for cascading deletes)
+    int deleteByOrganizationUuid(String organizationUuid);
 
     // Search tickets
     @Query("SELECT t FROM SupportTicket t WHERE " +

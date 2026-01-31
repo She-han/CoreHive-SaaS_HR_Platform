@@ -187,6 +187,7 @@ public class AuthService {
                     .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.ORG_ADMIN)
                     .isActive(false) // Inactive until sys_admin approval
+                    .isPasswordChangeRequired(true)
                     .build();
 
             appUserRepository.save(orgAdmin);
@@ -247,7 +248,7 @@ public class AuthService {
                         .email(email)
                         .role("SYS_ADMIN")
                         .userType("SYSTEM")
-                        .isPasswordChangeRequired(systemUser.getIsPasswordChangeRequired() != null ? systemUser.getIsPasswordChangeRequired() : false)
+                        .passwordChangeRequired(systemUser.getIsPasswordChangeRequired() != null ? systemUser.getIsPasswordChangeRequired() : false)
                         .build();
 
                 log.info("System admin login successful: {}", email);
@@ -281,27 +282,30 @@ public class AuthService {
                     return ApiResponse.error("Your organization is pending approval");
                 }
 
-                // 🚧 TESTING MODE: Payment check temporarily disabled
-                // TODO: Re-enable this check after testing payment gateway
-                /*
+                // ⭐ Check if organization status is APPROVED_PENDING_PAYMENT
+                if (organization.getStatus() == OrganizationStatus.APPROVED_PENDING_PAYMENT) {
+                    requiresPayment = true;
+                    log.info("Organization {} requires payment activation (APPROVED_PENDING_PAYMENT)", 
+                            organization.getOrganizationUuid());
+                }
+
                 // Check if organization needs payment setup
                 Optional<Subscription> subscriptionOpt = subscriptionRepository
                         .findByOrganizationUuid(organization.getOrganizationUuid());
 
-                if (subscriptionOpt.isEmpty()) {
-                    // No subscription exists - require payment
+                if (subscriptionOpt.isEmpty() && organization.getStatus() == OrganizationStatus.ACTIVE) {
+                    // Active org without subscription - should not happen but handle gracefully
                     requiresPayment = true;
-                    log.info("Organization requires payment setup: {}", organization.getOrganizationUuid());
-                } else {
+                    log.warn("Active organization missing subscription: {}", organization.getOrganizationUuid());
+                } else if (subscriptionOpt.isPresent()) {
                     Subscription subscription = subscriptionOpt.get();
                     hasActiveSubscription = subscription.isActive();
 
-                    if (!hasActiveSubscription) {
+                    if (!hasActiveSubscription && organization.getStatus() == OrganizationStatus.ACTIVE) {
                         requiresPayment = true;
                         log.info("Subscription inactive - payment required");
                     }
                 }
-                */
 
                 // Generate JWT token
                 Map<String, Object> userDetails = new HashMap<>();
@@ -315,12 +319,13 @@ public class AuthService {
                 // Build response
                 LoginResponse response = LoginResponse.builder()
                         .token(token)
+                        .userId(appUser.getId()) // ⭐ ADDED MISSING userId
                         .email(email)
                         .role(appUser.getRole().name())
                         .userType("ORG_USER")
                         .organizationUuid(appUser.getOrganizationUuid())
                         .organizationName(organization.getName())
-                        .isPasswordChangeRequired(appUser.getIsPasswordChangeRequired())
+                        .passwordChangeRequired(appUser.getIsPasswordChangeRequired())
                         .modulesConfigured(organization.getModulesConfigured())
                         .requiresPayment(requiresPayment) // ⭐ NEW FIELD
                         .hasActiveSubscription(hasActiveSubscription) // ⭐ NEW FIELD
@@ -476,7 +481,35 @@ public class AuthService {
         // 6. Build module configuration map
         Map<String, Boolean> moduleConfig = buildModuleConfig(organization);
 
-        // 7. Build response - FIXED: Include all required fields
+        // 7. Check subscription status for payment requirements
+        boolean requiresPayment = false;
+        boolean hasActiveSubscription = false;
+        
+        if (organization.getStatus() == OrganizationStatus.APPROVED_PENDING_PAYMENT) {
+            requiresPayment = true;
+            log.info("Organization {} requires payment activation (APPROVED_PENDING_PAYMENT)", 
+                    organization.getOrganizationUuid());
+        }
+        
+        Optional<Subscription> subscriptionOpt = subscriptionRepository
+                .findByOrganizationUuid(organization.getOrganizationUuid());
+        
+        if (subscriptionOpt.isPresent()) {
+            Subscription subscription = subscriptionOpt.get();
+            hasActiveSubscription = subscription.isActive();
+            
+            if (!hasActiveSubscription && organization.getStatus() == OrganizationStatus.ACTIVE) {
+                requiresPayment = true;
+            }
+        } else if (organization.getStatus() == OrganizationStatus.ACTIVE) {
+            // Active org without subscription - should not happen
+            requiresPayment = true;
+            log.warn("Active organization missing subscription: {}", organization.getOrganizationUuid());
+        }
+
+        // 8. Build response - FIXED: Include all required fields
+        boolean passwordChangeRequired = Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired());
+        
         LoginResponse response = LoginResponse.builder()
                 .token(token)
                 .userId(appUser.getId())
@@ -487,10 +520,13 @@ public class AuthService {
                 .organizationName(organization.getName())
                 .modulesConfigured(Boolean.TRUE.equals(organization.getModulesConfigured())) // FIXED: Proper boolean check
                 .moduleConfig(moduleConfig)
-                .isPasswordChangeRequired(Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired()))
+                .passwordChangeRequired(passwordChangeRequired)
+                .requiresPayment(requiresPayment)
+                .hasActiveSubscription(hasActiveSubscription)
                 .build();
 
-        log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
+        log.info("🔍 [AuthService] App user login - Email: {}, PasswordChangeRequired: {}, RequiresPayment: {}, ModulesConfigured: {}", 
+                 appUser.getEmail(), passwordChangeRequired, requiresPayment, organization.getModulesConfigured());
         return ApiResponse.success(response, "Login successful");
     }
 
@@ -514,7 +550,7 @@ public class AuthService {
 
             // Update password
             user.setPasswordHash(passwordEncoder.encode(newPassword));
-            user.setIsPasswordChangeRequired(false); // Flag එක false කරනවා
+            user.setIsPasswordChangeRequired(false); // Flag -> false
 
             appUserRepository.save(user);
 

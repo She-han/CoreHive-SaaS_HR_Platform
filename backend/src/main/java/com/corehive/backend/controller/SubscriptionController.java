@@ -68,10 +68,17 @@ public class SubscriptionController {
     @PutMapping("/plan/{organizationUuid}")
     public ResponseEntity<ApiResponse<String>> changePlan(
             @PathVariable String organizationUuid,
-            @RequestBody Map<String, Long> request) {
-        Long newPlanId = request.get("planId");
-        log.info("Changing plan for organization: {} to plan ID: {}", organizationUuid, newPlanId);
-        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId);
+            @RequestBody Map<String, Object> request) {
+        Long newPlanId = ((Number) request.get("planId")).longValue();
+        @SuppressWarnings("unchecked")
+        List<Long> customModules = request.get("customModules") != null 
+            ? ((List<Number>) request.get("customModules")).stream()
+                .map(Number::longValue)
+                .collect(java.util.stream.Collectors.toList())
+            : java.util.Collections.emptyList();
+        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules", 
+                organizationUuid, newPlanId, customModules.size());
+        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId, customModules);
         return ResponseEntity.ok(response);
     }
 
@@ -83,5 +90,29 @@ public class SubscriptionController {
     @GetMapping("/plans")
     public ResponseEntity<List<BillingPlanDTO>> getActivePlans() {
         return ResponseEntity.ok(billingPlanService.getActivePlans());
+    }
+
+    /**
+     * Activate subscription with trial for APPROVED_PENDING_PAYMENT organizations
+     * POST /api/subscription/activate/{organizationUuid}
+     */
+    @PostMapping("/activate/{organizationUuid}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> activateSubscription(
+            @PathVariable String organizationUuid) {
+        log.info("Activating subscription with trial for organization: {}", organizationUuid);
+        ApiResponse<Map<String, Object>> response = subscriptionManagementService.activateSubscriptionWithTrial(organizationUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get organization billing information for payment gateway
+     * GET /api/subscription/billing-info/{organizationUuid}
+     */
+    @GetMapping("/billing-info/{organizationUuid}")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getOrganizationBillingInfo(
+            @PathVariable String organizationUuid) {
+        log.info("Getting billing info for organization: {}", organizationUuid);
+        ApiResponse<Map<String, Object>> response = subscriptionManagementService.getOrganizationBillingInfo(organizationUuid);
+        return ResponseEntity.ok(response);
     }
 }

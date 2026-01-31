@@ -254,7 +254,7 @@ public class PaymentService {
                         .findById(transaction.getSubscriptionId())
                         .orElseThrow(() -> new RuntimeException("Subscription not found"));
 
-                subscription.setStatus(SubscriptionStatus.TRIAL);
+                subscription.setStatus(SubscriptionStatus.ACTIVE);
                 subscription.setLastPaymentDate(LocalDateTime.now());
                 subscription.setLastPaymentAmount(transaction.getAmount());
                 
@@ -273,7 +273,8 @@ public class PaymentService {
                         .findByOrganizationUuid(transaction.getOrganizationUuid())
                         .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-                organization.setStatus(OrganizationStatus.TRIAL);
+                organization.setStatus(OrganizationStatus.ACTIVE);
+                organization.setUpdatedAt(LocalDateTime.now());
                 organizationRepository.save(organization);
 
                 log.info("Payment successful for order: {}", orderId);
@@ -289,6 +290,66 @@ public class PaymentService {
         } catch (Exception e) {
             log.error("Error processing payment notification", e);
             return ApiResponse.error("Failed to process notification");
+        }
+    }
+
+    /**
+     * Manually mark payment success (used after redirect if webhook not received)
+     */
+    @Transactional
+    public ApiResponse<String> markPaymentSuccess(String organizationUuid, String orderId) {
+        try {
+            Organization organization = organizationRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+            Subscription subscription = subscriptionRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElse(null);
+
+            if (subscription == null) {
+                // create active subscription with current plan
+                LocalDateTime now = LocalDateTime.now();
+                subscription = Subscription.builder()
+                        .subscriptionUuid(UUID.randomUUID().toString())
+                        .organizationUuid(organizationUuid)
+                        .planName(organization.getBillingPlan() != null ? organization.getBillingPlan() : "Standard Plan")
+                        .planPrice(organization.getBillingPricePerUserPerMonth() != null ? organization.getBillingPricePerUserPerMonth() : BigDecimal.valueOf(500))
+                        .billingCycle(BillingCycle.MONTHLY)
+                        .status(SubscriptionStatus.ACTIVE)
+                        .isTrial(true)
+                        .trialStartDate(now)
+                        .trialEndDate(now.plusMonths(1))
+                        .nextBillingDate(now.plusMonths(1))
+                        .activeUserCount(1)
+                        .lastPaymentDate(now)
+                        .lastPaymentAmount(organization.getBillingPricePerUserPerMonth())
+                        .paymentGateway("PAYHERE")
+                        .createdAt(now)
+                        .updatedAt(now)
+                        .build();
+            } else {
+                subscription.setStatus(SubscriptionStatus.ACTIVE);
+                subscription.setUpdatedAt(LocalDateTime.now());
+                subscription.setLastPaymentDate(LocalDateTime.now());
+                if (subscription.getPlanPrice() == null && organization.getBillingPricePerUserPerMonth() != null) {
+                    subscription.setPlanPrice(organization.getBillingPricePerUserPerMonth());
+                }
+                subscription.setLastPaymentAmount(subscription.getPlanPrice());
+                subscription.setNextBillingDate(LocalDateTime.now().plusMonths(1));
+            }
+
+            subscriptionRepository.save(subscription);
+
+            organization.setStatus(OrganizationStatus.ACTIVE);
+            organization.setUpdatedAt(LocalDateTime.now());
+            organizationRepository.save(organization);
+
+            log.info("Payment marked successful for org {} (orderId: {})", organizationUuid, orderId);
+            return ApiResponse.success("Payment status updated to ACTIVE");
+        } catch (Exception e) {
+            log.error("Error marking payment success for org {}", organizationUuid, e);
+            return ApiResponse.error("Failed to mark payment success: " + e.getMessage());
         }
     }
 

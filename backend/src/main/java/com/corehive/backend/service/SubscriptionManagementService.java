@@ -136,7 +136,7 @@ public class SubscriptionManagementService {
      * Change subscription plan
      */
     @Transactional
-    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId) {
+    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules) {
         try {
             Subscription subscription = subscriptionRepository
                     .findByOrganizationUuid(organizationUuid)
@@ -159,6 +159,40 @@ public class SubscriptionManagementService {
             // Update organization billing details
             organization.setBillingPlan(newPlan.getName());
             organization.setBillingPricePerUserPerMonth(new BigDecimal(newPlan.getPrice()));
+            
+            // If custom plan, update module flags based on customModules
+            if ("Custom".equalsIgnoreCase(newPlan.getName()) && customModules != null && !customModules.isEmpty()) {
+                // Reset all module flags first
+                organization.setModuleQrAttendanceMarking(false);
+                organization.setModuleFaceRecognitionAttendanceMarking(false);
+                organization.setModuleEmployeeFeedback(false);
+                organization.setModuleHiringManagement(false);
+                
+                // Set flags for selected modules (based on module IDs from plan_modules)
+                for (Long moduleId : customModules) {
+                    // Map module IDs to organization flags
+                    // You'll need to adjust these IDs based on your extended_modules table
+                    switch (moduleId.intValue()) {
+                        case 1: // QR Attendance
+                            organization.setModuleQrAttendanceMarking(true);
+                            break;
+                        case 2: // Face Recognition
+                            organization.setModuleFaceRecognitionAttendanceMarking(true);
+                            break;
+                        case 3: // Employee Feedback
+                            organization.setModuleEmployeeFeedback(true);
+                            break;
+                        case 4: // Hiring Management
+                            organization.setModuleHiringManagement(true);
+                            break;
+                    }
+                }
+            } else {
+                // For predefined plans, set modules based on plan_modules
+                // This ensures plan modules are properly set
+                // You may want to fetch plan modules and update accordingly
+            }
+            
             organizationRepository.save(organization);
 
             log.info("Plan changed to {} for organization: {}", newPlan.getName(), organizationUuid);
@@ -219,5 +253,95 @@ public class SubscriptionManagementService {
         map.put("payhereSubscriptionId", subscription.getPayhereSubscriptionId());
         map.put("createdAt", subscription.getCreatedAt());
         return map;
+    }
+
+    /**
+     * Activate subscription with 30-day trial for APPROVED_PENDING_PAYMENT organization
+     * Changes organization status to ACTIVE
+     */
+    @Transactional
+    public ApiResponse<Map<String, Object>> activateSubscriptionWithTrial(String organizationUuid) {
+        try {
+            // Check if subscription already exists
+            if (subscriptionRepository.findByOrganizationUuid(organizationUuid).isPresent()) {
+                return ApiResponse.error("Subscription already exists for this organization");
+            }
+
+            // Get organization
+            Organization organization = organizationRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+            // Validate organization status
+            if (!OrganizationStatus.APPROVED_PENDING_PAYMENT.equals(organization.getStatus())) {
+                return ApiResponse.error("Organization is not in APPROVED_PENDING_PAYMENT status");
+            }
+
+            // Create subscription with 30-day trial
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime trialEnd = now.plusDays(30);
+
+            Subscription subscription = Subscription.builder()
+                    .subscriptionUuid(java.util.UUID.randomUUID().toString())
+                    .organizationUuid(organizationUuid)
+                    .planName(organization.getBillingPlan())
+                    .planPrice(organization.getBillingPricePerUserPerMonth())
+                    .billingCycle(BillingCycle.MONTHLY)
+                    .status(SubscriptionStatus.TRIAL)
+                    .trialStartDate(now)
+                    .trialEndDate(trialEnd)
+                    .isTrial(true)
+                    .nextBillingDate(trialEnd)
+                    .activeUserCount(0)
+                    .paymentGateway("PAYHERE")
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .build();
+
+            subscriptionRepository.save(subscription);
+
+            // Update organization status to ACTIVE
+            organization.setStatus(OrganizationStatus.ACTIVE);
+            organization.setUpdatedAt(now);
+            organizationRepository.save(organization);
+
+            log.info("Subscription activated with 30-day trial for organization: {}", organizationUuid);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("subscription", buildSubscriptionMap(subscription));
+            response.put("organizationStatus", organization.getStatus());
+            response.put("message", "Subscription activated successfully with 30-day free trial");
+
+            return ApiResponse.success(response, "Subscription activated with trial");
+
+        } catch (Exception e) {
+            log.error("Error activating subscription for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to activate subscription: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get organization billing information for payment gateway display
+     */
+    public ApiResponse<Map<String, Object>> getOrganizationBillingInfo(String organizationUuid) {
+        try {
+            Organization organization = organizationRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+            Map<String, Object> billingInfo = new HashMap<>();
+            billingInfo.put("organizationUuid", organization.getOrganizationUuid());
+            billingInfo.put("organizationName", organization.getName());
+            billingInfo.put("planName", organization.getBillingPlan());
+            billingInfo.put("price", organization.getBillingPricePerUserPerMonth());
+            billingInfo.put("organizationStatus", organization.getStatus());
+            billingInfo.put("employeeCountRange", organization.getEmployeeCountRange());
+
+            return ApiResponse.success(billingInfo, "Billing information retrieved");
+
+        } catch (Exception e) {
+            log.error("Error getting billing info for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to get billing information: " + e.getMessage());
+        }
     }
 }

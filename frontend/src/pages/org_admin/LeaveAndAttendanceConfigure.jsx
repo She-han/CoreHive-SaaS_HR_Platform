@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSave } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import * as leaveTypeApi from '../../api/leaveTypeApi';
 import * as attendanceConfigApi from '../../api/attendanceConfigApi';
 import * as departmentApi from '../../api/departmentApi';
 import * as designationApi from '../../api/designationApi';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const LeaveAndAttendanceConfigure = () => {
@@ -19,7 +19,6 @@ const LeaveAndAttendanceConfigure = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isEditingAttendance, setIsEditingAttendance] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   // Theme colors matching HRStaffManagement
   const THEME = {
@@ -75,7 +74,11 @@ const LeaveAndAttendanceConfigure = () => {
         }
       }
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to load data');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to load data'
+      });
     } finally {
       setLoading(false);
     }
@@ -97,11 +100,6 @@ const LeaveAndAttendanceConfigure = () => {
     } catch (error) {
       console.error('Error loading designations:', error);
     }
-  };
-
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
   };
 
   const handleOpenModal = (item = null) => {
@@ -130,15 +128,31 @@ const LeaveAndAttendanceConfigure = () => {
     try {
       if (editingItem) {
         await leaveTypeApi.updateLeaveType(editingItem.id, leaveTypeForm);
-        showAlert('success', 'Leave type updated successfully');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Leave type updated successfully',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } else {
         await leaveTypeApi.createLeaveType(leaveTypeForm);
-        showAlert('success', 'Leave type created successfully');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Leave type created successfully',
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
       setShowModal(false);
       loadData();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Operation failed');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Operation failed'
+      });
     } finally {
       setLoading(false);
     }
@@ -161,30 +175,67 @@ const LeaveAndAttendanceConfigure = () => {
 
       if (attendanceConfig && attendanceConfig.id) {
         await attendanceConfigApi.updateConfiguration(attendanceConfig.id, data);
-        showAlert('success', 'Configuration updated successfully');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Configuration updated successfully',
+          timer: 2000,
+          showConfirmButton: false
+        });
       } else {
         await attendanceConfigApi.createConfiguration(data);
-        showAlert('success', 'Configuration created successfully');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success',
+          text: 'Configuration created successfully',
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
       
       setIsEditingAttendance(false);
       loadData();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Operation failed');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Operation failed'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this leave type?')) return;
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to delete this leave type?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#02C39A',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (!result.isConfirmed) return;
+
     setLoading(true);
     try {
       await leaveTypeApi.deleteLeaveType(id);
-      showAlert('success', 'Leave type deleted successfully');
+      Swal.fire({
+        icon: 'success',
+        title: 'Deleted',
+        text: 'Leave type deleted successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
       loadData();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to delete');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to delete'
+      });
     } finally {
       setLoading(false);
     }
@@ -202,18 +253,12 @@ const LeaveAndAttendanceConfigure = () => {
   };
 
   return (
-    <DashboardLayout>
+  
       <div className="min-h-screen bg-gradient-to-br from-[#F1FDF9] to-white p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-[#0C397A] mb-2">Leave & Attendance Configuration</h1>
           <p className="text-gray-600">Manage leave types and attendance rules for your organization</p>
         </div>
-
-        {alert.show && (
-          <div className={`mb-4 p-4 rounded-lg ${alert.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-            {alert.message}
-          </div>
-        )}
 
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
           <nav className="flex">
@@ -576,7 +621,7 @@ const LeaveAndAttendanceConfigure = () => {
           </form>
         </Modal>
       </div>
-    </DashboardLayout>
+   
   );
 };
 

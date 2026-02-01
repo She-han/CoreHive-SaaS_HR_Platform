@@ -126,7 +126,7 @@ function App() {
                   }
                 />
                 
-                {/* Payment routes 
+                {/* Payment routes - expose top-level for redirects */}
                 <Route 
                   path="/payment-gateway" 
                   element={
@@ -134,7 +134,23 @@ function App() {
                       <PaymentGateway />
                     </ProtectedRoute>
                   } 
-                />*/}
+                />
+                <Route 
+                  path="/payment/success" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <PaymentSuccess />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/payment/cancel" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <PaymentCancel />
+                    </ProtectedRoute>
+                  } 
+                />
 
                 {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route
@@ -296,6 +312,7 @@ const SystemAdminRoutes = () => {
 const OrgAdminRoutes = () => {
   return (
     <Routes>
+      <Route element={<MainHRLayout />}>
      <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
@@ -314,6 +331,7 @@ const OrgAdminRoutes = () => {
      {/*   
       <Route path="reports" element={<OrgReports />} />
        */}
+       </Route>
     </Routes>
   );
 };

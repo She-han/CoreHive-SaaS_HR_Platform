@@ -76,9 +76,15 @@ public class SubscriptionController {
                 .map(Number::longValue)
                 .collect(java.util.stream.Collectors.toList())
             : java.util.Collections.emptyList();
-        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules", 
-                organizationUuid, newPlanId, customModules.size());
-        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId, customModules);
+        
+        // Get total price for Custom plan with selected modules
+        Double totalPrice = request.get("totalPrice") != null 
+            ? ((Number) request.get("totalPrice")).doubleValue() 
+            : null;
+        
+        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules, totalPrice: {}", 
+                organizationUuid, newPlanId, customModules.size(), totalPrice);
+        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId, customModules, totalPrice);
         return ResponseEntity.ok(response);
     }
 

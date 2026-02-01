@@ -3,6 +3,7 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.model.*;
 import com.corehive.backend.repository.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,9 @@ public class SubscriptionManagementService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final BillingPlanRepository billingPlanRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final ExtendedModuleRepository extendedModuleRepository;
+    private final EntityManager entityManager;
 
     /**
      * Check if organization has an active subscription
@@ -136,7 +140,7 @@ public class SubscriptionManagementService {
      * Change subscription plan
      */
     @Transactional
-    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules) {
+    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules, Double totalPrice) {
         try {
             Subscription subscription = subscriptionRepository
                     .findByOrganizationUuid(organizationUuid)
@@ -150,58 +154,123 @@ public class SubscriptionManagementService {
                     .findByOrganizationUuid(organizationUuid)
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-            // Update subscription
+            // Determine the final price to save
+            BigDecimal finalPrice;
+            if (totalPrice != null && totalPrice > 0) {
+                // Use the calculated total price (for Custom plan with modules)
+                finalPrice = BigDecimal.valueOf(totalPrice);
+                log.info("Using custom total price: {} for organization: {}", totalPrice, organizationUuid);
+            } else {
+                // Use the plan's default price
+                finalPrice = new BigDecimal(newPlan.getPrice());
+            }
+
+            // Update subscription with the final calculated price
             subscription.setPlanName(newPlan.getName());
-            subscription.setPlanPrice(new BigDecimal(newPlan.getPrice()));
+            subscription.setPlanPrice(finalPrice);
             subscription.setUpdatedAt(LocalDateTime.now());
             subscriptionRepository.save(subscription);
 
             // Update organization billing details
             organization.setBillingPlan(newPlan.getName());
-            organization.setBillingPricePerUserPerMonth(new BigDecimal(newPlan.getPrice()));
+            organization.setBillingPricePerUserPerMonth(finalPrice);
             
-            // If custom plan, update module flags based on customModules
+            // Determine which modules to activate
+            List<Long> modulesToActivate;
             if ("Custom".equalsIgnoreCase(newPlan.getName()) && customModules != null && !customModules.isEmpty()) {
-                // Reset all module flags first
-                organization.setModuleQrAttendanceMarking(false);
-                organization.setModuleFaceRecognitionAttendanceMarking(false);
-                organization.setModuleEmployeeFeedback(false);
-                organization.setModuleHiringManagement(false);
-                
-                // Set flags for selected modules (based on module IDs from plan_modules)
-                for (Long moduleId : customModules) {
-                    // Map module IDs to organization flags
-                    // You'll need to adjust these IDs based on your extended_modules table
-                    switch (moduleId.intValue()) {
-                        case 1: // QR Attendance
-                            organization.setModuleQrAttendanceMarking(true);
-                            break;
-                        case 2: // Face Recognition
-                            organization.setModuleFaceRecognitionAttendanceMarking(true);
-                            break;
-                        case 3: // Employee Feedback
-                            organization.setModuleEmployeeFeedback(true);
-                            break;
-                        case 4: // Hiring Management
-                            organization.setModuleHiringManagement(true);
-                            break;
+                // For Custom plan, use manually selected modules
+                modulesToActivate = customModules;
+                log.info("Custom plan selected with {} modules", customModules.size());
+            } else {
+                // For predefined plans, use modules from plan_modules table
+                modulesToActivate = newPlan.getModuleIds();
+                log.info("Predefined plan '{}' selected with {} modules from plan_modules", newPlan.getName(), 
+                        modulesToActivate != null ? modulesToActivate.size() : 0);
+            }
+
+            // Clear all existing organization_modules records for this organization
+            List<OrganizationModule> existingModules = organizationModuleRepository.findByOrganization(organization);
+            if (!existingModules.isEmpty()) {
+                organizationModuleRepository.deleteAll(existingModules);
+                entityManager.flush(); // Force flush to execute DELETE before INSERT
+                log.info("Removed {} existing module subscriptions for organization: {}", 
+                        existingModules.size(), organizationUuid);
+            }
+
+            // Reset all module flags first
+            organization.setModuleQrAttendanceMarking(false);
+            organization.setModuleFaceRecognitionAttendanceMarking(false);
+            organization.setModuleEmployeeFeedback(false);
+            organization.setModuleHiringManagement(false);
+
+            // Create new organization_modules records and update boolean flags
+            if (modulesToActivate != null && !modulesToActivate.isEmpty()) {
+                for (Long moduleId : modulesToActivate) {
+                    try {
+                        ExtendedModule module = extendedModuleRepository.findById(moduleId)
+                                .orElseThrow(() -> new RuntimeException("Module not found: " + moduleId));
+
+                        // Create organization_module record
+                        OrganizationModule orgModule = OrganizationModule.builder()
+                                .organization(organization)
+                                .extendedModule(module)
+                                .isEnabled(true)
+                                .subscribedAt(LocalDateTime.now())
+                                .build();
+                        organizationModuleRepository.save(orgModule);
+
+                        // Update organization boolean flags based on module key
+                        updateOrganizationModuleFlag(organization, module.getModuleKey(), true);
+
+                        log.info("Added module '{}' (ID: {}) to organization: {}", 
+                                module.getName(), moduleId, organizationUuid);
+
+                    } catch (Exception e) {
+                        log.error("Error adding module {} to organization {}: {}", 
+                                moduleId, organizationUuid, e.getMessage());
+                        // Continue with other modules even if one fails
                     }
                 }
+                log.info("Successfully activated {} modules for organization: {}", 
+                        modulesToActivate.size(), organizationUuid);
             } else {
-                // For predefined plans, set modules based on plan_modules
-                // This ensures plan modules are properly set
-                // You may want to fetch plan modules and update accordingly
+                log.info("No modules to activate for organization: {}", organizationUuid);
             }
             
             organizationRepository.save(organization);
 
-            log.info("Plan changed to {} for organization: {}", newPlan.getName(), organizationUuid);
+            log.info("Plan changed to {} for organization: {} with final price: {}", 
+                    newPlan.getName(), organizationUuid, finalPrice);
 
             return ApiResponse.success("Plan changed successfully");
 
         } catch (Exception e) {
             log.error("Error changing plan for organization: {}", organizationUuid, e);
             return ApiResponse.error("Failed to change plan: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update organization's module boolean flag based on module key
+     */
+    private void updateOrganizationModuleFlag(Organization org, String moduleKey, boolean value) {
+        if (moduleKey == null) return;
+
+        switch (moduleKey) {
+            case "moduleQrAttendanceMarking":
+                org.setModuleQrAttendanceMarking(value);
+                break;
+            case "moduleFaceRecognitionAttendanceMarking":
+                org.setModuleFaceRecognitionAttendanceMarking(value);
+                break;
+            case "moduleEmployeeFeedback":
+                org.setModuleEmployeeFeedback(value);
+                break;
+            case "moduleHiringManagement":
+                org.setModuleHiringManagement(value);
+                break;
+            default:
+                log.warn("Unknown module key: {}", moduleKey);
         }
     }
 

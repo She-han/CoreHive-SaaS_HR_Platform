@@ -42,7 +42,7 @@ public class Organization {
     private String businessRegistrationDocument;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private OrganizationStatus status = OrganizationStatus.PENDING_APPROVAL;
 
     @Column(name = "employee_count_range", nullable = false, length = 50)
@@ -68,7 +68,7 @@ public class Organization {
     private Boolean moduleHiringManagement = false;
 
     @Column(name = "modules_configured")
-    private Boolean modulesConfigured = false;
+    private Boolean modulesConfigured = true;
 
     // Audit fields
     @CreationTimestamp

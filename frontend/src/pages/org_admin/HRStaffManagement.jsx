@@ -25,7 +25,7 @@ import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import * as hrStaffApi from "../../api/hrStaffApi";
 import * as departmentApi from "../../api/departmentApi";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 
 const HRStaffManagement = () => {
   const { user } = useSelector((state) => state.auth);
@@ -388,7 +388,7 @@ const HRStaffManagement = () => {
   const displayedStaff = hrStaffList;
 
   return (
-    <DashboardLayout>
+    
       <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
@@ -1148,7 +1148,7 @@ const HRStaffManagement = () => {
           )}
         </Modal>
       </div>
-    </DashboardLayout>
+   
   );
 };
 

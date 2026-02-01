@@ -143,7 +143,7 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
 
           {
-            name: "Support",
+            name: "Support Requests",
             icon: FiHeadphones,
             path: "/sys_admin/supportlist",
             current: location.pathname.startsWith("/sys_admin/supportlist")
@@ -172,12 +172,6 @@ const Sidebar = ({ isCollapsed = false }) => {
             testingMode: true
           },
           {
-            name: 'Subscription Management',
-            icon: CreditCard,
-            path: '/org_admin/subscription-management',
-            current: location.pathname.startsWith('/org_admin/subscription-management')
-          },
-          {
             name: "HR Staff Management",
             icon: UsersIcon,
             path: "/org_admin/hrstaffmanagement",
@@ -201,21 +195,10 @@ const Sidebar = ({ isCollapsed = false }) => {
               "/org_admin/designationmanagement"
             )
           },
-          {
-            name: "Module Configuration",
-            icon: Cog6ToothIcon,
-            path: "/org_admin/modules",
-            current: location.pathname.startsWith("/org_admin/modules")
-          },
-          {
-            name: "Reports & Analytics",
-            icon: ChartBarIcon,
-            path: "/org_admin/reports",
-            current: location.pathname.startsWith("/org_admin/reports")
-          },
+
           {
             name: "Payroll Configuration",
-            icon: Cog6ToothIcon,
+            icon: DollarSign,
             path: "/org_admin/payroll-config",
             current: location.pathname.startsWith("/org_admin/payroll-config")
           },
@@ -226,8 +209,20 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/org_admin/leaveattendance-config")
           },
           {
+            name: "Reports & Analytics",
+            icon: ChartBarIcon,
+            path: "/org_admin/reports",
+            current: location.pathname.startsWith("/org_admin/reports")
+          },
+          {
+            name: 'Subscription Management',
+            icon: CreditCard,
+            path: '/org_admin/subscription-management',
+            current: location.pathname.startsWith('/org_admin/subscription-management')
+          },
+          {
             name: "Support",
-            icon: Cog6ToothIcon,
+            icon: FiHeadphones,
             path: "/org_admin/support",
             current: location.pathname.startsWith("/org_admin/support")
           }
@@ -496,7 +491,7 @@ const Sidebar = ({ isCollapsed = false }) => {
 
   return (
     <div
-      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-16" : "w-64"}`}
+      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-18" : "w-68"}`}
       style={{ backgroundColor: "#FFFFFF", borderRight: "1px solid #E5E7EB" }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -545,7 +540,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <div className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {modulesLoading && user?.role === "HR_STAFF" ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>

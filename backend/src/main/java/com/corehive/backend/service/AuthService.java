@@ -687,12 +687,29 @@ public class AuthService {
         moduleConfig.put("notificationSystem", true);
         moduleConfig.put("basicDashboard", true);
 
-        // Extended modules (based on organization selection)
-
+        // Extended modules (based on organization boolean flags)
         moduleConfig.put("employeeFeedback", organization.getModuleEmployeeFeedback());
         moduleConfig.put("hiringManagement", organization.getModuleHiringManagement());
         moduleConfig.put("qrAttendance", organization.getModuleQrAttendanceMarking());
         moduleConfig.put("faceRecognitionAttendance",organization.getModuleFaceRecognitionAttendanceMarking());
+
+        // AI Insights module (module_id = 5) - Check organization_modules table
+        boolean hasAIInsights = false;
+        try {
+            List<OrganizationModule> enabledModules = organizationModuleRepository
+                    .findEnabledByOrganizationUuid(organization.getOrganizationUuid());
+            
+            // Check if AI Insights module (ID = 5) is enabled
+            hasAIInsights = enabledModules.stream()
+                    .anyMatch(om -> om.getExtendedModule().getModuleId() == 5L && om.getIsEnabled());
+            
+            log.info("AI Insights module check for organization {}: {}", 
+                    organization.getOrganizationUuid(), hasAIInsights);
+        } catch (Exception e) {
+            log.error("Error checking AI Insights module for organization {}: {}", 
+                    organization.getOrganizationUuid(), e.getMessage());
+        }
+        moduleConfig.put("aiInsights", hasAIInsights);
 
         return moduleConfig;
     }

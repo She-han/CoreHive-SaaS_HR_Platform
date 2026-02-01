@@ -37,9 +37,13 @@ public enum OrganizationStatus {
     public boolean canChangeTo(OrganizationStatus targetStatus) {
         switch (this) {
             case PENDING_APPROVAL:
-                return targetStatus == ACTIVE || targetStatus == SUSPENDED;
+                return targetStatus == APPROVED_PENDING_PAYMENT || targetStatus == ACTIVE || targetStatus == SUSPENDED;
+            case APPROVED_PENDING_PAYMENT:
+                return targetStatus == ACTIVE || targetStatus == SUSPENDED || targetStatus == DORMANT;
             case ACTIVE:
                 return targetStatus == DORMANT || targetStatus == SUSPENDED;
+            case TRIAL:
+                return targetStatus == ACTIVE || targetStatus == SUSPENDED || targetStatus == DORMANT;
             case DORMANT:
                 return targetStatus == ACTIVE || targetStatus == SUSPENDED;
             case SUSPENDED:

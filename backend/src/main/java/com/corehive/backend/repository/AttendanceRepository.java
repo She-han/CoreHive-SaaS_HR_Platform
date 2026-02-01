@@ -34,6 +34,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     // ===== Organization Queries =====
 
+    List<Attendance> findByOrganizationUuid(String organizationUuid);
+
     List<Attendance> findByOrganizationUuidAndAttendanceDate(String organizationUuid, LocalDate date);
 
     /**

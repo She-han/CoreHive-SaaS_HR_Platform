@@ -56,7 +56,7 @@ export default function ViewLeaveAndAttendance() {
         const summaryCalc = {
           present: currentMonthHistory.filter((h) => h.status === "PRESENT").length,
           absent: currentMonthHistory.filter((h) => h.status === "ABSENT").length,
-          leave: currentMonthHistory.filter((h) => h.status === "LEAVE").length,
+          leave: currentMonthHistory.filter((h) => h.status === "ON_LEAVE").length,
           totalOtHours: currentMonthHistory
             .reduce((acc, h) => {
               // OT hours from backend response
@@ -209,23 +209,23 @@ export default function ViewLeaveAndAttendance() {
                   if (status === 'PRESENT') {
                     bgColor = 'bg-[var(--color-primary-50)] hover:bg-green-100';
                     textColor = 'text-green-700';
-                    borderColor = 'border-green-200';
+                    borderColor = 'border-green-400';
                   } else if (status === 'ABSENT') {
                     bgColor = 'bg-red-50 hover:bg-red-100';
                     textColor = 'text-red-700';
-                    borderColor = 'border-red-200';
-                  } else if (status === 'LEAVE' || status === 'ON_LEAVE') {
+                    borderColor = 'border-red-600';
+                  } else if (status === 'ON_LEAVE') {
                     bgColor = 'bg-yellow-50 hover:bg-yellow-100';
                     textColor = 'text-yellow-700';
-                    borderColor = 'border-yellow-200';
+                    borderColor = 'border-yellow-400';
                   } else if (status === 'LATE') {
                     bgColor = 'bg-orange-50 hover:bg-orange-100';
                     textColor = 'text-orange-700';
-                    borderColor = 'border-orange-200';
+                    borderColor = 'border-orange-400';
                   } else if (status === 'HALF_DAY') {
                     bgColor = 'bg-blue-50 hover:bg-blue-100';
                     textColor = 'text-blue-700';
-                    borderColor = 'border-blue-200';
+                    borderColor = 'border-blue-400';
                   }
                   
                   calendarDays.push(
@@ -241,7 +241,7 @@ export default function ViewLeaveAndAttendance() {
                       </span>
                       {status && (
                         <span className="text-[8px] font-bold uppercase mt-0.5 opacity-70">
-                          {status === 'PRESENT' ? 'P' : status === 'ABSENT' ? 'A' : status === 'LEAVE' || status === 'ON_LEAVE' ? 'L' : status === 'LATE' ? 'LT' : status === 'HALF_DAY' ? 'HD' : ''}
+                          {status === 'PRESENT' ? 'P' : status === 'ABSENT' ? 'A' : status === 'ON_LEAVE' ? 'L' : status === 'LATE' ? 'LT' : status === 'HALF_DAY' ? 'HD' : ''}
                         </span>
                       )}
                     </div>
@@ -255,23 +255,23 @@ export default function ViewLeaveAndAttendance() {
             {/* Legend */}
             <div className="flex flex-wrap gap-4 justify-center pt-4 border-t border-gray-100">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-[var(--color-primary-50)] border border-green-200"></div>
+                <div className="w-4 h-4 rounded bg-[var(--color-primary-50)] border border-green-400"></div>
                 <span className="text-xs text-gray-600">Present</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-50 border border-red-200"></div>
+                <div className="w-4 h-4 rounded bg-red-50 border border-red-600"></div>
                 <span className="text-xs text-gray-600">Absent</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-yellow-50 border border-yellow-200"></div>
+                <div className="w-4 h-4 rounded bg-yellow-50 border border-yellow-400"></div>
                 <span className="text-xs text-gray-600">Leave</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-orange-50 border border-orange-200"></div>
+                <div className="w-4 h-4 rounded bg-orange-50 border border-orange-400"></div>
                 <span className="text-xs text-gray-600">Late</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-blue-50 border border-blue-200"></div>
+                <div className="w-4 h-4 rounded bg-blue-50 border border-blue-400"></div>
                 <span className="text-xs text-gray-600">Half Day</span>
               </div>
               <div className="flex items-center gap-2">

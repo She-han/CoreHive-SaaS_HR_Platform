@@ -15,7 +15,7 @@ import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import * as departmentApi from "../../api/departmentApi";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 
 const DepartmentManagement = () => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,6 @@ const DepartmentManagement = () => {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedDept, setSelectedDept] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -124,45 +123,7 @@ const DepartmentManagement = () => {
     }
   };
 
-  const handleDelete = async () => {
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Are you sure?",
-      text: "This department will be permanently deleted",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#02C39A",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel"
-    });
 
-    if (!result.isConfirmed) return;
-
-    setLoading(true);
-    try {
-      await departmentApi.deleteDepartment(selectedDept.id);
-      Swal.fire({
-        icon: "success",
-        title: "Deleted!",
-        text: "Department deleted successfully",
-        confirmButtonColor: "#02C39A",
-        timer: 2000,
-        showConfirmButton: false
-      });
-      setIsDeleteModalOpen(false);
-      setSelectedDept(null);
-      fetchDepartments();
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Failed to delete department",
-        confirmButtonColor: "#02C39A"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setFormData({ name: "", code: "", isActive: true });
@@ -187,9 +148,42 @@ const DepartmentManagement = () => {
     setIsViewModalOpen(true);
   };
 
-  const openDeleteModal = (dept) => {
-    setSelectedDept(dept);
-    setIsDeleteModalOpen(true);
+  const handleDeleteClick = async (dept) => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      html: `This will permanently delete <strong>${dept.name}</strong>.<br>This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#02C39A",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!result.isConfirmed) return;
+
+    setLoading(true);
+    try {
+      await departmentApi.deleteDepartment(dept.id);
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Department deleted successfully",
+        confirmButtonColor: "#02C39A",
+        timer: 2000,
+        showConfirmButton: false
+      });
+      fetchDepartments();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to delete department",
+        confirmButtonColor: "#02C39A"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -209,7 +203,7 @@ const DepartmentManagement = () => {
   });
 
   return (
-    <DashboardLayout >
+    
       <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
@@ -351,7 +345,7 @@ const DepartmentManagement = () => {
                             <PencilIcon className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openDeleteModal(dept)}
+                            onClick={() => handleDeleteClick(dept)}
                             className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
                             title="Delete"
                           >
@@ -546,46 +540,8 @@ const DepartmentManagement = () => {
             </div>
           )}
         </Modal>
-
-        {/* Delete Confirmation Modal */}
-        <Modal
-          isOpen={isDeleteModalOpen}
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setSelectedDept(null);
-          }}
-          title="Delete Department"
-        >
-          {selectedDept && (
-            <div className="space-y-4">
-              <p className="text-gray-900">
-                Are you sure you want to delete{" "}
-                <strong>{selectedDept.name}</strong>? This action cannot be
-                undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteModalOpen(false);
-                    setSelectedDept(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={loading}
-                >
-                  {loading ? "Deleting..." : "Delete"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal>
       </div>
-    </DashboardLayout>
+    
   );
 };
 

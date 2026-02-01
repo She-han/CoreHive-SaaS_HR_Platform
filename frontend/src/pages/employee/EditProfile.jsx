@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import Alert from "../../components/common/Alert";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import Swal from "sweetalert2";
 import {
   getCurrentEmployeeProfile,
   updateCurrentEmployeeProfile
@@ -15,8 +15,6 @@ const EditProfile = () => {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
 
   // Photo states
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -44,7 +42,6 @@ const EditProfile = () => {
   const fetchEmployeeProfile = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const response = await getCurrentEmployeeProfile();
 
@@ -67,14 +64,26 @@ const EditProfile = () => {
         });
 
         if (employee.profileImage) {
-          setPhotoPreview(employee.profileImage);
+          // If it's a relative path, prepend the backend URL
+          const imageUrl = employee.profileImage.startsWith('http') 
+            ? employee.profileImage 
+            : `http://localhost:8080${employee.profileImage}`;
+          setPhotoPreview(imageUrl);
         }
       } else {
-        setError(response.message || "Failed to load profile");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.message || "Failed to load profile"
+        });
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to load profile. Please try again.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load profile. Please try again."
+      });
     } finally {
       setLoading(false);
     }
@@ -97,20 +106,23 @@ const EditProfile = () => {
     e.preventDefault();
 
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setError("First name and last name are required");
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "First name and last name are required"
+      });
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
-      setSuccess(null);
 
       const payload = new FormData();
-
-      Object.entries(formData).forEach(([key, value]) => {
-        payload.append(key, value);
-      });
+      
+      // Only send fields that employees are allowed to update
+      payload.append("firstName", formData.firstName);
+      payload.append("lastName", formData.lastName);
+      payload.append("phone", formData.phone || "");
 
       if (photoFile) {
         payload.append("profileImage", photoFile);
@@ -119,14 +131,28 @@ const EditProfile = () => {
       const response = await updateCurrentEmployeeProfile(payload);
 
       if (response.success) {
-        setSuccess("Profile updated successfully!");
-        setTimeout(() => navigate("/employee/profile"), 1500);
+        await Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Profile updated successfully!",
+          timer: 1500,
+          showConfirmButton: false
+        });
+        navigate("/employee/profile");
       } else {
-        setError(response.message || "Failed to update profile");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.message || "Failed to update profile"
+        });
       }
     } catch (err) {
       console.error(err);
-      setError("Failed to update profile. Please try again.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to update profile. Please try again."
+      });
     } finally {
       setSaving(false);
     }
@@ -156,9 +182,6 @@ const EditProfile = () => {
               Cancel
             </button>
           </div>
-
-          {error && <Alert type="error" message={error} />}
-          {success && <Alert type="success" message={success} />}
 
           {/* PROFILE PHOTO */}
           <div className="flex items-center gap-6 mb-10">

@@ -51,8 +51,19 @@ export const updateDepartment = async (id, deptData) => {
   }
 };
 
+export const deleteDepartment = async (id) => {
+  try {
+    const response = await axios.delete(`/org-admin/departments/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting department:", error);
+    throw error;
+  }
+};
+
 export default {
   getAllDepartments,
   createDepartment,
-  updateDepartment
+  updateDepartment,
+  deleteDepartment
 };

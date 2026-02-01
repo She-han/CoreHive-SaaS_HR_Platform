@@ -47,11 +47,19 @@ export const cancelSubscription = async (organizationUuid) => {
 /**
  * Change subscription plan
  */
-export const changePlan = async (organizationUuid, planId) => {
+export const changePlan = async (organizationUuid, planId, customModules = [], totalPrice = null) => {
   try {
-    const response = await axios.put(`/subscription/plan/${organizationUuid}`, {
-      planId
-    });
+    const requestBody = {
+      planId,
+      customModules
+    };
+    
+    // Add totalPrice if provided (for Custom plans with selected modules)
+    if (totalPrice !== null) {
+      requestBody.totalPrice = totalPrice;
+    }
+    
+    const response = await axios.put(`/subscription/plan/${organizationUuid}`, requestBody);
     return response.data;
   } catch (error) {
     console.error('Error changing plan:', error);
@@ -72,10 +80,38 @@ export const getAvailablePlans = async () => {
   }
 };
 
+/**
+ * Activate subscription with 30-day trial
+ */
+export const activateSubscription = async (organizationUuid) => {
+  try {
+    const response = await axios.post(`/subscription/activate/${organizationUuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error activating subscription:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get organization billing information
+ */
+export const getOrganizationBillingInfo = async (organizationUuid) => {
+  try {
+    const response = await axios.get(`/subscription/billing-info/${organizationUuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting billing info:', error);
+    throw error;
+  }
+};
+
 export default {
   checkSubscription,
   getSubscriptionDetails,
   cancelSubscription,
   changePlan,
-  getAvailablePlans
+  getAvailablePlans,
+  activateSubscription,
+  getOrganizationBillingInfo
 };

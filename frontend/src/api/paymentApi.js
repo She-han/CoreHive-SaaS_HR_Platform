@@ -63,3 +63,27 @@ export const verifyPayment = async (orderId) => {
     throw error;
   }
 };
+
+/**
+ * Manually mark payment success (called from payment success page)
+ */
+export const markPaymentSuccess = async (organizationUuid, orderId = null) => {
+  try {
+    console.log('🔄 Marking payment success for org:', organizationUuid);
+    const response = await apiPost('/payment/mark-success', {
+      organizationUuid,
+      orderId,
+    });
+    return response;
+  } catch (error) {
+    console.error('❌ Failed to mark payment success:', error);
+    throw error;
+  }
+};
+
+export default {
+  initiatePayment,
+  getSubscriptionStatus,
+  verifyPayment,
+  markPaymentSuccess,
+};

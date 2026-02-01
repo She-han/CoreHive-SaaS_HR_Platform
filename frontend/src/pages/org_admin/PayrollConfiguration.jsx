@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import * as payrollApi from '../../api/payrollApi';
 import departmentApi from '../../api/departmentApi';
+import designationApi from '../../api/designationApi';
 import employeeApi from '../../api/employeeApi';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 
 const PayrollConfiguration = () => {
@@ -14,15 +15,12 @@ const PayrollConfiguration = () => {
   const [allowances, setAllowances] = useState([]);
   const [deductions, setDeductions] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [editingItem, setEditingItem] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [deleteType, setDeleteType] = useState('');
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   // Theme colors matching HRStaffManagement
   const THEME = {
@@ -65,22 +63,24 @@ const PayrollConfiguration = () => {
       }
 
       // Load reference data
-      const [deptResponse, empResponse] = await Promise.all([
+      const [deptResponse, empResponse, designationResponse] = await Promise.all([
         departmentApi.getAllDepartments(),
-        employeeApi.getAllEmployees(0, 1000)
+        employeeApi.getAllEmployees(0, 1000),
+        designationApi.getAllDesignations()
       ]);
       setDepartments(deptResponse.data);
       setEmployees(empResponse.data.items || []);
+      setDesignations(designationResponse.data || []);
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to load data');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to load data',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
   };
 
   const handleConfigSubmit = async (e) => {
@@ -88,9 +88,21 @@ const PayrollConfiguration = () => {
     setLoading(true);
     try {
       await payrollApi.updatePayrollConfiguration(config);
-      showAlert('success', 'Configuration updated successfully');
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Configuration updated successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to update configuration');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to update configuration',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setLoading(false);
     }
@@ -154,38 +166,65 @@ const PayrollConfiguration = () => {
         }
       }
 
-      showAlert('success', `${modalType.includes('allowance') ? 'Allowance' : 'Deduction'} ${editingItem ? 'updated' : 'created'} successfully`);
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: `${modalType.includes('allowance') ? 'Allowance' : 'Deduction'} ${editingItem ? 'updated' : 'created'} successfully`,
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
       setShowModal(false);
       loadData();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Operation failed');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Operation failed',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const openDeleteModal = (type, item) => {
-    setDeleteType(type);
-    setSelectedItem(item);
-    setIsDeleteModalOpen(true);
-  };
+  const handleDeleteClick = async (type, item) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Are you sure?',
+      html: `This will permanently delete this <strong>${type}</strong>.<br>This action cannot be undone.`,
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#02C39A',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
 
-  const handleDelete = async () => {
-    if (!selectedItem) return;
+    if (!result.isConfirmed) return;
     
     setLoading(true);
     try {
-      if (deleteType === 'allowance') {
-        await payrollApi.deleteAllowance(selectedItem.id);
+      if (type === 'allowance') {
+        await payrollApi.deleteAllowance(item.id);
       } else {
-        await payrollApi.deleteDeduction(selectedItem.id);
+        await payrollApi.deleteDeduction(item.id);
       }
-      showAlert('success', `${deleteType} deleted successfully`);
-      setIsDeleteModalOpen(false);
-      setSelectedItem(null);
+      Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: `${type} deleted successfully`,
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
       loadData();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Failed to delete');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'Failed to delete',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setLoading(false);
     }
@@ -198,7 +237,10 @@ const PayrollConfiguration = () => {
       const dept = departments.find(d => d.id === item.departmentId);
       return `Department: ${dept?.name || 'Unknown'}`;
     }
-    if (type === 'DESIGNATION_WISE') return `Designation: ${item.designation}`;
+    if (type === 'DESIGNATION_WISE') {
+      const designation = designations.find(d => d.name === item.designation);
+      return `Designation: ${designation?.name || item.designation}`;
+    }
     if (type === 'EMPLOYEE_SPECIFIC') {
       const emp = employees.find(e => e.id === item.employeeId);
       return `Employee: ${emp?.firstName} ${emp?.lastName}`;
@@ -207,8 +249,8 @@ const PayrollConfiguration = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="p-4">
+    
+      <div className="p-4 md:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
           <div>
@@ -221,17 +263,8 @@ const PayrollConfiguration = () => {
           </div>
         </div>
 
-        {/* Alert */}
-        {alert.show && (
-          <Alert
-            type={alert.type}
-            message={alert.message}
-            onClose={() => setAlert({ show: false, type: '', message: '' })}
-          />
-        )}
-
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
+        <div className="bg-white rounded-lg shadow-md mb-6 ">
           <div className="flex border-b">
             {['configuration', 'allowances', 'deductions'].map((tab) => (
               <button
@@ -405,7 +438,7 @@ const PayrollConfiguration = () => {
                                 <FaEdit />
                               </button>
                               <button
-                                onClick={() => openDeleteModal('allowance', allowance)}
+                                onClick={() => handleDeleteClick('allowance', allowance)}
                                 className="text-red-600 hover:text-red-800"
                               >
                                 <FaTrash />
@@ -466,7 +499,7 @@ const PayrollConfiguration = () => {
                                 <FaEdit />
                               </button>
                               <button
-                                onClick={() => openDeleteModal('deduction', deduction)}
+                                onClick={() => handleDeleteClick('deduction', deduction)}
                                 className="text-red-600 hover:text-red-800"
                               >
                                 <FaTrash />
@@ -561,14 +594,17 @@ const PayrollConfiguration = () => {
             {(formData.allowanceType === 'DESIGNATION_WISE' || formData.deductionType === 'DESIGNATION_WISE') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Designation *</label>
-                <input
-                  type="text"
+                <select
                   required
                   value={formData.designation}
                   onChange={(e) => setFormData({...formData, designation: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#02C39A] focus:border-transparent"
-                  placeholder="e.g., Manager"
-                />
+                >
+                  <option value="">Select Designation</option>
+                  {designations.map(designation => (
+                    <option key={designation.id} value={designation.name}>{designation.name}</option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -610,45 +646,8 @@ const PayrollConfiguration = () => {
             </div>
           </form>
         </Modal>
-
-        {/* Delete Confirmation Modal */}
-        <Modal
-          isOpen={isDeleteModalOpen}
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setSelectedItem(null);
-          }}
-          title={`Delete ${deleteType === 'allowance' ? 'Allowance' : 'Deduction'}`}
-        >
-          {selectedItem && (
-            <div className="space-y-4">
-              <p className="text-gray-900">
-                Are you sure you want to delete{" "}
-                <strong>{selectedItem.name}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteModalOpen(false);
-                    setSelectedItem(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={loading}
-                >
-                  {loading ? 'Deleting...' : 'Delete'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal>
       </div>
-    </DashboardLayout>
+    
   );
 };
 

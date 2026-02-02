@@ -22,10 +22,29 @@ import {
   RefreshCw,
   Zap,
   Bell,
-  ArrowRight
+  ArrowRight,
+  Briefcase,
+  Building,
+  CreditCard,
+  MessageSquare,
+  QrCode,
+  ScanFace
 } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
 import { getDashboardData } from "../../api/dashboardApi";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import AIInsightsCard from "../../components/dashboard/AIInsightsCard";
 
@@ -39,7 +58,17 @@ const THEME = {
   success: "#1ED292",
   text: "#333333",
   muted: "#9B9B9B",
-  white: "#FFFFFF"
+  white: "#FFFFFF",
+  charts: [
+    "#02C39A", // Primary
+    "#05668D", // Secondary
+    "#0C397A", // Dark
+    "#4CC9F0", // Light Blue
+    "#F72585", // Pink/Accent
+    "#4361EE", // Blue/Accent
+    "#3A0CA3", // Deep Purple
+    "#7209B7"  // Purple
+  ]
 };
 
 // Memoized Skeleton Loader
@@ -187,6 +216,142 @@ const FeatureBadge = memo(({ module }) => (
 ));
 FeatureBadge.displayName = "FeatureBadge";
 
+// Memoized Chart Component - Department Distribution
+const DepartmentChart = memo(({ data }) => {
+  // Transform object data relative to department names
+  const chartData = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) {
+      console.log("⚠️ No department data available");
+      return [];
+    }
+    console.log("📊 Processing department data:", data);
+    return Object.entries(data).map(([name, value]) => ({ 
+      name, 
+      value: Number(value) 
+    }));
+  }, [data]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center">
+        <Building className="w-12 h-12 text-gray-300 mb-3" />
+        <p className="text-sm text-gray-500">No department data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold" style={{ color: THEME.dark }}>Department Structure</h3>
+          <p className="text-xs mt-1" style={{ color: THEME.muted }}>Employee distribution by department</p>
+        </div>
+        <div className="p-2 rounded-lg bg-primary-50">
+          <Building className="w-5 h-5 text-primary-600" />
+        </div>
+      </div>
+      
+      <div className="flex-1 w-full min-h-[300px] ">
+        <ResponsiveContainer width="100%" height="95%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={100}
+              paddingAngle={5}
+              dataKey="value"
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={THEME.charts[index % THEME.charts.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+               itemStyle={{ color: THEME.darkText, fontWeight: 100 }}
+            />
+            <Legend verticalAlign="bottom" height={36} iconType="circle"/>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+});
+DepartmentChart.displayName = "DepartmentChart";
+
+// Memoized Chart Component - Designation Distribution
+const DesignationChart = memo(({ data }) => {
+   // Transform object data relative to designation names
+   const chartData = useMemo(() => {
+    if (!data || Object.keys(data).length === 0) {
+      console.log("⚠️ No designation data available");
+      return [];
+    }
+    console.log("📊 Processing designation data:", data);
+    return Object.entries(data)
+      .map(([name, value]) => ({ name, value: Number(value) }))
+      .sort((a, b) => b.value - a.value) // Sort by count descending
+      .slice(0, 8); // Top 8 designations
+  }, [data]);
+
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full flex flex-col items-center justify-center">
+        <Briefcase className="w-12 h-12 text-gray-300 mb-3" />
+        <p className="text-sm text-gray-500">No designation data available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-bold" style={{ color: THEME.dark }}>Designation Overview</h3>
+          <p className="text-xs mt-1" style={{ color: THEME.muted }}>Employees by top designations</p>
+        </div>
+        <div className="p-2 rounded-lg bg-blue-50">
+          <Briefcase className="w-5 h-5 text-blue-600" />
+        </div>
+      </div>
+
+      <div className="flex-1 w-full min-h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E5E7EB" />
+            <XAxis type="number" hide />
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              width={100} 
+              tick={{ fontSize: 12, fill: THEME.text }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip 
+               cursor={{ fill: 'transparent' }}
+               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+            />
+            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={THEME.charts[index % THEME.charts.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+});
+DesignationChart.displayName = "DesignationChart";
+
 /**
  * Organization Dashboard Component
  * Role-based dashboard for ORG_ADMIN, HR_STAFF, and EMPLOYEE
@@ -207,7 +372,10 @@ const OrgDashboard = () => {
     employeesOnLeave: 0,
     leaveBalance: {},
     checkedInToday: false,
-    attendanceThisMonth: { present: 0, absent: 0 }
+    attendanceThisMonth: { present: 0, absent: 0 },
+    employeesByDepartment: {}, // Added
+    employeesByDesignation: {}, // Added
+    features: {} // Added
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -221,6 +389,11 @@ const OrgDashboard = () => {
     try {
       const response = await getDashboardData();
       if (response.success) {
+        console.log("📊 Dashboard data received:", response.data);
+        console.log("📊 Employees by Department:", response.data.employeesByDepartment);
+        console.log("📊 Employees by Designation:", response.data.employeesByDesignation);
+        console.log("📊 Features:", response.data.features);
+        
         setDashboardData((prev) => ({
           ...prev,
           ...response.data
@@ -295,12 +468,12 @@ const OrgDashboard = () => {
         },
         {
           title: "Monthly Payroll",
-          value: dashboardData.monthlyPayrollTotal || 0,
+          value: dashboardData.monthlyPayrollTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00",
           suffix: "LKR",
           icon: DollarSign,
           iconColor: THEME.secondary,
           iconColorDark: THEME.dark,
-          change: "Total Amount",
+          change: "Total Cost (This Month)",
           link: "/org_admin/reports"
         }
       ];
@@ -405,88 +578,103 @@ const OrgDashboard = () => {
         {
           icon: BarChart3,
           label: "Dashboard",
-          link:
-            userRole === "ORG_ADMIN"
-              ? "/hr_staff/dashboard"
-              : "/hr_staff/dashboard",
+          link: userRole === "ORG_ADMIN" ? "/org_admin/dashboard" : "/hr_staff/dashboard",
           color: THEME.secondary,
-          colorDark: THEME.dark
         },
         {
           icon: Users,
           label: "Employee Management",
           link: "/hr_staff/employeemanagement",
           color: THEME.primary,
-          colorDark: THEME.secondary
         },
         {
           icon: Calendar,
-          label: "Leave Management",
+          label: "Leave Approval",
           link: "/hr_staff/leavemanagement",
           color: "#F59E0B",
-          colorDark: "#D97706"
         },
         {
-          icon: Clock,
-          label: "Attendance",
-          link: "/hr_staff/attendancemanagement",
-          color: THEME.success,
-          colorDark: "#059669"
+            icon: Clock,
+            label: "Monitor Attendance",
+            link: "/hr_staff/attendancemanagement",
+            color: THEME.success
         },
         {
-          icon: DollarSign,
-          label: "Payroll",
-          link: "/hr_staff/payrolldashboard",
-          color: THEME.secondary,
-          colorDark: THEME.dark
+          icon: CheckCircle,
+          label: "Mark Attendance",
+          link: "/hr_staff/attendancemarking",
+          color: THEME.charts[3]
         },
+        {
+             icon: DollarSign,
+             label: "Payslip Generation",
+             link: "/hr_staff/payslips",
+             color: THEME.secondary
+        },
+   
+        {
+            icon: Bell,
+            label: "Notice Management",
+            link: "/hr_staff/noticemanagement",
+            color: THEME.charts[5]
+        },
+         {
+             icon: MessageSquare,
+             label: "Employee Feedbacks",
+             link: "/hr_staff/employeefeedbacks",
+             color: THEME.charts[6]
+         },
         {
           icon: FileText,
           label: "HR Reports",
           link: "/hr_staff/hrreportingmanagement",
           color: THEME.dark,
-          colorDark: THEME.secondary
         }
       ];
 
       // Add module-based actions if enabled
-      if (availableModules?.moduleFaceRecognitionAttendanceMarking) {
+      // Check BOTH Redux state (availableModules) AND Dashboard API response (features)
+      const hasFeature = (reduxKey, apiKey) => {
+         const fromRedux = availableModules?.[reduxKey] === true;
+         const fromAPI = dashboardData.features?.[apiKey] === true;
+         console.log(`🔍 Feature check - ${reduxKey}/${apiKey}: Redux=${fromRedux}, API=${fromAPI}`);
+         return fromRedux || fromAPI;
+      };
+
+      if (hasFeature('faceRecognitionAttendance', 'faceAttendance') || hasFeature('moduleFaceRecognitionAttendanceMarking', 'faceAttendance')) {
         hrActions.push({
-          icon: UserCheck,
+          icon: ScanFace,
           label: "Face Attendance",
           link: "/hr_staff/faceattendance",
           color: THEME.primary,
-          colorDark: THEME.secondary
         });
       }
-      if (availableModules?.moduleQrAttendanceMarking) {
+      if (hasFeature('qrAttendance', 'qrAttendance') || hasFeature('moduleQrAttendanceMarking', 'qrAttendance')) {
         hrActions.push({
-          icon: Zap,
+          icon: QrCode,
           label: "QR Attendance",
           link: "/hr_staff/qrattendance",
           color: "#0EA5E9",
-          colorDark: "#0284C7"
         });
       }
-      if (availableModules?.moduleEmployeeFeedback) {
+      if (hasFeature('employeeFeedback', 'feedback') || hasFeature('moduleEmployeeFeedback', 'feedback')) {
         hrActions.push({
-          icon: FileText,
-          label: "Feedback Management",
+          icon: MessageSquare,
+          label: "Survey Management",
           link: "/hr_staff/feedbackmanagement",
           color: "#7C3AED",
-          colorDark: "#6D28D9"
         });
       }
-      if (availableModules?.moduleHiringManagement) {
+      if (hasFeature('hiringManagement', 'hiring') || hasFeature('moduleHiringManagement', 'hiring')) {
         hrActions.push({
           icon: UserPlus,
           label: "Hiring Management",
           link: "/hr_staff/hiringmanagement",
           color: "#EA580C",
-          colorDark: "#C2410C"
         });
       }
 
+      console.log("📋 Total Quick Actions:", hrActions.length);
       return hrActions;
     } else {
       // EMPLOYEE
@@ -685,10 +873,22 @@ const OrgDashboard = () => {
             <AIInsightsCard organizationUuid={user.organizationUuid} />
           </div>
         )}
+        
+        {/* Charts Section - Only for ORG_ADMIN and HR_STAFF */}
+        {(user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF") && (
+           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="h-[400px]">
+                 <DepartmentChart data={dashboardData.employeesByDepartment} />
+              </div>
+              <div className="h-[400px]">
+                 <DesignationChart data={dashboardData.employeesByDesignation} />
+              </div>
+           </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Quick Actions */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                 <div
@@ -718,58 +918,7 @@ const OrgDashboard = () => {
             </div>
           </div>
 
-          {/* Available Features */}
-          <div>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: "#ECFDF5" }}
-                >
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <h2 className="font-semibold" style={{ color: THEME.dark }}>
-                    Available Features
-                  </h2>
-                  <p className="text-xs" style={{ color: THEME.muted }}>
-                    {enabledModules.length} modules enabled
-                  </p>
-                </div>
-              </div>
-              <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
-                {enabledModules.length > 0 ? (
-                  enabledModules.map((module) => (
-                    <FeatureBadge key={module} module={module} />
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-sm" style={{ color: THEME.muted }}>
-                      No additional modules enabled
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {user?.role === "ORG_ADMIN" && (
-                <div className="px-4 pb-4">
-                  <Link to="/org_admin/modules">
-                    <button
-                      className="w-full py-2.5 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all hover:shadow-md"
-                      style={{
-                        backgroundColor: THEME.background,
-                        color: THEME.secondary,
-                        border: `1px solid ${THEME.primary}`
-                      }}
-                    >
-                      Manage Features
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
+         
         </div>
       </div>
     

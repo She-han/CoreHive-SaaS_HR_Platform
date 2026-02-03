@@ -44,6 +44,7 @@ import {
   ResponsiveContainer
 } from "recharts";
 import { getDashboardData } from "../../api/dashboardApi";
+import { getOrganizationModules } from "../../api/organizationModulesApi";
 
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import AIInsightsCard from "../../components/dashboard/AIInsightsCard";
@@ -178,6 +179,11 @@ const QuickAction = memo(({ action }) => {
   return (
     <Link to={action.link} className="block">
       <div className="relative group p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-300 text-center">
+        {action.moduleEnabled && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm">
+            EXT
+          </span>
+        )}
         <div
           className="w-11 h-11 rounded-lg flex items-center justify-center mx-auto mb-2 border-2 group-hover:scale-105 transition-transform duration-300"
           style={{
@@ -254,27 +260,46 @@ const DepartmentChart = memo(({ data }) => {
       
       <div className="flex-1 w-full min-h-[300px] ">
         <ResponsiveContainer width="100%" height="95%">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={5}
-              dataKey="value"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            >
-              {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={THEME.charts[index % THEME.charts.length]} />
-              ))}
-            </Pie>
-            <Tooltip 
-               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-               itemStyle={{ color: THEME.darkText, fontWeight: 100 }}
-            />
-            <Legend verticalAlign="bottom" height={36} iconType="circle"/>
-          </PieChart>
+          <PieChart margin={{ bottom: 30 }}>
+  <Pie
+    data={chartData}
+    cx="50%"
+    cy="50%"
+    innerRadius={60}
+    outerRadius={100}
+    paddingAngle={5}
+    dataKey="value"
+    label={({ name, percent }) =>
+      `${name}: ${(percent * 100).toFixed(0)}%`
+    }
+  >
+    {chartData.map((entry, index) => (
+      <Cell
+        key={`cell-${index}`}
+        fill={THEME.charts[index % THEME.charts.length]}
+      />
+    ))}
+  </Pie>
+
+  <Tooltip
+    contentStyle={{
+      borderRadius: '12px',
+      border: 'none',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+    }}
+    itemStyle={{ color: THEME.darkText, fontWeight: 100 }}
+  />
+
+  <Legend
+    verticalAlign="bottom"
+    height={12}
+    iconType="circle"
+    wrapperStyle={{
+      fontSize: '12px'
+    }}
+  />
+</PieChart>
+
         </ResponsiveContainer>
       </div>
     </div>
@@ -361,6 +386,16 @@ const OrgDashboard = () => {
   const user = useSelector(selectUser);
   const availableModules = useSelector(selectAvailableModules);
 
+  // Organization modules state (like Sidebar.jsx)
+  const [organizationModules, setOrganizationModules] = useState({
+    moduleFaceRecognitionAttendanceMarking: false,
+    moduleQrAttendanceMarking: false,
+    moduleEmployeeFeedback: false,
+    moduleHiringManagement: false,
+    moduleAiInsights: false
+  });
+  const [modulesLoading, setModulesLoading] = useState(true);
+
   // State management
   const [dashboardData, setDashboardData] = useState({
     totalEmployees: 0,
@@ -380,6 +415,60 @@ const OrgDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+
+  // Fetch organization modules (like Sidebar.jsx)
+  useEffect(() => {
+    const fetchModules = async () => {
+      if ((user?.role === "HR_STAFF" || user?.role === "ORG_ADMIN") && user?.organizationUuid) {
+        try {
+          console.log("🔍 Fetching modules for organization:", user.organizationUuid);
+          const response = await getOrganizationModules(user.organizationUuid);
+          console.log("📦 Organization modules API response:", response);
+          
+          // Response structure from API: { success: true, data: [OrganizationModule array], message: "..." }
+          const modulesArray = response.data || response; // Handle both wrapped and unwrapped responses
+          console.log("📋 Modules array:", modulesArray);
+          
+          if (modulesArray && Array.isArray(modulesArray) && modulesArray.length > 0) {
+            // Process the array of OrganizationModule objects
+            const modules = {
+              moduleFaceRecognitionAttendanceMarking: false,
+              moduleQrAttendanceMarking: false,
+              moduleEmployeeFeedback: false,
+              moduleHiringManagement: false,
+              moduleAiInsights: false
+            };
+            
+            // Map each module based on moduleKey from ExtendedModule
+            modulesArray.forEach(orgModule => {
+              if (orgModule.isEnabled && orgModule.extendedModule) {
+                const moduleKey = orgModule.extendedModule.moduleKey;
+                console.log("✅ Enabled module found:", moduleKey, orgModule.extendedModule.name);
+                
+                if (moduleKey in modules) {
+                  modules[moduleKey] = true;
+                }
+              }
+            });
+            
+            console.log("✅ Processed modules:", modules);
+            setOrganizationModules(modules);
+          } else {
+            console.log("⚠️ No organization modules found - organization may not have any extended modules enabled");
+          }
+        } catch (error) {
+          console.error("❌ Error fetching organization modules:", error);
+        } finally {
+          setModulesLoading(false);
+        }
+      } else {
+        console.log("⏭️ Skipping module fetch - role:", user?.role, "orgUuid:", user?.organizationUuid);
+        setModulesLoading(false);
+      }
+    };
+
+    fetchModules();
+  }, [user?.role, user?.organizationUuid]);
 
   // Load dashboard data with useCallback
   const loadDashboardData = useCallback(async () => {
@@ -578,7 +667,7 @@ const OrgDashboard = () => {
         {
           icon: BarChart3,
           label: "Dashboard",
-          link: userRole === "ORG_ADMIN" ? "/org_admin/dashboard" : "/hr_staff/dashboard",
+          link: "/hr_staff/dashboard",
           color: THEME.secondary,
         },
         {
@@ -632,45 +721,50 @@ const OrgDashboard = () => {
         }
       ];
 
-      // Add module-based actions if enabled
-      // Check BOTH Redux state (availableModules) AND Dashboard API response (features)
-      const hasFeature = (reduxKey, apiKey) => {
-         const fromRedux = availableModules?.[reduxKey] === true;
-         const fromAPI = dashboardData.features?.[apiKey] === true;
-         console.log(`🔍 Feature check - ${reduxKey}/${apiKey}: Redux=${fromRedux}, API=${fromAPI}`);
-         return fromRedux || fromAPI;
-      };
+      // Module-based quick actions (conditional) - EXACT SAME LOGIC AS SIDEBAR
+      console.log("🔍 Checking organization modules:", organizationModules);
 
-      if (hasFeature('faceRecognitionAttendance', 'faceAttendance') || hasFeature('moduleFaceRecognitionAttendanceMarking', 'faceAttendance')) {
+      // Add Face Recognition Attendance if enabled
+      if (organizationModules.moduleFaceRecognitionAttendanceMarking) {
         hrActions.push({
           icon: ScanFace,
           label: "Face Attendance",
           link: "/hr_staff/faceattendance",
           color: THEME.primary,
+          moduleEnabled: true
         });
       }
-      if (hasFeature('qrAttendance', 'qrAttendance') || hasFeature('moduleQrAttendanceMarking', 'qrAttendance')) {
+
+      // Add QR Attendance if enabled
+      if (organizationModules.moduleQrAttendanceMarking) {
         hrActions.push({
           icon: QrCode,
           label: "QR Attendance",
           link: "/hr_staff/qrattendance",
           color: "#0EA5E9",
+          moduleEnabled: true
         });
       }
-      if (hasFeature('employeeFeedback', 'feedback') || hasFeature('moduleEmployeeFeedback', 'feedback')) {
+
+      // Add Employee Feedback if enabled
+      if (organizationModules.moduleEmployeeFeedback) {
         hrActions.push({
           icon: MessageSquare,
           label: "Survey Management",
           link: "/hr_staff/feedbackmanagement",
           color: "#7C3AED",
+          moduleEnabled: true
         });
       }
-      if (hasFeature('hiringManagement', 'hiring') || hasFeature('moduleHiringManagement', 'hiring')) {
+
+      // Add Hiring Management if enabled
+      if (organizationModules.moduleHiringManagement) {
         hrActions.push({
           icon: UserPlus,
           label: "Hiring Management",
           link: "/hr_staff/hiringmanagement",
           color: "#EA580C",
+          moduleEnabled: true
         });
       }
 
@@ -709,17 +803,18 @@ const OrgDashboard = () => {
         }
       ];
     }
-  }, [user?.role, availableModules]);
+  }, [user?.role, organizationModules]);
 
-  // Check if AI Insights should be shown
+  // Check if AI Insights should be shown - USE FETCHED MODULES
   const shouldShowAIInsights = useMemo(() => {
-    // Show AI Insights only if:
-    // 1. User is ORG_ADMIN or HR_STAFF
-    // 2. aiInsights module is enabled in availableModules
-    const hasRole = user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF";
-    const hasAIModule = availableModules?.aiInsights === true;
-    return hasRole && hasAIModule;
-  }, [user?.role, availableModules]);
+    // Only for ORG_ADMIN and HR_STAFF
+    if (user?.role !== "ORG_ADMIN" && user?.role !== "HR_STAFF") {
+      return false;
+    }
+    // Check if AI Insights module is enabled in organization_modules table
+    console.log("🤖 AI Insights check:", organizationModules.moduleAiInsights);
+    return organizationModules.moduleAiInsights === true;
+  }, [user?.role, organizationModules]);
 
   // Memoized enabled modules
   const enabledModules = useMemo(

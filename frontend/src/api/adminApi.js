@@ -12,7 +12,16 @@ const ADMIN_ENDPOINTS = {
   APPROVE_ORG: (uuid) => `/sys_admin/organizations/${uuid}/approve`,
   REJECT_ORG: (uuid) => `/sys_admin/organizations/${uuid}/reject`,
   CHANGE_STATUS: (uuid) => `/sys_admin/organizations/${uuid}/status`,
-  PLATFORM_STATS: "/sys_admin/statistics"
+  PLATFORM_STATS: "/sys_admin/statistics",
+  // Report endpoints
+  ORGANIZATIONS_REPORT: "/sys_admin/reports/organizations",
+  REVENUE_REPORT: "/sys_admin/reports/revenue",
+  MODULE_USAGE_REPORT: "/sys_admin/reports/module-usage",
+  // Extended modules
+  ALL_MODULES: "/sys_admin/modules",
+  ACTIVE_MODULES: "/modules/active",
+  // Billing plans
+  BILLING_PLANS: "/sys_admin/billing-plans"
 };
 
 /**
@@ -193,6 +202,163 @@ export const getPlatformStatistics = async () => {
     return response;
   } catch (error) {
     console.error(" Failed to fetch platform statistics:", error);
+    throw error;
+  }
+};
+
+// ==================== REPORT API METHODS ====================
+
+/**
+ * Get Organizations Report with Filters
+ * @param {Object} filters - Filter parameters { startDate, endDate, billingPlan, extendedModules }
+ * @returns {Promise} Organizations report data
+ */
+export const getOrganizationsReport = async (filters = {}) => {
+  try {
+    console.log("📊 Fetching organizations report with filters:", filters);
+
+    const queryParams = new URLSearchParams();
+    
+    if (filters.startDate) {
+      queryParams.append("startDate", filters.startDate);
+    }
+    if (filters.endDate) {
+      queryParams.append("endDate", filters.endDate);
+    }
+    if (filters.billingPlan && filters.billingPlan !== "ALL") {
+      queryParams.append("billingPlan", filters.billingPlan);
+    }
+    if (filters.extendedModules && filters.extendedModules.length > 0) {
+      filters.extendedModules.forEach(module => {
+        queryParams.append("extendedModules", module);
+      });
+    }
+
+    const url = queryParams.toString()
+      ? `${ADMIN_ENDPOINTS.ORGANIZATIONS_REPORT}?${queryParams}`
+      : ADMIN_ENDPOINTS.ORGANIZATIONS_REPORT;
+
+    const response = await apiGet(url);
+
+    if (response.success) {
+      console.log("✅ Organizations report retrieved:", response.data?.totalOrganizations || 0, "organizations");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch organizations report:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get Revenue Report
+ * @param {string} timePeriod - Time period (THIS_MONTH, LAST_MONTH, LAST_3_MONTHS, etc.)
+ * @returns {Promise} Revenue report data
+ */
+export const getRevenueReport = async (timePeriod = "THIS_MONTH") => {
+  try {
+    console.log("💰 Fetching revenue report for period:", timePeriod);
+
+    const response = await apiGet(
+      `${ADMIN_ENDPOINTS.REVENUE_REPORT}?timePeriod=${timePeriod}`
+    );
+
+    if (response.success) {
+      console.log("✅ Revenue report retrieved - Total Revenue:", response.data?.totalRevenue || 0);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch revenue report:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get Module Usage Report
+ * @param {string} timePeriod - Time period filter (ALL, THIS_MONTH, LAST_3_MONTHS, etc.)
+ * @returns {Promise} Module usage report data
+ */
+export const getModuleUsageReport = async (timePeriod = "ALL") => {
+  try {
+    console.log("📦 Fetching module usage report for period:", timePeriod);
+
+    const response = await apiGet(
+      `${ADMIN_ENDPOINTS.MODULE_USAGE_REPORT}?timePeriod=${timePeriod}`
+    );
+
+    if (response.success) {
+      console.log("✅ Module usage report retrieved - Total Active Subscriptions:", 
+        response.data?.totalActiveModuleSubscriptions || 0);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch module usage report:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get All Extended Modules (System Admin only)
+ * @returns {Promise} List of all extended modules
+ */
+export const getAllExtendedModules = async () => {
+  try {
+    console.log("📦 Fetching all extended modules");
+
+    const response = await apiGet(ADMIN_ENDPOINTS.ALL_MODULES);
+
+    if (response.success) {
+      console.log("✅ Extended modules retrieved:", response.data?.length || 0, "modules");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch extended modules:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get Active Extended Modules
+ * @returns {Promise} List of active extended modules
+ */
+export const getActiveExtendedModules = async () => {
+  try {
+    console.log("📦 Fetching active extended modules");
+
+    const response = await apiGet(ADMIN_ENDPOINTS.ACTIVE_MODULES);
+
+    if (response.success) {
+      console.log("✅ Active extended modules retrieved:", response.data?.length || 0, "modules");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch active extended modules:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get All Billing Plans
+ * @returns {Promise} List of all billing plans
+ */
+export const getAllBillingPlans = async () => {
+  try {
+    console.log("💳 Fetching all billing plans");
+
+    const response = await apiGet(ADMIN_ENDPOINTS.BILLING_PLANS);
+
+    if (response.success) {
+      console.log("✅ Billing plans retrieved:", response.data?.length || 0, "plans");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Failed to fetch billing plans:", error);
     throw error;
   }
 };

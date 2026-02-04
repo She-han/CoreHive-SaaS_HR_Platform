@@ -55,6 +55,21 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+        /**
+         * Manual success callback (used by frontend success page when webhook not received)
+         */
+        @PostMapping("/mark-success")
+        public ResponseEntity<ApiResponse<String>> markPaymentSuccess(
+                        @RequestBody Map<String, String> body) {
+
+                String organizationUuid = body.get("organizationUuid");
+                String orderId = body.getOrDefault("orderId", null);
+                log.info("Marking payment success manually for org: {}", organizationUuid);
+
+                ApiResponse<String> response = paymentService.markPaymentSuccess(organizationUuid, orderId);
+                return ResponseEntity.ok(response);
+        }
+
     /**
      * Get subscription status
      * GET /api/payment/subscription/status/{organizationUuid}

@@ -10,6 +10,7 @@ import {
   FiClock,
   FiCheckCircle
 } from "react-icons/fi";
+import Swal from "sweetalert2";
 
 const emptyForm = {
   title: "",
@@ -118,10 +119,26 @@ if (!formData.publishAt) {
       };
       if (mode === "edit") await updateNotice(notice.id, payload);
       else await createNotice(payload);
+      
+      await Swal.fire({
+        icon: 'success',
+        title: mode === "edit" ? 'Notice Updated!' : 'Notice Created!',
+        text: `Notice has been ${mode === "edit" ? "updated" : "published"} successfully.`,
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      
       onSuccess();
       onClose();
-    } catch {
-      alert("Failed to save notice");
+    } catch (error) {
+      console.error('Save error:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Save Failed',
+        text: `Failed to ${mode === "edit" ? "update" : "create"} notice. Please try again.`,
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setLoading(false);
     }

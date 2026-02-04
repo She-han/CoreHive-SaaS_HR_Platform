@@ -15,7 +15,7 @@ import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import * as designationApi from "../../api/designationApi";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 
 export const DesignationManagement = () => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,6 @@ export const DesignationManagement = () => {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedDesignation, setSelectedDesignation] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -145,7 +144,6 @@ export const DesignationManagement = () => {
         timer: 2000,
         showConfirmButton: false
       });
-      setIsDeleteModalOpen(false);
       setSelectedDesignation(null);
       fetchDesignations();
     } catch (error) {
@@ -182,9 +180,9 @@ export const DesignationManagement = () => {
     setIsViewModalOpen(true);
   };
 
-  const openDeleteModal = (designation) => {
+  const handleDeleteClick = async (designation) => {
     setSelectedDesignation(designation);
-    setIsDeleteModalOpen(true);
+    await handleDelete();
   };
 
   const handleRefresh = async () => {
@@ -204,7 +202,7 @@ export const DesignationManagement = () => {
   });
 
   return (
-    <DashboardLayout>
+    
       <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
@@ -324,7 +322,7 @@ export const DesignationManagement = () => {
                             <PencilIcon className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openDeleteModal(designation)}
+                            onClick={() => handleDeleteClick(designation)}
                             className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
                             title="Delete"
                           >
@@ -459,45 +457,7 @@ export const DesignationManagement = () => {
             </div>
           )}
         </Modal>
-
-        {/* Delete Confirmation Modal */}
-        <Modal
-          isOpen={isDeleteModalOpen}
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setSelectedDesignation(null);
-          }}
-          title="Delete Designation"
-        >
-          {selectedDesignation && (
-            <div className="space-y-4">
-              <p className="text-gray-900">
-                Are you sure you want to delete{" "}
-                <strong>{selectedDesignation.name}</strong>? This action cannot
-                be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsDeleteModalOpen(false);
-                    setSelectedDesignation(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  onClick={handleDelete}
-                  disabled={loading}
-                >
-                  {loading ? "Deleting..." : "Delete"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal>
       </div>
-    </DashboardLayout>
+    
   );
 };

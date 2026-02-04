@@ -3,9 +3,11 @@ import apiClient from "./axios";
 
 const BASE = "http://localhost:8080/api/attendance";
 
-export const getCheckInList = async (token) => {
+export const getCheckInList = async (token, date = null) => {
+  const params = date ? { date } : {};
   return axios
     .get(`${BASE}/check-in/list`, {
+      params,
       headers: { Authorization: `Bearer ${token}` }
     })
     .then((res) => res.data.data)
@@ -14,8 +16,11 @@ export const getCheckInList = async (token) => {
     });
 };
 
-export const manualCheckIn = async (employeeId, token, manualTime = null) => {
-  const payload = manualTime ? { manualTime } : {};
+export const manualCheckIn = async (employeeId, token, manualTime = null, date = null) => {
+  const payload = { 
+    ...(manualTime && { manualTime }),
+    ...(date && { date })
+  };
   return axios
     .post(
       `${BASE}/check-in/${employeeId}`,
@@ -41,8 +46,11 @@ export const getPendingCheckouts = async (token) => {
     });
 };
 
-export const manualCheckOut = async (employeeId, token, manualTime = null) => {
-  const payload = manualTime ? { manualTime } : {};
+export const manualCheckOut = async (employeeId, token, manualTime = null, date = null) => {
+  const payload = { 
+    ...(manualTime && { manualTime }),
+    ...(date && { date })
+  };
   return axios
     .post(
       `${BASE}/check-out/${employeeId}`,
@@ -52,10 +60,14 @@ export const manualCheckOut = async (employeeId, token, manualTime = null) => {
     .then((res) => res.data.data); // ✅ RETURN DTO ONLY
 };
 
-export const getTodayAttendance = async (token) => {
+export const getTodayAttendance = async (token, date = null) => {
+  const params = date ? { date } : {};
   return axios
-    .get(`${BASE}/today-all`, { headers: { Authorization: `Bearer ${token}` } })
-    .then((res) => res.data);
+    .get(`${BASE}/check-out/today`, { 
+      params,
+      headers: { Authorization: `Bearer ${token}` } 
+    })
+    .then((res) => res.data.data);
 };
 
 export const updateAttendanceStatus = async (
@@ -84,4 +96,30 @@ export const getTotalOnLeaveCount = async () => {
     console.error("Error when get total-on-leave-count of employees:", error);
     throw new Error(error.response?.data?.message || error.message);
   }
+};
+
+/**
+ * Update attendance record (edit check-in/check-out times and status)
+ */
+export const updateAttendanceRecord = async (
+  employeeId,
+  date,
+  checkInTime,
+  checkOutTime,
+  status,
+  token
+) => {
+  return axios
+    .put(
+      `${BASE}/update`,
+      {
+        employeeId,
+        date,
+        checkInTime,
+        checkOutTime,
+        status,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    .then((res) => res.data.data);
 };

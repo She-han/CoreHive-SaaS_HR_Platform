@@ -6,6 +6,7 @@ import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
 import com.corehive.backend.dto.request.ManualTimeRequest;
 import com.corehive.backend.dto.request.QrAttendanceRequest;
+import com.corehive.backend.dto.request.UpdateAttendanceRequest;
 import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
 import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.model.AppUser;
@@ -91,14 +92,18 @@ public class AttendanceController {
     // CHECK-IN TAB LOAD
     @GetMapping("/check-in/list")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<StandardResponse> getCheckInList(HttpServletRequest request) {
+    public ResponseEntity<StandardResponse> getCheckInList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
 
         return ResponseEntity.ok(
                 new StandardResponse(
                         200,
                         "Employees loaded",
-                        attendanceService.getEmployeesForCheckIn(orgUuid)
+                        attendanceService.getEmployeesForCheckIn(orgUuid, targetDate)
                 )
         );
     }
@@ -113,8 +118,11 @@ public class AttendanceController {
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
         String manualTime = (req != null) ? req.getManualTime() : null;
+        LocalDate targetDate = (req != null && req.getDate() != null) 
+                ? LocalDate.parse(req.getDate()) 
+                : LocalDate.now();
 
-        attendanceService.manualCheckIn(orgUuid, employeeId, manualTime);
+        attendanceService.manualCheckIn(orgUuid, employeeId, manualTime, targetDate);
 
         return ResponseEntity.ok(
                 new StandardResponse(200, "Check-in successful", null)
@@ -124,14 +132,18 @@ public class AttendanceController {
     // CHECK-OUT TAB LOAD
     @GetMapping("/check-out/list")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<StandardResponse> getCheckOutList(HttpServletRequest request) {
+    public ResponseEntity<StandardResponse> getCheckOutList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
 
         return ResponseEntity.ok(
                 new StandardResponse(
                         200,
                         "Pending check-outs loaded",
-                        attendanceService.getPendingCheckouts(orgUuid)
+                        attendanceService.getPendingCheckouts(orgUuid, targetDate)
                 )
         );
     }
@@ -146,8 +158,11 @@ public class AttendanceController {
     ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
         String manualTime = (req != null) ? req.getManualTime() : null;
+        LocalDate targetDate = (req != null && req.getDate() != null) 
+                ? LocalDate.parse(req.getDate()) 
+                : LocalDate.now();
 
-        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId, manualTime);
+        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId, manualTime, targetDate);
 
         return ResponseEntity.ok(
                 new StandardResponse(200, "Check-out successful", dto) // ✅ RETURN DATA
@@ -157,10 +172,37 @@ public class AttendanceController {
     //GET ALL TODAY ATTENDANCE
     @GetMapping("/check-out/today")
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<StandardResponse> getTodayCheckOutList(HttpServletRequest request) {
+    public ResponseEntity<StandardResponse> getTodayCheckOutList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
         String orgUuid = (String) request.getAttribute("organizationUuid");
-        List<TodayAttendanceDTO> employees = attendanceService.getEmployeesForCheckIn(orgUuid); // reuse existing method
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        List<TodayAttendanceDTO> employees = attendanceService.getEmployeesForCheckIn(orgUuid, targetDate);
         return ResponseEntity.ok(new StandardResponse(200, "Today's attendance loaded", employees));
+    }
+
+    // UPDATE ATTENDANCE RECORD
+    @PutMapping("/update")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> updateAttendance(
+            HttpServletRequest request,
+            @RequestBody UpdateAttendanceRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        
+        TodayAttendanceDTO updated = attendanceService.updateAttendanceRecord(
+                orgUuid,
+                req.getEmployeeId(),
+                req.getDate(),
+                req.getCheckInTime(),
+                req.getCheckOutTime(),
+                req.getStatus()
+        );
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Attendance updated successfully", updated)
+        );
     }
 
 

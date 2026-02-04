@@ -21,7 +21,6 @@ public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @NotNull
     private Long id;
 
     @Column(name = "organization_uuid", nullable = false, length = 36)

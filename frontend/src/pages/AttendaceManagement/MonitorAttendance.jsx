@@ -12,8 +12,7 @@ export default function MonitorAttendance() {
   const user = useSelector(selectUser);
   const token = user?.token;
 
-  //   👉 මේක තෝරාගත් දිනය save කරලා තියෙන්නේ.
-  // 👉 ඔයාට date picker එකෙන් date වෙනුවෙනුත් change කරන්න පුළුවන්.
+ 
 
   const today = new Date().toISOString().slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(today);
@@ -156,7 +155,7 @@ export default function MonitorAttendance() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 h-screen overflow-hidden">
+    <div className="flex flex-col gap-6 p-6  overflow-hidden">
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <SummaryCard
@@ -217,7 +216,7 @@ export default function MonitorAttendance() {
         </div>
 
         {/* BODY (scrollable only) */}
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className=" overflow-y-auto">
           {loading && (
             <div className="p-6 text-center text-sm text-[#9B9B9B]">
               Loading...

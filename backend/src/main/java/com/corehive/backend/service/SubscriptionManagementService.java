@@ -3,6 +3,7 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.model.*;
 import com.corehive.backend.repository.*;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,9 @@ public class SubscriptionManagementService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final BillingPlanRepository billingPlanRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final ExtendedModuleRepository extendedModuleRepository;
+    private final EntityManager entityManager;
 
     /**
      * Check if organization has an active subscription
@@ -136,7 +140,7 @@ public class SubscriptionManagementService {
      * Change subscription plan
      */
     @Transactional
-    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId) {
+    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules, Double totalPrice) {
         try {
             Subscription subscription = subscriptionRepository
                     .findByOrganizationUuid(organizationUuid)
@@ -150,24 +154,123 @@ public class SubscriptionManagementService {
                     .findByOrganizationUuid(organizationUuid)
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-            // Update subscription
+            // Determine the final price to save
+            BigDecimal finalPrice;
+            if (totalPrice != null && totalPrice > 0) {
+                // Use the calculated total price (for Custom plan with modules)
+                finalPrice = BigDecimal.valueOf(totalPrice);
+                log.info("Using custom total price: {} for organization: {}", totalPrice, organizationUuid);
+            } else {
+                // Use the plan's default price
+                finalPrice = new BigDecimal(newPlan.getPrice());
+            }
+
+            // Update subscription with the final calculated price
             subscription.setPlanName(newPlan.getName());
-            subscription.setPlanPrice(new BigDecimal(newPlan.getPrice()));
+            subscription.setPlanPrice(finalPrice);
             subscription.setUpdatedAt(LocalDateTime.now());
             subscriptionRepository.save(subscription);
 
             // Update organization billing details
             organization.setBillingPlan(newPlan.getName());
-            organization.setBillingPricePerUserPerMonth(new BigDecimal(newPlan.getPrice()));
+            organization.setBillingPricePerUserPerMonth(finalPrice);
+            
+            // Determine which modules to activate
+            List<Long> modulesToActivate;
+            if ("Custom".equalsIgnoreCase(newPlan.getName()) && customModules != null && !customModules.isEmpty()) {
+                // For Custom plan, use manually selected modules
+                modulesToActivate = customModules;
+                log.info("Custom plan selected with {} modules", customModules.size());
+            } else {
+                // For predefined plans, use modules from plan_modules table
+                modulesToActivate = newPlan.getModuleIds();
+                log.info("Predefined plan '{}' selected with {} modules from plan_modules", newPlan.getName(), 
+                        modulesToActivate != null ? modulesToActivate.size() : 0);
+            }
+
+            // Clear all existing organization_modules records for this organization
+            List<OrganizationModule> existingModules = organizationModuleRepository.findByOrganization(organization);
+            if (!existingModules.isEmpty()) {
+                organizationModuleRepository.deleteAll(existingModules);
+                entityManager.flush(); // Force flush to execute DELETE before INSERT
+                log.info("Removed {} existing module subscriptions for organization: {}", 
+                        existingModules.size(), organizationUuid);
+            }
+
+            // Reset all module flags first
+            organization.setModuleQrAttendanceMarking(false);
+            organization.setModuleFaceRecognitionAttendanceMarking(false);
+            organization.setModuleEmployeeFeedback(false);
+            organization.setModuleHiringManagement(false);
+
+            // Create new organization_modules records and update boolean flags
+            if (modulesToActivate != null && !modulesToActivate.isEmpty()) {
+                for (Long moduleId : modulesToActivate) {
+                    try {
+                        ExtendedModule module = extendedModuleRepository.findById(moduleId)
+                                .orElseThrow(() -> new RuntimeException("Module not found: " + moduleId));
+
+                        // Create organization_module record
+                        OrganizationModule orgModule = OrganizationModule.builder()
+                                .organization(organization)
+                                .extendedModule(module)
+                                .isEnabled(true)
+                                .subscribedAt(LocalDateTime.now())
+                                .build();
+                        organizationModuleRepository.save(orgModule);
+
+                        // Update organization boolean flags based on module key
+                        updateOrganizationModuleFlag(organization, module.getModuleKey(), true);
+
+                        log.info("Added module '{}' (ID: {}) to organization: {}", 
+                                module.getName(), moduleId, organizationUuid);
+
+                    } catch (Exception e) {
+                        log.error("Error adding module {} to organization {}: {}", 
+                                moduleId, organizationUuid, e.getMessage());
+                        // Continue with other modules even if one fails
+                    }
+                }
+                log.info("Successfully activated {} modules for organization: {}", 
+                        modulesToActivate.size(), organizationUuid);
+            } else {
+                log.info("No modules to activate for organization: {}", organizationUuid);
+            }
+            
             organizationRepository.save(organization);
 
-            log.info("Plan changed to {} for organization: {}", newPlan.getName(), organizationUuid);
+            log.info("Plan changed to {} for organization: {} with final price: {}", 
+                    newPlan.getName(), organizationUuid, finalPrice);
 
             return ApiResponse.success("Plan changed successfully");
 
         } catch (Exception e) {
             log.error("Error changing plan for organization: {}", organizationUuid, e);
             return ApiResponse.error("Failed to change plan: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Update organization's module boolean flag based on module key
+     */
+    private void updateOrganizationModuleFlag(Organization org, String moduleKey, boolean value) {
+        if (moduleKey == null) return;
+
+        switch (moduleKey) {
+            case "moduleQrAttendanceMarking":
+                org.setModuleQrAttendanceMarking(value);
+                break;
+            case "moduleFaceRecognitionAttendanceMarking":
+                org.setModuleFaceRecognitionAttendanceMarking(value);
+                break;
+            case "moduleEmployeeFeedback":
+                org.setModuleEmployeeFeedback(value);
+                break;
+            case "moduleHiringManagement":
+                org.setModuleHiringManagement(value);
+                break;
+            default:
+                log.warn("Unknown module key: {}", moduleKey);
         }
     }
 
@@ -219,5 +322,95 @@ public class SubscriptionManagementService {
         map.put("payhereSubscriptionId", subscription.getPayhereSubscriptionId());
         map.put("createdAt", subscription.getCreatedAt());
         return map;
+    }
+
+    /**
+     * Activate subscription with 30-day trial for APPROVED_PENDING_PAYMENT organization
+     * Changes organization status to ACTIVE
+     */
+    @Transactional
+    public ApiResponse<Map<String, Object>> activateSubscriptionWithTrial(String organizationUuid) {
+        try {
+            // Check if subscription already exists
+            if (subscriptionRepository.findByOrganizationUuid(organizationUuid).isPresent()) {
+                return ApiResponse.error("Subscription already exists for this organization");
+            }
+
+            // Get organization
+            Organization organization = organizationRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+            // Validate organization status
+            if (!OrganizationStatus.APPROVED_PENDING_PAYMENT.equals(organization.getStatus())) {
+                return ApiResponse.error("Organization is not in APPROVED_PENDING_PAYMENT status");
+            }
+
+            // Create subscription with 30-day trial
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime trialEnd = now.plusDays(30);
+
+            Subscription subscription = Subscription.builder()
+                    .subscriptionUuid(java.util.UUID.randomUUID().toString())
+                    .organizationUuid(organizationUuid)
+                    .planName(organization.getBillingPlan())
+                    .planPrice(organization.getBillingPricePerUserPerMonth())
+                    .billingCycle(BillingCycle.MONTHLY)
+                    .status(SubscriptionStatus.TRIAL)
+                    .trialStartDate(now)
+                    .trialEndDate(trialEnd)
+                    .isTrial(true)
+                    .nextBillingDate(trialEnd)
+                    .activeUserCount(0)
+                    .paymentGateway("PAYHERE")
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .build();
+
+            subscriptionRepository.save(subscription);
+
+            // Update organization status to ACTIVE
+            organization.setStatus(OrganizationStatus.ACTIVE);
+            organization.setUpdatedAt(now);
+            organizationRepository.save(organization);
+
+            log.info("Subscription activated with 30-day trial for organization: {}", organizationUuid);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("subscription", buildSubscriptionMap(subscription));
+            response.put("organizationStatus", organization.getStatus());
+            response.put("message", "Subscription activated successfully with 30-day free trial");
+
+            return ApiResponse.success(response, "Subscription activated with trial");
+
+        } catch (Exception e) {
+            log.error("Error activating subscription for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to activate subscription: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get organization billing information for payment gateway display
+     */
+    public ApiResponse<Map<String, Object>> getOrganizationBillingInfo(String organizationUuid) {
+        try {
+            Organization organization = organizationRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+            Map<String, Object> billingInfo = new HashMap<>();
+            billingInfo.put("organizationUuid", organization.getOrganizationUuid());
+            billingInfo.put("organizationName", organization.getName());
+            billingInfo.put("planName", organization.getBillingPlan());
+            billingInfo.put("price", organization.getBillingPricePerUserPerMonth());
+            billingInfo.put("organizationStatus", organization.getStatus());
+            billingInfo.put("employeeCountRange", organization.getEmployeeCountRange());
+
+            return ApiResponse.success(billingInfo, "Billing information retrieved");
+
+        } catch (Exception e) {
+            log.error("Error getting billing info for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to get billing information: " + e.getMessage());
+        }
     }
 }

@@ -10,16 +10,19 @@ import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.EmployeeLeaveBalance;
 import com.corehive.backend.model.LeaveRequest;
 import com.corehive.backend.model.LeaveType;
+import com.corehive.backend.model.Attendance;
 import com.corehive.backend.repository.EmployeeLeaveBalanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.repository.LeaveRequestRepository;
 import com.corehive.backend.repository.LeaveTypeRepository;
+import com.corehive.backend.repository.AttendanceRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -31,6 +34,7 @@ public class LeaveRequestService {
     private final LeaveTypeRepository leaveTypeRepo;
     private final EmployeeRepository employeeRepo;
     private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepo;
+    private final AttendanceRepository attendanceRepository;
 
     // CREATE LEAVE REQUEST (For employee part implementation)
     public void createLeaveRequest(String orgUuid, CreateLeaveRequestDTO dto) {
@@ -115,6 +119,10 @@ public class LeaveRequestService {
             request.setStatus(LeaveRequest.LeaveStatus.APPROVED);
             leaveBalance.setBalance(remainingLeaves - requestedDays);
             employeeLeaveBalanceRepo.save(leaveBalance);
+            
+            // 6️⃣ Mark attendance as ON_LEAVE for all days in the leave period
+            markAttendanceAsOnLeave(employee.getId(), request.getOrganizationUuid(), 
+                                   request.getStartDate(), request.getEndDate());
         } else {
             request.setStatus(LeaveRequest.LeaveStatus.REJECTED);
         }
@@ -164,6 +172,43 @@ public class LeaveRequestService {
                         .build()
                 )
                 .toList();
+    }
+
+    /**
+     * Helper method to mark attendance as ON_LEAVE for all days in a leave period
+     */
+    private void markAttendanceAsOnLeave(Long employeeId, String orgUuid, 
+                                         LocalDate startDate, LocalDate endDate) {
+        LocalDate currentDate = startDate;
+        
+        while (!currentDate.isAfter(endDate)) {
+            // Check if attendance record already exists for this date
+            final LocalDate dateToCheck = currentDate;
+            attendanceRepository.findByEmployeeIdAndAttendanceDateAndOrganizationUuid(
+                employeeId, dateToCheck, orgUuid
+            ).ifPresentOrElse(
+                // Update existing record
+                existingAttendance -> {
+                    existingAttendance.setStatus(Attendance.AttendanceStatus.ON_LEAVE);
+                    existingAttendance.setNotes("Leave approved");
+                    attendanceRepository.save(existingAttendance);
+                },
+                // Create new record
+                () -> {
+                    Attendance newAttendance = Attendance.builder()
+                        .employeeId(employeeId)
+                        .organizationUuid(orgUuid)
+                        .attendanceDate(dateToCheck)
+                        .status(Attendance.AttendanceStatus.ON_LEAVE)
+                        .verificationType(Attendance.VerificationType.MANUAL)
+                        .notes("Leave approved")
+                        .build();
+                    attendanceRepository.save(newAttendance);
+                }
+            );
+            
+            currentDate = currentDate.plusDays(1);
+        }
     }
 
 

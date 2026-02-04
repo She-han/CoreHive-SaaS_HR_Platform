@@ -10,13 +10,13 @@ import com.corehive.backend.util.QrCodeUtil;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -25,7 +25,6 @@ import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
-
 @Slf4j
 @RequestMapping("/api/employees")
 public class EmployeeController {
@@ -113,7 +112,8 @@ public class EmployeeController {
     /**
      * Update employee
      */
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
     public ResponseEntity<ApiResponse<EmployeeResponseDTO>> updateEmployee(
             HttpServletRequest request,
             @PathVariable Long id,
@@ -178,46 +178,6 @@ public class EmployeeController {
         );
     }
 
-    @GetMapping("/me")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    public ResponseEntity<ApiResponse<Employee>> getCurrentEmployeeProfile(HttpServletRequest request) {
-        String userEmail = (String) request.getAttribute("userEmail");
-        String organizationUuid = (String) request.getAttribute("organizationUuid");
-
-        if (userEmail == null || organizationUuid == null) {
-            log.warn("User email or organization UUID not found in request");
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Authentication information not found"));
-        }
-
-        log.info("Fetching profile for employee: {}", userEmail);
-        ApiResponse<Employee> response = employeeService.getEmployeeByEmail(organizationUuid, userEmail);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Update current logged-in employee's profile
-     */
-    @PutMapping("/me")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    public ResponseEntity<ApiResponse<Employee>> updateCurrentEmployeeProfile(
-            HttpServletRequest request,
-            @Valid @RequestBody EmployeeRequestDTO employeeRequest) {
-
-        String userEmail = (String) request.getAttribute("userEmail");
-        String organizationUuid = (String) request.getAttribute("organizationUuid");
-
-        if (userEmail == null || organizationUuid == null) {
-            log.warn("User email or organization UUID not found in request");
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Authentication information not found"));
-        }
-
-        log.info("Updating profile for employee: {}", userEmail);
-        ApiResponse<Employee> response = employeeService.updateEmployeeByEmail(organizationUuid, userEmail, employeeRequest);
-        return ResponseEntity.ok(response);
-    }
-
     //*****************************************//
 // Download Employee QR by Employee Code
 //*****************************************//
@@ -236,26 +196,6 @@ public class EmployeeController {
                 .generatePermanentQrByEmployeeCode(employeeCode, orgUuid);
 
         return QrCodeUtil.generateQrImage(qrToken);
-    }
-
-    /**
-     * Get leave balances for logged-in employee
-     */
-    @GetMapping("/leave-balances")
-    @PreAuthorize("hasRole('EMPLOYEE')")
-    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getMyLeaveBalances(
-            HttpServletRequest request) {
-        
-        String userEmail = (String) request.getAttribute("userEmail");
-        String organizationUuid = (String) request.getAttribute("organizationUuid");
-
-        if (userEmail == null || organizationUuid == null) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Authentication information not found"));
-        }
-
-        ApiResponse<List<Map<String, Object>>> response = employeeService.getEmployeeLeaveBalances(organizationUuid, userEmail);
-        return ResponseEntity.ok(response);
     }
 
 

@@ -123,19 +123,14 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/sys_admin/organizations")
           },
           {
-            name: "Admin Approvals",
-            icon: Cog6ToothIcon,
+            name: "Registration Requests",
+            icon: AiOutlineAudit,
             path: "/sys_admin/approvals",
             current: location.pathname.startsWith("/sys_admin/approvals")
           },
+ 
           {
-            name: "Users",
-            icon: FiUsers,
-            path: "/sys_admin/users",
-            current: location.pathname.startsWith("/sys_admin/users")
-          },
-          {
-            name: 'Modules',
+            name: 'Extended Modules',
             icon: Cog6ToothIcon,
             path: '/sys_admin/Modules',
             current: location.pathname.startsWith('/sys_admin/Modules')
@@ -146,29 +141,18 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: "/sys_admin/billing",
             current: location.pathname.startsWith("/sys_admin/billing")
           },
+
           {
-            name: "Audit Logs",
-            icon: AiOutlineAudit,
-            path: '/sys_admin/audits',
-            current: location.pathname.startsWith('/sys_admin/audits')
-          },
-          {
-            name: "Support",
+            name: "Support Requests",
             icon: FiHeadphones,
-            path: "/sys_admin/support",
-            current: location.pathname.startsWith("/sys_admin/support")
+            path: "/sys_admin/supportlist",
+            current: location.pathname.startsWith("/sys_admin/supportlist")
           },
           {
             name: "System Analytics",
             icon: MdQueryStats,
             path: "/sys_admin/analytics",
             current: location.pathname.startsWith("/sys_admin/analytics")
-          },
-          {
-            name: "Settings",
-            icon: Cog6ToothIcon,
-            path: "/sys_admin/settings",
-            current: location.pathname.startsWith("/sys_admin/settings")
           }
         ];
 
@@ -186,12 +170,6 @@ const Sidebar = ({ isCollapsed = false }) => {
             path: '/org_admin/payment-gateway',
             current: location.pathname === '/org_admin/payment-gateway',
             testingMode: true
-          },
-          {
-            name: 'Subscription Management',
-            icon: CreditCard,
-            path: '/org_admin/subscription-management',
-            current: location.pathname.startsWith('/org_admin/subscription-management')
           },
           {
             name: "HR Staff Management",
@@ -217,21 +195,10 @@ const Sidebar = ({ isCollapsed = false }) => {
               "/org_admin/designationmanagement"
             )
           },
-          {
-            name: "Module Configuration",
-            icon: Cog6ToothIcon,
-            path: "/org_admin/modules",
-            current: location.pathname.startsWith("/org_admin/modules")
-          },
-          {
-            name: "Reports & Analytics",
-            icon: ChartBarIcon,
-            path: "/org_admin/reports",
-            current: location.pathname.startsWith("/org_admin/reports")
-          },
+
           {
             name: "Payroll Configuration",
-            icon: Cog6ToothIcon,
+            icon: DollarSign,
             path: "/org_admin/payroll-config",
             current: location.pathname.startsWith("/org_admin/payroll-config")
           },
@@ -240,6 +207,24 @@ const Sidebar = ({ isCollapsed = false }) => {
             icon: Cog6ToothIcon,
             path: "/org_admin/leaveattendance-config",
             current: location.pathname.startsWith("/org_admin/leaveattendance-config")
+          },
+          {
+            name: "Reports & Analytics",
+            icon: ChartBarIcon,
+            path: "/org_admin/reports",
+            current: location.pathname.startsWith("/org_admin/reports")
+          },
+          {
+            name: 'Subscription Management',
+            icon: CreditCard,
+            path: '/org_admin/subscription-management',
+            current: location.pathname.startsWith('/org_admin/subscription-management')
+          },
+          {
+            name: "Support",
+            icon: FiHeadphones,
+            path: "/org_admin/support",
+            current: location.pathname.startsWith("/org_admin/support")
           }
         ];
 
@@ -261,13 +246,13 @@ const Sidebar = ({ isCollapsed = false }) => {
             )
           },
           {
-            name: "Leave Management",
+            name: "Approve Leaves",
             icon: CalendarDaysIcon,
             path: "/hr_staff/leavemanagement",
             current: location.pathname.startsWith("/hr_staff/leavemanagement")
           },
           {
-            name: "Attendance Management",
+            name: "Monitor Attendance",
             icon: ClockIcon,
             path: "/hr_staff/attendancemanagement",
             current: location.pathname.startsWith(
@@ -282,18 +267,11 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: "Employee Feedbacks",
-            icon: DollarSign,
+            icon: MessageSquare,
             path: "/hr_staff/employeefeedbacks",
             current: location.pathname.startsWith("/hr_staff/employeefeedbacks")
           },
-          {
-            name: "HR Reports",
-            icon: ChartBarIcon,
-            path: "/hr_staff/hrreportingmanagement",
-            current: location.pathname.startsWith(
-              "/hr_staff/hrreportingmanagement"
-            )
-          },
+  
           {
             name: "Notice Management",
             icon: BellIcon,
@@ -302,9 +280,23 @@ const Sidebar = ({ isCollapsed = false }) => {
           },
           {
             name: "Payslips Generation",
-            icon: BellIcon,
+            icon: DollarSign,
             path: "/hr_staff/payslips",
             current: location.pathname.startsWith("/hr_staff/payslips")
+          },
+         {
+            name: "HR Reports",
+            icon: ChartBarIcon,
+            path: "/hr_staff/hrreportingmanagement",
+            current: location.pathname.startsWith(
+              "/hr_staff/hrreportingmanagement"
+            )
+          },
+          {
+            name: "Support",
+            icon: Cog6ToothIcon,
+            path: "/hr_staff/support",
+            current: location.pathname.startsWith("/hr_staff/support")
           }
         ];
 
@@ -336,7 +328,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         // Add Employee Feedback if enabled
         if (organizationModules.moduleEmployeeFeedback) {
           moduleNavigation.push({
-            name: "Feedback Management",
+            name: "Survey Management",
             icon: MessageSquare,
             path: "/hr_staff/feedbackmanagement",
             current: location.pathname.startsWith(
@@ -349,7 +341,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         // Add Hiring Management if enabled
         if (organizationModules.moduleHiringManagement) {
           moduleNavigation.push({
-            name: "Hiring Management",
+            name: "Job Postings",
             icon: UserPlus,
             path: "/hr_staff/hiringmanagement",
             current: location.pathname.startsWith("/hr_staff/hiringmanagement"),
@@ -371,7 +363,7 @@ const Sidebar = ({ isCollapsed = false }) => {
               location.pathname.startsWith("/employee/profile/edit")
           },
           {
-            name: "Leave & Attendance",
+            name: "Attendance History",
             icon: CalendarDaysIcon,
             path: "/employee/viewleaveandattendance",
             current: location.pathname.startsWith(
@@ -379,7 +371,7 @@ const Sidebar = ({ isCollapsed = false }) => {
             )
           },
           {
-            name: "Leave Request",
+            name: "Apply for leave",
             icon: ClockIcon,
             path: "/employee/leaverequest",
             current: location.pathname.startsWith("/employee/leaverequest")
@@ -398,16 +390,22 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/employee/surveys")
           },
           {
-            name: "Feedback",
+            name: "Submit Feedback",
             icon: MessageSquare,
             path: "/employee/feedback",
             current: location.pathname.startsWith("/employee/feedback")
           },
           {
-            name: "Notices",
+            name: "View Notices",
             icon: BellIcon,
             path: "/employee/notices",
             current: location.pathname.startsWith("/employee/notices")
+          },
+          {
+            name: "Support",
+            icon: Cog6ToothIcon,
+            path: "/employee/support",
+            current: location.pathname.startsWith("/employee/support")
           }
         ];
 
@@ -493,7 +491,7 @@ const Sidebar = ({ isCollapsed = false }) => {
 
   return (
     <div
-      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-16" : "w-64"}`}
+      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-18" : "w-68"}`}
       style={{ backgroundColor: "#FFFFFF", borderRight: "1px solid #E5E7EB" }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -542,7 +540,7 @@ const Sidebar = ({ isCollapsed = false }) => {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <div className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
           {modulesLoading && user?.role === "HR_STAFF" ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>

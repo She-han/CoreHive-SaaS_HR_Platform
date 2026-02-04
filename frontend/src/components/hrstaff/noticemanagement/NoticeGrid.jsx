@@ -4,6 +4,8 @@ import NoticeCard from "./NoticeCard";
 import NoticeFormModal from "./NoticeFormModal";
 import { getAllNotices, deleteNotice } from "../../../api/NoticeApi";
 import { FiChevronLeft, FiChevronRight, FiLoader } from "react-icons/fi";
+import Swal from "sweetalert2";
+import LoadingSpinner from "../../common/LoadingSpinner";
 
 export default function NoticeGrid() {
   const [notices, setNotices] = useState([]);
@@ -34,12 +36,37 @@ export default function NoticeGrid() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this notice?")) return;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Notice?',
+      text: 'Are you sure you want to delete this notice? This action cannot be undone.',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#9B9B9B',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    });
+    if (!result.isConfirmed) return;
+    
     try {
       await deleteNotice(id);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'Notice has been deleted successfully.',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
       loadNotices();
     } catch (error) {
-      alert("Failed to delete notice");
+      console.error('Delete error:', error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: 'Failed to delete notice. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
     }
   };
 
@@ -50,7 +77,7 @@ export default function NoticeGrid() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <FiLoader className="animate-spin text-[#02C39A]" size={40} />
+        <LoadingSpinner className="animate-spin text-[#02C39A]" size={40} />
         <p className="text-sm font-medium text-[#9B9B9B]">Loading notices...</p>
       </div>
     );

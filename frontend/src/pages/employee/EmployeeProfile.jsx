@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../components/layout/DashboardLayout";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import Alert from "../../components/common/Alert";
+import Swal from "sweetalert2";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchEmployeeProfile();
@@ -18,16 +17,23 @@ export default function EmployeeProfile() {
   const fetchEmployeeProfile = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const response = await getCurrentEmployeeProfile();
       if (response.success) {
         setEmployee(response.data);
       } else {
-        setError(response.message || "Failed to load profile");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.message || "Failed to load profile"
+        });
       }
     } catch {
-      setError("Failed to load profile. Please try again.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to load profile. Please try again."
+      });
     } finally {
       setLoading(false);
     }
@@ -55,23 +61,13 @@ export default function EmployeeProfile() {
     );
   }
 
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="p-8">
-          <Alert type="error" message={error} />
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="p-8 w-full animate-fade-in">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
-            Employee Profile
+            My Profile
           </h1>
 
           <button
@@ -101,7 +97,7 @@ export default function EmployeeProfile() {
             <div className="w-32 h-32 rounded-full overflow-hidden bg-[var(--color-primary-500)] flex items-center justify-center">
               {employee.profileImage ? (
                 <img
-                  src={employee.profileImage}
+                  src={employee.profileImage.startsWith('http') ? employee.profileImage : `http://localhost:8080${employee.profileImage}`}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />

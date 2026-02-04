@@ -107,12 +107,13 @@ const Feedback = () => {
   return (
     <DashboardLayout>
       <div className="p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+<h1 className="text-3xl font-bold mb-2 text-[var(--color-text-primary)]">
 
-        {/* ================= FEEDBACK FORM ================= */}
-        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
-          <h1 className="text-2xl font-semibold mb-2" style={{ color: THEME.dark }}>
             Submit Feedback
           </h1>
+        {/* ================= FEEDBACK FORM ================= */}
+        <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
+          
           <p className="text-sm text-gray-500 mb-6">
             You can submit up to 3 feedbacks per month. Share your thoughts with us!
           </p>

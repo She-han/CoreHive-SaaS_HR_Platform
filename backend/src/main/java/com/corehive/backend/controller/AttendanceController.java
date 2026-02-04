@@ -22,7 +22,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -766,5 +768,98 @@ public class AttendanceController {
                 )
         );
     }
+
+    //=========Get Attendance summary report for date range===========//
+    @GetMapping("/report/summary")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceSummaryReport(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid =
+                (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance summary report generated",
+                        attendanceService.generateAttendanceSummaryReport(
+                                orgUuid, startDate, endDate
+                        )
+                )
+        );
+    }
+
+    //=========Get Day-wise attendance details for selected employee
+    @GetMapping("/report/details/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceDetailReport(
+            @PathVariable Long employeeId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid =
+                (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance detail report generated",
+                        attendanceService.generateEmployeeAttendanceDetail(
+                                orgUuid, employeeId, startDate, endDate
+                        )
+                )
+        );
+    }
+
+    //=========Get Attendance summary excel report for date range===========//
+    @GetMapping("/report/summary/excel")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<Resource> downloadSummaryExcel(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        Resource file =
+                attendanceService.generateAttendanceSummaryExcel(
+                        orgUuid, startDate, endDate
+                );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=attendance-summary.xlsx")
+                .header(HttpHeaders.CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(file);
+    }
+
+    //=========Get Day-wise attendance details excel report for selected employee
+    @GetMapping("/report/details/{employeeId}/excel")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<Resource> downloadDetailExcel(
+            @PathVariable Long employeeId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        Resource file =
+                attendanceService.generateEmployeeAttendanceDetailExcel(
+                        orgUuid, employeeId, startDate, endDate
+                );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=attendance-details-" + employeeId + ".xlsx")
+                .header(HttpHeaders.CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(file);
+    }
+
 
 }

@@ -80,9 +80,32 @@ export const downloadHeadcountReport = async () => {
   }
 };
 
+/**
+ * Download Employee Details Excel
+ */
+export const downloadEmployeeDetailsExcel = async () => {
+  try {
+    const response = await apiClient.get(
+      "/reports/employees/download",
+      { responseType: "blob" } // 👈 REQUIRED
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error("Error downloading employee excel:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        "Failed to download employee details excel"
+    );
+  }
+};
+
+
+
 export default {
   getHeadcountReport,
   getMonthlyEmployeeReport,
   getAnnualEmployeeGrowthReport,
-  downloadHeadcountReport
+  downloadHeadcountReport ,
+  downloadEmployeeDetailsExcel
 };

@@ -1,9 +1,6 @@
 package com.corehive.backend.service;
 
-import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
-import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
-import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
-import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.attendance.*;
 import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
 import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
@@ -25,14 +22,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +56,8 @@ public class AttendanceService {
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
     private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
+    private static final long MIN_CHECKOUT_DELAY_MINUTES = 5;
+
 
     //GET ATTENDANCE DETAILS FOR A WEEK/////////////////////////////////////
     private long calculateWorkingMinutes(Attendance attendance) {
@@ -1152,7 +1156,20 @@ public class AttendanceService {
         // ================= SECOND SCAN → CHECK-OUT =================
         else if (attendance.getCheckOutTime() == null) {
 
-            attendance.setCheckOutTime(LocalDateTime.now());
+            LocalDateTime checkInTime = attendance.getCheckInTime();
+            LocalDateTime now = LocalDateTime.now();
+
+            long minutesBetween = ChronoUnit.MINUTES.between(checkInTime, now);
+
+            if (minutesBetween < MIN_CHECKOUT_DELAY_MINUTES) {
+                throw new BadRequestException(
+                        "Checkout allowed only after "
+                                + MIN_CHECKOUT_DELAY_MINUTES
+                                + " minutes from check-in"
+                );
+            }
+
+            attendance.setCheckOutTime(now);
             attendance.setVerificationType(Attendance.VerificationType.QR_CODE);
             attendance.setIpAddress(ip);
             attendance.setDeviceInfo(deviceInfo);
@@ -1179,6 +1196,240 @@ public class AttendanceService {
                         }
                 )
                 .build();
+    }
+
+    //=========Get Attendance summary report for date range===========//
+    @Transactional(readOnly = true)
+    public List<AttendanceSummaryReportDTO> generateAttendanceSummaryReport(
+            String orgUuid,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        // 1️⃣ Get all ACTIVE employees
+        List<Employee> employees =
+                employeeRepository.findByOrganizationUuidAndIsActiveTrue(orgUuid);
+
+        long totalDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+
+        return employees.stream().map(emp -> {
+
+            // 2️⃣ Count attendance status
+            List<Object[]> counts =
+                    attendanceRepository.countStatusByEmployee(
+                            orgUuid, emp.getId(), startDate, endDate
+                    );
+
+            long present = 0, absent = 0, late = 0, halfDay = 0, leave = 0;
+
+            for (Object[] row : counts) {
+                Attendance.AttendanceStatus status =
+                        (Attendance.AttendanceStatus) row[0];
+                long count = (long) row[1];
+
+                switch (status) {
+                    case PRESENT -> present = count;
+                    case ABSENT -> absent = count;
+                    case LATE -> late = count;
+                    case HALF_DAY -> halfDay = count;
+                    case ON_LEAVE -> leave = count;
+                }
+            }
+
+            // 3️⃣ Attendance percentage
+            double percentage =
+                    totalDays == 0 ? 0 :
+                            ((double) present / totalDays) * 100;
+
+            return AttendanceSummaryReportDTO.builder()
+                    .employeeId(emp.getId())
+                    .employeeCode(emp.getEmployeeCode())
+                    .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                    .department(
+                            emp.getDepartment() != null
+                                    ? emp.getDepartment().getName()
+                                    : "N/A"
+                    )
+                    .designation(emp.getDesignation())
+                    .totalWorkingDays(totalDays)
+                    .present(present)
+                    .absent(absent)
+                    .late(late)
+                    .halfDay(halfDay)
+                    .leave(leave)
+                    .attendancePercentage(
+                            Math.round(percentage * 10.0) / 10.0
+                    )
+                    .build();
+
+        }).toList();
+    }
+
+    //=========Get Day-wise attendance details for selected employee
+    @Transactional(readOnly = true)
+    public List<AttendanceDetailReportDTO> generateEmployeeAttendanceDetail(
+            String orgUuid,
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        List<Attendance> records =
+                attendanceRepository.findByOrganizationUuidAndAttendanceDateBetween(
+                                orgUuid, startDate, endDate
+                        ).stream()
+                        .filter(a -> a.getEmployeeId().equals(employeeId))
+                        .toList();
+
+        return records.stream().map(att -> {
+
+            String workingHours = null;
+            if (att.getCheckInTime() != null && att.getCheckOutTime() != null) {
+                Duration d =
+                        Duration.between(att.getCheckInTime(), att.getCheckOutTime());
+                workingHours =
+                        d.toHours() + "h " + d.toMinutesPart() + "m";
+            }
+
+            return AttendanceDetailReportDTO.builder()
+                    .date(att.getAttendanceDate())
+                    .day(att.getAttendanceDate().getDayOfWeek().name())
+                    .checkInTime(att.getCheckInTime())
+                    .checkOutTime(att.getCheckOutTime())
+                    .workingHours(workingHours)
+                    .status(att.getStatus().name())
+                    .remarks(att.getNotes())
+                    .build();
+        }).toList();
+    }
+
+    //=========Generate Attendance Summary Excel===========//
+    public ByteArrayResource generateAttendanceSummaryExcel(
+            String orgUuid,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        try {
+            // 1️⃣ Reuse existing summary logic
+            List<AttendanceSummaryReportDTO> report =
+                    generateAttendanceSummaryReport(orgUuid, startDate, endDate);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Attendance Summary");
+
+            // 2️⃣ Header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            // 3️⃣ Header row
+            String[] headers = {
+                    "Employee Code", "Employee Name", "Department", "Designation",
+                    "Total Working Days", "Present", "Absent", "Late",
+                    "Half Day", "Leave", "Attendance %"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // 4️⃣ Data rows
+            int rowIndex = 1;
+            for (AttendanceSummaryReportDTO dto : report) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(dto.getEmployeeCode());
+                row.createCell(1).setCellValue(dto.getEmployeeName());
+                row.createCell(2).setCellValue(dto.getDepartment());
+                row.createCell(3).setCellValue(dto.getDesignation());
+                row.createCell(4).setCellValue(dto.getTotalWorkingDays());
+                row.createCell(5).setCellValue(dto.getPresent());
+                row.createCell(6).setCellValue(dto.getAbsent());
+                row.createCell(7).setCellValue(dto.getLate());
+                row.createCell(8).setCellValue(dto.getHalfDay());
+                row.createCell(9).setCellValue(dto.getLeave());
+                row.createCell(10).setCellValue(dto.getAttendancePercentage());
+            }
+
+            // 5️⃣ Auto size
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            workbook.close();
+
+            return new ByteArrayResource(out.toByteArray());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Excel generation failed", e);
+        }
+    }
+
+    //=========Generate Employee Attendance Detail Excel===========//
+    public ByteArrayResource generateEmployeeAttendanceDetailExcel(
+            String orgUuid,
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        try {
+            List<AttendanceDetailReportDTO> details =
+                    generateEmployeeAttendanceDetail(orgUuid, employeeId, startDate, endDate);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Attendance Details");
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            String[] headers = {
+                    "Date", "Day", "Check-In", "Check-Out",
+                    "Working Hours", "Status", "Remarks"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIndex = 1;
+            for (AttendanceDetailReportDTO dto : details) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(dto.getDate().toString());
+                row.createCell(1).setCellValue(dto.getDay());
+                row.createCell(2).setCellValue(
+                        dto.getCheckInTime() != null ? dto.getCheckInTime().toString() : "-"
+                );
+                row.createCell(3).setCellValue(
+                        dto.getCheckOutTime() != null ? dto.getCheckOutTime().toString() : "-"
+                );
+                row.createCell(4).setCellValue(dto.getWorkingHours());
+                row.createCell(5).setCellValue(dto.getStatus());
+                row.createCell(6).setCellValue(dto.getRemarks());
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            workbook.close();
+
+            return new ByteArrayResource(out.toByteArray());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Excel generation failed", e);
+        }
     }
 
     /**

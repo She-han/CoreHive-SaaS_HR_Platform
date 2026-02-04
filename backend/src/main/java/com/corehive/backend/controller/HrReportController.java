@@ -1,9 +1,7 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.model.Employee;
-import com.corehive.backend.service.HrReportPdfService;
-import com.corehive.backend.service.HrReportService;
-import com.corehive.backend.service.OrganizationService;
+import com.corehive.backend.service.*;
 import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,6 +27,12 @@ public class HrReportController {
 
     @Autowired
     private OrganizationService organizationService;
+
+    @Autowired
+    private HrEmployeeReportService employeeReportService;
+
+    @Autowired
+    private HrEmployeeExcelService excelService;
 
 
     //Get head-count report department , designation and overall wisely
@@ -150,4 +154,27 @@ public class HrReportController {
         response.getOutputStream().write(pdf);
     }
 
+    //Employee details report
+    @GetMapping("/employees/download")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public void downloadEmployeeExcel(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        Map<String, Object> data =
+                employeeReportService.getEmployeeExcelData(orgUuid);
+
+        byte[] excel = excelService.generateEmployeeExcel(data);
+
+        response.setContentType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename=employee-master-report.xlsx"
+        );
+        response.getOutputStream().write(excel);
+    }
 }

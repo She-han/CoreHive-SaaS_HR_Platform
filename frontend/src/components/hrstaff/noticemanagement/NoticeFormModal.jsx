@@ -30,6 +30,9 @@ export default function NoticeFormModal({
 }) {
   const [formData, setFormData] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
+  const [errors , setErrors] = useState({});
+
+
 
   useEffect(() => {
     if (isOpen) {
@@ -55,8 +58,56 @@ export default function NoticeFormModal({
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
+
+  //================== Form Validation ================= //
+  const validateForm = () => {
+  const newErrors = {};
+
+  if (!formData.title.trim()) {
+    newErrors.title = "Title is required";
+  } else if (formData.title.length < 5) {
+    newErrors.title = "Title must be at least 5 characters";
+  }
+
+  if (!formData.content.trim()) {
+    newErrors.content = "Content is required";
+  } else if (formData.content.length < 10) {
+    newErrors.content = "Content must be at least 10 characters";
+  }
+
+  // Publish date validation
+if (!formData.publishAt) {
+  newErrors.publishAt = "Publish date is required";
+} else {
+  const publishDate = new Date(formData.publishAt);
+  const today = new Date();
+
+  // normalize time (important!)
+  today.setHours(0, 0, 0, 0);
+  publishDate.setHours(0, 0, 0, 0);
+
+  if (publishDate < today) {
+    newErrors.publishAt = "Publish date cannot be in the past";
+  }
+}
+
+
+  if (
+    formData.publishAt &&
+    formData.expireAt &&
+    new Date(formData.expireAt) < new Date(formData.publishAt)
+  ) {
+    newErrors.expireAt = "Expire date must be after publish date";
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return; // Prevent submission if validation fails
     setLoading(true);
     try {
       const payload = {
@@ -137,6 +188,10 @@ export default function NoticeFormModal({
               onChange={handleChange}
               className={inputClass}
             />
+            {errors.title && (
+  <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+)}
+
           </div>
 
           <div>
@@ -152,6 +207,10 @@ export default function NoticeFormModal({
               onChange={handleChange}
               className={`${inputClass} resize-none`}
             />
+            {errors.content && (
+  <p className="text-red-500 text-xs mt-1">{errors.content}</p>
+)}
+
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -168,7 +227,7 @@ export default function NoticeFormModal({
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
-              </select>
+              </select>           
             </div>
             <div>
               <label className={labelClass}>
@@ -200,6 +259,10 @@ export default function NoticeFormModal({
                 onChange={handleChange}
                 className={inputClass}
               />
+              {errors.publishAt && (
+  <p className="text-red-500 text-xs mt-1">{errors.publishAt}</p>
+)}
+
             </div>
             <div>
               <label className={labelClass}>
@@ -212,6 +275,10 @@ export default function NoticeFormModal({
                 onChange={handleChange}
                 className={inputClass}
               />
+              {errors.expireAt && (
+  <p className="text-red-500 text-xs mt-1">{errors.expireAt}</p>
+)}
+
             </div>
           </div>
 

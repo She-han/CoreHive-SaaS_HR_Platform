@@ -8,9 +8,11 @@ import com.corehive.backend.repository.NoticeRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.BadRequestException;
 import org.springframework.data.domain.*;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,6 +49,7 @@ public class NoticeService {
         notice.setPublishAt(req.getPublishAt());
         notice.setExpireAt(req.getExpireAt());
         notice.setStatus(req.getStatus());
+        applyExpiryStatus(notice); //Automatically expired after passing expired date
         notice.setCreatedBy(userId);
 
         // ✅ Audit
@@ -129,6 +132,8 @@ public class NoticeService {
         notice.setExpireAt(req.getExpireAt());
         notice.setStatus(req.getStatus());
 
+        applyExpiryStatus(notice); //Automatically expired after passing expired date
+
         // ✅ Audit
         notice.setUpdatedAt(LocalDateTime.now());
 
@@ -165,4 +170,33 @@ public class NoticeService {
         dto.setCreatedAt(notice.getCreatedAt());
         return dto;
     }
+
+    //============Helper method for automatically expired=================//
+    private void applyExpiryStatus(Notice notice) {
+        if (notice.getExpireAt() != null &&
+                notice.getExpireAt().isBefore(LocalDateTime.now())) {
+            notice.setStatus(Notice.Status.EXPIRED);
+        }
+    }
+
+    //===========Auto expire Notices=================//
+     @Scheduled(cron = "0 0 * * * *") // every hour
+    public void autoExpireNotices() {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<Notice> expiredNotices =
+                noticeRepository.findByExpireAtBeforeAndStatusNot(
+                        now,
+                        Notice.Status.EXPIRED
+                );
+
+        expiredNotices.forEach(notice -> {
+            notice.setStatus(Notice.Status.EXPIRED);
+            notice.setUpdatedAt(LocalDateTime.now());
+        });
+
+        noticeRepository.saveAll(expiredNotices);
+    }
+
+
 }

@@ -227,4 +227,14 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     Optional<Object> findByQrToken(String qrToken);
 
 
+    @Query("""
+        SELECT e FROM Employee e
+        LEFT JOIN FETCH e.department d
+        WHERE e.organizationUuid = :orgUuid
+    """)
+    List<Employee> findAllByOrganizationUuid(@Param("orgUuid") String orgUuid);
+
+
+    long countByOrganizationUuidAndIsActiveFalse(String orgUuid);
+
 }

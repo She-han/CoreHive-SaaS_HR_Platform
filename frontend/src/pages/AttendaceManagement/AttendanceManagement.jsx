@@ -1,6 +1,6 @@
 import { useState } from "react";
 import MonitorAttendance from "./MonitorAttendance";
-import MonthlyReport from "./MonthlyReport";
+import Reports from "./AttendaceReports";
 
 export default function AttendanceManagement() {
   const [activeTab, setActiveTab] = useState("monitor");

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import DashboardLayout from "../../components/layout/DashboardLayout";
+import OrganizationDetailsModal from "../../components/admin/OrganizationDetailsModal";
 import { 
   getPendingApprovals, 
   approveOrganization, 
@@ -98,6 +99,18 @@ const AdminApprovals = () => {
         confirmButtonColor: THEME.primary,
       });
     }
+  };
+
+  // Close modal handler
+  const handleCloseModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedOrg(null);
+  };
+
+  // Handle organization update (approve/reject)
+  const handleOrganizationUpdate = () => {
+    handleCloseModal();
+    loadApprovals();
   };
 
   // Approve organization
@@ -213,65 +226,7 @@ const AdminApprovals = () => {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "#FEF3C7" }}
-              >
-                <Clock className="w-6 h-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: THEME.muted }}>
-                  Pending Approvals
-                </p>
-                <p className="text-2xl font-bold" style={{ color: THEME.dark }}>
-                  {approvals.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "#DBEAFE" }}
-              >
-                <Filter className="w-6 h-6" style={{ color: THEME.secondary }} />
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: THEME.muted }}>
-                  Filtered Results
-                </p>
-                <p className="text-2xl font-bold" style={{ color: THEME.dark }}>
-                  {filteredApprovals.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "#D1FAE5" }}
-              >
-                <Search className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm" style={{ color: THEME.muted }}>
-                  Search Active
-                </p>
-                <p className="text-2xl font-bold" style={{ color: THEME.dark }}>
-                  {searchQuery ? "Yes" : "No"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+      
 
         {/* Search Bar */}
         <div className="mb-6">
@@ -425,122 +380,15 @@ const AdminApprovals = () => {
             </div>
           </div>
         )}
-
-        {/* Detail Modal */}
-        {isDetailModalOpen && selectedOrg && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div
-                className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white"
-              >
-                <h3 className="text-xl font-bold" style={{ color: THEME.dark }}>
-                  Organization Details
-                </h3>
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" style={{ color: THEME.muted }} />
-                </button>
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Organization Name
-                    </label>
-                    <p className="mt-1 font-medium" style={{ color: THEME.dark }}>
-                      {selectedOrg.name}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Email
-                    </label>
-                    <p className="mt-1 font-medium" style={{ color: THEME.dark }}>
-                      {selectedOrg.email}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Employee Count Range
-                    </label>
-                    <p className="mt-1 font-medium" style={{ color: THEME.dark }}>
-                      {selectedOrg.employeeCountRange || "Not specified"}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Status
-                    </label>
-                    <p className="mt-1">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor:
-                            selectedOrg.status === "PENDING_APPROVAL"
-                              ? "#FEF3C7"
-                              : "#DBEAFE",
-                          color:
-                            selectedOrg.status === "PENDING_APPROVAL"
-                              ? "#D97706"
-                              : THEME.secondary,
-                        }}
-                      >
-                        {selectedOrg.status}
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Registration Date
-                    </label>
-                    <p className="mt-1 font-medium" style={{ color: THEME.dark }}>
-                      {new Date(selectedOrg.createdAt).toLocaleString("en-US", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-semibold" style={{ color: THEME.muted }}>
-                      Organization UUID
-                    </label>
-                    <p className="mt-1 font-mono text-xs" style={{ color: THEME.dark }}>
-                      {selectedOrg.organizationUuid}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => {
-                      setIsDetailModalOpen(false);
-                      handleApprove(selectedOrg);
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={{ backgroundColor: THEME.success, color: "white" }}
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsDetailModalOpen(false);
-                      handleReject(selectedOrg);
-                    }}
-                    className="flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                    style={{ backgroundColor: "#EF4444", color: "white" }}
-                  >
-                    <XCircle className="w-5 h-5" />
-                    Reject
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Organization Details Modal */}
+      <OrganizationDetailsModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseModal}
+        organization={selectedOrg}
+        onOrganizationDeleted={handleOrganizationUpdate}
+      />
     </DashboardLayout>
   );
 };

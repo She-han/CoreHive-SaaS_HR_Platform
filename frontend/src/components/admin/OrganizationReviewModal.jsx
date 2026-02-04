@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, memo } from "react";
 import { useDispatch } from 'react-redux';
 import { 
   Building2, 
@@ -626,7 +626,7 @@ const OrganizationReviewModal = ({
   );
 };
 
-const InfoCard = ({
+const InfoCard = memo(({
   icon: Icon,
   label,
   value,
@@ -646,9 +646,10 @@ const InfoCard = ({
       </div>
     </div>
   </div>
-);
+));
+InfoCard.displayName = "InfoCard";
 
-const ModuleCard = ({ module }) => {
+const ModuleCard = memo(({ module }) => {
   const Icon = module.icon;
 
   return (
@@ -678,6 +679,7 @@ const ModuleCard = ({ module }) => {
       )}
     </div>
   );
-};
+});
+ModuleCard.displayName = "ModuleCard";
 
 export default OrganizationReviewModal;

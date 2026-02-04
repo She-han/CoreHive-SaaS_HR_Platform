@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import {
   getCheckInList,
   manualCheckIn,
@@ -51,14 +52,23 @@ const CheckInTab = ({ token, selectedDate }) => {
 
   const handleStatusChange = async (employeeId, newStatus) => {
     if (newStatus === "ABSENT" || newStatus === "ON_LEAVE") {
-      // optional: confirm with user
-      alert("Selecting ABSENT/ON_LEAVE will prevent check-in");
+      const result = await Swal.fire({
+        title: 'Warning',
+        text: 'Selecting ABSENT/ON_LEAVE will prevent check-in',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#02C39A',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, proceed'
+      });
+      
+      if (!result.isConfirmed) return;
     }
     try {
       const updated = await updateAttendanceStatus(
         employeeId,
         newStatus,
-        null, // OR pass a selected time later
+        null,
         token
       );
 
@@ -67,8 +77,20 @@ const CheckInTab = ({ token, selectedDate }) => {
           emp.employeeId === employeeId ? { ...emp, ...updated } : emp
         )
       );
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Status Updated!',
+        text: 'Attendance status has been updated successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert(err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed',
+        text: err.message || 'Failed to update status'
+      });
     }
   };
 
@@ -86,8 +108,10 @@ const CheckInTab = ({ token, selectedDate }) => {
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, [token, selectedDate]); // Add selectedDate to dependency array
+    if (token && selectedDate) {
+      fetchEmployees();
+    }
+  }, [token, selectedDate]); // Add token to trigger reload when available
 
   const handleCheckIn = async (employeeId) => {
     try {
@@ -99,9 +123,21 @@ const CheckInTab = ({ token, selectedDate }) => {
         delete updated[employeeId];
         return updated;
       });
-      fetchEmployees();
+      await fetchEmployees();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Checked In!',
+        text: 'Employee has been checked in successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert(err.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Check-In Failed',
+        text: err.message || 'Failed to check in employee'
+      });
     }
   };
 
@@ -116,10 +152,21 @@ const CheckInTab = ({ token, selectedDate }) => {
         token
       );
       setEditingEmployee(null);
-      fetchEmployees();
-      alert("Attendance updated successfully!");
+      await fetchEmployees();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Updated!',
+        text: 'Attendance updated successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert(err.message || "Failed to update attendance");
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err.message || 'Failed to update attendance'
+      });
     }
   };
 

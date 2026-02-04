@@ -28,7 +28,10 @@ import {
   CreditCard,
   MessageSquare,
   QrCode,
-  ScanFace
+  ScanFace,
+  Activity,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import {
   PieChart,
@@ -41,10 +44,15 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
 } from "recharts";
 import { getDashboardData } from "../../api/dashboardApi";
 import { getOrganizationModules } from "../../api/organizationModulesApi";
+import { getMonthlyAttendanceChartData, getYearlyEmployeeGrowthChartData } from "../../api/chartApi";
 
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import AIInsightsCard from "../../components/dashboard/AIInsightsCard";
@@ -93,31 +101,35 @@ const StatCard = memo(({ stat }) => {
   return (
     <Link to={stat.link || "#"} className="group block h-full">
       <div
-        className="relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-500 border-2 border-transparent hover:border-opacity-100 h-full overflow-hidden transform hover:-translate-y-1"
-        style={{ borderColor: `${stat.iconColor}20` }}
+        className="relative rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 border-2 h-full overflow-hidden transform hover:-translate-y-2 hover:scale-[1.02]"
+        style={{ 
+          borderColor: stat.iconColor,
+          background: `linear-gradient(135deg, ${stat.iconColor}15 0%, ${stat.iconColor}05 100%)`,
+        }}
       >
         <div
-          className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500"
+          className="absolute top-0 right-0 w-40 h-40 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"
           style={{ backgroundColor: stat.iconColor }}
         />
         <div
-          className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full blur-2xl opacity-5 group-hover:opacity-10 transition-opacity duration-500"
+          className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full blur-2xl opacity-15 group-hover:opacity-25 transition-opacity duration-500"
           style={{ backgroundColor: stat.iconColor }}
         />
 
         <div className="relative z-10">
           <div className="flex items-start justify-between mb-4">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center border-2 shadow-sm group-hover:scale-110 transition-all duration-300"
+              className="w-14 h-14 rounded-xl flex items-center justify-center border-2 shadow-md group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
               style={{
                 borderColor: stat.iconColor,
-                backgroundColor: `${stat.iconColor}22`
+                backgroundColor: `${stat.iconColor}35`,
+                boxShadow: `0 4px 14px ${stat.iconColor}25`
               }}
             >
               <Icon
-                className="w-6 h-6"
+                className="w-7 h-7"
                 style={{ color: stat.iconColor }}
-                strokeWidth={2.25}
+                strokeWidth={2.5}
               />
             </div>
 
@@ -221,6 +233,234 @@ const FeatureBadge = memo(({ module }) => (
   </div>
 ));
 FeatureBadge.displayName = "FeatureBadge";
+
+// Memoized Monthly Attendance Line Chart Component
+const MonthlyAttendanceChart = memo(({ currentMonth, onMonthChange, attendanceData, loading }) => {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const handlePrevMonth = () => {
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    onMonthChange(prevMonth);
+  };
+
+  const handleNextMonth = () => {
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    onMonthChange(nextMonth);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: THEME.background }}
+          >
+            <Activity className="w-5 h-5" style={{ color: THEME.primary }} />
+          </div>
+          <div>
+            <h2 className="font-semibold" style={{ color: THEME.dark }}>
+              Monthly Attendance Trends
+            </h2>
+            <p className="text-xs" style={{ color: THEME.muted }}>
+              Daily attendance patterns for {monthNames[currentMonth]} 2026
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevMonth}
+            className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+            style={{ color: THEME.dark }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="px-3 py-1 text-sm font-medium" style={{ color: THEME.dark }}>
+            {monthNames[currentMonth]}
+          </span>
+          <button
+            onClick={handleNextMonth}
+            className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+            style={{ color: THEME.dark }}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="p-6">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner size="md" text="Loading attendance data..." />
+          </div>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={attendanceData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="day" 
+                  tick={{ fontSize: 12, fill: THEME.muted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: THEME.muted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: 'white'
+                  }}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="present" 
+                  stroke={THEME.success} 
+                  strokeWidth={3}
+                  dot={{ fill: THEME.success, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: THEME.success, strokeWidth: 2 }}
+                  name="Present"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="absent" 
+                  stroke="#EF4444" 
+                  strokeWidth={3}
+                  dot={{ fill: "#EF4444", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: "#EF4444", strokeWidth: 2 }}
+                  name="Absent"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="late" 
+                  stroke="#F59E0B" 
+                  strokeWidth={3}
+                  dot={{ fill: "#F59E0B", strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: "#F59E0B", strokeWidth: 2 }}
+                  name="Late"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+MonthlyAttendanceChart.displayName = 'MonthlyAttendanceChart';
+
+// Memoized Yearly Employee Growth Chart Component
+const YearlyEmployeeGrowthChart = memo(({ currentYear, onYearChange, growthData, loading }) => {
+  const handlePrevYear = () => {
+    onYearChange(currentYear - 1);
+  };
+
+  const handleNextYear = () => {
+    onYearChange(currentYear + 1);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
+      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: THEME.background }}
+          >
+            <BarChart3 className="w-5 h-5" style={{ color: THEME.secondary }} />
+          </div>
+          <div>
+            <h2 className="font-semibold" style={{ color: THEME.dark }}>
+              Employee Growth Trends
+            </h2>
+            <p className="text-xs" style={{ color: THEME.muted }}>
+              Monthly employee count progression for {currentYear}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevYear}
+            className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+            style={{ color: THEME.dark }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="px-3 py-1 text-sm font-medium" style={{ color: THEME.dark }}>
+            {currentYear}
+          </span>
+          <button
+            onClick={handleNextYear}
+            className="p-2 rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+            style={{ color: THEME.dark }}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="p-6">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <LoadingSpinner size="md" text="Loading growth data..." />
+          </div>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={growthData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="employeeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={THEME.primary} stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor={THEME.primary} stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12, fill: THEME.muted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 12, fill: THEME.muted }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    backgroundColor: 'white'
+                  }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="totalEmployees" 
+                  stroke={THEME.primary} 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#employeeGradient)"
+                  dot={{ fill: THEME.primary, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: THEME.primary, strokeWidth: 2 }}
+                  name="Total Employees"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+YearlyEmployeeGrowthChart.displayName = 'YearlyEmployeeGrowthChart';
 
 // Memoized Chart Component - Department Distribution
 const DepartmentChart = memo(({ data }) => {
@@ -416,6 +656,13 @@ const OrgDashboard = () => {
   const [error, setError] = useState(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
+  // Chart navigation states for new attendance and growth charts
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [growthData, setGrowthData] = useState([]);
+  const [chartsLoading, setChartsLoading] = useState(true);
+
   // Fetch organization modules (like Sidebar.jsx)
   useEffect(() => {
     const fetchModules = async () => {
@@ -507,6 +754,54 @@ const OrgDashboard = () => {
     () => loadDashboardData(),
     [loadDashboardData]
   );
+
+  // Load monthly attendance data from API
+  const loadMonthlyAttendanceData = useCallback(async (month) => {
+    try {
+      setChartsLoading(true);
+      const currentYear = new Date().getFullYear();
+      const response = await getMonthlyAttendanceChartData(currentYear, month + 1);
+      setAttendanceData(response.data || []);
+    } catch (error) {
+      console.error('Error loading attendance data:', error);
+      setAttendanceData([]);
+    } finally {
+      setChartsLoading(false);
+    }
+  }, []);
+
+  // Load yearly employee growth data from API
+  const loadYearlyGrowthData = useCallback(async (year) => {
+    try {
+      setChartsLoading(true);
+      const response = await getYearlyEmployeeGrowthChartData(year);
+      setGrowthData(response.data || []);
+    } catch (error) {
+      console.error('Error loading growth data:', error);
+      setGrowthData([]);
+    } finally {
+      setChartsLoading(false);
+    }
+  }, []);
+
+  // Chart navigation handlers
+  const handleMonthChange = useCallback((month) => {
+    setCurrentMonth(month);
+    loadMonthlyAttendanceData(month);
+  }, [loadMonthlyAttendanceData]);
+
+  const handleYearChange = useCallback((year) => {
+    setCurrentYear(year);
+    loadYearlyGrowthData(year);
+  }, [loadYearlyGrowthData]);
+
+  // Load chart data when component mounts or month/year changes
+  useEffect(() => {
+    if (user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF") {
+      loadMonthlyAttendanceData(currentMonth);
+      loadYearlyGrowthData(currentYear);
+    }
+  }, [user?.role, loadMonthlyAttendanceData, loadYearlyGrowthData, currentMonth, currentYear]);
 
   // Memoized greeting based on time of day
   const greeting = useMemo(() => {
@@ -966,6 +1261,24 @@ const OrgDashboard = () => {
         {shouldShowAIInsights && user?.organizationUuid && (
           <div className="mb-8">
             <AIInsightsCard organizationUuid={user.organizationUuid} />
+          </div>
+        )}
+        
+        {/* NEW: Attendance & Employee Growth Charts - Only for ORG_ADMIN and HR_STAFF */}
+        {(user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF") && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
+            <MonthlyAttendanceChart
+              currentMonth={currentMonth}
+              onMonthChange={handleMonthChange}
+              attendanceData={attendanceData}
+              loading={chartsLoading}
+            />
+            <YearlyEmployeeGrowthChart
+              currentYear={currentYear}
+              onYearChange={handleYearChange}
+              growthData={growthData}
+              loading={chartsLoading}
+            />
           </div>
         )}
         

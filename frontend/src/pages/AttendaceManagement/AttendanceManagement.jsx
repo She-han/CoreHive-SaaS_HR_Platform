@@ -21,36 +21,13 @@ export default function AttendanceManagement() {
           </p>
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-3 mt-4 md:mt-0">
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "monitor"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("monitor")}
-          >
-            Monitor
-          </button>
-
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "monthly"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("monthly")}
-          >
-            Monthly Report
-          </button>
-        </div>
+      
       </div>
 
       {/* CONTENT */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
-        {activeTab === "monthly" && <MonthlyReport />}
+        
       </div>
     </div>
   );

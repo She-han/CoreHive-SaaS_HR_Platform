@@ -3,6 +3,9 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 import apiClient from "../../../api/axios";
 import * as designationApi from "../../../api/designationApi";
 import * as leaveTypeApi from "../../../api/leaveTypeApi";
@@ -170,6 +173,14 @@ export default function AddEmployee() {
     }
   };
 
+  const handlePhoneChange = (value) => {
+    setFormData({ ...formData, phone: value || "" });
+    // Clear phone error when user types
+    if (formErrors.phone) {
+      setFormErrors({ ...formErrors, phone: "" });
+    }
+  };
+
   const handleLeaveBalanceChange = (leaveTypeId, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -279,12 +290,18 @@ export default function AddEmployee() {
 
     if (!formData.phone.trim()) {
       errors.phone = "Phone number is required";
-    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
-      errors.phone = "Please enter a valid phone number";
+    } else if (!isValidPhoneNumber(formData.phone, 'LK')) {
+      errors.phone = "Please enter a valid Sri Lankan phone number (10 digits)";
     }
 
     if (!formData.nationalId.trim()) {
       errors.nationalId = "National ID is required";
+    } else {
+      const nicPattern12 = /^\d{12}$/; // 12 digits
+      const nicPattern10 = /^\d{9}[Vv]$/; // 9 digits + V or v
+      if (!nicPattern12.test(formData.nationalId) && !nicPattern10.test(formData.nationalId)) {
+        errors.nationalId = "National ID must be either 12 digits or 9 digits followed by 'V'";
+      }
     }
 
     if (!formData.designation.trim()) {
@@ -598,15 +615,16 @@ export default function AddEmployee() {
                 )}
               </Field>
               <Field label="Phone Number" required>
-                <input
-                  name="phone"
-                  placeholder="0771234567"
+                <PhoneInput
+                  international
+                  defaultCountry="LK"
+                  countries={['LK']}
                   value={formData.phone}
-                  onChange={handleChange}
-                  className={`input-box ${
-                    formErrors.phone ? "border-red-500" : ""
+                  onChange={handlePhoneChange}
+                  placeholder="Enter phone number"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.phone ? "border-red-500" : "border-gray-300"
                   }`}
-                  required
                 />
                 {formErrors.phone && (
                   <p className="text-red-600 text-sm mt-1">{formErrors.phone}</p>

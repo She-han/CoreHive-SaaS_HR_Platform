@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Input from "../../components/common/Input";
 import Button from "../../components/common/Button";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 import Swal from "sweetalert2";
 import {
   getCurrentEmployeeProfile,
@@ -94,6 +97,10 @@ const EditProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePhoneChange = (value) => {
+    setFormData((prev) => ({ ...prev, phone: value || "" }));
+  };
+
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -110,6 +117,16 @@ const EditProfile = () => {
         icon: "warning",
         title: "Validation Error",
         text: "First name and last name are required"
+      });
+      return;
+    }
+
+    // Validate Sri Lankan phone number (10 digits)
+    if (formData.phone && !isValidPhoneNumber(formData.phone, 'LK')) {
+      Swal.fire({
+        icon: "warning",
+        title: "Validation Error",
+        text: "Please enter a valid phone number (10 digits)"
       });
       return;
     }
@@ -160,16 +177,16 @@ const EditProfile = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
-    <DashboardLayout>
+    
       <div className="bg-gray-100 min-h-screen px-10 py-10">
         <div className="bg-white p-10 rounded-xl shadow w-full max-w-4xl mx-auto">
           {/* Header */}
@@ -222,7 +239,20 @@ const EditProfile = () => {
               <div className="grid grid-cols-2 gap-6">
                 <Input label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} required />
                 <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} required />
-                <Input label="Phone" name="phone" value={formData.phone} onChange={handleChange} />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <PhoneInput
+                    international
+                    defaultCountry="LK"
+                    countries={['LK']}
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    placeholder="Enter phone number"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
                 <Input label="National ID" name="nationalId" value={formData.nationalId} disabled className="bg-gray-100" />
               </div>
             </div>
@@ -257,7 +287,7 @@ const EditProfile = () => {
           </form>
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 };
 

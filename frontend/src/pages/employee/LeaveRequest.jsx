@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
 import { submitLeaveRequest, getEmployeeLeaveRequests, getLeaveTypes, getEmployeeLeaveBalances } from "../../api/leaveApi";
@@ -190,17 +190,17 @@ export default function LeaveRequest() {
 
   if (pageLoading) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+     
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 max-w-6xl mx-auto animate-fade-in space-y-8">
+    
+      <div className="p-8 max-w-6xl mx-auto  space-y-8">
         {/* PAGE HEADER */}
         <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-6">
           Leave Request Portal
@@ -408,6 +408,6 @@ export default function LeaveRequest() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+   
   );
 }

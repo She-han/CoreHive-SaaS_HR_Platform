@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
+import Swal from 'sweetalert2';
 import { 
   Package, 
   Plus, 
@@ -19,7 +20,6 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
-import Alert from '../../components/common/Alert';
 
 import { 
   getAllModules, 
@@ -200,11 +200,21 @@ const Modules = () => {
         setModules(response.data || []);
         setFilteredModules(response.data || []);
       } else {
-        showAlert('error', 'Failed to load modules');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load modules',
+          confirmButtonColor: '#02C39A'
+        });
       }
     } catch (error) {
       console.error('Error loading modules:', error);
-      showAlert('error', 'Error loading modules');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error loading modules',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -241,12 +251,6 @@ const Modules = () => {
 
     setFilteredModules(filtered);
   }, [modules, searchQuery, filterCategory, filterStatus]);
-
-  // Show alert
-  const showAlert = (type, message) => {
-    setAlert({ type, message, isOpen: true });
-    setTimeout(() => setAlert({ type: '', message: '', isOpen: false }), 5000);
-  };
 
   // Open create/edit modal
   const openModal = (module = null) => {
@@ -348,15 +352,31 @@ const Modules = () => {
       }
 
       if (response.success) {
-        showAlert('success', editingModule ? 'Module updated successfully' : 'Module created successfully');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: editingModule ? 'Module updated successfully' : 'Module created successfully',
+          confirmButtonColor: '#02C39A',
+          timer: 2000
+        });
         closeModal();
         loadModules();
       } else {
-        showAlert('error', response.message || 'Operation failed');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: response.message || 'Operation failed',
+          confirmButtonColor: '#02C39A'
+        });
       }
     } catch (error) {
       console.error('Error saving module:', error);
-      showAlert('error', 'Error saving module');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error saving module',
+        confirmButtonColor: '#02C39A'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -367,36 +387,75 @@ const Modules = () => {
     try {
       const response = await toggleModuleStatus(moduleId);
       if (response.success) {
-        showAlert('success', 'Module status updated');
+        Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: 'Module status updated',
+          confirmButtonColor: '#02C39A',
+          timer: 2000
+        });
         loadModules();
       } else {
-        showAlert('error', 'Failed to update status');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to update status',
+          confirmButtonColor: '#02C39A'
+        });
       }
     } catch (error) {
       console.error('Error toggling status:', error);
-      showAlert('error', 'Error updating status');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Error updating status',
+        confirmButtonColor: '#02C39A'
+      });
     }
   };
 
-  // Delete module
-  const handleDeleteConfirm = async () => {
-    if (!deleteConfirmModule) return;
+  // Delete module with confirmation
+  const handleDelete = async (module) => {
+    const result = await Swal.fire({
+      title: 'Delete Module?',
+      html: `Are you sure you want to delete <strong>${module.name}</strong>?<br/>This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Delete',
+      cancelButtonText: 'Cancel'
+    });
 
-    setIsLoading(true);
-    try {
-      const response = await deleteModule(deleteConfirmModule.moduleId);
-      if (response.success) {
-        showAlert('success', 'Module deleted successfully');
-        setDeleteConfirmModule(null);
-        loadModules();
-      } else {
-        showAlert('error', 'Failed to delete module');
+    if (result.isConfirmed) {
+      try {
+        const response = await deleteModule(module.moduleId);
+        if (response.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Deleted!',
+            text: 'Module deleted successfully',
+            confirmButtonColor: '#02C39A',
+            timer: 2000
+          });
+          loadModules();
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to delete module',
+            confirmButtonColor: '#02C39A'
+          });
+        }
+      } catch (error) {
+        console.error('Error deleting module:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error deleting module',
+          confirmButtonColor: '#02C39A'
+        });
       }
-    } catch (error) {
-      console.error('Error deleting module:', error);
-      showAlert('error', 'Error deleting module');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -420,17 +479,6 @@ const Modules = () => {
   return (
     <DashboardLayout title="Module Management">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Alert */}
-        {alert.isOpen && (
-          <Alert
-            type={alert.type}
-            message={alert.message}
-            isOpen={alert.isOpen}
-            onClose={() => setAlert({ ...alert, isOpen: false })}
-            className="mb-6"
-          />
-        )}
-
         {/* Header */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -560,7 +608,7 @@ const Modules = () => {
                 module={module}
                 onEdit={openModal}
                 onToggle={handleToggleStatus}
-                onDelete={setDeleteConfirmModule}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -681,38 +729,6 @@ const Modules = () => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteConfirmModule}
-        onClose={() => setDeleteConfirmModule(null)}
-        title="Delete Module"
-      >
-        <div className="space-y-4">
-          <p style={{ color: THEME.text }}>
-            Are you sure you want to delete <strong>{deleteConfirmModule?.name}</strong>?
-            This action cannot be undone.
-          </p>
-          
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteConfirmModule(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleDeleteConfirm}
-              loading={isLoading}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              Delete Module
-            </Button>
-          </div>
-        </div>
       </Modal>
     </DashboardLayout>
   );

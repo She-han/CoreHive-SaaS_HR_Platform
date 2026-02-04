@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Modal from "../../components/common/Modal";
 import Swal from "sweetalert2";
@@ -293,16 +293,16 @@ const Payslips = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+    
     );
   }
 
   return (
-    <DashboardLayout>
+    
       <div className="p-8 max-w-6xl mx-auto space-y-10 animate-fade-in">
 
         {/* ================= SALARY SUMMARY ================= */}
@@ -513,7 +513,7 @@ const Payslips = () => {
         </Modal>
 
       </div>
-    </DashboardLayout>
+  
   );
 };
 

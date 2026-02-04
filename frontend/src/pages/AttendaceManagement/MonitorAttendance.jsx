@@ -155,9 +155,9 @@ export default function MonitorAttendance() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6  overflow-hidden">
-      {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    <div className="flex flex-col gap-6 py-4  overflow-hidden">
+      {/* SUMMARY CARDS - Enhanced UI */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <SummaryCard
           title="Present"
           value={summary.PRESENT}
@@ -174,11 +174,6 @@ export default function MonitorAttendance() {
           title="On Leave"
           value={summary.ON_LEAVE}
           statusKey="ON_LEAVE"
-        />
-        <SummaryCard
-          title="WFH"
-          value={summary.WORK_FROM_HOME}
-          statusKey="WORK_FROM_HOME"
         />
       </div>
 

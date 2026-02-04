@@ -10,10 +10,12 @@ export default function LeaveManagement() {
 
   const [leaveRequests, setLeaveRequests] = useState([]);
 
-  // Load leave requests
+  // Load leave requests when token is available
   useEffect(() => {
-    loadLeaves();
-  }, []);
+    if (token) {
+      loadLeaves();
+    }
+  }, [token]); // Add token dependency to reload when token becomes available
 
   const loadLeaves = async () => {
     const data = await getAllLeaveRequests(token);

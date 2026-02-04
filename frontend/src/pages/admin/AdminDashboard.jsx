@@ -617,7 +617,7 @@ const AdminDashboard = () => {
   const loadLatestTickets = useCallback(async () => {
     setTicketsLoading(true);
     try {
-      const response = await getAllTickets(0, 3); // Get first 3 tickets
+      const response = await getAllTickets(0, 20); // Get more tickets to ensure we have 3 unread OPEN ones
       
       if (response.status === 'success' && response.data) {
         let ticketsData = [];
@@ -629,9 +629,11 @@ const AdminDashboard = () => {
           ticketsData = response.data;
         }
         
-        // Filter for unread tickets only, limit to 3
-        const unreadTickets = ticketsData.filter(ticket => !ticket.isRead).slice(0, 3);
-        setLatestTickets(unreadTickets);
+        // Filter for unread AND OPEN tickets only, limit to 3
+        const unreadOpenTickets = ticketsData
+          .filter(ticket => !ticket.isRead && ticket.status === 'OPEN')
+          .slice(0, 3);
+        setLatestTickets(unreadOpenTickets);
       }
     } catch (error) {
       console.error('Error loading latest tickets:', error);
@@ -1053,7 +1055,7 @@ const AdminDashboard = () => {
                     </p>
                   </div>
                 </div>
-                {pendingApprovals.length > 3 && (
+                {pendingApprovals.length > 0 && (
                   <Link
                     to="/sys_admin/approvals"
                     className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
@@ -1114,13 +1116,13 @@ const AdminDashboard = () => {
                       Latest Support Requests
                     </h2>
                     <p className="text-xs" style={{ color: THEME.muted }}>
-                      {latestTickets.filter(t => t.ticketStatus === 'OPEN').slice(0, 3).length} unread ticket{latestTickets.filter(t => t.ticketStatus === 'OPEN').slice(0, 3).length !== 1 ? 's' : ''}
+                      {latestTickets.length} unread ticket{latestTickets.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </div>
-                {latestTickets.filter(t => t.ticketStatus === 'OPEN').length > 3 && (
+                {latestTickets.length > 0 && (
                   <Link
-                    to="/sys_admin/support"
+                    to="/sys_admin/supportlist"
                     className="text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all"
                     style={{ color: THEME.primary }}
                   >
@@ -1134,7 +1136,7 @@ const AdminDashboard = () => {
                   <div className="flex justify-center items-center h-full">
                     <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
                   </div>
-                ) : latestTickets.filter(t => t.ticketStatus === 'OPEN').length === 0 ? (
+                ) : latestTickets.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
@@ -1143,7 +1145,7 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {latestTickets.filter(t => t.ticketStatus === 'OPEN').slice(0, 3).map((ticket) => {
+                    {latestTickets.map((ticket) => {
                       const getTypeIcon = (type) => {
                         switch (type) {
                           case "SUPPORT_REQUEST":
@@ -1175,7 +1177,7 @@ const AdminDashboard = () => {
                       return (
                         <Link
                           key={ticket.id}
-                          to="/sys_admin/support"
+                          to="/sys_admin/supportlist"
                           className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                         >
                           <div className="flex items-start gap-3">

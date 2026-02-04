@@ -19,6 +19,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import { ForgetPasswordPage } from "./pages/auth/ForgetPasswordPage";
+import AboutUs from "./pages/AboutUs";
+import UserGuide from "./pages/UserGuide";
 
 // Middle auth pages
 import ModuleConfigPage from "./pages/auth/ModuleConfigPage";
@@ -115,6 +117,8 @@ function App() {
                   path="/forgot-password"
                   element={<ForgetPasswordPage />}
                 />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/guide" element={<UserGuide />} />
 
                 {/* Change Password (First-time any ORG_USER) */}
                 <Route

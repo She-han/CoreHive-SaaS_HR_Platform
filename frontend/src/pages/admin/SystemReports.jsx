@@ -99,17 +99,17 @@ const SystemReports = () => {
       icon: Building,
       color: THEME.secondary,
     },
-    {
+ /*  {
       id: "revenue",
       label: "Revenue Report",
       icon: DollarSign,
       color: "#10B981",
-    },
+    }, */
     {
       id: "modules",
       label: "Module Usage",
       icon: BarChart3,
-      color: "#8B5CF6",
+      color: THEME.secondary,
     },
   ];
 

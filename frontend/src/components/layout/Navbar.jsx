@@ -51,10 +51,16 @@ const Navbar = () => {
         { name: "Features", href: "/#features", current: false },
         { name: "Pricing", href: "/#pricing", current: false },
         {
-          name: "Contact",
-          href: "/contact",
-          current: location.pathname === "/contact"
+          name: "User Guide",
+          href: "/guide",
+          current: location.pathname === "/guide"
+        },
+                {
+          name: "About Us",
+          href: "/about",
+          current: location.pathname === "/about"
         }
+
       ];
     }
 

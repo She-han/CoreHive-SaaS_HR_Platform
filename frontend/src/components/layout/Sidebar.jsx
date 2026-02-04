@@ -211,8 +211,8 @@ const Sidebar = ({ isCollapsed = false }) => {
           {
             name: "Reports & Analytics",
             icon: ChartBarIcon,
-            path: "/org_admin/reports",
-            current: location.pathname.startsWith("/org_admin/reports")
+            path: "/hr_staff/hrreportingmanagement",
+            current: location.pathname.startsWith("/hr_staff/hrreportingmanagement")
           },
           {
             name: 'Subscription Management',
@@ -293,8 +293,8 @@ const Sidebar = ({ isCollapsed = false }) => {
             )
           },
           {
-            name: "Support",
-            icon: Cog6ToothIcon,
+            name: "System Support",
+            icon: FiHeadphones,
             path: "/hr_staff/support",
             current: location.pathname.startsWith("/hr_staff/support")
           }
@@ -402,8 +402,8 @@ const Sidebar = ({ isCollapsed = false }) => {
             current: location.pathname.startsWith("/employee/notices")
           },
           {
-            name: "Support",
-            icon: Cog6ToothIcon,
+            name: "System Support",
+            icon: FiHeadphones,
             path: "/employee/support",
             current: location.pathname.startsWith("/employee/support")
           }
@@ -491,7 +491,7 @@ const Sidebar = ({ isCollapsed = false }) => {
 
   return (
     <div
-      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-18" : "w-68"}`}
+      className={`shadow-lg transition-all duration-300 ${isCollapsed ? "w-16" : "w-64"}`}
       style={{ backgroundColor: "#FFFFFF", borderRight: "1px solid #E5E7EB" }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -637,3 +637,4 @@ const Sidebar = ({ isCollapsed = false }) => {
 };
 
 export default Sidebar;
+

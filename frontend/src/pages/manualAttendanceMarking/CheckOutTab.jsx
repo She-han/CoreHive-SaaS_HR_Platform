@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import {
   getTodayAttendance,
   manualCheckOut,
@@ -58,9 +59,9 @@ const STATUS_STYLES = {
     setLoading(true);
     try {
       const data = await getTodayAttendance(token, selectedDate);
-      // Filter out those who shouldn't be in the manual checkout list
+      // Filter to show only employees who have checked in
       const filtered = data.filter(
-        (emp) => emp.status !== "ABSENT" && emp.status !== "ON_LEAVE"
+        (emp) => emp.checkInTime !== null && emp.status !== "ABSENT" && emp.status !== "ON_LEAVE"
       );
       setEmployees(filtered);
     } catch (err) {
@@ -71,8 +72,10 @@ const STATUS_STYLES = {
   };
 
   useEffect(() => {
-    fetchTodayAttendance();
-  }, [token, selectedDate]); // Add selectedDate to dependency array
+    if (token && selectedDate) {
+      fetchTodayAttendance();
+    }
+  }, [token, selectedDate]); // Add token to trigger reload when available
 
   const handleCheckOut = async (employeeId) => {
     try {
@@ -85,9 +88,21 @@ const STATUS_STYLES = {
         return updated;
       });
       // Refresh the list to show updated checkout times and status
-      fetchTodayAttendance();
+      await fetchTodayAttendance();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Checked Out!',
+        text: 'Employee has been checked out successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert(err.message || "Failed to check out employee");
+      Swal.fire({
+        icon: 'error',
+        title: 'Check-Out Failed',
+        text: err.message || 'Failed to check out employee'
+      });
     }
   };
 
@@ -102,10 +117,21 @@ const STATUS_STYLES = {
         token
       );
       setEditingEmployee(null);
-      fetchTodayAttendance();
-      alert("Attendance updated successfully!");
+      await fetchTodayAttendance();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Updated!',
+        text: 'Attendance updated successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
     } catch (err) {
-      alert(err.message || "Failed to update attendance");
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err.message || 'Failed to update attendance'
+      });
     }
   };
 

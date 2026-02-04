@@ -87,3 +87,21 @@ export async function updateEmployee(id, payload, token) {
     throw new Error(err.response?.data?.message || err.message);
   }
 }
+
+// 6) DELETE EMPLOYEE
+export async function deleteEmployee(id, token) {
+  if (!id) {
+    throw new Error("Employee ID is required");
+  }
+
+  try {
+    const response = await axios.delete(`${BASE}/employees/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (err) {
+    throw new Error(err.response?.data?.message || err.message);
+  }
+}

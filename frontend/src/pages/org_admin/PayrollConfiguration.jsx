@@ -252,9 +252,9 @@ const PayrollConfiguration = () => {
     
       <div className="p-4 md:px-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row py-4 justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: THEME.dark }}>
+            <h1 className="text-3xl font-bold" style={{ color: THEME.dark }}>
               Payroll Configuration
             </h1>
             <p className="text-gray-600 mt-1">

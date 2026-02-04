@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, memo } from "react";
 import {
   X,
   Building,
@@ -592,10 +592,10 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization, onOrganizatio
 };
 
 /* ------------------------------------------------------------------ */
-/* Helpers                                                             */
+/* Helpers - MEMOIZED FOR PERFORMANCE                                 */
 /* ------------------------------------------------------------------ */
 
-const InfoCard = ({ icon: Icon, label, value, iconColor = "text-gray-500" }) => (
+const InfoCard = memo(({ icon: Icon, label, value, iconColor = "text-gray-500" }) => (
   <div className="border border-gray-200 rounded-lg p-4 flex items-center gap-3 bg-white hover:shadow-md transition-shadow">
     <div className={`p-2 rounded-lg bg-gray-50`}>
       <Icon className={iconColor} size={20} />
@@ -605,9 +605,10 @@ const InfoCard = ({ icon: Icon, label, value, iconColor = "text-gray-500" }) => 
       <p className="font-semibold text-gray-900 truncate">{value}</p>
     </div>
   </div>
-);
+));
+InfoCard.displayName = "InfoCard";
 
-const ModuleCard = ({ module }) => {
+const ModuleCard = memo(({ module }) => {
   const IconComponent = module.iconElement || Package;
   
   return (
@@ -631,6 +632,7 @@ const ModuleCard = ({ module }) => {
       )}
     </div>
   );
-};
+});
+ModuleCard.displayName = "ModuleCard";
 
 export default OrganizationDetailsModal;

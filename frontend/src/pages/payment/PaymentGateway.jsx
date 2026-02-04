@@ -264,12 +264,8 @@ const PaymentGateway = () => {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Left Column - Plan Details */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Card className="h-full">
+      
+            <Card className="h-full shadow-lg">
               <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 Your Plan Details
@@ -336,17 +332,13 @@ const PaymentGateway = () => {
                 </div>
               </div>
             </Card>
-          </motion.div>
+          
 
           {/* Right Column - Payment Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <Card className="h-full">
+        
+            <Card className="h-full border-0">
               <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-primary-500" />
+                
                 Payment Information
               </h3>
 
@@ -370,38 +362,27 @@ const PaymentGateway = () => {
                 {/* Info Notice */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-800">
-                    <strong className="block mb-2">🎉 30-Day Free Trial</strong>
+                    <strong className="block mb-2">30-Day Free Trial</strong>
                     Start your trial now without payment. After 30 days, you'll be charged LKR {billingInfo?.price || '500'} monthly. Cancel anytime from your dashboard.
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="space-y-3 pt-4">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="lg"
-                    className="w-full"
-                    onClick={handleActivateSubscription}
-                    disabled={activatingTrial}
-                    icon={ArrowRight}
-                    iconPosition="right"
-                  >
-                    {activatingTrial ? 'Activating Trial...' : 'Activate 30-Day Free Trial'}
-                  </Button>
+     
 
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-gray-300"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">OR</span>
+                      <span className="px-2 bg-white text-gray-500">Activate Trail by</span>
                     </div>
                   </div>
 
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="primary"
                     size="lg"
                     className="w-full"
                     onClick={handleProceedToPayHere}
@@ -424,23 +405,11 @@ const PaymentGateway = () => {
                 </div>
               </div>
             </Card>
-          </motion.div>
+         
         </div>
 
-        {/* Footer Notice */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8 text-center"
-        >
-          <div className="inline-flex items-center gap-2 bg-white rounded-lg px-6 py-3 shadow-sm">
-            <Shield className="w-5 h-5 text-green-600" />
-            <span className="text-sm text-text-secondary">
-              Protected by 256-bit SSL encryption
-            </span>
-          </div>
-        </motion.div>
+     
+      
       </div>
 
       {/* Subscription Details Modal */}

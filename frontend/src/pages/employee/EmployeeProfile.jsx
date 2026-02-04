@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Swal from "sweetalert2";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
+import { EditIcon } from "lucide-react";
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
@@ -53,17 +54,17 @@ export default function EmployeeProfile() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+     
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 w-full animate-fade-in">
+   
+      <div className="p-8 w-full ">
         {/* HEADER */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
@@ -74,12 +75,12 @@ export default function EmployeeProfile() {
             onClick={() => navigate("/employee/profile/edit")}
             className="
               bg-[var(--color-primary-500)]
-              text-white px-6 py-3 rounded-lg font-medium
+              text-white px-4 py-2 rounded-lg font-medium
               hover:bg-[var(--color-primary-600)]
-              transition-all
+              transition-all flex
             "
           >
-            Edit Profile
+            <EditIcon/>
           </button>
         </div>
 
@@ -202,14 +203,10 @@ export default function EmployeeProfile() {
                 <p className="font-medium">{employee.salaryType}</p>
               </div>
 
-              <div>
-                <p className="text-xs text-gray-500">Leave Balance</p>
-                <p className="font-medium">{employee.leaveCount} days</p>
-              </div>
             </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 }

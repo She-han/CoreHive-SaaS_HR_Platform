@@ -88,7 +88,7 @@ export default function SummaryCard({ title, value, statusKey }) {
         >
           {value}
         </h2>
-        <span className="text-[10px] font-bold text-slate-400">MEMBERS</span>
+        <span className="text-[10px] font-bold text-slate-400">Employees</span>
       </div>
 
       {/* Progress Bar Decor - Purely Visual but Premium */}

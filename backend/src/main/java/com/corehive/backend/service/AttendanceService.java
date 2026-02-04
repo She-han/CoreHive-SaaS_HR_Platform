@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1429,6 +1430,41 @@ public class AttendanceService {
         } catch (Exception e) {
             throw new RuntimeException("Excel generation failed", e);
         }
+    }
+
+    /**
+     * Get monthly attendance chart data for dashboard charts
+     * Returns daily attendance counts (present, absent, late) for a specific month
+     */
+    public List<Map<String, Object>> getMonthlyAttendanceChartData(String organizationUuid, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+        
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            Map<String, Long> dailyCounts = attendanceRepository
+                .findByOrganizationUuidAndAttendanceDate(organizationUuid, date)
+                .stream()
+                .filter(attendance -> attendance.getStatus() != null)  // Filter out null status
+                .collect(Collectors.groupingBy(
+                    attendance -> attendance.getStatus().name(),
+                    Collectors.counting()
+                ));
+            
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("day", date.getDayOfMonth());
+            dayData.put("date", date.toString());
+            dayData.put("present", dailyCounts.getOrDefault("PRESENT", 0L).intValue());
+            dayData.put("absent", dailyCounts.getOrDefault("ABSENT", 0L).intValue());
+            dayData.put("late", dailyCounts.getOrDefault("LATE", 0L).intValue());
+            dayData.put("onLeave", dailyCounts.getOrDefault("ON_LEAVE", 0L).intValue());
+            dayData.put("halfDay", dailyCounts.getOrDefault("HALF_DAY", 0L).intValue());
+            
+            chartData.add(dayData);
+        }
+        
+        return chartData;
     }
 
 

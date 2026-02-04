@@ -700,6 +700,33 @@ public class AttendanceController {
     }
 
     //************************************************//
+    // GET MONTHLY ATTENDANCE DATA FOR CHARTS
+    //************************************************//
+    @GetMapping("/monthly-chart-data")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getMonthlyAttendanceChartData(
+            @RequestParam("year") int year,
+            @RequestParam("month") int month, // 1-12
+            HttpServletRequest request
+    ) {
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
+        
+        try {
+            var monthlyData = attendanceService.getMonthlyAttendanceChartData(organizationUuid, year, month);
+            return new ResponseEntity<>(
+                new StandardResponse(200, "Monthly attendance chart data fetched successfully", monthlyData),
+                HttpStatus.OK
+            );
+        } catch (Exception e) {
+            log.error("Error fetching monthly attendance chart data: ", e);
+            return new ResponseEntity<>(
+                new StandardResponse(500, "Failed to fetch monthly attendance data", null),
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    //************************************************//
     // get count of today's ON_LEAVE employees
     //************************************************//
     @GetMapping("/today/on-leave-count")

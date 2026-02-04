@@ -17,6 +17,7 @@ import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import apiClient from '../../api/axios';
 import { getActiveModules } from '../../api/extendedModulesApi';
+import Swal from 'sweetalert2';
 
 const BillingAndPlans = () => {
   const [plans, setPlans] = useState([]);
@@ -201,15 +202,39 @@ const BillingAndPlans = () => {
   };
 
   const handleDeletePlan = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this plan?')) return;
+    const plan = plans.find(p => p.id === id);
+    const result = await Swal.fire({
+      title: 'Delete Plan?',
+      html: `Are you sure you want to delete <strong>${plan?.name}</strong>?<br/>This action cannot be undone.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#6B7280',
+      confirmButtonText: 'Yes, Delete',
+      cancelButtonText: 'Cancel'
+    });
 
-    try {
-      setError(null);
-      await apiClient.delete(`/billing-plans/${id}`);
-      await fetchPlans();
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to delete plan');
-      console.error('Error deleting plan:', err);
+    if (result.isConfirmed) {
+      try {
+        setError(null);
+        await apiClient.delete(`/billing-plans/${id}`);
+        await fetchPlans();
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'Plan deleted successfully',
+          confirmButtonColor: '#02C39A',
+          timer: 2000
+        });
+      } catch (err) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: err.response?.data?.message || err.message || 'Failed to delete plan',
+          confirmButtonColor: '#02C39A'
+        });
+        console.error('Error deleting plan:', err);
+      }
     }
   };
 
@@ -233,7 +258,7 @@ const BillingAndPlans = () => {
         >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-text-primary mb-2">
+              <h1 className="text-3xl md:text-3xl font-bold text-text-primary mb-2">
                 Billing & Plans Management
               </h1>
               <p className="text-text-secondary">

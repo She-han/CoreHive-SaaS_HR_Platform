@@ -1,4 +1,4 @@
-import { FaEdit, FaBan, FaCheckCircle } from "react-icons/fa";
+import { FaEdit, FaBan, FaCheckCircle, FaTrash } from "react-icons/fa";
 import { FiCreditCard } from "react-icons/fi";
 import { useState, useEffect } from "react";
 import EmployeeModal from "./EmployeeModal";
@@ -7,7 +7,8 @@ import withReactContent from "sweetalert2-react-content";
 import { Link } from "react-router-dom";
 import {
   getAllEmployees,
-  toggleEmployeeStatus
+  toggleEmployeeStatus,
+  deleteEmployee
 } from "../../../api/employeeService";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../store/slices/authSlice";
@@ -111,6 +112,44 @@ export default function EmployeeTable({ search, filterBy }) {
         icon: 'error',
         title: 'Update Failed',
         text: 'Failed to update employee status. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
+    }
+  };
+
+  const handleDeleteEmployee = async (id, employeeName) => {
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: 'Delete Employee?',
+      text: `Are you sure you want to delete ${employeeName}? This action cannot be undone!`,
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#9B9B9B',
+      confirmButtonText: 'Yes, delete!',
+      cancelButtonText: 'Cancel'
+    });
+    
+    if (!result.isConfirmed) return;
+
+    try {
+      await deleteEmployee(id, token);
+      await Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'Employee has been deleted successfully.',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+
+      // Remove employee from state
+      setEmployees((prev) => prev.filter((emp) => emp.id !== id));
+    } catch (err) {
+      console.error(err);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: err.message || 'Failed to delete employee. Please try again.',
         confirmButtonColor: '#02C39A'
       });
     }
@@ -228,15 +267,26 @@ export default function EmployeeTable({ search, filterBy }) {
                       <div className="flex justify-center">
                         <Link
                           to={`/hr_staff/editemployee/${emp.id}`}
-                          className="group flex items-center justify-center gap-2 px-3 h-10 rounded border transition-all duration-300 bg-[#FFFFFF] border-[#05668D]/30 text-[#05668D] hover:bg-[#05668D] hover:text-[#FFFFFF] shadow-sm hover:shadow-md"
+                          className="group flex items-center justify-center w-10 h-10 rounded border transition-all duration-300 bg-[#FFFFFF] border-[#05668D]/30 text-[#05668D] hover:bg-[#05668D] hover:text-[#FFFFFF] shadow-sm hover:shadow-md"
                           onClick={(e) => e.stopPropagation()}
-                          title="Edit Employee Information"
+                          title="Edit Employee"
                         >
-                          <FaEdit size={14} />
-                          <span className="text-[11px] font-bold uppercase tracking-wide">
-                            Edit
-                          </span>
+                          <FaEdit size={16} />
                         </Link>
+                      </div>
+
+                      {/* DELETE ACTION */}
+                      <div className="flex justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEmployee(emp.id, `${emp.firstName} ${emp.lastName}`);
+                          }}
+                          className="group flex items-center justify-center w-10 h-10 rounded border transition-all duration-300 bg-[#FFFFFF] border-red-300 text-red-500 hover:bg-red-500 hover:text-[#FFFFFF] shadow-sm hover:shadow-md"
+                          title="Delete Employee"
+                        >
+                          <FaTrash size={14} />
+                        </button>
                       </div>
 
                       {/* STATUS TOGGLE ACTION */}

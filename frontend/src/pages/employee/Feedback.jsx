@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import * as feedbackApi from "../../api/feedbackApi";
 import Swal from "sweetalert2";
@@ -105,8 +105,8 @@ const Feedback = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+    
+      <div className="p-8 max-w-6xl mx-auto space-y-8 ">
 
         {/* ================= FEEDBACK FORM ================= */}
         <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-100">
@@ -252,7 +252,7 @@ const Feedback = () => {
         </div>
 
       </div>
-    </DashboardLayout>
+    
   );
 };
 

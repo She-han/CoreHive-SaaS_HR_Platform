@@ -19,6 +19,8 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
 import { ForgetPasswordPage } from "./pages/auth/ForgetPasswordPage";
+import AboutUs from "./pages/AboutUs";
+import UserGuide from "./pages/UserGuide";
 import PublicJobs from "./pages/PublicJobs";
 
 // Middle auth pages
@@ -117,6 +119,8 @@ function App() {
                   path="/forgot-password"
                   element={<ForgetPasswordPage />}
                 />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/guide" element={<UserGuide />} />
 
                 {/* Change Password (First-time any ORG_USER) */}
                 <Route
@@ -392,6 +396,7 @@ const HRStaffRoutes = () => {
 const EmployeeRoutes = () => {
   return (
     <Routes>
+      <Route element={<MainHRLayout />}>
       <Route path="profile" element={<EmployeeProfile />} />
       <Route path="profile/edit" element={<EditProfile />} />
       <Route
@@ -405,6 +410,7 @@ const EmployeeRoutes = () => {
       <Route path="surveys" element={<Surveys />} />
       <Route path="support" element={<Support />} />
       <Route path="" element={<Navigate to="profile" replace />} />
+      </Route>
     </Routes>
   );
 };

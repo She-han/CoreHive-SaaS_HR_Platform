@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Modal from '../../components/common/Modal';
 import * as surveyApi from '../../api/surveyApi';
@@ -156,22 +156,23 @@ const Surveys = () => {
 
   if (loading && surveys.length === 0) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
+    
+      <div className="p-8 max-w-6xl mx-auto space-y-8 ">
         
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: THEME.dark }}>
-            
+          <h1 className="text-3xl font-bold mb-2 text-[var(--color-text-primary)]">
+
+            <FaClipboardList className="inline mr-3" />
             Feedback Surveys
           </h1>
           <p className="text-gray-600">
@@ -387,7 +388,7 @@ const Surveys = () => {
         </Modal>
 
       </div>
-    </DashboardLayout>
+    
   );
 };
 

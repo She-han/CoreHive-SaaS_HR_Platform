@@ -255,7 +255,7 @@ const LeaveAndAttendanceConfigure = () => {
   return (
   
       <div className="min-h-screen bg-gradient-to-br from-[#F1FDF9] to-white p-6">
-        <div className="mb-6">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#0C397A] mb-2">Leave & Attendance Configuration</h1>
           <p className="text-gray-600">Manage leave types and attendance rules for your organization</p>
         </div>

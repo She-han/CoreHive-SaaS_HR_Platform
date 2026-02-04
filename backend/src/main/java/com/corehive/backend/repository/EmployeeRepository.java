@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -219,6 +220,9 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     GROUP BY MONTH(e.dateOfJoining)
 """)
     List<Object[]> yearlyEmployeeGrowth(String orgUuid, int year);
+
+    // Count employees created before a specific date (for cumulative growth chart)
+    long countByOrganizationUuidAndCreatedAtBefore(String organizationUuid, LocalDateTime dateTime);
 
     Optional<Object> findByQrToken(String qrToken);
 

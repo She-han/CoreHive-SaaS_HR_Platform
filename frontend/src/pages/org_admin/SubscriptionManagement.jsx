@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Card from '../../components/common/Card';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+
 import { selectUser } from '../../store/slices/authSlice';
 import {
   getSubscriptionDetails,
@@ -316,11 +316,7 @@ const SubscriptionManagement = () => {
     <div className="min-h-screen bg-gradient-to-br from-[#F1FDF9] to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+   
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div>
@@ -333,14 +329,10 @@ const SubscriptionManagement = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+       
 
         {/* Current Plan Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+  
           <Card className="mb-6 shadow-sm">
             <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-6">
               <div className="flex items-start justify-between">
@@ -397,15 +389,10 @@ const SubscriptionManagement = () => {
               </div>
             </div>
           </Card>
-        </motion.div>
+   
 
         {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-6"
-        >
+
           <Card>
             <div className="flex gap-3">
               <Button
@@ -425,17 +412,11 @@ const SubscriptionManagement = () => {
               </Button>
             </div>
           </Card>
-        </motion.div>
+
 
         {/* Plan Change Section */}
         {showPlanChange && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
-          >
+
             <Card>
               <h3 className="text-lg font-semibold text-text-primary mb-4 flex items-center gap-2">
                 <Package className="w-5 h-5" />
@@ -593,15 +574,11 @@ const SubscriptionManagement = () => {
                 </>
               )}
             </Card>
-          </motion.div>
+       
         )}
 
         {/* Transaction History */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
+
           <Card>
             <h3 className="text-lg font-semibold text-text-primary mb-4">Transaction History</h3>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -652,7 +629,7 @@ const SubscriptionManagement = () => {
               </div>
             </div>
           </Card>
-        </motion.div>
+
       </div>
     </div>
   );

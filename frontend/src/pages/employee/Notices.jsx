@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import DashboardLayout from "../../components/layout/DashboardLayout";
+
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Swal from "sweetalert2";
 import { getAllNotices } from "../../api/NoticeApi";
@@ -64,17 +64,17 @@ export default function NoticePage() {
 
   if (pageLoading) {
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+    
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="p-8 max-w-6xl mx-auto animate-fade-in space-y-6">
+    
+      <div className="p-8 max-w-6xl mx-auto space-y-6">
 
         {/* PAGE HEADER */}
         <div className="flex items-center gap-3 mb-6">
@@ -161,6 +161,6 @@ export default function NoticePage() {
         )}
 
       </div>
-    </DashboardLayout>
+  
   );
 }

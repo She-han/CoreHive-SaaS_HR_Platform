@@ -14,7 +14,7 @@ const AttendanceMarking = () => {
   return (
     <div
       style={{ backgroundColor: "#F1FDF9" }}
-      className="w-full h-screen shadow-md flex flex-col p-8"
+      className="w-full shadow-md flex flex-col p-8 h-screen"
     >
       {/* HEADER MATCHING EMPLOYEE MANAGEMENT */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">

@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
   getTodayAttendance,
-  manualCheckOut
+  manualCheckOut,
+  updateAttendanceRecord
 } from "../../api/manualAttendanceService";
-import { Clock, CheckCircle } from "lucide-react";
+import { Clock, CheckCircle, Edit } from "lucide-react";
+import EditAttendanceModal from "../../components/attendance/EditAttendanceModal";
 
+const CheckOutTab = ({ token, selectedDate }) => {
 // Professional Status Styles Configuration
 // Full Status Styles for Your Enum
 const STATUS_STYLES = {
@@ -45,16 +48,16 @@ const STATUS_STYLES = {
   }
 };
 
-const CheckOutTab = ({ token }) => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [manualTimes, setManualTimes] = useState({});
+  const [editingEmployee, setEditingEmployee] = useState(null);
 
   const fetchTodayAttendance = async () => {
-    if (!token) return;
+    if (!token || !selectedDate) return;
     setLoading(true);
     try {
-      const data = await getTodayAttendance(token);
+      const data = await getTodayAttendance(token, selectedDate);
       // Filter out those who shouldn't be in the manual checkout list
       const filtered = data.filter(
         (emp) => emp.status !== "ABSENT" && emp.status !== "ON_LEAVE"
@@ -69,12 +72,12 @@ const CheckOutTab = ({ token }) => {
 
   useEffect(() => {
     fetchTodayAttendance();
-  }, [token]); // Add token to dependency array
+  }, [token, selectedDate]); // Add selectedDate to dependency array
 
   const handleCheckOut = async (employeeId) => {
     try {
       const selectedTime = manualTimes[employeeId];
-      await manualCheckOut(employeeId, token, selectedTime);
+      await manualCheckOut(employeeId, token, selectedTime, selectedDate);
       // Clear the manual time after check-out
       setManualTimes(prev => {
         const updated = { ...prev };
@@ -85,6 +88,24 @@ const CheckOutTab = ({ token }) => {
       fetchTodayAttendance();
     } catch (err) {
       alert(err.message || "Failed to check out employee");
+    }
+  };
+
+  const handleSaveEdit = async (data) => {
+    try {
+      await updateAttendanceRecord(
+        data.employeeId,
+        data.date,
+        data.checkInTime,
+        data.checkOutTime,
+        data.status,
+        token
+      );
+      setEditingEmployee(null);
+      fetchTodayAttendance();
+      alert("Attendance updated successfully!");
+    } catch (err) {
+      alert(err.message || "Failed to update attendance");
     }
   };
 
@@ -107,6 +128,9 @@ const CheckOutTab = ({ token }) => {
             </th>
             <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
               Actions
+            </th>
+            <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Edit
             </th>
           </tr>
         </thead>
@@ -219,12 +243,33 @@ const CheckOutTab = ({ token }) => {
                       )}
                     </button>
                   </td>
+
+                  {/* Edit Button Column */}
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => setEditingEmployee(emp)}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white transition-all text-xs font-medium"
+                    >
+                      <Edit size={14} />
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+
+      {/* Edit Attendance Modal */}
+      {editingEmployee && (
+        <EditAttendanceModal
+          employee={editingEmployee}
+          selectedDate={selectedDate}
+          onClose={() => setEditingEmployee(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 };

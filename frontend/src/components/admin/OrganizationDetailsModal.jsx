@@ -224,6 +224,12 @@ const OrganizationDetailsModal = ({ isOpen, onClose, organization, onOrganizatio
         icon: Clock,
         className: "bg-yellow-50 text-yellow-700 border-yellow-200"
       },
+      APPROVED_PENDING_PAYMENT: {
+        label: "Approved, Pending Payment",
+        icon: Clock,
+        className: "bg-orange-50 text-orange-700 border-orange-200"
+      },
+
       ACTIVE: {
         label: "Active",
         icon: CheckCircle,

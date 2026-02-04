@@ -32,7 +32,10 @@ const initialState = {
     // Extended modules (based on org selection)
     performanceTracking: false,
     employeeFeedback: false,
-    hiringManagement: false
+    hiringManagement: false,
+    qrAttendance: false,
+    faceRecognitionAttendance: false,
+    aiInsights: false // AI Insights module (module_id = 5)
   }
 };
 
@@ -258,6 +261,9 @@ const authSlice = createSlice({
 
         // Backend response structure: { success: true, data: LoginResponse }
         const loginData = action.payload; // This should be the LoginResponse object directly
+        
+        console.log('🔍 [authSlice] Login data received:', loginData);
+        console.log('🔍 [authSlice] passwordChangeRequired:', loginData.passwordChangeRequired);
 
         state.token = loginData.token;
         state.user = {
@@ -268,9 +274,14 @@ const authSlice = createSlice({
           organizationUuid: loginData.organizationUuid,
           organizationName: loginData.organizationName,
           modulesConfigured: loginData.modulesConfigured,
-          moduleConfig: loginData.moduleConfig
+          moduleConfig: loginData.moduleConfig,
+          passwordChangeRequired: loginData.passwordChangeRequired,
+          requiresPayment: loginData.requiresPayment,
+          hasActiveSubscription: loginData.hasActiveSubscription
         };
         state.isAuthenticated = true;
+        
+        console.log('🔍 [authSlice] User object stored in state:', state.user);
 
         // Store in localStorage immediately
         if (loginData.token) {

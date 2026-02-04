@@ -28,9 +28,9 @@ import { ChangePasswordPage } from "./pages/auth/ChangePasswordPage";
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminApprovals from './pages/admin/AdminApprovals';
 import Settings from './pages/admin/Settings';
-import Support from './pages/admin/Support';
+import SupportList from './pages/admin/Support';
 import AuditLogs from './pages/admin/AuditLogs';
-import Analytics from './pages/admin/SystemAnalytics';
+import Analytics from './pages/admin/SystemReports';
 import Billing from './pages/admin/BillingAndPlans';
 import Users from './pages/admin/Users';
 import Organizations from './pages/admin/Organizations';
@@ -89,6 +89,8 @@ import Payslips from "./pages/employee/Payslips";
 import LeaveAndAttendanceConfigure from "./pages/org_admin/LeaveAndAttendanceConfigure";
 import Surveys from "./pages/employee/Surveys";
 
+//Org Level all 3 Roles
+import Support from "./pages/support/RequestSupportOrBugReport";
 
 /* // Error Pages
 import NotFoundPage from './pages/common/NotFoundPage';
@@ -124,7 +126,7 @@ function App() {
                   }
                 />
                 
-                {/* Payment routes 
+                {/* Payment routes - expose top-level for redirects */}
                 <Route 
                   path="/payment-gateway" 
                   element={
@@ -132,7 +134,23 @@ function App() {
                       <PaymentGateway />
                     </ProtectedRoute>
                   } 
-                />*/}
+                />
+                <Route 
+                  path="/payment/success" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <PaymentSuccess />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/payment/cancel" 
+                  element={
+                    <ProtectedRoute requiredUserType="ORG_USER">
+                      <PaymentCancel />
+                    </ProtectedRoute>
+                  } 
+                />
 
                 {/* Module Configuration (First-time ORG_ADMIN only) */}
                 <Route
@@ -271,7 +289,7 @@ const SystemAdminRoutes = () => {
       <Route path="approvals" element={<AdminApprovals />} />
       <Route path="modules" element={<Modules />} />
       <Route path="settings" element={<Settings />} />
-      <Route path="support" element={<Support />} />
+      <Route path="supportlist" element={<SupportList />} />
       <Route path="audits" element={<AuditLogs />} />
       <Route path="analytics" element={<Analytics />} />
       <Route path="billing" element={<Billing />} />
@@ -294,6 +312,7 @@ const SystemAdminRoutes = () => {
 const OrgAdminRoutes = () => {
   return (
     <Routes>
+      <Route element={<MainHRLayout />}>
      <Route path="dashboard" element={<OrgDashboard />} />
      <Route path="hrstaffmanagement" element={<HRStaffManagement />} />
      <Route path="departmentmanagement" element={<DepartmentManagement />} />
@@ -307,10 +326,12 @@ const OrgAdminRoutes = () => {
      <Route path="/payment/cancel" element={<PaymentCancel />} />
      <Route path="payroll-config" element={<PayrollConfiguration/>}/>
      <Route path="leaveattendance-config" element={<LeaveAndAttendanceConfigure/>}/>
+     <Route path="support" element={<Support />} />
      <Route path="" element={<Navigate to="dashboard" replace />} />
      {/*   
       <Route path="reports" element={<OrgReports />} />
        */}
+       </Route>
     </Routes>
   );
 };
@@ -354,6 +375,7 @@ const HRStaffRoutes = () => {
         <Route path="employeefeedbacks" element={<EmployeeFeedbacks />} />
         <Route path="noticemanagement" element={<NoticeManagement />} />
         <Route path="payslips" element={<PayslipGeneration />} />
+        <Route path="support" element={<Support />} />
         
         <Route path="" element={<Navigate to="dashboard" replace />} />
       </Route>
@@ -379,6 +401,7 @@ const EmployeeRoutes = () => {
       <Route path="notices" element={<Notices />} />
       <Route path="payslips" element={<Payslips />} />
       <Route path="surveys" element={<Surveys />} />
+      <Route path="support" element={<Support />} />
       <Route path="" element={<Navigate to="profile" replace />} />
     </Routes>
   );

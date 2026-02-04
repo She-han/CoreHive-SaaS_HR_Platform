@@ -34,6 +34,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
     // ===== Organization Queries =====
 
+    List<Attendance> findByOrganizationUuid(String organizationUuid);
+
     List<Attendance> findByOrganizationUuidAndAttendanceDate(String organizationUuid, LocalDate date);
 
     /**
@@ -152,4 +154,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
 
     Optional<Attendance> findByEmployeeIdAndOrganizationUuidAndAttendanceDate(Long employeeId, String orgUuid, LocalDate today);
+    
+    Optional<Attendance> findByEmployeeIdAndAttendanceDateAndOrganizationUuid(Long employeeId, LocalDate date, String organizationUuid);
 }

@@ -13,7 +13,7 @@ import {
 } from "../../store/slices/authSlice";
 
 import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
+import Input from "../../components/common/Input"; 
 import Card from "../../components/common/Card";
 import Alert from "../../components/common/Alert";
 import ReCaptcha from "../../components/common/ReCaptcha";
@@ -126,63 +126,82 @@ const LoginPage = () => {
       if (loginUser.fulfilled.match(resultAction)) {
         const userData = resultAction.payload;
         
-        // Show success message
+        // DEBUG: Log complete user data to see what backend is returning
+        console.log('🔍 Login Response - Full userData:', userData);
+        console.log('🔍 passwordChangeRequired:', userData.passwordChangeRequired);
+        console.log('🔍 requiresPayment:', userData.requiresPayment);
+        console.log('🔍 modulesConfigured:', userData.modulesConfigured);
+        
+        // Show success message (non-blocking)
         Swal.fire({
           icon: 'success',
           title: 'Login Successful!',
           text: 'Welcome back to CoreHive',
           confirmButtonColor: '#02C39A',
-          timer: 1500,
-          showConfirmButton: false
+          timer: 1000,
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          allowEscapeKey: false
         });
         
         // System Admin - direct redirect without any checks
         if (userData.userType === 'SYSTEM' && userData.role === 'SYS_ADMIN') {
+          console.log('🔀 Redirecting SYSTEM ADMIN to dashboard');
           setTimeout(() => {
             navigate('/sys_admin/dashboard', { replace: true });
-          }, 1500);
+          }, 1000);
           return;
         }
 
         // Organization Users - check password change, payment, modules
         if (userData.userType === 'ORG_USER') {
-          const needsPasswordChange = userData.isPasswordChangeRequired || userData.passwordChangeRequired;
+          const needsPasswordChange = userData.passwordChangeRequired === true;
+          console.log('🔀 ORG_USER detected. passwordChangeRequired:', userData.passwordChangeRequired, 'needsPasswordChange:', needsPasswordChange);
 
           if (needsPasswordChange) {
+            console.log('🔀 Redirecting to /change-password');
             setTimeout(() => {
               navigate('/change-password', { replace: true });
-            }, 1500);
+            }, 1000);
             return;
           }
 
           if (userData.role === 'ORG_ADMIN') {
-            // 🚧 TESTING MODE: Skip payment check for testing
-            // TODO: Re-enable payment check after testing
-            /*
+            console.log('🔀 ORG_ADMIN detected. Checking payment/modules...');
+           
             if (userData.requiresPayment) {
-              navigate('/payment-gateway', { replace: true });
-              console.log('Redirecting to payment gateway...');
+              console.log('🔀 Payment required. Redirecting to /org_admin/payment-gateway');
+              setTimeout(() => {
+                navigate('/org_admin/payment-gateway', { replace: true });
+              }, 500);
               return;
             }
-            */
             
-            setTimeout(() => {
-              if (!userData.modulesConfigured) {
+            console.log('🔀 No payment required. Checking modules...');
+            if (!userData.modulesConfigured) {
+              console.log('🔀 Modules not configured. Redirecting to /configure-modules');
+              setTimeout(() => {
                 navigate("/configure-modules", { replace: true });
-              } else {
+              }, 500);
+            } else {
+              console.log('🔀 All checks passed. Redirecting to /org_admin/dashboard');
+              setTimeout(() => {
                 navigate("/org_admin/dashboard", { replace: true });
-              }
-            }, 1500);
+              }, 500);
+            }
+            return;
           }
           else if (userData.role === 'HR_STAFF') {
+            console.log('🔀 HR_STAFF detected. Redirecting to dashboard');
             setTimeout(() => {
               navigate('/hr_staff/dashboard', { replace: true });
-            }, 1500);
+            }, 1000);
           } 
           else if (userData.role === 'EMPLOYEE') {
+            console.log('🔀 EMPLOYEE detected. Redirecting to profile');
             setTimeout(() => {
               navigate('/employee/profile', { replace: true });
-            }, 1500);
+            }, 1000);
           }
         }
       } else {

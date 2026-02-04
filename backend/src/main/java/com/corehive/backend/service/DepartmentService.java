@@ -210,5 +210,30 @@ public class DepartmentService {
                 .map(Department::getName)
                 .orElse("Unknown Department");
     }
+    /**
+     * Delete a department
+     */
+    @Transactional
+    public ApiResponse<Void> deleteDepartment(String organizationUuid, Long id) {
+        try {
+            Optional<Department> departmentOpt = departmentRepository.findById(id);
 
+            if (departmentOpt.isEmpty()) {
+                return ApiResponse.error("Department not found");
+            }
+
+            Department department = departmentOpt.get();
+
+            if (!department.getOrganizationUuid().equals(organizationUuid)) {
+                return ApiResponse.error("Unauthorized to delete this department");
+            }
+
+            departmentRepository.delete(department);
+            return ApiResponse.success(null, "Department deleted successfully");
+
+        } catch (Exception e) {
+            log.error("Error deleting department", e);
+            return ApiResponse.error("Failed to delete department: " + e.getMessage());
+        }
+    }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Modal from '../../components/common/Modal';
 import * as feedbackApi from '../../api/feedbackApi';
@@ -167,19 +167,19 @@ const EmployeeFeedbacks = () => {
     return ratings[rating] || 'N/A';
   };
 
-  if (loading) {
+  if (loading) {  
     return (
-      <DashboardLayout>
+      
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
     
-      <div className="p-8 max-w-7xl mx-auto animate-fade-in">
+      <div className="p-8 max-w-7xl mx-auto ">
         
         {/* Header */}
         <div className="mb-8">

@@ -3,10 +3,11 @@ import CheckInTab from "./CheckInTab";
 import CheckOutTab from "./CheckOutTab";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../store/slices/authSlice";
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, Calendar } from "lucide-react";
 
 const AttendanceMarking = () => {
   const [activeTab, setActiveTab] = useState("checkin");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const user = useSelector(selectUser);
   const token = user?.token;
 
@@ -24,6 +25,18 @@ const AttendanceMarking = () => {
           <p className="text-[#9B9B9B] font-medium">
             Record daily staff entry and exit times manually
           </p>
+        </div>
+
+        {/* DATE PICKER */}
+        <div className="flex items-center gap-3 mt-4 md:mt-0 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+          <Calendar size={18} className="text-[#02C39A]" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className="text-sm font-medium text-[#333333] border-none focus:outline-none cursor-pointer"
+          />
         </div>
 
         {/* TAB SWITCHER */}
@@ -54,9 +67,9 @@ const AttendanceMarking = () => {
       {/* SCROLLABLE CONTENT AREA */}
       <div className="flex-1 overflow-y-auto bg-white rounded-xl shadow-lg border border-gray-200 p-4">
         {activeTab === "checkin" ? (
-          <CheckInTab token={token} />
+          <CheckInTab token={token} selectedDate={selectedDate} />
         ) : (
-          <CheckOutTab token={token} />
+          <CheckOutTab token={token} selectedDate={selectedDate} />
         )}
       </div>
     </div>

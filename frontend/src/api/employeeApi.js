@@ -79,7 +79,7 @@ export const deleteEmployee = async (id) => {
  */
 export const getCurrentEmployeeProfile = async () => {
   try {
-    const response = await apiClient.get("/employees/me");
+    const response = await apiClient.get("/current-employee/profile");
     return response.data;
   } catch (error) {
     console.error("Error fetching current employee profile:", error);
@@ -92,7 +92,11 @@ export const getCurrentEmployeeProfile = async () => {
  */
 export const updateCurrentEmployeeProfile = async (employeeData) => {
   try {
-    const response = await apiClient.put("/employees/me", employeeData);
+    const response = await apiClient.put("/current-employee/profile", employeeData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
     return response.data;
   } catch (error) {
     console.error("Error updating current employee profile:", error);
@@ -149,6 +153,7 @@ export default {
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  
   getCurrentEmployeeProfile,
   updateCurrentEmployeeProfile,
   deactivateEmployee,

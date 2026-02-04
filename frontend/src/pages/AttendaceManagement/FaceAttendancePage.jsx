@@ -518,7 +518,7 @@ const FaceAttendancePage = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen py-6 px-4 overflow-y-auto">
+    <div className="bg-gray-100 min-h-screen p-8 overflow-y-auto ">
       <div className="max-w-7xl mx-auto space-y-6 pb-8">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">

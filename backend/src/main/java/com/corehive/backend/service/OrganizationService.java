@@ -8,10 +8,7 @@ import com.corehive.backend.dto.response.OrganizationSummaryResponse;
 import com.corehive.backend.exception.hrReportsException.ResourceNotFoundException;
 import com.corehive.backend.dto.response.PlatformStatistics;
 import com.corehive.backend.model.*;
-import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.EmployeeRepository;
-import com.corehive.backend.repository.OrganizationRepository;
-import com.corehive.backend.repository.OrganizationModuleRepository;
+import com.corehive.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +37,19 @@ public class OrganizationService {
     private final EmployeeRepository employeeRepository;
     private final OrganizationModuleService organizationModuleService;
     private final OrganizationModuleRepository organizationModuleRepository;
+    private final DepartmentRepository departmentRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final PayslipRepository payslipRepository;
+    private final PayrollConfigurationRepository payrollConfigurationRepository;
+    private final AttendanceConfigurationRepository attendanceConfigurationRepository;
+    private final LeaveTypeRepository leaveTypeRepository;
+    private final AllowanceRepository allowanceRepository;
+    private final DeductionRepository deductionRepository;
+    private final DesignationRepository designationRepository;
+    private final SupportTicketRepository supportTicketRepository;
     /**
      * Get all pending organization approvals
      */
@@ -96,7 +106,7 @@ public class OrganizationService {
             String tempPassword = UUID.randomUUID().toString().substring(0, 8);
             String hashedPassword = passwordEncoder.encode(tempPassword);
 
-            organization.setStatus(OrganizationStatus.ACTIVE);
+            organization.setStatus(OrganizationStatus.APPROVED_PENDING_PAYMENT);
             organizationRepository.save(organization);
             log.info("Organization status updated successfully to ACTIVE: {}", organization.getName());
 
@@ -621,35 +631,196 @@ public class OrganizationService {
             Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
                     .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
 
-            // Delete all users associated with this organization
-            List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
-            if (!users.isEmpty()) {
-                appUserRepository.deleteAll(users);
-                log.info("Deleted {} users for organization: {}", users.size(), organizationUuid);
+            String orgName = organization.getName();
+            int totalDeleted = 0;
+
+            // Delete support tickets
+            try {
+                int count = supportTicketRepository.deleteByOrganizationUuid(organizationUuid);
+                log.info("Deleted {} support tickets", count);
+                totalDeleted += count;
+            } catch (Exception e) {
+                log.warn("No support tickets to delete or error: {}", e.getMessage());
             }
 
-            // Delete all employees associated with this organization
+            // Delete attendance records
+            try {
+                List<Attendance> attendances = attendanceRepository.findByOrganizationUuid(organizationUuid);
+                if (!attendances.isEmpty()) {
+                    attendanceRepository.deleteAll(attendances);
+                    log.info("Deleted {} attendance records", attendances.size());
+                    totalDeleted += attendances.size();
+                }
+            } catch (Exception e) {
+                log.warn("No attendance records to delete or error: {}", e.getMessage());
+            }
+
+            // Delete leave requests
+            try {
+                List<LeaveRequest> leaveRequests = leaveRequestRepository.findByOrganizationUuid(organizationUuid);
+                if (!leaveRequests.isEmpty()) {
+                    leaveRequestRepository.deleteAll(leaveRequests);
+                    log.info("Deleted {} leave requests", leaveRequests.size());
+                    totalDeleted += leaveRequests.size();
+                }
+            } catch (Exception e) {
+                log.warn("No leave requests to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payslips
+            try {
+                List<Payslip> payslips = payslipRepository.findByOrganizationUuid(organizationUuid);
+                if (!payslips.isEmpty()) {
+                    payslipRepository.deleteAll(payslips);
+                    log.info("Deleted {} payslips", payslips.size());
+                    totalDeleted += payslips.size();
+                }
+            } catch (Exception e) {
+                log.warn("No payslips to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payroll configuration
+            try {
+                payrollConfigurationRepository.findByOrganizationUuid(organizationUuid)
+                        .ifPresent(config -> {
+                            payrollConfigurationRepository.delete(config);
+                            log.info("Deleted payroll configuration");
+                        });
+            } catch (Exception e) {
+                log.warn("No payroll configuration to delete or error: {}", e.getMessage());
+            }
+
+            // Delete attendance configurations
+            try {
+                List<AttendanceConfiguration> configs = attendanceConfigurationRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!configs.isEmpty()) {
+                    attendanceConfigurationRepository.deleteAll(configs);
+                    log.info("Deleted {} attendance configurations", configs.size());
+                    totalDeleted += configs.size();
+                }
+            } catch (Exception e) {
+                log.warn("No attendance configurations to delete or error: {}", e.getMessage());
+            }
+
+            // Delete leave types
+            try {
+                List<LeaveType> leaveTypes = leaveTypeRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!leaveTypes.isEmpty()) {
+                    leaveTypeRepository.deleteAll(leaveTypes);
+                    log.info("Deleted {} leave types", leaveTypes.size());
+                    totalDeleted += leaveTypes.size();
+                }
+            } catch (Exception e) {
+                log.warn("No leave types to delete or error: {}", e.getMessage());
+            }
+
+            // Delete allowances
+            try {
+                List<Allowance> allowances = allowanceRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!allowances.isEmpty()) {
+                    allowanceRepository.deleteAll(allowances);
+                    log.info("Deleted {} allowances", allowances.size());
+                    totalDeleted += allowances.size();
+                }
+            } catch (Exception e) {
+                log.warn("No allowances to delete or error: {}", e.getMessage());
+            }
+
+            // Delete deductions
+            try {
+                List<Deduction> deductions = deductionRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!deductions.isEmpty()) {
+                    deductionRepository.deleteAll(deductions);
+                    log.info("Deleted {} deductions", deductions.size());
+                    totalDeleted += deductions.size();
+                }
+            } catch (Exception e) {
+                log.warn("No deductions to delete or error: {}", e.getMessage());
+            }
+
+            // Delete designations
+            try {
+                List<Designation> designations = designationRepository.findByOrganizationUuid(organizationUuid);
+                if (!designations.isEmpty()) {
+                    designationRepository.deleteAll(designations);
+                    log.info("Deleted {} designations", designations.size());
+                    totalDeleted += designations.size();
+                }
+            } catch (Exception e) {
+                log.warn("No designations to delete or error: {}", e.getMessage());
+            }
+
+            // Delete employees
             List<Employee> employees = employeeRepository.findByOrganizationUuid(organizationUuid);
             if (!employees.isEmpty()) {
                 employeeRepository.deleteAll(employees);
-                log.info("Deleted {} employees for organization: {}", employees.size(), organizationUuid);
+                log.info("Deleted {} employees", employees.size());
+                totalDeleted += employees.size();
             }
 
-            // Delete all organization modules
+            // Delete departments
+            try {
+                List<Department> departments = departmentRepository.findByOrganizationUuid(organizationUuid);
+                if (!departments.isEmpty()) {
+                    departmentRepository.deleteAll(departments);
+                    log.info("Deleted {} departments", departments.size());
+                    totalDeleted += departments.size();
+                }
+            } catch (Exception e) {
+                log.warn("No departments to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payment transactions
+            try {
+                List<PaymentTransaction> transactions = paymentTransactionRepository.findByOrganizationUuid(organizationUuid);
+                if (!transactions.isEmpty()) {
+                    paymentTransactionRepository.deleteAll(transactions);
+                    log.info("Deleted {} payment transactions", transactions.size());
+                    totalDeleted += transactions.size();
+                }
+            } catch (Exception e) {
+                log.warn("No payment transactions to delete or error: {}", e.getMessage());
+            }
+
+            // Delete subscription
+            try {
+                subscriptionRepository.findByOrganizationUuid(organizationUuid)
+                        .ifPresent(subscription -> {
+                            subscriptionRepository.delete(subscription);
+                            log.info("Deleted subscription");
+                        });
+            } catch (Exception e) {
+                log.warn("No subscription to delete or error: {}", e.getMessage());
+            }
+
+            // Delete organization modules
             List<OrganizationModule> organizationModules = organizationModuleRepository.findByOrganizationUuid(organizationUuid);
             if (!organizationModules.isEmpty()) {
                 organizationModuleRepository.deleteAll(organizationModules);
-                log.info("Deleted {} organization modules for organization: {}", organizationModules.size(), organizationUuid);
+                log.info("Deleted {} organization modules", organizationModules.size());
+                totalDeleted += organizationModules.size();
             }
 
-            // Delete the organization
+            // Delete users
+            List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
+            if (!users.isEmpty()) {
+                appUserRepository.deleteAll(users);
+                log.info("Deleted {} users", users.size());
+                totalDeleted += users.size();
+            }
+
+            // Finally, delete the organization
             organizationRepository.delete(organization);
-            log.info("Successfully deleted organization: {} ({})", organization.getName(), organizationUuid);
+            log.info("Successfully deleted organization: {} ({}) - Total {} related records deleted", 
+                    orgName, organizationUuid, totalDeleted);
 
-            return ApiResponse.success(null, "Organization deleted successfully");
+            return ApiResponse.success(null, "Organization and all related data deleted successfully");
 
+        } catch (ResourceNotFoundException e) {
+            log.error("Organization not found: {}", organizationUuid);
+            return ApiResponse.error("Organization not found");
         } catch (Exception e) {
-            log.error("Error deleting organization: {}", organizationUuid, e);
+            log.error("Error deleting organization: {} - {}", organizationUuid, e.getMessage(), e);
             return ApiResponse.error("Failed to delete organization: " + e.getMessage());
         }
     }

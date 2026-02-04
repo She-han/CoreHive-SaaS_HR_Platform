@@ -525,8 +525,13 @@ const OrgDashboard = () => {
 
   // Check if AI Insights should be shown
   const shouldShowAIInsights = useMemo(() => {
-    return user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF";
-  }, [user?.role]);
+    // Show AI Insights only if:
+    // 1. User is ORG_ADMIN or HR_STAFF
+    // 2. aiInsights module is enabled in availableModules
+    const hasRole = user?.role === "ORG_ADMIN" || user?.role === "HR_STAFF";
+    const hasAIModule = availableModules?.aiInsights === true;
+    return hasRole && hasAIModule;
+  }, [user?.role, availableModules]);
 
   // Memoized enabled modules
   const enabledModules = useMemo(
@@ -556,7 +561,7 @@ const OrgDashboard = () => {
   // Loading state with skeleton
   if (isLoading && dashboardData.totalEmployees === 0) {
     return (
-      <DashboardLayout title="Dashboard">
+     
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
@@ -567,12 +572,12 @@ const OrgDashboard = () => {
             <LoadingSpinner size="lg" text="Loading dashboard..." />
           </div>
         </div>
-      </DashboardLayout>
+      
     );
   }
 
   return (
-    <DashboardLayout title="Dashboard">
+   
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* Header */}
         <div className="mb-6">
@@ -767,7 +772,7 @@ const OrgDashboard = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    
   );
 };
 

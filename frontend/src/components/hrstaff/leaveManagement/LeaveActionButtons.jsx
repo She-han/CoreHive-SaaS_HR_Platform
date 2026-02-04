@@ -3,6 +3,7 @@ import { approveLeaveRequest } from "../../../api/leaveRequestApi";
 import { useSelector } from "react-redux";
 import { selectUser } from "../../../store/slices/authSlice";
 import { Check, X } from "lucide-react";
+import Swal from "sweetalert2";
 
 export default function LeaveActionButtons({ leave, reload }) {
   const user = useSelector(selectUser);
@@ -10,16 +11,39 @@ export default function LeaveActionButtons({ leave, reload }) {
 
   const handleAction = async (approve) => {
     const actionType = approve ? "approve" : "reject";
-    const confirmMsg = `Are you sure you want to ${actionType} this leave request?`;
-
-    if (!window.confirm(confirmMsg)) return;
+    
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: `${actionType.charAt(0).toUpperCase() + actionType.slice(1)} Leave Request?`,
+      text: `Are you sure you want to ${actionType} this leave request for ${leave.employeeName}?`,
+      showCancelButton: true,
+      confirmButtonColor: approve ? '#02C39A' : '#d33',
+      cancelButtonColor: '#9B9B9B',
+      confirmButtonText: `Yes, ${actionType}!`,
+      cancelButtonText: 'Cancel'
+    });
+    
+    if (!result.isConfirmed) return;
 
     try {
-      await approveLeaveRequest(leave.requestId, approve, token);
+      await approveLeaveRequest(leave.id || leave.requestId, approve, token);
+      await Swal.fire({
+        icon: 'success',
+        title: `Leave ${approve ? 'Approved' : 'Rejected'}!`,
+        text: `The leave request has been ${approve ? 'approved' : 'rejected'} successfully.`,
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
       reload();
     } catch (error) {
       const message = error?.message || "Unable to process leave request";
-      alert(message); // shows real reason
+      await Swal.fire({
+        icon: 'error',
+        title: 'Action Failed',
+        text: message,
+        confirmButtonColor: '#02C39A'
+      });
     }
   };
 

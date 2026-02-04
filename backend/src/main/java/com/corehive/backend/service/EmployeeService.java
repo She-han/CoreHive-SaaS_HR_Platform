@@ -21,8 +21,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,6 +51,9 @@ public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository;
     private final LeaveTypeRepository leaveTypeRepository;
+    
+    private static final String PROFILE_IMAGES_DIR = "uploads/profile-images";
+    private static final String PROFILE_IMAGES_URL_PREFIX = "/uploads/profile-images";
 
 
 
@@ -701,6 +710,7 @@ public class EmployeeService {
             }
 
             Employee employee = employeeOpt.get();
+            applyProfileImageNormalization(employee);
             log.info("Employee profile retrieved successfully for: {}", email);
             return ApiResponse.success(employee, "Employee profile retrieved successfully");
 
@@ -714,7 +724,9 @@ public class EmployeeService {
      * Update employee by email (for current user profile)
      */
     @Transactional
-    public ApiResponse<Employee> updateEmployeeByEmail(String organizationUuid, String email, EmployeeRequestDTO request) {
+    public ApiResponse<Employee> updateEmployeeByEmail(String organizationUuid, String email, 
+                                                      String firstName, String lastName, String phone, 
+                                                      MultipartFile profileImage) {
         try {
             log.info("Updating employee with email: {} for organization: {}", email, organizationUuid);
 
@@ -728,12 +740,26 @@ public class EmployeeService {
             Employee employee = employeeOpt.get();
 
             // Employees can only update limited fields (not email, salary, department, etc.)
-            employee.setFirstName(request.getFirstName());
-            employee.setLastName(request.getLastName());
-            employee.setPhone(request.getPhone());
+            employee.setFirstName(firstName);
+            employee.setLastName(lastName);
+            employee.setPhone(phone);
+            
+            // Handle profile image upload
+            if (profileImage != null && !profileImage.isEmpty()) {
+                try {
+                    String imageUrl = saveProfileImage(profileImage, employee.getId(), organizationUuid);
+                    employee.setProfileImage(imageUrl);
+                    log.info("Profile image saved for employee: {}", email);
+                } catch (IOException e) {
+                    log.error("Error saving profile image for employee: {}", email, e);
+                    return ApiResponse.error("Failed to upload profile image");
+                }
+            }
+            
             employee.setUpdatedAt(LocalDateTime.now());
 
             Employee savedEmployee = employeeRepository.save(employee);
+            applyProfileImageNormalization(savedEmployee);
 
             log.info("Employee profile updated successfully for: {}", email);
             return ApiResponse.success(savedEmployee, "Profile updated successfully");
@@ -742,6 +768,72 @@ public class EmployeeService {
             log.error("Error updating employee with email: {}", email, e);
             return ApiResponse.error("Failed to update profile: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Save profile image to file system
+     */
+    private String saveProfileImage(MultipartFile file, Long employeeId, String organizationUuid) throws IOException {
+        // Create uploads directory if it doesn't exist
+        Path uploadPath = Paths.get(PROFILE_IMAGES_DIR, organizationUuid);
+        
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+        
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String filename = "employee_" + employeeId + "_" + System.currentTimeMillis() + extension;
+        
+        // Save file
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        
+        // Return relative URL path
+        return PROFILE_IMAGES_URL_PREFIX + "/" + organizationUuid + "/" + filename;
+    }
+
+    private void applyProfileImageNormalization(Employee employee) {
+        if (employee == null) {
+            return;
+        }
+        employee.setProfileImage(normalizeProfileImageUrl(employee.getProfileImage()));
+    }
+
+    private String normalizeProfileImageUrl(String profileImage) {
+        if (profileImage == null) {
+            return null;
+        }
+
+        String trimmed = profileImage.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        String normalized = trimmed.replace("\\", "/");
+
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+            return normalized;
+        }
+
+        if (normalized.startsWith(PROFILE_IMAGES_URL_PREFIX)) {
+            return normalized;
+        }
+
+        if (normalized.startsWith("uploads/")) {
+            return "/" + normalized;
+        }
+
+        int uploadsIndex = normalized.indexOf("uploads/");
+        if (uploadsIndex >= 0) {
+            return "/" + normalized.substring(uploadsIndex);
+        }
+
+        return normalized;
     }
 
     /**

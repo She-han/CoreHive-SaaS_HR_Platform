@@ -102,4 +102,27 @@ public class DepartmentController {
                 .body(ApiResponse.error("Internal server error: " + e.getMessage()));
         }
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteDepartment(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id) {
+        try {
+            String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+            ApiResponse<Void> response = departmentService.deleteDepartment(organizationUuid, id);
+
+            if(response.isSuccess()){
+                return ResponseEntity.ok(response);
+            }else{
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+        } catch (Exception e) {
+            log.error("Error deleting department", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Internal server error: " + e.getMessage()));
+        }
+    }
 }

@@ -1,22 +1,59 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowRight, Gift, Calendar } from 'lucide-react';
 
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { selectUser, updateSubscriptionStatus } from '../../store/slices/authSlice';
+import { markPaymentSuccess } from '../../api/paymentApi';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const [countdown, setCountdown] = useState(10);
+  const [saving, setSaving] = useState(true);
+  const user = useSelector(selectUser);
 
   const orderId = searchParams.get('order_id');
 
   useEffect(() => {
-    // Countdown redirect
+    const orgUuid = user?.organizationUuid;
+    const orderId = searchParams.get('order_id');
+
+    const markSuccess = async () => {
+      if (!orgUuid) {
+        setSaving(false);
+        return;
+      }
+      try {
+        const resp = await markPaymentSuccess(orgUuid, orderId);
+        if (resp?.success) {
+          dispatch(updateSubscriptionStatus({
+            requiresPayment: false,
+            hasActiveSubscription: true,
+            subscriptionStatus: 'ACTIVE',
+          }));
+          // Also update localStorage user snapshot
+          const storedUser = JSON.parse(localStorage.getItem('corehive_user') || '{}');
+          storedUser.requiresPayment = false;
+          storedUser.hasActiveSubscription = true;
+          storedUser.subscriptionStatus = 'ACTIVE';
+          localStorage.setItem('corehive_user', JSON.stringify(storedUser));
+        }
+      } catch (err) {
+        console.error('Failed to mark payment success', err);
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    markSuccess();
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -29,7 +66,7 @@ const PaymentSuccess = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [navigate]);
+  }, [navigate, searchParams, dispatch, user]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-white flex items-center justify-center p-4">

@@ -170,8 +170,7 @@ const Surveys = () => {
         
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-[var(--color-text-primary)]">
-
+          <h1 className="text-3xl font-bold mb-2" style={{ color: THEME.dark }}>
             <FaClipboardList className="inline mr-3" />
             Feedback Surveys
           </h1>

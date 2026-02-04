@@ -58,13 +58,31 @@ export const ChangePasswordPage = () => {
       return;
     }
 
+    // Debug: Check user object
+    console.log("👤 Current user object:", user);
+    console.log("🔑 User ID:", user?.userId);
+
+    if (!user) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'User session invalid. Please login again.',
+        confirmButtonColor: '#02C39A',
+      });
+      navigate("/login");
+      return;
+    }
+
     setLoading(true);
     try {
       // API call to change password
+      // Backend can handle null userId by using email from JWT token
       const response = await apiPost("/auth/change-password", {
-        userId: user.userId, // Send User ID
+        userId: user.userId || null, // Send User ID (can be null, backend will use email from JWT)
         newPassword: passwords.newPassword
       });
+
+      console.log("📨 Change password response:", response);
 
       if (response.success) {
         // Success! Show SweetAlert and redirect
@@ -73,19 +91,35 @@ export const ChangePasswordPage = () => {
           title: 'Password Changed!',
           text: 'Your password has been updated successfully',
           confirmButtonColor: '#02C39A',
-          timer: 2000,
-          showConfirmButton: false
+          timer: 1500,
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          allowEscapeKey: false
         });
+
+        // Update Redux state to mark password change as complete
+        const updatedUser = { ...user, passwordChangeRequired: false };
+        localStorage.setItem("corehive_user", JSON.stringify(updatedUser));
 
         setTimeout(() => {
           if (user.role === "ORG_ADMIN") {
-            navigate("/org_admin/dashboard");
+            // Check if needs payment or module configuration
+            if (user.requiresPayment) {
+              console.log("🔀 Redirecting to payment gateway...");
+              navigate("/payment-gateway", { replace: true });
+            } else if (!user.modulesConfigured) {
+              console.log("🔀 Redirecting to module configuration...");
+              navigate("/configure-modules", { replace: true });
+            } else {
+              console.log("🔀 Redirecting to dashboard...");
+              navigate("/org_admin/dashboard", { replace: true });
+            }
           } else if (user.role === "HR_STAFF") {
-            navigate("/hr_staff/dashboard");
+            navigate("/hr_staff/dashboard", { replace: true });
           } else {
-            navigate("/employee/profile");
+            navigate("/employee/profile", { replace: true });
           }
-        }, 2000);
+        }, 1500);
       } else {
         Swal.fire({
           icon: 'error',
@@ -95,10 +129,11 @@ export const ChangePasswordPage = () => {
         });
       }
     } catch (err) {
+      console.error("❌ Change password error:", err);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'An error occurred. Please try again',
+        text: err.response?.data?.message || 'An error occurred. Please try again',
         confirmButtonColor: '#02C39A',
       });
     } finally {

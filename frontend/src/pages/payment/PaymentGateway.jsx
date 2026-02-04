@@ -15,12 +15,13 @@ import {
 
 import { selectUser } from '../../store/slices/authSlice';
 import { initiatePayment } from '../../api/paymentApi';
-import { checkSubscription } from '../../api/subscriptionApi';
+import { checkSubscription, getOrganizationBillingInfo, activateSubscription } from '../../api/subscriptionApi';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Alert from '../../components/common/Alert';
 import SubscriptionDetailsModal from '../../components/subscription/SubscriptionDetailsModal';
+import Swal from 'sweetalert2';
 
 const PaymentGateway = () => {
   const navigate = useNavigate();
@@ -29,8 +30,9 @@ const PaymentGateway = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [paymentData, setPaymentData] = useState(null);
+  const [billingInfo, setBillingInfo] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [activatingTrial, setActivatingTrial] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
 
@@ -41,36 +43,65 @@ const PaymentGateway = () => {
       return;
     }
 
-    // Initialize payment
-    initializePayment();
+    // Load billing information
+    loadBillingInfo();
   }, [user]);
 
-  const initializePayment = async () => {
+  const loadBillingInfo = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await initiatePayment(
-        user.organizationUuid,
-        user.email
-      );
+      const response = await getOrganizationBillingInfo(user.organizationUuid);
 
       if (response.success && response.data) {
-        setPaymentData(response.data);
-        console.log('Payment initialized:', response.data);
+        setBillingInfo(response.data);
+        console.log('Billing info loaded:', response.data);
       } else {
-        setError(response.message || 'Failed to initialize payment');
+        setError(response.message || 'Failed to load billing information');
       }
     } catch (err) {
-      console.error('Payment initialization error:', err);
-      setError('Failed to connect to payment gateway. Please try again.');
+      console.error('Billing info error:', err);
+      setError('Failed to load billing information. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProceedToPayment = async () => {
-    if (!paymentData) return;
+  const handleActivateSubscription = async () => {
+    if (activatingTrial) return;
+
+    try {
+      setActivatingTrial(true);
+      setError(null);
+
+      const response = await activateSubscription(user.organizationUuid);
+
+      if (response.success) {
+        // Show success message
+        await Swal.fire({
+          icon: 'success',
+          title: 'Subscription Activated!',
+          text: 'Your 30-day free trial has started. Welcome to CoreHive!',
+          confirmButtonColor: '#10B981',
+          confirmButtonText: 'Go to Dashboard'
+        });
+
+        // Redirect to dashboard
+        navigate('/org_admin/dashboard', { replace: true });
+      } else {
+        setError(response.message || 'Failed to activate subscription');
+      }
+    } catch (err) {
+      console.error('Subscription activation error:', err);
+      setError('Failed to activate subscription. Please try again.');
+    } finally {
+      setActivatingTrial(false);
+    }
+  };
+
+  const handleProceedToPayHere = async () => {
+    if (!billingInfo) return;
 
     // 🔒 Prevent double submission
     if (processingPayment) {
@@ -94,70 +125,87 @@ const PaymentGateway = () => {
       // Continue with payment if check fails
     }
 
-    // ✅ Check if PayHere SDK is loaded
-    if (!window.payhere) {
-      setError('Payment gateway not loaded. Please refresh the page and try again.');
-      console.error('PayHere SDK not loaded');
-      return;
+    // Initialize PayHere payment flow
+    try {
+      setProcessingPayment(true);
+      const response = await initiatePayment(user.organizationUuid, user.email);
+
+      if (!response.success || !response.data) {
+        setError(response.message || 'Failed to initialize payment');
+        setProcessingPayment(false);
+        return;
+      }
+
+      const paymentData = response.data;
+
+      // ✅ Check if PayHere SDK is loaded
+      if (!window.payhere) {
+        setError('Payment gateway not loaded. Please refresh the page and try again.');
+        console.error('PayHere SDK not loaded');
+        setProcessingPayment(false);
+        return;
+      }
+
+      // Configure PayHere callbacks
+      window.payhere.onCompleted = function (orderId) {
+        console.log("Payment completed. OrderID:", orderId);
+        setProcessingPayment(false);
+        // Redirect to success page
+        navigate('/payment/success?order_id=' + orderId, { replace: true });
+      };
+
+      window.payhere.onDismissed = function () {
+        console.log("Payment dismissed");
+        setProcessingPayment(false);
+        setError('Payment was cancelled. Please try again.');
+      };
+
+      window.payhere.onError = function (error) {
+        console.log("Payment Error:", error);
+        setProcessingPayment(false);
+        setError('Payment failed: ' + error);
+      };
+
+      // Prepare payment object according to PayHere JS SDK documentation
+      const payment = {
+        "sandbox": true, // Set to false in production
+        "merchant_id": paymentData.paymentData.merchant_id,
+        "return_url": undefined, // Important: must be undefined for JS SDK
+        "cancel_url": undefined, // Important: must be undefined for JS SDK
+        "notify_url": paymentData.paymentData.notify_url,
+        "order_id": paymentData.orderId,
+        "items": paymentData.paymentData.items,
+        "amount": parseFloat(paymentData.amount).toFixed(2), // Format with 2 decimals
+        "currency": paymentData.currency,
+        "hash": paymentData.paymentData.hash,
+        "first_name": paymentData.paymentData.first_name,
+        "last_name": paymentData.paymentData.last_name || '',
+        "email": paymentData.paymentData.email,
+        "phone": paymentData.paymentData.phone || '',
+        "address": paymentData.paymentData.address || '',
+        "city": paymentData.paymentData.city || '',
+        "country": paymentData.paymentData.country,
+        "custom_1": paymentData.paymentData.custom_1,
+        "custom_2": paymentData.paymentData.custom_2,
+        // 🔄 Recurring subscription parameters
+        "recurrence": paymentData.paymentData.recurrence || "1 Month",
+        "duration": paymentData.paymentData.duration || "Forever"
+      };
+
+      console.log('Starting PayHere payment:', payment);
+
+      // Show PayHere popup
+      window.payhere.startPayment(payment);
+    } catch (err) {
+      console.error('Payment initialization error:', err);
+      setError('Failed to initialize payment. Please try again.');
+      setProcessingPayment(false);
     }
-
-    setProcessingPayment(true);
-
-    // Configure PayHere callbacks
-    window.payhere.onCompleted = function (orderId) {
-      console.log("Payment completed. OrderID:", orderId);
-      setProcessingPayment(false);
-      // Redirect to success page
-      navigate('/payment/success?order_id=' + orderId, { replace: true });
-    };
-
-    window.payhere.onDismissed = function () {
-      console.log("Payment dismissed");
-      setProcessingPayment(false);
-      setError('Payment was cancelled. Please try again.');
-    };
-
-    window.payhere.onError = function (error) {
-      console.log("Payment Error:", error);
-      setProcessingPayment(false);
-      setError('Payment failed: ' + error);
-    };
-
-    // Prepare payment object according to PayHere JS SDK documentation
-    const payment = {
-      "sandbox": true, // Set to false in production
-      "merchant_id": paymentData.paymentData.merchant_id,
-      "return_url": undefined, // Important: must be undefined for JS SDK
-      "cancel_url": undefined, // Important: must be undefined for JS SDK
-      "notify_url": paymentData.paymentData.notify_url,
-      "order_id": paymentData.orderId,
-      "items": paymentData.paymentData.items,
-      "amount": parseFloat(paymentData.amount).toFixed(2), // Format with 2 decimals
-      "currency": paymentData.currency,
-      "hash": paymentData.paymentData.hash,
-      "first_name": paymentData.paymentData.first_name,
-      "last_name": paymentData.paymentData.last_name || '',
-      "email": paymentData.paymentData.email,
-      "phone": paymentData.paymentData.phone || '',
-      "address": paymentData.paymentData.address || '',
-      "city": paymentData.paymentData.city || '',
-      "country": paymentData.paymentData.country,
-      "custom_1": paymentData.paymentData.custom_1,
-      "custom_2": paymentData.paymentData.custom_2,
-      // 🔄 Recurring subscription parameters
-      "recurrence": paymentData.paymentData.recurrence || "1 Month",
-      "duration": paymentData.paymentData.duration || "Forever"
-    };
-
-    console.log('Starting PayHere payment:', payment);
-
-    // Show PayHere popup
-    window.payhere.startPayment(payment);
   };
 
   const handleSkipTrial = () => {
-    // For free trial, allow skip without card (optional feature)
-    navigate('/org_admin/dashboard', { replace: true });
+    // Activate subscription with free trial instead of skipping
+    handleActivateSubscription();
   };
 
   if (loading) {
@@ -183,7 +231,7 @@ const PaymentGateway = () => {
             </Button>
             <Button
               variant="primary"
-              onClick={initializePayment}
+              onClick={loadBillingInfo}
               className="flex-1"
             >
               Try Again
@@ -232,7 +280,7 @@ const PaymentGateway = () => {
                 <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-4">
                   <div className="text-sm text-text-secondary mb-1">Selected Plan</div>
                   <div className="text-2xl font-bold text-primary-600">
-                    {paymentData?.planName || 'Standard Plan'}
+                    {billingInfo?.planName || 'Standard Plan'}
                   </div>
                 </div>
 
@@ -260,7 +308,7 @@ const PaymentGateway = () => {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-text-secondary">After Trial Period</span>
                     <span className="font-semibold text-text-primary">
-                      LKR {paymentData?.planPrice || '500'} / {paymentData?.billingCycle?.toLowerCase() || 'month'}
+                      LKR {billingInfo?.price || '500'} / month
                     </span>
                   </div>
                 </div>
@@ -322,8 +370,8 @@ const PaymentGateway = () => {
                 {/* Info Notice */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-800">
-                    <strong className="block mb-2">🔄 Recurring Monthly Subscription</strong>
-                    After your 30-day free trial, you'll be automatically charged LKR {paymentData?.planPrice || '500'} monthly. Cancel anytime from your dashboard.
+                    <strong className="block mb-2">🎉 30-Day Free Trial</strong>
+                    Start your trial now without payment. After 30 days, you'll be charged LKR {billingInfo?.price || '500'} monthly. Cancel anytime from your dashboard.
                   </div>
                 </div>
 
@@ -334,23 +382,32 @@ const PaymentGateway = () => {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    onClick={handleProceedToPayment}
-                    disabled={processingPayment}
+                    onClick={handleActivateSubscription}
+                    disabled={activatingTrial}
                     icon={ArrowRight}
                     iconPosition="right"
                   >
-                    {processingPayment ? 'Processing...' : 'Proceed to Payment'}
+                    {activatingTrial ? 'Activating Trial...' : 'Activate 30-Day Free Trial'}
                   </Button>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">OR</span>
+                    </div>
+                  </div>
 
                   <Button
                     type="button"
                     variant="outline"
                     size="lg"
                     className="w-full"
-                    onClick={handleSkipTrial}
-                    disabled={processingPayment}
+                    onClick={handleProceedToPayHere}
+                    disabled={processingPayment || activatingTrial}
                   >
-                    Skip for Now (Start Trial)
+                    {processingPayment ? 'Processing...' : 'Pay Now with PayHere'}
                   </Button>
                 </div>
 
@@ -392,8 +449,8 @@ const PaymentGateway = () => {
         onClose={() => setShowSubscriptionModal(false)}
         organizationUuid={user?.organizationUuid}
         onUpdate={() => {
-          // Reload payment data after subscription update
-          initializePayment();
+          // Reload billing info after subscription update
+          loadBillingInfo();
         }}
       />
     </div>

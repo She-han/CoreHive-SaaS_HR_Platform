@@ -48,13 +48,23 @@ const ProtectedRoute = ({
   // ⭐ ENHANCED: Payment flow for ORG users
   if (user?.userType === 'ORG_USER' && user?.role === 'ORG_ADMIN') {
     
-    // Priority 1: Payment required (highest priority)
-    if (requiresPayment) {
-      // Allow access to payment-related routes
-      const allowedRoutes = ['/payment-gateway', '/payment/success', '/payment/cancel', '/logout'];
+    // Priority 0: ALWAYS allow password change (highest priority - security requirement)
+    if (user?.passwordChangeRequired && location.pathname !== '/change-password') {
+      console.log('⚠️ Password change required, redirecting...');
+      return <Navigate to="/change-password" replace />;
+    }
+    
+    // Priority 1: Payment required (but allow password change first)
+    if (requiresPayment && !user?.passwordChangeRequired) {
+      // Allow access to payment-related routes and password change
+      const allowedRoutes = [
+        '/payment-gateway', '/payment/success', '/payment/cancel',
+        '/org_admin/payment-gateway', '/org_admin/payment/success', '/org_admin/payment/cancel',
+        '/change-password', '/logout'
+      ];
       if (!allowedRoutes.includes(location.pathname)) {
         console.log('Payment required, redirecting to payment gateway...');
-        return <Navigate to="/payment-gateway" replace />;
+        return <Navigate to="/org_admin/payment-gateway" replace />;
       }
     }
     

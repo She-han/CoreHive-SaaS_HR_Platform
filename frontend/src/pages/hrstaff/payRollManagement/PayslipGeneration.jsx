@@ -392,13 +392,13 @@ const PayslipGeneration = () => {
     });
     
     // Earnings Section
-    yPos += 5;
+    yPos += 10;
     doc.setFillColor(245, 247, 250);
     doc.rect(10, yPos - 5, pageWidth - 20, 8, 'F');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
     doc.text('EARNINGS', 14, yPos);
-    yPos += 10;
+    yPos += 5;
     
     const earningsData = [
       ['Basic Salary', `LKR ${(payslip.basicSalary || 0).toFixed(2)}`],
@@ -434,12 +434,12 @@ const PayslipGeneration = () => {
     yPos = doc.lastAutoTable.finalY + 5;
     
     // Gross Salary
-    doc.setFillColor(232, 245, 241);
-    doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(10, yPos -5, pageWidth - 20, 8, 'F');
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
-    doc.text('Gross Salary', 14, yPos + 6);
-    doc.text(`LKR ${(payslip.grossSalary || 0).toFixed(2)}`, pageWidth - 14, yPos + 6, { align: 'right' });
+    doc.text('Gross Salary', 17, yPos);
+    doc.text(`LKR ${(payslip.grossSalary || 0).toFixed(2)}`, pageWidth - 19, yPos, { align: 'right' });
     yPos += 15;
     
     // Deductions Section
@@ -448,7 +448,7 @@ const PayslipGeneration = () => {
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
     doc.text('DEDUCTIONS', 14, yPos);
-    yPos += 10;
+    yPos += 5;
     
     const deductionsData = [];
     
@@ -488,23 +488,23 @@ const PayslipGeneration = () => {
     }
     
     // Total Deductions
-    doc.setFillColor(254, 242, 242);
-    doc.rect(10, yPos, pageWidth - 20, 8, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(10, yPos - 5, pageWidth - 20, 8, 'F');
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(220, 38, 38);
-    doc.text('Total Deductions', 14, yPos + 6);
-    doc.text(`LKR ${(payslip.totalDeductions || 0).toFixed(2)}`, pageWidth - 14, yPos + 6, { align: 'right' });
+    doc.text('Total Deductions', 17, yPos );
+    doc.text(`LKR ${(payslip.totalDeductions || 0).toFixed(2)}`, pageWidth - 19, yPos , { align: 'right' });
     doc.setTextColor(0, 0, 0);
     yPos += 15;
     
     // Employer Contributions
     doc.setFillColor(245, 247, 250);
-    doc.rect(10, yPos - 5, pageWidth - 20, 8, 'F');
+    doc.rect(10, yPos -5, pageWidth - 20, 8, 'F');
     doc.setFont(undefined, 'bold');
     doc.setFontSize(12);
     doc.text('EMPLOYER CONTRIBUTIONS', 14, yPos);
-    yPos += 10;
+    yPos += 5;
     
     const contributionsData = [];
     if (payslip.epfEmployer && payslip.epfEmployer > 0) {
@@ -538,8 +538,8 @@ const PayslipGeneration = () => {
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text('Net Salary', 14, yPos + 6);
-    doc.text(`LKR ${(payslip.netSalary || 0).toFixed(2)}`, pageWidth - 14, yPos + 6, { align: 'right' });
+    doc.text('Net Salary', 17, yPos + 6);
+    doc.text(`LKR ${(payslip.netSalary || 0).toFixed(2)}`, pageWidth - 19, yPos + 6, { align: 'right' });
     yPos += 15;
     
     // Net Salary (highlighted) - Extra section at bottom

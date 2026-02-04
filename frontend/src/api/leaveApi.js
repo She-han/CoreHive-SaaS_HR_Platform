@@ -49,7 +49,7 @@ export const getLeaveTypes = async () => {
  */
 export const getEmployeeLeaveBalances = async () => {
   try {
-    const response = await apiClient.get('/employees/leave-balances');
+    const response = await apiClient.get('/current-employee/leave-balances');
     return response.data;
   } catch (error) {
     console.error('Error fetching employee leave balances:', error);

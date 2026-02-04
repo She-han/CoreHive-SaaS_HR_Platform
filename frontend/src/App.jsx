@@ -390,6 +390,7 @@ const HRStaffRoutes = () => {
 const EmployeeRoutes = () => {
   return (
     <Routes>
+      <Route element={<MainHRLayout />}>
       <Route path="profile" element={<EmployeeProfile />} />
       <Route path="profile/edit" element={<EditProfile />} />
       <Route
@@ -403,6 +404,7 @@ const EmployeeRoutes = () => {
       <Route path="surveys" element={<Surveys />} />
       <Route path="support" element={<Support />} />
       <Route path="" element={<Navigate to="profile" replace />} />
+      </Route>
     </Routes>
   );
 };

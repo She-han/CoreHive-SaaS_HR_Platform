@@ -1,1 +1,10 @@
 frontend/.vite/
+
+# Node modules (if accidentally installed in root)
+node_modules/
+package-lock.json
+package.json
+
+# Build artifacts
+dist/
+*.log

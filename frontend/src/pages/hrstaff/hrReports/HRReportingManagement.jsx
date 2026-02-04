@@ -19,7 +19,7 @@ export default function HRReportingManagement() {
   return (
     <div
       style={{ backgroundColor: "#F1FDF9" }}
-      className="w-full h-screen flex flex-col p-8"
+      className="w-full  flex flex-col p-8"
     >
       {/* Header */}
       <div className="mb-6 shrink-0">

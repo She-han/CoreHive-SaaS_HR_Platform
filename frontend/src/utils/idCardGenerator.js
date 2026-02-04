@@ -23,12 +23,11 @@ const getAuthToken = () => {
 
 /**
  * Generate Employee ID Card PDF
- * @param {Object} employee - Employee data
+ * @param {Object} employee - Employee data (must include id and organizationUuid)
  * @param {string} organizationName - Organization name
- * @param {string} photoPath - Path to employee photo
  * @returns {Promise<void>}
  */
-export const generateEmployeeIDCard = async (employee, organizationName, photoPath = null) => {
+export const generateEmployeeIDCard = async (employee, organizationName) => {
   try {
     // Create PDF in landscape orientation for ID card
     const pdf = new jsPDF({
@@ -67,22 +66,17 @@ export const generateEmployeeIDCard = async (employee, organizationName, photoPa
     pdf.setLineWidth(0.5);
     pdf.rect(photoX, photoY, photoWidth, photoHeight);
 
-    // Try to load employee photo
-    if (photoPath) {
-      try {
-        // Convert file path to base64
-        const photoBase64 = await loadImageAsBase64(photoPath);
-        if (photoBase64) {
-          pdf.addImage(photoBase64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
-        } else {
-          // Placeholder if photo not found
-          addPhotoPlaceholder(pdf, photoX, photoY, photoWidth, photoHeight);
-        }
-      } catch (error) {
-        console.warn('Failed to load photo:', error);
+    // Try to load employee photo from AI service
+    try {
+      const photoBase64 = await loadImageAsBase64(employee.id, employee.organizationUuid);
+      if (photoBase64) {
+        pdf.addImage(photoBase64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
+      } else {
+        // Placeholder if photo not found
         addPhotoPlaceholder(pdf, photoX, photoY, photoWidth, photoHeight);
       }
-    } else {
+    } catch (error) {
+      console.warn('Failed to load photo:', error);
       addPhotoPlaceholder(pdf, photoX, photoY, photoWidth, photoHeight);
     }
 

@@ -54,15 +54,18 @@ export default function EditeJobPosting() {
 
   // Load departments for the dropdown
   useEffect(() => {
-    getAllDepartments()
-      .then((res) => {
-        setDepartments(res.data); // ✅ because API service should return res.data.data
-      })
-      .catch((err) => {
-        console.error("Failed to load departments", err);
-        setDepartments([]);
-      });
-  }, []);
+    if (token) {
+      getAllDepartments(token)
+        .then((res) => {
+          console.log("Departments API response:", res);
+          setDepartments(res.data?.data || res.data || []);
+        })
+        .catch((err) => {
+          console.error("Failed to load departments", err);
+          setDepartments([]);
+        });
+    }
+  }, [token]);
 
   // Simple email validation
   function isValidEmail(email) {

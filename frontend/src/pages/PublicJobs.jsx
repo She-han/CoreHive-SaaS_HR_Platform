@@ -3,6 +3,8 @@ import { fetchPublicJobs } from "../api/publicJobsApi";
 import JobCard from "../components/jobs/JobCard";
 // Note: Using standard Lucide-style SVG icons for zero-dependency copy-paste
 import { SearchIcon, BriefcaseIcon } from "lucide-react"; 
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 
 const PublicJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -45,17 +47,19 @@ useEffect(() => {
 
 
   return (
+    <>
+    <Navbar/>
     <div className="bg-[#F1FDF9] min-h-screen font-sans text-[#333333]">
       {/* --- Hero Section --- */}
-      <section className="bg-[#0C397A] pt-20 pb-32 px-6 text-center">
+      <section className="bg-gradient-to-b from-[#0C397A] via-[#05668D] to-[#02C39A] pt-20 pb-32 px-6 text-center">
         <div className="max-w-4xl mx-auto">
-          <span className="inline-block px-4 py-1.5 mb-4 text-xs font-bold tracking-widest text-[#02C39A] uppercase bg-white/10 rounded-full">
+          <span className="inline-block px-4 py-1.5 mb-4 text-xl font-bold tracking-widest text-[#02C39A] uppercase bg-white/10 rounded-full">
             CoreHive Careers
           </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+          <h1 className="text-4xl md:text-5xl font-semibold text-white mb-6">
             Find Your Next Career Opportunity
           </h1>
-          <p className="text-[#9B9B9B] text-lg max-w-2xl mx-auto">
+          <p className="text-gray-300 text-lg max-w-2xl mx-auto">
             Explore premium openings from industry-leading organizations powered by CoreHive technology.
           </p>
         </div>
@@ -83,7 +87,7 @@ useEffect(() => {
       </section>
 
       {/* --- Main Content --- */}
-      <main className="max-w-7xl mx-auto px-4 py-16">
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <div className="flex items-center justify-between mb-10 border-b border-gray-200 pb-5">
           <div>
             <h2 className="text-2xl font-bold text-[#0C397A]">Current Openings</h2>
@@ -128,6 +132,8 @@ useEffect(() => {
         )}
       </main>
     </div>
+    <Footer/>
+    </>
   );
 };
 

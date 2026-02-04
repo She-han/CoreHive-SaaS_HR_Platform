@@ -157,11 +157,15 @@ export default function EmployeeTable({ search, filterBy }) {
 
   const handleGenerateIDCard = async (employee) => {
     try {
-      // Get organization name from user data or use default
+      // Get organization info from user data
       const organizationName = user?.organizationName || "Organization";
+      const organizationUuid = user?.organizationUuid || employee.organizationUuid;
       
-      // Construct photo path if employee has a photo
-      const photoPath = employee.photoPath || null;
+      // Ensure employee has organizationUuid for photo retrieval
+      const employeeWithOrg = {
+        ...employee,
+        organizationUuid: organizationUuid
+      };
       
       // Show loading
       Swal.fire({
@@ -173,8 +177,8 @@ export default function EmployeeTable({ search, filterBy }) {
         }
       });
 
-      // Generate ID card
-      await generateEmployeeIDCard(employee, organizationName, photoPath);
+      // Generate ID card (photo will be fetched automatically from AI service)
+      await generateEmployeeIDCard(employeeWithOrg, organizationName);
       
       // Success message
       Swal.fire({
@@ -197,7 +201,12 @@ export default function EmployeeTable({ search, filterBy }) {
   };
 
   const handleRowClick = (employee) => {
-    setSelectedEmployee(employee);
+    // Ensure organizationUuid is available for photo retrieval
+    const employeeWithOrg = {
+      ...employee,
+      organizationUuid: employee.organizationUuid || user?.organizationUuid
+    };
+    setSelectedEmployee(employeeWithOrg);
     setIsModalOpen(true);
   };
 

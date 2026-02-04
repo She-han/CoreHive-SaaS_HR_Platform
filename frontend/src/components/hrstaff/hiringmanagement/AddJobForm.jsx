@@ -36,7 +36,7 @@ export default function AddJobForm() {
       getAllDepartments(token)
         .then((res) => {
           console.log("Departments API response:", res);
-          setDepartments(res.data || []);
+          setDepartments(res.data?.data || res.data || []);
         })
         .catch((err) => console.error("Error loading departments", err));
     }

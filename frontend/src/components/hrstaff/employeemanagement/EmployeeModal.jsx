@@ -10,15 +10,15 @@ export default function EmployeeModal({ employee, isOpen, onClose }) {
 
   useEffect(() => {
     if (employee && isOpen) {
-      // Try to load face image from AI service
+      // Try to load face photo from AI service
       setImageLoading(true);
-      const faceImageUrl = `${AI_SERVICE_URL}/api/face/image/${employee.id}/${employee.organizationUuid}`;
+      const facePhotoUrl = `${AI_SERVICE_URL}/api/face/photo/${employee.organizationUuid}/${employee.id}`;
       
-      // Check if image exists
-      fetch(faceImageUrl)
+      // Check if photo exists
+      fetch(facePhotoUrl)
         .then(response => {
           if (response.ok) {
-            setImageUrl(faceImageUrl);
+            setImageUrl(facePhotoUrl);
           } else {
             setImageUrl(null);
           }

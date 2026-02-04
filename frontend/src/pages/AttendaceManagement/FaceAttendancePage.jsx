@@ -518,322 +518,238 @@ const FaceAttendancePage = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8 overflow-y-auto ">
-      <div className="max-w-7xl mx-auto space-y-6 pb-8">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center space-x-4">
-              <div
-                className={`p-3 rounded-xl ${mode === "checkin" ? "bg-green-500" : "bg-orange-500"}`}
-              >
-                {mode === "checkin" ? (
-                  <LogIn className="w-8 h-8 text-white" />
+    <div className="w-full min-h-screen flex flex-col p-6 lg:p-10 bg-[#F1FDF9] text-[#333333]">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            Face Attendance Marking
+          </h1>
+          <p className="text-[#9B9B9B] font-medium">
+            AI-powered facial recognition for automated attendance tracking
+          </p>
+        </div>
+        {/* TAB SWITCHER */}
+        <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-[#9B9B9B]/20 w-full md:w-auto">
+          <button
+            onClick={() => switchMode("checkin")}
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+              mode === "checkin"
+                ? "bg-[#02C39A] text-white shadow-md"
+                : "text-[#9B9B9B] hover:bg-[#F1FDF9]"
+            }`}
+          >
+            <LogIn size={18} /> Check-In
+          </button>
+          <button
+            onClick={() => switchMode("checkout")}
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-bold transition-all duration-200 ${
+              mode === "checkout"
+                ? "bg-[#05668D] text-white shadow-md"
+                : "text-[#9B9B9B] hover:bg-[#F1FDF9]"
+            }`}
+          >
+            <LogOut size={18} /> Check-Out
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+        {/* CAMERA VIEWPORT (COL-8) */}
+        <div className="lg:col-span-8 flex flex-col gap-4">
+          <div className="bg-white rounded-3xl shadow-xl border border-[#9B9B9B]/10 overflow-hidden flex flex-col h-full">
+            {/* CAMERA HEADER */}
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-3 h-3 rounded-full ${isKioskActive ? "bg-red-500 animate-pulse" : "bg-gray-300"}`}
+                />
+                <h2 className="font-bold text-[#333333] uppercase tracking-wider text-sm">
+                  {isKioskActive ? "Live Camera Active" : "Camera Standby"}
+                </h2>
+              </div>
+
+              <div className="flex gap-3">
+                {!isKioskActive ? (
+                  <button
+                    onClick={toggleKiosk}
+                    disabled={!serviceReady}
+                    className="flex items-center gap-2 bg-[#1ED292] hover:bg-[#02C39A] text-white px-6 py-2 rounded-xl font-bold transition-all transform active:scale-95 disabled:opacity-50"
+                  >
+                    <Play size={16} fill="currentColor" /> Start Camera
+                  </button>
                 ) : (
-                  <LogOut className="w-8 h-8 text-white" />
+                  <button
+                    onClick={toggleKiosk}
+                    className="flex items-center gap-2 bg-[#333333] hover:bg-black text-white px-6 py-2 rounded-xl font-bold transition-all transform active:scale-95"
+                  >
+                    <Square size={16} fill="currentColor" /> Stop
+                  </button>
                 )}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Face Attendance -{" "}
-                  {mode === "checkin" ? "Check In" : "Check Out"}
-                </h1>
-                <p className="text-gray-600 flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
-                  {formatTime(currentTime)}
-                </p>
-              </div>
             </div>
 
-            {/* Mode Switch Buttons */}
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => switchMode("checkin")}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all ${
-                  mode === "checkin"
-                    ? "bg-green-500 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                <LogIn className="w-5 h-5" />
-                <span>Check In</span>
-              </button>
-              <button
-                onClick={() => switchMode("checkout")}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all ${
-                  mode === "checkout"
-                    ? "bg-orange-500 text-white shadow-md"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Check Out</span>
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="flex items-center space-x-3">
-              <div className="bg-green-100 px-4 py-2 rounded-lg flex items-center border border-green-200">
-                <LogIn className="w-5 h-5 text-green-600 mr-2" />
-                <span className="text-gray-900 font-bold">
-                  {todayCount.checkIn}
-                </span>
-                <span className="text-green-700 ml-1 text-sm">In</span>
-              </div>
-              <div className="bg-orange-100 px-4 py-2 rounded-lg flex items-center border border-orange-200">
-                <LogOut className="w-5 h-5 text-orange-600 mr-2" />
-                <span className="text-gray-900 font-bold">
-                  {todayCount.checkOut}
-                </span>
-                <span className="text-orange-700 ml-1 text-sm">Out</span>
-              </div>
-            </div>
-
-            {/* Kiosk Toggle */}
-            <button
-              onClick={toggleKiosk}
-              disabled={!serviceReady}
-              className={`px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 transition-all shadow-md ${
-                isKioskActive
-                  ? "bg-red-500 hover:bg-red-600 text-white"
-                  : mode === "checkin"
-                    ? "bg-green-500 hover:bg-green-600 text-white"
-                    : "bg-orange-500 hover:bg-orange-600 text-white"
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {isKioskActive ? (
+            {/* CAMERA STAGE */}
+            <div className="relative bg-[#0C397A] flex-1 min-h-[450px] flex items-center justify-center">
+              {serviceReady ? (
                 <>
-                  <Square className="w-5 h-5" />
-                  <span>Stop</span>
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={videoConstraints}
+                    className="w-full h-full object-cover"
+                  />
+
+                  {/* Face Guide Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div
+                      className={`w-64 h-80 border-4 border-dashed rounded-[120px] ${
+                        isProcessing
+                          ? "border-yellow-400 animate-pulse"
+                          : isKioskActive
+                            ? mode === "checkin"
+                              ? "border-[#02C39A]"
+                              : "border-[#05668D]"
+                            : "border-gray-400"
+                      } ${isKioskActive ? "animate-pulse" : ""}`}
+                    />
+                  </div>
+
+                  {!isKioskActive && !lastResult && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
+                      <Camera size={64} strokeWidth={1} className="mb-4" />
+                      <p className="font-medium">
+                        Click "Start Camera" to begin face recognition
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Processing Indicator */}
+                  {isProcessing && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+                      <div className="bg-white rounded-2xl p-6 text-center">
+                        <Loader2 className="w-12 h-12 text-[#02C39A] animate-spin mx-auto mb-3" />
+                        <p className="text-gray-700 font-medium">
+                          Identifying...
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* OVERLAY RESULTS */}
+                  {lastResult && (
+                    <div
+                      className={`absolute inset-0 flex items-center justify-center z-10 animate-in fade-in zoom-in duration-300 ${
+                        lastResult.success ? "bg-[#02C39A]/95" : "bg-red-600/95"
+                      }`}
+                    >
+                      <div className="text-center text-white p-8">
+                        <div className="bg-white rounded-full w-24 h-24 mx-auto flex items-center justify-center mb-6 shadow-2xl">
+                          {lastResult.success ? (
+                            <Check
+                              size={48}
+                              className="text-[#02C39A]"
+                              strokeWidth={3}
+                            />
+                          ) : (
+                            <X
+                              size={48}
+                              className="text-red-500"
+                              strokeWidth={3}
+                            />
+                          )}
+                        </div>
+                        <h3 className="text-3xl font-black mb-2 tracking-tight">
+                          {lastResult.success ? "VERIFIED" : "ACCESS DENIED"}
+                        </h3>
+                        <p className="text-lg opacity-90 font-medium mb-2">
+                          {lastResult.employeeName}
+                        </p>
+                        {lastResult.success && (
+                          <>
+                            <p className="text-xl mb-2">
+                              {lastResult.isCheckIn ? "✅ Check-in" : "👋 Check-out"} at {lastResult.time}
+                            </p>
+                            <p className="text-sm opacity-75">
+                              Confidence: {Math.round((lastResult.confidence || 0.85) * 100)}%
+                            </p>
+                          </>
+                        )}
+                        {!lastResult.success && (
+                          <p className="text-lg opacity-90">{lastResult.message}</p>
+                        )}
+                        <button
+                          onClick={() => setLastResult(null)}
+                          className="mt-8 px-6 py-2 border-2 border-white/50 rounded-lg hover:bg-white/10 transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Instructions */}
+                  {!isProcessing && !lastResult && isKioskActive && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                      <p className="text-white text-center text-lg">
+                        👤 Position your face within the oval guide
+                      </p>
+                    </div>
+                  )}
                 </>
               ) : (
-                <>
-                  <Play className="w-5 h-5" />
-                  <span>Start</span>
-                </>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
+                  <AlertCircle size={64} strokeWidth={1} className="mb-4 text-red-500" />
+                  <p className="font-medium text-white text-lg">
+                    Face Recognition Service Unavailable
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">{error}</p>
+                </div>
               )}
-            </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Camera Section */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              {/* Camera Header */}
-              <div
-                className={`px-6 py-4 ${
-                  isKioskActive
-                    ? mode === "checkin"
-                      ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                      : "bg-gradient-to-r from-orange-500 to-amber-600"
-                    : "bg-gradient-to-r from-gray-600 to-gray-700"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-white flex items-center">
-                      <Camera className="w-6 h-6 mr-2" />
-                      {isKioskActive ? (
-                        <>
-                          🔴 LIVE -{" "}
-                          {mode === "checkin"
-                            ? "Check-In Mode"
-                            : "Check-Out Mode"}
-                        </>
-                      ) : (
-                        "Camera Ready"
-                      )}
-                    </h2>
-                    <p className="text-white/80 text-sm">
-                      {isKioskActive
-                        ? `Employees can show face to ${mode === "checkin" ? "check in" : "check out"}`
-                        : 'Click "Start" to begin scanning'}
-                    </p>
-                  </div>
-                  {isKioskActive && (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                      <span className="text-white text-sm font-medium">
-                        Scanning
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Camera View */}
-              <div className="relative bg-black aspect-video">
-                {serviceReady ? (
-                  <>
-                    <Webcam
-                      audio={false}
-                      ref={webcamRef}
-                      screenshotFormat="image/jpeg"
-                      videoConstraints={videoConstraints}
-                      className="w-full h-full object-cover"
-                    />
-
-                    {/* Face Guide Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div
-                        className={`w-64 h-80 border-4 border-dashed rounded-[120px] ${
-                          isProcessing
-                            ? "border-yellow-400 animate-pulse"
-                            : isKioskActive
-                              ? mode === "checkin"
-                                ? "border-green-400"
-                                : "border-orange-400"
-                              : "border-gray-400"
-                        } ${isKioskActive ? "animate-pulse" : ""}`}
-                      />
-                    </div>
-
-                    {/* Processing Indicator */}
-                    {isProcessing && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <div className="bg-white rounded-2xl p-6 text-center">
-                          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-3" />
-                          <p className="text-gray-700 font-medium">
-                            Identifying...
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Result Overlay */}
-                    {lastResult && (
-                      <div
-                        className={`absolute inset-0 ${
-                          lastResult.success
-                            ? "bg-green-500/90"
-                            : "bg-red-500/90"
-                        } flex items-center justify-center animate-fade-in`}
-                      >
-                        <div className="text-center text-white">
-                          <div
-                            className={`w-24 h-24 ${
-                              lastResult.success ? "bg-white" : "bg-white"
-                            } rounded-full flex items-center justify-center mx-auto mb-4`}
-                          >
-                            {lastResult.success ? (
-                              <Check
-                                className={`w-14 h-14 ${
-                                  lastResult.isCheckIn
-                                    ? "text-green-500"
-                                    : "text-orange-500"
-                                }`}
-                              />
-                            ) : (
-                              <X className="w-14 h-14 text-red-500" />
-                            )}
-                          </div>
-                          <h3 className="text-3xl font-bold mb-2">
-                            {lastResult.employeeName}
-                          </h3>
-                          {lastResult.success ? (
-                            <>
-                              <p className="text-2xl">
-                                {lastResult.isCheckIn
-                                  ? "✅ Check-in"
-                                  : "👋 Check-out"}{" "}
-                                at {lastResult.time}
-                              </p>
-                              <p className="text-lg mt-2 opacity-80">
-                                Confidence:{" "}
-                                {Math.round(
-                                  (lastResult.confidence || 0.85) * 100
-                                )}
-                                %
-                              </p>
-                            </>
-                          ) : (
-                            <p className="text-xl">{lastResult.message}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Instructions */}
-                    {!isProcessing && !lastResult && isKioskActive && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                        <p className="text-white text-center text-lg">
-                          👤 Position your face within the oval guide
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-                    <div className="text-center">
-                      <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                      <p className="text-white text-lg">
-                        Face Recognition Service Unavailable
-                      </p>
-                      <p className="text-gray-400 text-sm mt-2">{error}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Manual Controls */}
-              <div className="p-4 bg-gray-50 border-t border-gray-200 flex justify-center space-x-4">
-                <button
-                  onClick={handleManualCapture}
-                  disabled={!serviceReady || isProcessing}
-                  className={`px-6 py-3 rounded-lg font-semibold flex items-center space-x-2 shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                    mode === "checkin"
-                      ? "bg-green-500 hover:bg-green-600 text-white"
-                      : "bg-orange-500 hover:bg-orange-600 text-white"
-                  }`}
-                >
-                  <Camera className="w-5 h-5" />
-                  <span>Manual Capture</span>
-                </button>
-                <button
-                  onClick={fetchTodayAttendance}
-                  className="px-4 py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg font-semibold flex items-center space-x-2 shadow-sm transition-all"
-                >
-                  <RefreshCw className="w-5 h-5" />
-                  <span>Refresh</span>
-                </button>
-              </div>
-
-              {/* Error Display */}
-              {error && (
-                <div className="px-6 py-3 bg-red-50 border-t border-red-200">
-                  <p className="text-red-600 text-center">{error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Today's Attendance Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col max-h-[600px]">
-              <div
-                className={`px-6 py-4 ${
-                  mode === "checkin"
-                    ? "bg-gradient-to-r from-green-600 to-emerald-600"
-                    : "bg-gradient-to-r from-orange-600 to-amber-600"
-                }`}
-              >
-                <h3 className="text-lg font-bold text-white flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Today's Attendance ({todayAttendance.length})
+        {/* RECENT LOGS (COL-4) */}
+        <div className="lg:col-span-4 h-full">
+          <div className="bg-white rounded-3xl shadow-xl border border-[#9B9B9B]/10 overflow-hidden h-full flex flex-col">
+            <div className="p-6 h-full overflow-auto">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-[#333333] mb-2">
+                  {mode === "checkin" ? "Check-In Logs" : "Check-Out Logs"}
                 </h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-[#02C39A]/10 px-4 py-2 rounded-lg flex items-center border border-[#02C39A]/20">
+                    <LogIn className="w-4 h-4 text-[#02C39A] mr-2" />
+                    <span className="text-[#333333] font-bold text-sm">
+                      {todayCount.checkIn}
+                    </span>
+                    <span className="text-[#02C39A] ml-1 text-xs font-medium">In</span>
+                  </div>
+                  <div className="bg-[#05668D]/10 px-4 py-2 rounded-lg flex items-center border border-[#05668D]/20">
+                    <LogOut className="w-4 h-4 text-[#05668D] mr-2" />
+                    <span className="text-[#333333] font-bold text-sm">
+                      {todayCount.checkOut}
+                    </span>
+                    <span className="text-[#05668D] ml-1 text-xs font-medium">Out</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-4 flex-1 overflow-y-auto">
+              <div className="space-y-3">
                 {todayAttendance.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-[#9B9B9B]">
                     <User className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p>No attendance recorded yet</p>
-                    <p className="text-sm">Start the kiosk to begin</p>
+                    <p className="font-medium">No attendance recorded yet</p>
+                    <p className="text-sm">Start the camera to begin</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <>
                     {todayAttendance
+                      .filter((a) =>
+                        mode === "checkin" ? a.checkInTime : a.checkOutTime
+                      )
                       .sort((a, b) => {
                         const timeA = a.checkOutTime || a.checkInTime;
                         const timeB = b.checkOutTime || b.checkInTime;
@@ -842,64 +758,43 @@ const FaceAttendancePage = () => {
                       .map((attendance, index) => (
                         <div
                           key={attendance.id || index}
-                          className={`p-3 rounded-xl border-2 ${
-                            attendance.checkOutTime
-                              ? "bg-gray-50 border-gray-200"
-                              : "bg-green-50 border-green-200"
-                          }`}
+                          className="p-4 rounded-xl border-2 border-gray-200 bg-white hover:shadow-md transition-all"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                  attendance.checkOutTime
-                                    ? "bg-gray-200"
-                                    : "bg-green-200"
-                                }`}
-                              >
-                                {attendance.checkOutTime ? (
-                                  <UserCheck className="w-5 h-5 text-gray-600" />
-                                ) : (
-                                  <User className="w-5 h-5 text-green-600" />
-                                )}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-[#02C39A]/10 flex items-center justify-center">
+                                <User className="w-5 h-5 text-[#02C39A]" />
                               </div>
                               <div>
-                                <p className="font-semibold text-gray-900 text-sm">
+                                <p className="font-bold text-[#333333] text-sm">
                                   {getDisplayName(attendance)}
                                 </p>
-                                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                  <span className="text-green-600">
-                                    In: {formatDateTime(attendance.checkInTime)}
-                                  </span>
-                                  {attendance.checkOutTime && (
-                                    <span className="text-orange-600">
-                                      Out:{" "}
-                                      {formatDateTime(attendance.checkOutTime)}
-                                    </span>
-                                  )}
-                                </div>
+                                <p className="text-xs text-[#9B9B9B]">
+                                  {mode === "checkin"
+                                    ? formatDateTime(attendance.checkInTime)
+                                    : formatDateTime(attendance.checkOutTime)}
+                                </p>
                               </div>
                             </div>
                             <div
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                attendance.checkOutTime
-                                  ? "bg-gray-200 text-gray-600"
-                                  : "bg-green-200 text-green-700"
+                              className={`px-2 py-1 rounded-full text-xs font-bold ${
+                                mode === "checkin"
+                                  ? "bg-[#02C39A]/10 text-[#02C39A]"
+                                  : "bg-[#05668D]/10 text-[#05668D]"
                               }`}
                             >
-                              {attendance.checkOutTime ? "Done" : "Active"}
+                              {mode === "checkin" ? "IN" : "OUT"}
                             </div>
                           </div>
                         </div>
                       ))}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
-
       {/* Custom Styles */}
       <style>{`
         @keyframes fade-in {

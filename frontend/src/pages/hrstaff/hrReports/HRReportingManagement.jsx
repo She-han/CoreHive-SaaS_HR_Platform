@@ -1,7 +1,5 @@
 import { useState } from "react";
 import HeadcountReport from "./HeadcountReport";
-import MonthlyReport from "./MonthlyReport";
-import AnnualReport from "./AnnualReport";
 import EmployeeExcelReport from "./EmployeeDetailsReport";
 
 export default function HRReportingManagement() {
@@ -11,10 +9,6 @@ export default function HRReportingManagement() {
     switch (activeTab) {
       case "headcount":
         return <HeadcountReport />;
-      case "monthly":
-        return <MonthlyReport />;
-      case "annual":
-        return <AnnualReport />;
       case "employees":
       return <EmployeeExcelReport />;
       default:
@@ -39,8 +33,7 @@ export default function HRReportingManagement() {
       <div className="flex flex-wrap gap-3 mb-6">
         {[
           { key: "headcount", label: "Headcount Report" },
-          { key: "monthly", label: "Monthly Report" },
-          { key: "annual", label: "Annual Report" },
+
           { key: "employees", label: "Employee Details" }
 
         ].map((tab) => (

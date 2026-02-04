@@ -156,4 +156,42 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     Optional<Attendance> findByEmployeeIdAndOrganizationUuidAndAttendanceDate(Long employeeId, String orgUuid, LocalDate today);
     
     Optional<Attendance> findByEmployeeIdAndAttendanceDateAndOrganizationUuid(Long employeeId, LocalDate date, String organizationUuid);
+
+    // ===== Report Queries =====
+
+    /**
+     * Count attendance by status for a specific employee within a date range
+     * Returns: [AttendanceStatus, count]
+     */
+    @Query("""
+        SELECT a.status, COUNT(a)
+        FROM Attendance a
+        WHERE a.organizationUuid = :orgUuid
+          AND a.employeeId = :employeeId
+          AND a.attendanceDate BETWEEN :startDate AND :endDate
+        GROUP BY a.status
+    """)
+    List<Object[]> countStatusByEmployee(
+            @Param("orgUuid") String orgUuid,
+            @Param("employeeId") Long employeeId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
+    /**
+     * Find all attendance records for an organization within a date range
+     */
+    @Query("""
+        SELECT a
+        FROM Attendance a
+        LEFT JOIN FETCH a.employee e
+        WHERE a.organizationUuid = :orgUuid
+          AND a.attendanceDate BETWEEN :startDate AND :endDate
+        ORDER BY a.attendanceDate DESC, a.checkInTime DESC
+    """)
+    List<Attendance> findByOrganizationUuidAndAttendanceDateBetween(
+            @Param("orgUuid") String orgUuid,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }

@@ -1,21 +1,18 @@
-import axios from "axios";
-
-const BASE = "http://localhost:8080/api/leave-requests";
+import apiClient from "./axios";
 
 /**
  * ============================================
  * GET ALL LEAVE REQUESTS (HR / ORG ADMIN)
  * ============================================
  */
-export const getAllLeaveRequests = async (token) => {
-  return axios
-    .get(`${BASE}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    .then((res) => res.data.data)
-    .catch((err) => {
-      throw new Error(err.response?.data?.message || err.message);
-    });
+export const getAllLeaveRequests = async () => {
+  try {
+    const response = await apiClient.get("/leave-requests");
+    return response.data.data;
+  } catch (error) {
+    console.error("Error fetching leave requests:", error);
+    throw new Error(error.response?.data?.message || error.message);
+  }
 };
 
 /**
@@ -23,17 +20,15 @@ export const getAllLeaveRequests = async (token) => {
  * APPROVE / REJECT LEAVE REQUEST (HR)
  * ============================================
  */
-export const approveLeaveRequest = async (requestId, approve, token) => {
-  return axios
-    .put(
-      `${BASE}/${requestId}/approve?approve=${approve}`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    )
-    .then((res) => res.data)
-    .catch((err) => {
-      throw new Error(err.response?.data?.message || err.message);
-    });
+export const approveLeaveRequest = async (requestId, approve) => {
+  try {
+    const response = await apiClient.put(
+      `/leave-requests/${requestId}/approve?approve=${approve}`,
+      {}
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error approving/rejecting leave request:", error);
+    throw new Error(error.response?.data?.message || error.message);
+  }
 };

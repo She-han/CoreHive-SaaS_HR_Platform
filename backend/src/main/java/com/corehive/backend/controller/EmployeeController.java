@@ -198,5 +198,54 @@ public class EmployeeController {
         return QrCodeUtil.generateQrImage(qrToken);
     }
 
+    //************************************************//
+    //GET YEARLY EMPLOYEE GROWTH DATA FOR CHARTS//
+    //************************************************//
+    @GetMapping("/yearly-growth-chart-data")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getYearlyEmployeeGrowthChartData(
+            @RequestParam("year") int year,
+            HttpServletRequest httpRequest) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        
+        try {
+            var yearlyGrowthData = employeeService.getYearlyEmployeeGrowthChartData(organizationUuid, year);
+            return new ResponseEntity<>(
+                    new StandardResponse(200, "Yearly employee growth chart data fetched successfully", yearlyGrowthData),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            log.error("Error fetching yearly employee growth chart data: ", e);
+            return new ResponseEntity<>(
+                    new StandardResponse(500, "Failed to fetch yearly employee growth data", null),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    //************************************************//
+    //DELETE EMPLOYEE//
+    //************************************************//
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> deleteEmployee(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id) {
+        String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+        
+        try {
+            employeeService.deleteEmployee(organizationUuid, id);
+            return new ResponseEntity<>(
+                    new StandardResponse(200, "Employee deleted successfully", null),
+                    HttpStatus.OK
+            );
+        } catch (Exception e) {
+            log.error("Error deleting employee: ", e);
+            return new ResponseEntity<>(
+                    new StandardResponse(500, "Failed to delete employee: " + e.getMessage(), null),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 
 }

@@ -32,7 +32,9 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -927,5 +929,73 @@ public class EmployeeService {
             log.error("Error fetching employee leave balances", e);
             return ApiResponse.error("Failed to fetch leave balances");
         }
+    }
+
+    /**
+     * Get yearly employee growth chart data for dashboard charts
+     * Returns monthly employee counts for a specific year
+     */
+    public List<Map<String, Object>> getYearlyEmployeeGrowthChartData(String organizationUuid, int year) {
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        
+        String[] monthNames = {
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        };
+        
+        for (int month = 1; month <= 12; month++) {
+            LocalDate endOfMonth = LocalDate.of(year, month, 1).withDayOfMonth(
+                LocalDate.of(year, month, 1).lengthOfMonth()
+            );
+            
+            // Count employees who were created before or on end of month
+            long employeeCount = employeeRepository.countByOrganizationUuidAndCreatedAtBefore(
+                organizationUuid, endOfMonth.atTime(23, 59, 59)
+            );
+            
+            Map<String, Object> monthData = new HashMap<>();
+            monthData.put("month", monthNames[month - 1]);
+            monthData.put("monthNumber", month);
+            monthData.put("totalEmployees", employeeCount);
+            monthData.put("year", year);
+            
+            chartData.add(monthData);
+        }
+        
+        return chartData;
+    }
+
+    /**
+     * Delete an employee
+     * Validates organization and employee existence before deletion
+     */
+    @Transactional
+    public void deleteEmployee(String organizationUuid, Long employeeId) {
+        log.info("Deleting employee with ID: {} for organization: {}", employeeId, organizationUuid);
+        
+        // Validate employee exists and belongs to organization
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found with ID: " + employeeId));
+        
+        if (!employee.getOrganizationUuid().equals(organizationUuid)) {
+            throw new InvalidEmployeeDataException("Employee does not belong to this organization");
+        }
+        
+        // Delete associated leave balances first (to avoid foreign key constraint)
+        List<EmployeeLeaveBalance> leaveBalances = employeeLeaveBalanceRepository.findByEmployeeIdAndOrganizationUuid(employeeId, organizationUuid);
+        if (!leaveBalances.isEmpty()) {
+            employeeLeaveBalanceRepository.deleteAll(leaveBalances);
+            log.info("Deleted {} leave balance records for employee ID: {}", leaveBalances.size(), employeeId);
+        }
+        
+        // Delete associated AppUser if exists
+        if (employee.getAppUserId() != null) {
+            appUserRepository.deleteById(employee.getAppUserId());
+            log.info("Deleted associated AppUser with ID: {}", employee.getAppUserId());
+        }
+        
+        // Delete employee
+        employeeRepository.delete(employee);
+        log.info("Successfully deleted employee with ID: {}", employeeId);
     }
 }

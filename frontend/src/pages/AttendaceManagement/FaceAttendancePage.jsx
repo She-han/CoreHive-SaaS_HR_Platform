@@ -318,6 +318,17 @@ const FaceAttendancePage = () => {
       console.log("Identify result:", identifyResult);
 
       if (!identifyResult.identified || !identifyResult.employee_id) {
+        // Show "not identified" message to user
+        setLastResult({
+          success: false,
+          employeeName: "Unknown",
+          message: identifyResult.message || "Face not recognized. Please try again.",
+          confidence: identifyResult.similarity_percent || "0%",
+          isCheckIn: mode === "checkin",
+          photo: imageSrc
+        });
+        playSound("error");
+        setTimeout(() => setLastResult(null), 3000);
         setIsProcessing(false);
         return;
       }

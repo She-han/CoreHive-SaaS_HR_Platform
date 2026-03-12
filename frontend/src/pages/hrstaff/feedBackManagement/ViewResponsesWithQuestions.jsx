@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import {
   getSurveyDetails,
   getResponsesWithEmployees
-} from "../../../api/feedbackService";
+} from "../../../api/feedbackservice.js";
 import { FiArrowLeft, FiUser, FiHelpCircle, FiEye, FiDownload } from "react-icons/fi";
 import Modal from "../../../components/common/Modal";
 import * as XLSX from 'xlsx';

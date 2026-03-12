@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   getSurveyQuestions,
   updateSurveyQuestions
-} from "../../../api/feedbackService";
+} from "../../../api/feedbackservice.js";
 import { useParams, useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 import Swal from "sweetalert2";

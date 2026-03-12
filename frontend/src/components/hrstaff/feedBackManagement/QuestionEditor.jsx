@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   getSurveyQuestions,
   updateSurveyQuestions
-} from "../../../api/feedbackService";
+} from "../../../api/feedbackservice.js";
 
 export default function QuestionEditor({ surveyId, onSaved }) {
   const token =

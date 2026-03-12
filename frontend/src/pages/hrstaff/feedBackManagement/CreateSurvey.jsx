@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createSurvey } from "../../../api/feedbackService.js"; // ✅ token-based API
+import { createSurvey } from "../../../api/feedbackservice.js"; // ✅ token-based API
 import { useNavigate } from "react-router-dom";
 import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
 import Swal from "sweetalert2";

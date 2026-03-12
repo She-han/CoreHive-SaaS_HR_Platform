@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getSurveyDetails } from "../../../api/feedbackService.js";
+import { getSurveyDetails } from "../../../api/feedbackservice.js";
 import { FiCalendar, FiHelpCircle, FiList, FiArrowLeft } from "react-icons/fi";
 
 export default function ViewSurveyQuestions() {

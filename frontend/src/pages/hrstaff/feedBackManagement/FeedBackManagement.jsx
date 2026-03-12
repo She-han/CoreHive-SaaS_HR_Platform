@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listSurveys, deleteSurvey } from "../../../api/feedbackService.js";
+import { listSurveys, deleteSurvey } from "../../../api/feedbackservice.js";
 import SurveyList from "../../../components/hrstaff/feedBackManagement/SurveyList.jsx";
 import { FaPlus } from "react-icons/fa";
 import Swal from "sweetalert2";

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { FiEye, FiEdit2, FiTrash2, FiList, FiCalendar } from "react-icons/fi";
-import { updateSurveyStatus } from "../../../api/feedbackService.js";
+import { updateSurveyStatus } from "../../../api/feedbackservice.js";
 import Swal from "sweetalert2";
 
 export default function SurveyList({ surveys = [], onDelete, onStatusChange }) {

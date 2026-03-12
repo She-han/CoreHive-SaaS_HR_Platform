@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as authApi from '../../api/authApi';
-import toast from 'react-hot-toast';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import * as authApi from "../../api/authApi";
+import toast from "react-hot-toast";
 
 // Initial state
 const initialState = {
@@ -8,15 +8,15 @@ const initialState = {
   user: null,
   token: null,
   isAuthenticated: false,
-  
+
   // Loading states - ADD THESE MISSING STATES
   isLoading: false,
   isSignupLoading: false,
   isModuleConfigLoading: false,
-  
+
   // Error states
   error: null,
-  
+
   // Module configuration
   availableModules: {
     // Basic modules (always true)
@@ -28,21 +28,24 @@ const initialState = {
     adminActivityTracking: true,
     notificationSystem: true,
     basicDashboard: true,
-    
+
     // Extended modules (based on org selection)
     performanceTracking: false,
     employeeFeedback: false,
     hiringManagement: false,
+    qrAttendance: false,
+    faceRecognitionAttendance: false,
+    aiInsights: false // AI Insights module (module_id = 5)
   }
 };
 
 // Async Thunks
 export const signupOrganization = createAsyncThunk(
-  'auth/signupOrganization',
+  "auth/signupOrganization",
   async (signupData, { rejectWithValue }) => {
     try {
       const response = await authApi.signupOrganization(signupData);
-      
+
       if (response.success) {
         toast.success(response.message);
         return response.data;
@@ -51,7 +54,8 @@ export const signupOrganization = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Signup failed. Please try again.';
+      const message =
+        error.response?.data?.message || "Signup failed. Please try again.";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -59,16 +63,18 @@ export const signupOrganization = createAsyncThunk(
 );
 
 export const loginUser = createAsyncThunk(
-  'auth/loginUser',
+  "auth/loginUser",
   async (loginData, { rejectWithValue }) => {
     try {
       const response = await authApi.loginUser(loginData);
-      
+
       // Backend returns: { success: true, data: LoginResponse }
-      toast.success('Login successful! Welcome to CoreHive.');
+      toast.success("Login successful! Welcome to CoreHive.");
       return response; // Return the LoginResponse object directly
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      const message =
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials.";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -77,18 +83,20 @@ export const loginUser = createAsyncThunk(
 
 // Configure modules thunk - FIXED VERSION
 export const configureModules = createAsyncThunk(
-  'auth/configureModules',
+  "auth/configureModules",
   async (moduleConfig, { rejectWithValue }) => {
     try {
-      console.log('⚙️ Configuring modules:', moduleConfig);
-      
+      console.log("⚙️ Configuring modules:", moduleConfig);
+
       const response = await authApi.configureModules(moduleConfig);
-      
+
       if (response.success) {
-        toast.success('Modules configured successfully!');
-        
+        toast.success("Modules configured successfully!");
+
         // Update user data in localStorage with modules configured flag
-        const storedUser = JSON.parse(localStorage.getItem('corehive_user') || '{}');
+        const storedUser = JSON.parse(
+          localStorage.getItem("corehive_user") || "{}"
+        );
         storedUser.modulesConfigured = true;
         storedUser.moduleConfig = {
           ...storedUser.moduleConfig,
@@ -106,15 +114,17 @@ export const configureModules = createAsyncThunk(
           employeeFeedback: moduleConfig.moduleEmployeeFeedback,
           hiringManagement: moduleConfig.moduleHiringManagement
         };
-        localStorage.setItem('corehive_user', JSON.stringify(storedUser));
-        
+        localStorage.setItem("corehive_user", JSON.stringify(storedUser));
+
         return moduleConfig;
       } else {
         toast.error(response.message);
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Module configuration failed. Please try again.';
+      const message =
+        error.response?.data?.message ||
+        "Module configuration failed. Please try again.";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -122,54 +132,55 @@ export const configureModules = createAsyncThunk(
 );
 
 export const getCurrentUser = createAsyncThunk(
-  'auth/getCurrentUser',
+  "auth/getCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
       const response = await authApi.getCurrentUser();
-      
+
       if (response.success) {
         return response.data;
       } else {
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.response?.data?.message || 'Failed to get user details.';
+      const message =
+        error.response?.data?.message || "Failed to get user details.";
       return rejectWithValue(message);
     }
   }
 );
 
 export const initializeAuth = createAsyncThunk(
-  'auth/initializeAuth',
+  "auth/initializeAuth",
   async (_, { rejectWithValue }) => {
     try {
       const token = authApi.getStoredToken();
       const user = authApi.getStoredUser();
-      
+
       if (token && user) {
         const response = await authApi.getCurrentUser();
         if (response.success) {
           return { token, user: response.data };
         }
       }
-      
-      return rejectWithValue('No valid authentication found');
+
+      return rejectWithValue("No valid authentication found");
     } catch (error) {
       authApi.logoutUser();
-      return rejectWithValue('Invalid authentication');
+      return rejectWithValue("Invalid authentication");
     }
   }
 );
 
 // Auth Slice Definition
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     clearError: (state) => {
       state.error = null;
     },
-    
+
     logout: (state) => {
       state.user = null;
       state.token = null;
@@ -178,11 +189,19 @@ const authSlice = createSlice({
       state.availableModules = initialState.availableModules;
       authApi.logoutUser();
     },
-    
+
     updateUser: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('corehive_user', JSON.stringify(state.user));
+        localStorage.setItem("corehive_user", JSON.stringify(state.user));
+      }
+    },
+
+    updateSubscriptionStatus: (state, action) => {
+      if (state.user) {
+        state.user.requiresPayment = action.payload.requiresPayment;
+        state.user.hasActiveSubscription = action.payload.hasActiveSubscription;
+        state.user.subscriptionStatus = action.payload.subscriptionStatus;
       }
     },
     
@@ -204,7 +223,7 @@ const authSlice = createSlice({
         state.token = action.payload.token;
         state.user = action.payload.user;
         state.isAuthenticated = true;
-        
+
         if (action.payload.user.moduleConfig) {
           state.availableModules = {
             ...initialState.availableModules,
@@ -218,7 +237,7 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
       })
-      
+
       // Organization Signup
       .addCase(signupOrganization.pending, (state) => {
         state.isSignupLoading = true;
@@ -231,7 +250,7 @@ const authSlice = createSlice({
         state.isSignupLoading = false;
         state.error = action.payload;
       })
-      
+
       // User Login - UPDATED VERSION
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
@@ -239,10 +258,13 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        
+
         // Backend response structure: { success: true, data: LoginResponse }
         const loginData = action.payload; // This should be the LoginResponse object directly
         
+        console.log('🔍 [authSlice] Login data received:', loginData);
+        console.log('🔍 [authSlice] passwordChangeRequired:', loginData.passwordChangeRequired);
+
         state.token = loginData.token;
         state.user = {
           userId: loginData.userId,
@@ -252,18 +274,26 @@ const authSlice = createSlice({
           organizationUuid: loginData.organizationUuid,
           organizationName: loginData.organizationName,
           modulesConfigured: loginData.modulesConfigured,
-          moduleConfig: loginData.moduleConfig
+          moduleConfig: loginData.moduleConfig,
+          passwordChangeRequired: loginData.passwordChangeRequired,
+          requiresPayment: loginData.requiresPayment,
+          hasActiveSubscription: loginData.hasActiveSubscription
         };
         state.isAuthenticated = true;
         
+        console.log('🔍 [authSlice] User object stored in state:', state.user);
+
         // Store in localStorage immediately
         if (loginData.token) {
-          localStorage.setItem('corehive_token', loginData.token);
-          localStorage.setItem('corehive_user', JSON.stringify(state.user));
-          console.log('🔐 Token stored in localStorage:', loginData.token.substring(0, 20) + '...');
-          console.log('👤 User data stored:', state.user);
+          localStorage.setItem("corehive_token", loginData.token);
+          localStorage.setItem("corehive_user", JSON.stringify(state.user));
+          console.log(
+            "🔐 Token stored in localStorage:",
+            loginData.token.substring(0, 20) + "..."
+          );
+          console.log("👤 User data stored:", state.user);
         }
-        
+
         // Update available modules
         if (loginData.moduleConfig) {
           state.availableModules = {
@@ -277,7 +307,7 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
       })
-      
+
       // Configure Modules
       .addCase(configureModules.pending, (state) => {
         state.isModuleConfigLoading = true;
@@ -285,10 +315,10 @@ const authSlice = createSlice({
       })
       .addCase(configureModules.fulfilled, (state, action) => {
         state.isModuleConfigLoading = false;
-        
+
         if (state.user) {
           state.user.modulesConfigured = true;
-          
+
           state.availableModules = {
             ...state.availableModules,
             ...action.payload
@@ -299,7 +329,7 @@ const authSlice = createSlice({
         state.isModuleConfigLoading = false;
         state.error = action.payload;
       })
-      
+
       // Get Current User
       .addCase(getCurrentUser.pending, (state) => {
         state.isLoading = true;
@@ -307,7 +337,7 @@ const authSlice = createSlice({
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload;
-        
+
         if (action.payload.moduleConfig) {
           state.availableModules = {
             ...initialState.availableModules,
@@ -319,11 +349,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       });
-  },
+  }
 });
 
 // Export actions
-export const { clearError, logout, updateUser, resetLoadingStates } = authSlice.actions;
+export const { clearError, logout, updateUser, updateSubscriptionStatus, resetLoadingStates } = authSlice.actions;
 
 // Export selectors - ADD MISSING SELECTORS
 export const selectAuth = (state) => state.auth;
@@ -334,8 +364,12 @@ export const selectUserType = (state) => state.auth.user?.userType;
 export const selectAvailableModules = (state) => state.auth.availableModules;
 export const selectIsLoading = (state) => state.auth.isLoading;
 export const selectIsSignupLoading = (state) => state.auth.isSignupLoading; // MISSING
-export const selectIsModuleConfigLoading = (state) => state.auth.isModuleConfigLoading; // MISSING
+export const selectIsModuleConfigLoading = (state) =>
+  state.auth.isModuleConfigLoading; // MISSING
 export const selectError = (state) => state.auth.error;
+export const selectRequiresPayment = (state) => state.auth.user?.requiresPayment || false;
+export const selectHasActiveSubscription = (state) => state.auth.user?.hasActiveSubscription || false;
+
 
 // Export reducer
 export default authSlice.reducer;

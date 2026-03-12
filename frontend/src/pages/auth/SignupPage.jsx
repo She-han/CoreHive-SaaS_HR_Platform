@@ -2,6 +2,8 @@ import React, { useState, useEffect , useRef} from 'react';
 import ReCaptcha from '../../components/common/ReCaptcha';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { getAllBillingPlans } from '../../api/billingPlansApi';
+import { getActiveModules } from '../../api/extendedModulesApi';
 import { 
   Building2, 
   Mail, 
@@ -9,22 +11,23 @@ import {
   Users, 
   ArrowRight, 
   CheckCircle,
-  Info
+  Info,
+  Package
 } from 'lucide-react';
 
-import { 
-  signupOrganization, 
-  clearError, 
-  selectIsSignupLoading, 
-  selectError 
-} from '../../store/slices/authSlice';
+import {
+  signupOrganization,
+  clearError,
+  selectIsSignupLoading,
+  selectError
+} from "../../store/slices/authSlice";
 
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Card from '../../components/common/Card';
-import Alert from '../../components/common/Alert';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Card from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
 
 /**
  * Signup Page Component
@@ -33,79 +36,88 @@ import Footer from '../../components/layout/Footer';
 const SignupPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const isLoading = useSelector(selectIsSignupLoading);
   const error = useSelector(selectError);
 
   const recaptchaRef = useRef(null);
-const [recaptchaToken, setRecaptchaToken] = useState(null);
-const [recaptchaError, setRecaptchaError] = useState('');
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [recaptchaError, setRecaptchaError] = useState("");
 
-// Add these handlers:
-const handleRecaptchaChange = (token) => {
-  setRecaptchaToken(token);
-  setRecaptchaError('');
-};
+  // Add these handlers:
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+    setRecaptchaError("");
+  };
 
-const handleRecaptchaExpired = () => {
-  setRecaptchaToken(null);
-  setRecaptchaError('reCAPTCHA expired. Please verify again.');
-};
+  const handleRecaptchaExpired = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError("reCAPTCHA expired. Please verify again.");
+  };
 
-const handleRecaptchaError = () => {
-  setRecaptchaToken(null);
-  setRecaptchaError('reCAPTCHA error. Please try again.');
-};
-  
+  const handleRecaptchaError = () => {
+    setRecaptchaToken(null);
+    setRecaptchaError("reCAPTCHA error. Please try again.");
+  };
+
   // Form state
   const [formData, setFormData] = useState({
-    organizationName: '',
-    adminEmail: '',
-    businessRegistrationNumber: '',
+    organizationName: "",
+    adminEmail: "",
+    businessRegistrationNumber: "",
     businessRegistrationDocument: null,
     employeeCountRange: '',
-    modulePerformanceTracking: false,
-    moduleEmployeeFeedback: false,
-    moduleHiringManagement: false
+    selectedPlanId: null,
+    selectedPlanName: '',
+    selectedPlanPrice: 0,
+    customModules: [] // Array of module IDs for custom plan
   });
+  
+  // Plans and modules state
+  const [billingPlans, setBillingPlans] = useState([]);
+  const [extendedModules, setExtendedModules] = useState([]);
+  const [allModules, setAllModules] = useState([]); // All modules for mapping
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isLoadingModules, setIsLoadingModules] = useState(false);
   
   const [formErrors, setFormErrors] = useState({});
   const [currentStep, setCurrentStep] = useState(1);
   const [isSuccess, setIsSuccess] = useState(false);
-  
+
   // Employee count options
   const employeeCountOptions = [
-    { value: '1-10', label: '1-10 employees' },
-    { value: '11-50', label: '11-50 employees' },
-    { value: '51-200', label: '51-200 employees' },
-    { value: '201-500', label: '201-500 employees' },
-    { value: '500+', label: '500+ employees' }
+    { value: "1-10", label: "1-10 employees" },
+    { value: "11-50", label: "11-50 employees" },
+    { value: "51-200", label: "51-200 employees" },
+    { value: "201-500", label: "201-500 employees" },
+    { value: "500+", label: "500+ employees" }
   ];
-  
+
   // Module options
   const moduleOptions = [
     {
-      key: 'moduleQrAttendance',
-      name: 'QR Attendance Marking',
-      description: 'QR code based attendance tracking for employees'
+      key: "moduleQrAttendance",
+      name: "QR Attendance Marking",
+      description: "QR code based attendance tracking for employees"
     },
     {
-      key: 'moduleFaceRecognitionAttendance',
-      name: 'Face Recognition Attendance Marking',
-      description: 'Face recognition technology for accurate attendance tracking'
+      key: "moduleFaceRecognitionAttendance",
+      name: "Face Recognition Attendance Marking",
+      description:
+        "Face recognition technology for accurate attendance tracking"
     },
     {
-      key: 'moduleEmployeeFeedback',
-      name: 'Employee Feedback',
-      description: 'Surveys, sentiment analysis, and feedback management'
+      key: "moduleEmployeeFeedback",
+      name: "Employee Feedback",
+      description: "Surveys, sentiment analysis, and feedback management"
     },
     {
-      key: 'moduleHiringManagement',
-      name: 'Hiring Management',
-      description: 'Applicant tracking, interview scheduling, and recruitment'
+      key: "moduleHiringManagement",
+      name: "Hiring Management",
+      description: "Applicant tracking, interview scheduling, and recruitment"
     }
   ];
-  
+
   // Clear errors when component mounts
   useEffect(() => {
     dispatch(clearError());
@@ -114,104 +126,202 @@ const handleRecaptchaError = () => {
     };
   }, [dispatch]);
   
+  // Fetch billing plans when moving to step 2
+  useEffect(() => {
+    if (currentStep === 2 && billingPlans.length === 0) {
+      fetchBillingPlans();
+      fetchAllModules(); // Also fetch modules for display
+    }
+  }, [currentStep]);
+  
+  // Fetch extended modules when moving to step 3 (custom plan)
+  useEffect(() => {
+    if (currentStep === 3 && extendedModules.length === 0) {
+      fetchExtendedModules();
+    }
+  }, [currentStep]);
+  
+  // Fetch billing plans
+  const fetchBillingPlans = async () => {
+    setIsLoadingPlans(true);
+    try {
+      const response = await getAllBillingPlans();
+      setBillingPlans(response || []);
+    } catch (error) {
+      console.error('Error fetching billing plans:', error);
+      setFormErrors(prev => ({ ...prev, plans: 'Failed to load billing plans' }));
+    } finally {
+      setIsLoadingPlans(false);
+    }
+  };
+  
+  // Fetch extended modules
+  const fetchExtendedModules = async () => {
+    setIsLoadingModules(true);
+    try {
+      const response = await getActiveModules();
+      setExtendedModules(response.data || []);
+    } catch (error) {
+      console.error('Error fetching extended modules:', error);
+      setFormErrors(prev => ({ ...prev, modules: 'Failed to load modules' }));
+    } finally {
+      setIsLoadingModules(false);
+    }
+  };
+  
+  // Fetch all modules for plan display
+  const fetchAllModules = async () => {
+    try {
+      const response = await getActiveModules();
+      setAllModules(response.data || []);
+    } catch (error) {
+      console.error('Error fetching modules for plan display:', error);
+    }
+  };
+  
+  // Get module details by ID
+  const getModuleById = (moduleId) => {
+    return allModules.find(m => m.moduleId === moduleId || m.id === moduleId);
+  };
+  
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-  
-    if (type === 'file') {
-    const file = files[0];
-    
-    // Validate file
+
+    if (type === "file") {
+      const file = files[0];
+
+      // Validate file
       if (file) {
         // Check file size (2MB)
         if (file.size > 2 * 1024 * 1024) {
-          setFormErrors(prev => ({
+          setFormErrors((prev) => ({
             ...prev,
-            businessRegistrationDocument: 'File size must be less than 2MB'
+            businessRegistrationDocument: "File size must be less than 2MB"
           }));
           return;
         }
-        
+
         // Check file type
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        const allowedTypes = [
+          "application/pdf",
+          "image/jpeg",
+          "image/jpg",
+          "image/png"
+        ];
         if (!allowedTypes.includes(file.type)) {
-          setFormErrors(prev => ({
+          setFormErrors((prev) => ({
             ...prev,
-            businessRegistrationDocument: 'Only PDF, JPG, and PNG files are allowed'
+            businessRegistrationDocument:
+              "Only PDF, JPG, and PNG files are allowed"
           }));
           return;
         }
-        
+
         // Clear errors if validation passed
-        setFormErrors(prev => ({
+        setFormErrors((prev) => ({
           ...prev,
           businessRegistrationDocument: null
         }));
-        
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
           ...prev,
           [name]: file
         }));
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: type === "checkbox" ? checked : value
       }));
     }
-    
+
     // Clear field error
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
         [name]: null
       }));
     }
-};
-  
+  };
+
   // Validate step 1
- const validateStep1 = () => {
-  const errors = {};
-  
-  if (!formData.organizationName.trim()) {
-    errors.organizationName = 'Organization name is required';
-  }
-  
-  if (!formData.adminEmail.trim()) {
-    errors.adminEmail = 'Email is required';
-  } else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) {
-    errors.adminEmail = 'Email is invalid';
-  }
-  
-  if (!formData.businessRegistrationNumber.trim()) {
-    errors.businessRegistrationNumber = 'Business registration number is required';
-  }
-  
-  if (!formData.businessRegistrationDocument) {
-    errors.businessRegistrationDocument = 'Business registration document is required';
-  }
-  
-  if (!formData.employeeCountRange) {
-    errors.employeeCountRange = 'Please select employee count range';
-  }
-  
-  setFormErrors(errors);
-  return Object.keys(errors).length === 0;
-};
-  
+  const validateStep1 = () => {
+    const errors = {};
+
+    if (!formData.organizationName.trim()) {
+      errors.organizationName = "Organization name is required";
+    }
+
+    if (!formData.adminEmail.trim()) {
+      errors.adminEmail = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.adminEmail)) {
+      errors.adminEmail = "Email is invalid";
+    }
+
+    if (!formData.businessRegistrationNumber.trim()) {
+      errors.businessRegistrationNumber =
+        "Business registration number is required";
+    }
+
+    if (!formData.businessRegistrationDocument) {
+      errors.businessRegistrationDocument =
+        "Business registration document is required";
+    }
+
+    if (!formData.employeeCountRange) {
+      errors.employeeCountRange = "Please select employee count range";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Handle next step
-const handleNextStep = () => {
-  console.log('handleNextStep called');
-  console.log('Current step:', currentStep);
-  console.log('Form data:', formData);
+  const handleNextStep = () => {
+    if (currentStep === 1 && validateStep1()) {
+      setCurrentStep(2);
+    } else if (currentStep === 2) {
+      // Validate plan selection
+      if (!formData.selectedPlanId) {
+        setFormErrors(prev => ({ ...prev, plan: 'Please select a billing plan' }));
+        return;
+      }
+      
+      // If custom plan is selected, go to step 3
+      if (formData.selectedPlanName.toLowerCase() === 'custom') {
+        setCurrentStep(3);
+      } else {
+        // For non-custom plans, skip to submission (show recaptcha)
+        setCurrentStep(3);
+      }
+    }
+  };
   
-  if (currentStep === 1 && validateStep1()) {
-    console.log('Validation passed, moving to step 2');
-    setCurrentStep(2);
-  } else {
-    console.log('Validation failed');
-  }
-};
+  // Handle plan selection
+  const handlePlanSelect = (plan) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedPlanId: plan.id,
+      selectedPlanName: plan.name,
+      selectedPlanPrice: plan.price,
+      customModules: [] // Reset custom modules when changing plan
+    }));
+    setFormErrors(prev => ({ ...prev, plan: null }));
+  };
+  
+  // Handle module toggle for custom plan
+  const handleModuleToggle = (moduleId) => {
+    setFormData(prev => {
+      const isSelected = prev.customModules.includes(moduleId);
+      return {
+        ...prev,
+        customModules: isSelected
+          ? prev.customModules.filter(id => id !== moduleId)
+          : [...prev.customModules, moduleId]
+      };
+    });
+  };
 
   
   // Handle form submission
@@ -220,6 +330,12 @@ const handleSubmit = async (e) => {
   
   if (!recaptchaToken) {
     setRecaptchaError('Please complete the reCAPTCHA verification');
+    return;
+  }
+  
+  // Validate custom modules if custom plan
+  if (formData.selectedPlanName.toLowerCase() === 'custom' && formData.customModules.length === 0) {
+    setFormErrors(prev => ({ ...prev, modules: 'Please select at least one module for custom plan' }));
     return;
   }
   
@@ -235,9 +351,24 @@ const handleSubmit = async (e) => {
       signupFormData.append('businessRegistrationDocument', formData.businessRegistrationDocument);
     }
     
-    signupFormData.append('modulePerformanceTracking', formData.modulePerformanceTracking);
-    signupFormData.append('moduleEmployeeFeedback', formData.moduleEmployeeFeedback);
-    signupFormData.append('moduleHiringManagement', formData.moduleHiringManagement);
+    // Calculate total price for custom plan
+    let totalPrice = formData.selectedPlanPrice;
+    if (formData.selectedPlanName.toLowerCase() === 'custom') {
+      const modulesTotal = extendedModules
+        .filter(m => formData.customModules.includes(m.moduleId))
+        .reduce((sum, m) => sum + parseFloat(m.price), 0);
+      totalPrice = 319 + modulesTotal;
+    }
+    
+    // Add billing plan information
+    signupFormData.append('selectedPlanId', formData.selectedPlanId);
+    signupFormData.append('selectedPlanName', formData.selectedPlanName);
+    signupFormData.append('selectedPlanPrice', totalPrice);
+    
+    // Add custom modules if custom plan
+    if (formData.selectedPlanName.toLowerCase() === 'custom') {
+      signupFormData.append('customModules', JSON.stringify(formData.customModules));
+    }
     
     const resultAction = await dispatch(signupOrganization(signupFormData));
     
@@ -266,17 +397,15 @@ const handleSubmit = async (e) => {
                 Registration Successful!
               </h2>
               <p className="text-text-secondary">
-                Your organization has been registered successfully. 
-                Please wait for admin approval to start using CoreHive.
+                Your organization has been registered successfully. Please wait
+                for admin approval to start using CoreHive.
               </p>
             </div>
-            
+
             <div className="space-y-4">
-             
-              
               <Button
                 variant="primary"
-                onClick={() => navigate('/login')}
+                onClick={() => navigate("/login")}
                 className="w-full"
               >
                 Go to Login
@@ -287,16 +416,15 @@ const handleSubmit = async (e) => {
       </div>
     );
   }
-  
+
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <div className="min-h-screen bg-background-primary py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center items-center space-x-2 mb-6">
-              
               <span className="text-4xl font-bold text-text-primary">
                 Core<span className="text-primary-500">Hive</span>
               </span>
@@ -305,23 +433,24 @@ const handleSubmit = async (e) => {
               Register Your Organization
             </h1>
             <p className="text-text-secondary">
-              Join thousands of SMEs already using CoreHive for their HR management
+              Join thousands of SMEs already using CoreHive for their HR
+              management
             </p>
           </div>
-          
+
           {/* Progress indicator */}
           <div className="mb-8">
-            <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center justify-center space-x-2 md:space-x-4">
               <div className={`flex items-center ${currentStep >= 1 ? 'text-primary-500' : 'text-text-secondary'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                   currentStep >= 1 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
                 }`}>
                   1
                 </div>
-                <span className="ml-2 font-medium">Company Info</span>
+                <span className="ml-2 font-medium text-sm md:text-base">Company</span>
               </div>
               
-              <div className={`w-12 h-0.5 ${currentStep > 1 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+              <div className={`w-8 md:w-12 h-0.5 ${currentStep > 1 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
               
               <div className={`flex items-center ${currentStep >= 2 ? 'text-primary-500' : 'text-text-secondary'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
@@ -329,22 +458,33 @@ const handleSubmit = async (e) => {
                 }`}>
                   2
                 </div>
-                <span className="ml-2 font-medium">Features</span>
+                <span className="ml-2 font-medium text-sm md:text-base">Plan</span>
+              </div>
+              
+              <div className={`w-8 md:w-12 h-0.5 ${currentStep > 2 ? 'bg-primary-500' : 'bg-gray-300'}`}></div>
+              
+              <div className={`flex items-center ${currentStep >= 3 ? 'text-primary-500' : 'text-text-secondary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= 3 ? 'border-primary-500 bg-primary-500 text-white' : 'border-gray-300'
+                }`}>
+                  3
+                </div>
+                <span className="ml-2 font-medium text-sm md:text-base">Confirm</span>
               </div>
             </div>
           </div>
-          
+
           <Card className="animate-slide-up bg-white shadow-md">
             {/* API Error Alert */}
             {error && (
-              <Alert 
-                type="error" 
-                message={error} 
+              <Alert
+                type="error"
+                message={error}
                 onClose={() => dispatch(clearError())}
                 className="mb-6"
               />
             )}
-            
+
             <form onSubmit={handleSubmit}>
               {/* Step 1: Company Information */}
               {currentStep === 1 && (
@@ -357,7 +497,7 @@ const handleSubmit = async (e) => {
                       Tell us about your organization
                     </p>
                   </div>
-                  
+
                   {/* Organization name */}
                   <Input
                     label="Organization Name"
@@ -371,7 +511,7 @@ const handleSubmit = async (e) => {
                     required
                     disabled={isLoading}
                   />
-                  
+
                   {/* Admin email */}
                   <Input
                     label="Admin Email Address"
@@ -385,7 +525,7 @@ const handleSubmit = async (e) => {
                     required
                     disabled={isLoading}
                   />
-                  
+
                   {/* Business registration number */}
                   <Input
                     label="Business Registration Number"
@@ -412,26 +552,35 @@ const handleSubmit = async (e) => {
                       onChange={handleInputChange}
                       accept=".pdf,.jpg,.jpeg,.png"
                       className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-light focus:border-primary transition ${
-                        formErrors.businessRegistrationDocument ? 'border-red-500' : 'border-gray-300'
+                        formErrors.businessRegistrationDocument
+                          ? "border-red-500"
+                          : "border-gray-300"
                       }`}
                     />
                     {formData.businessRegistrationDocument && (
                       <p className="mt-1 text-sm text-green-600">
-                        ✓ {formData.businessRegistrationDocument.name} ({(formData.businessRegistrationDocument.size / 1024).toFixed(2)} KB)
+                        ✓ {formData.businessRegistrationDocument.name} (
+                        {(
+                          formData.businessRegistrationDocument.size / 1024
+                        ).toFixed(2)}{" "}
+                        KB)
                       </p>
                     )}
                     {formErrors.businessRegistrationDocument && (
-                      <p className="mt-1 text-sm text-red-600">{formErrors.businessRegistrationDocument}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {formErrors.businessRegistrationDocument}
+                      </p>
                     )}
                     <p className="mt-1 text-xs text-gray-500">
                       Accepted formats: PDF, JPG, PNG (Max 2MB)
                     </p>
                   </div>
-                  
+
                   {/* Employee count range */}
                   <div className="space-y-1">
                     <label className="block text-sm font-medium text-text-primary">
-                      Number of Employees <span className="text-red-500">*</span>
+                      Number of Employees{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -440,12 +589,14 @@ const handleSubmit = async (e) => {
                         value={formData.employeeCountRange}
                         onChange={handleInputChange}
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 ${
-                          formErrors.employeeCountRange ? 'border-red-300' : 'border-gray-300'
+                          formErrors.employeeCountRange
+                            ? "border-red-300"
+                            : "border-gray-300"
                         }`}
                         disabled={isLoading}
                       >
                         <option value="">Select employee count range</option>
-                        {employeeCountOptions.map(option => (
+                        {employeeCountOptions.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -459,7 +610,7 @@ const handleSubmit = async (e) => {
                       </p>
                     )}
                   </div>
-                  
+
                   {/* Next button */}
                   <div className="flex justify-end space-x-3">
                     <Button
@@ -476,53 +627,312 @@ const handleSubmit = async (e) => {
                 </div>
               )}
               
-              {/* Step 2: Module Selection */}
+              {/* Step 2: Billing Plan Selection */}
               {currentStep === 2 && (
                 <div className="space-y-6">
-                  <div className="text-center mb-6">
+                  <div className="text-center mb-6 max-w-5xl">
                     <h2 className="text-xl font-semibold text-text-primary mb-2">
-                      Choose Your Features
+                      Choose Your Plan
                     </h2>
                     <p className="text-text-secondary">
-                      Select additional modules for your organization (optional)
+                      Select a billing plan that fits your organization
                     </p>
                   </div>
                   
-                  {/* Module selection */}
-                  <div className="space-y-4">
-                    <div 
-                      type="info"
-                      title="Basic Features Included"
-                      message="Employee Management, Payroll, Leave Management, Attendance Tracking, and Reports are included in all plans."
-                    />
-                    
-                    {moduleOptions.map((module) => (
-                      <div 
-                        key={module.key}
-                        className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors duration-200"
-                      >
-                        <label className="flex items-start space-x-3 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            name={module.key}
-                            checked={formData[module.key]}
-                            onChange={handleInputChange}
-                            className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
-                            disabled={isLoading}
-                          />
-                          <div>
-                            <h3 className="font-medium text-text-primary">
-                              {module.name}
-                            </h3>
-                            <p className="text-sm text-text-secondary mt-1">
-                              {module.description}
-                            </p>
+                  {/* Loading state */}
+                  {isLoadingPlans ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+                      <p className="mt-4 text-text-secondary">Loading plans...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Plans grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {billingPlans.map((plan) => (
+                          <div
+                            key={plan.id}
+                            onClick={() => handlePlanSelect(plan)}
+                            className={`relative border-2 rounded-xl p-6 cursor-pointer transition-all duration-200 ${
+                              formData.selectedPlanId === plan.id
+                                ? 'border-primary-500 bg-primary-50 shadow-lg'
+                                : 'border-gray-200 hover:border-primary-300 hover:shadow-md'
+                            } ${
+                              plan.popular ? 'ring-2 ring-primary-500' : ''
+                            }`}
+                          >
+                            {/* Popular badge */}
+                            {plan.popular && (
+                              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                                <span className="bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                                  Most Popular
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Selected indicator */}
+                            {formData.selectedPlanId === plan.id && (
+                              <div className="absolute top-4 right-4">
+                                <CheckCircle className="w-6 h-6 text-primary-500" />
+                              </div>
+                            )}
+                            
+                            {/* Plan header */}
+                            <div className="text-center mb-4">
+                              <h3 className="text-xl font-bold text-text-primary mb-2">
+                                {plan.name}
+                              </h3>
+                              <p className="text-sm text-text-secondary mb-4">
+                                {plan.description}
+                              </p>
+                              <div className="flex items-baseline justify-center gap-1">
+                                <span className="text-3xl font-bold text-text-primary">
+                                  LKR {plan.price}
+                                </span>
+                               
+                              </div>
+                              <p className="text-sm text-text-secondary mt-2">
+                                {plan.period}
+                              </p>
+                            </div>
+                            
+                            {/* Features list */}
+                            <div className="space-y-2 mb-4 border-t border-gray-200 pt-4 mt-4">
+                              <h4 className="text-sm font-semibold text-text-primary mb-2 flex items-center gap-1">
+                                
+                                Basic Features
+                              </h4>
+                              {plan.features.map((feature, idx) => (
+                                <div key={idx} className="flex items-start gap-2">
+                                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                                  <span className="text-sm text-text-primary">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Extended Modules list */}
+                            {plan.moduleIds && plan.moduleIds.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <h4 className="text-sm font-semibold text-text-primary mb-3 flex items-center gap-1">
+                                  
+                                  Extended Features ({plan.moduleIds.length})
+                                </h4>
+                                <div className="space-y-2.5">
+                                  {plan.moduleIds.map((moduleId, idx) => {
+                                    const module = getModuleById(moduleId);
+                                    return module ? (
+                                      <div key={idx} className="flex gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                                        
+                                          <span className="text-sm text-text-primary">{module.name}</span>
+                                        
+                                       
+                                      </div>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </label>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      
+                      {formErrors.plan && (
+                        <p className="text-sm text-red-600 text-center">
+                          {formErrors.plan}
+                        </p>
+                      )}
+                    </>
+                  )}
                   
+                  {/* Action buttons */}
+                  <div className="flex justify-between space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setCurrentStep(1)}
+                      disabled={isLoading || isLoadingPlans}
+                    >
+                      Back
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={handleNextStep}
+                      disabled={isLoading || isLoadingPlans || !formData.selectedPlanId}
+                      icon={ArrowRight}
+                      iconPosition="right"
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Step 3: Custom Modules or Confirmation */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  {formData.selectedPlanName.toLowerCase() === 'custom' ? (
+                    <>
+                      {/* Custom Module Selection */}
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-text-primary mb-2">
+                          Customize Your Modules
+                        </h2>
+                        <p className="text-text-secondary">
+                          Select the modules you need for your custom plan
+                        </p>
+                      </div>
+                      
+                      {/* Loading state */}
+                      {isLoadingModules ? (
+                        <div className="text-center py-8">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
+                          <p className="mt-4 text-text-secondary">Loading modules...</p>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Modules grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {extendedModules.map((module) => (
+                              <div
+                                key={module.moduleId}
+                                onClick={() => handleModuleToggle(module.moduleId)}
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 ${
+                                  formData.customModules.includes(module.moduleId)
+                                    ? 'border-primary-500 bg-primary-50'
+                                    : 'border-gray-200 hover:border-primary-300'
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.customModules.includes(module.moduleId)}
+                                    onChange={() => handleModuleToggle(module.moduleId)}
+                                    className="mt-1 w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h3 className="font-semibold text-text-primary">
+                                        {module.name}
+                                      </h3>
+                                      <span className="text-sm font-bold text-primary-500">
+                                        LKR {module.price}/mo
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-text-secondary">
+                                      {module.description}
+                                    </p>
+                                    {module.category && (
+                                      <span className="inline-block mt-2 text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">
+                                        {module.category}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Total price */}
+                          {formData.customModules.length > 0 && (
+                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-text-primary font-medium">
+                                  Fixed cost for basic modules:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  319.00 LKR                            
+                                </span>
+
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-text-primary font-medium">
+                                  Cost for selected modules:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  {extendedModules
+                                    .filter(m => formData.customModules.includes(m.moduleId))
+                                    .reduce((sum, m) => sum + parseFloat(m.price), 0)
+                                    .toFixed(2)}
+                                    <t/> LKR
+                                </span>
+
+                              </div>
+                              <p className="text-sm text-text-secondary ">
+                                {formData.customModules.length} module(s) selected
+                              </p>
+                              <div className="flex items-center justify-between mt-3">
+                                <span className="text-text-primary font-medium">
+                                  Total price for one active user/month:
+                                </span>
+                                <span className="text-2xl font-bold text-primary-500">
+                                  {(() => {
+                                    const modulesTotal = extendedModules
+                                      .filter(m => formData.customModules.includes(m.moduleId))
+                                      .reduce((sum, m) => sum + parseFloat(m.price), 0);
+                                    return (319 + modulesTotal).toFixed(2);
+                                  })()}
+                                  {' '}LKR
+                                </span>
+
+                              </div>
+                            </div>
+                          )}
+                          
+                          {formErrors.modules && (
+                            <p className="text-sm text-red-600 text-center">
+                              {formErrors.modules}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Confirmation step for non-custom plans */}
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-text-primary mb-2">
+                          Confirm Your Registration
+                        </h2>
+                        <p className="text-text-secondary">
+                          Review your details and complete the registration
+                        </p>
+                      </div>
+                      
+                      {/* Summary */}
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 space-y-4">
+                        <div>
+                          <p className="text-sm text-text-secondary">Organization</p>
+                          <p className="font-semibold text-text-primary">{formData.organizationName}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Admin Email</p>
+                          <p className="font-semibold text-text-primary">{formData.adminEmail}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Employee Count</p>
+                          <p className="font-semibold text-text-primary">{formData.employeeCountRange}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-text-secondary">Selected Plan</p>
+                          <p className="font-semibold text-primary-500">{formData.selectedPlanName}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <span className="text-text-primary font-medium">
+                            Total price for one active user/month:
+                          </span>
+                          <span className="text-2xl font-bold text-primary-500">
+                              {formData.selectedPlanPrice} LKR
+                          </span>
+
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* reCAPTCHA */}
                   <ReCaptcha
                     ref={recaptchaRef}
                     onChange={handleRecaptchaChange}
@@ -536,40 +946,38 @@ const handleSubmit = async (e) => {
                     </div>
                   )}
 
-                  {isLoading || !recaptchaToken}
-
                   {/* Action buttons */}
                   <div className="flex justify-between space-x-3">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setCurrentStep(1)}
+                      onClick={() => setCurrentStep(2)}
                       disabled={isLoading}
                     >
                       Back
                     </Button>
-                    
+
                     <Button
                       type="submit"
                       variant="primary"
                       loading={isLoading}
-                      disabled={isLoading}
+                      disabled={isLoading || !recaptchaToken}
                       icon={ArrowRight}
                       iconPosition="right"
                     >
-                      {isLoading ? 'Registering...' : 'Complete Registration'}
+                      {isLoading ? "Registering..." : "Complete Registration"}
                     </Button>
                   </div>
                 </div>
               )}
             </form>
           </Card>
-          
+
           {/* Login link */}
           <div className="text-center mt-6 ">
             <p className="text-text-secondary">
-              Already have an account?{' '}
-              <Link 
+              Already have an account?{" "}
+              <Link
                 to="/login"
                 className="text-primary-500 hover:text-primary-600 font-medium transition-colors duration-200"
               >
@@ -579,7 +987,7 @@ const handleSubmit = async (e) => {
           </div>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </>
   );
 };

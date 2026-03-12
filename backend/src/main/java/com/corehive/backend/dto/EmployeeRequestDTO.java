@@ -6,16 +6,14 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * DTO for creating and updating employee
  */
+
 @Data
 public class EmployeeRequestDTO {
-
-    @JsonProperty("employeeCode")
-    @Size(max = 50, message = "Employee code must not exceed 50 characters")
-    private String employeeCode;
 
     @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name must not exceed 100 characters")
@@ -34,15 +32,18 @@ public class EmployeeRequestDTO {
     private String email;
 
     @NotBlank(message = "Phone number is required")
-    @Size(max = 50, message = "Phone number must not exceed 50 characters")
+    @Size(max = 10, message = "Phone number must not exceed 10 characters")
     @JsonProperty("phone")
     private String phone;
 
-
     @NotBlank(message = "National ID is required")
-    @Size(max = 50, message = "National ID must not exceed 50 characters")
+    @Size(max = 12, message = "National ID must not exceed 12 characters")
     @JsonProperty("nationalId")
     private String nationalId;
+
+    @Size(max = 50, message = "Bank account number must not exceed 50 characters")
+    @JsonProperty("bankAccNo")
+    private String bankAccNo;
 
     @NotBlank(message = "Designation is required")
     @Size(max = 100, message = "Designation must not exceed 100 characters")
@@ -64,10 +65,7 @@ public class EmployeeRequestDTO {
     @JsonProperty("salaryType")
     private String salaryType;
 
-    @NotNull(message = "Leave count is required")
-    @Min(value = 0, message = "Leave count must be at least 0")
-    @JsonProperty("leaveCount")
-    private Integer leaveCount;
+   
 
     @NotNull(message = "Date of joining is required")
     @JsonProperty("dateOfJoining")
@@ -77,4 +75,8 @@ public class EmployeeRequestDTO {
     @Pattern(regexp = "Active|NonActive", message = "Status must be Active or NonActive")
     @JsonProperty("status")
     private String status;
+
+    @JsonProperty("leaveBalances")
+    private List<EmployeeLeaveBalanceDTO> leaveBalances;
+
 }

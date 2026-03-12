@@ -1,54 +1,76 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate , useParams} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { getSingleJobPosting } from "../../../api/hiringService";
+import { getAllDepartments } from "../../../api/departmentApi";
+import { updateJobPosting } from "../../../api/hiringService";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../../store/slices/authSlice";
 
 export default function EditeJobPosting() {
   const navigate = useNavigate();
   const { id } = useParams();
 
-  const[jobPosting, setJobPosting] = useState(null);
+  const [jobPosting, setJobPosting] = useState(null);
   const [departments, setDepartments] = useState([]);
+
+  const user = useSelector(selectUser); // get token from Redux
+  const token = user?.token;
 
   const [form, setForm] = useState({
     title: "",
+    contactEmail: "",
     department: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
     postedDate: "",
     closingDate: "",
     availableVacancies: 1,
-    description: "",
+    description: ""
   });
 
-   // Load job posting data
+  // Load job posting data
   useEffect(() => {
-    axios
-      .get(`http://localhost:8080/api/job-postings/${id}`)
-      .then((res) => {
-        setJobPosting(res.data);
+    getSingleJobPosting(id, token)
+      .then((data) => {
+        setJobPosting(data);
 
         setForm({
-            title: res.data.title,
-            department: res.data.department,
-            employmentType: res.data.employmentType,
-            status: res.data.status,
-            postedDate: res.data.postedDate,
-            closingDate: res.data.closingDate,
-            availableVacancies: res.data.availableVacancies,
-            description: res.data.description,
+          title: data.title || "",
+          contactEmail: data.contactEmail || "",
+          department: String(data.department || ""),
+          employmentType: data.employmentType || "FULL_TIME",
+          status: data.status || "OPEN",
+          postedDate: data.postedDate || "",
+          closingDate: data.closingDate || "",
+          availableVacancies: data.availableVacancies || 1,
+          description: data.description || ""
         });
       })
       .catch(console.error);
-  }, [id]);
+  }, [id, token]);
 
-    useEffect(() => {
-  axios.get("http://localhost:8080/api/departments")
-    .then(res => setDepartments(res.data))
-    .catch(err => console.error("Error loading departments", err));
-}, []);
+  // Load departments for the dropdown
+  useEffect(() => {
+    if (token) {
+      getAllDepartments(token)
+        .then((res) => {
+          console.log("Departments API response:", res);
+          setDepartments(res.data?.data || res.data || []);
+        })
+        .catch((err) => {
+          console.error("Failed to load departments", err);
+          setDepartments([]);
+        });
+    }
+  }, [token]);
 
+  // Simple email validation
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
 
   const [avatarFile, setAvatarFile] = useState(null);
 
@@ -63,90 +85,121 @@ export default function EditeJobPosting() {
     setAvatarFile(file || null);
   }
 
-
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
 
-  // Validate required fields using SweetAlert
-  if (!form.title.trim()) {
-    Swal.fire("Required!", "Job title is required.", "warning");
-    return;
+    // Validate required fields using SweetAlert
+    if (!form.title.trim()) {
+      Swal.fire("Required!", "Job title is required.", "warning");
+      return;
+    }
+    if (!form.department) {
+      Swal.fire("Required!", "Please select a department.", "warning");
+      return;
+    }
+    if (!form.employmentType) {
+      Swal.fire("Required!", "Please select an employment type.", "warning");
+      return;
+    }
+    if (!form.postedDate) {
+      Swal.fire("Required!", "Posted date is required.", "warning");
+      return;
+    }
+    if (!form.closingDate) {
+      Swal.fire("Required!", "Closing date is required.", "warning");
+      return;
+    }
+    if (!form.status) {
+      Swal.fire("Required!", "Please select a status.", "warning");
+      return;
+    }
+    if (!form.availableVacancies || form.availableVacancies < 1) {
+      Swal.fire(
+        "Required!",
+        "Available vacancies must be at least 1.",
+        "warning"
+      );
+      return;
+    }
+    if (!form.description.trim()) {
+      Swal.fire("Required!", "Job description is required.", "warning");
+      return;
+    }
+
+    if (!form.contactEmail.trim()) {
+      Swal.fire("Required!", "Contact email is required.", "warning");
+      return;
+    }
+
+    if (!isValidEmail(form.contactEmail)) {
+      Swal.fire(
+        "Invalid Email!",
+        "Please enter a valid email address.",
+        "warning"
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Build FormData if there is a file, otherwise send JSON
+      let payload;
+      if (avatarFile) {
+        payload = new FormData();
+        payload.append("title", form.title);
+        payload.append("contactEmail", form.contactEmail.toLowerCase());
+        payload.append("departmentId", form.department); // ✅ FIX
+        payload.append("employmentType", form.employmentType);
+        payload.append("status", form.status);
+        payload.append("postedDate", form.postedDate);
+        payload.append("closingDate", form.closingDate);
+        payload.append("availableVacancies", form.availableVacancies);
+        payload.append("description", form.description);
+        payload.append("avatar", avatarFile);
+      } else {
+        payload = {
+          title: form.title,
+          contactEmail: form.contactEmail.toLowerCase(),
+          departmentId: form.department,
+          employmentType: form.employmentType,
+          status: form.status,
+          postedDate: form.postedDate,
+          closingDate: form.closingDate,
+          availableVacancies: form.availableVacancies,
+          description: form.description
+        };
+      }
+
+      const response = await updateJobPosting(id, payload, token);
+
+      Swal.fire({
+        title: "Success!",
+        text: "Job posting updated successfully",
+        icon: "success",
+        confirmButtonColor: "#02C39A"
+      }).then(() => {
+        navigate("/hr_staff/HiringManagement");
+      });
+
+      console.log("Saved:", response.data);
+    } catch (error) {
+      console.error("Error creating job posting:", error);
+
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update job posting",
+        icon: "error",
+        confirmButtonColor: "#d33"
+      });
+    } finally {
+      setLoading(false);
+    }
   }
-  if (!form.department) {
-    Swal.fire("Required!", "Please select a department.", "warning");
-    return;
-  }
-  if (!form.employmentType) {
-    Swal.fire("Required!", "Please select an employment type.", "warning");
-    return;
-  }
-  if (!form.postedDate) {
-    Swal.fire("Required!", "Posted date is required.", "warning");
-    return;
-  }
-  if (!form.closingDate) {
-    Swal.fire("Required!", "Closing date is required.", "warning");
-    return;
-  }
-  if (!form.status) {
-    Swal.fire("Required!", "Please select a status.", "warning");
-    return;
-  }
-  if (!form.availableVacancies || form.availableVacancies < 1) {
-    Swal.fire("Required!", "Available vacancies must be at least 1.", "warning");
-    return;
-  }
-  if (!form.description.trim()) {
-    Swal.fire("Required!", "Job description is required.", "warning");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (avatarFile) payload.append("avatar", avatarFile);
-
-    const response = await axios.put(
-      `http://localhost:8080/api/job-postings/${id}`,
-      payload,
-      { headers: { "Content-Type": "application/json"  } }
-    );
-
-    Swal.fire({
-      title: "Success!",
-      text: "Job posting updated successfully",
-      icon: "success",
-      confirmButtonColor: "#02C39A",
-    }).then(() => {
-      navigate("/hr_staff/HiringManagement");
-    });
-
-    console.log("Saved:", response.data);
-
-  } catch (error) {
-    console.error("Error creating job posting:", error);
-
-    Swal.fire({
-      title: "Error!",
-      text: "Failed to update job posting",
-      icon: "error",
-      confirmButtonColor: "#d33",
-    });
-
-  } finally {
-    setLoading(false);
-  }
-}
-
-
-   
 
   return (
-     <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
-        
         {/* HEADER */}
         <div className="px-8 py-8 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#0C397A]">
@@ -158,18 +211,18 @@ export default function EditeJobPosting() {
         </div>
 
         {/* FORM BODY */}
-       <form
-        onSubmit={handleSubmit}
-        className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
-        style={{ maxHeight: "70vh" }}
+        <form
+          onSubmit={handleSubmit}
+          className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-y-auto"
+          style={{ maxHeight: "70vh" }}
         >
-
-
           {/* LEFT SIDE */}
           <div className="space-y-6">
             {/* Job Title */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Title</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Title
+              </label>
               <input
                 name="title"
                 value={form.title}
@@ -179,10 +232,28 @@ export default function EditeJobPosting() {
               />
             </div>
 
+            {/* Contact Email */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Contact Email
+              </label>
+              <input
+                type="email"
+                name="contactEmail"
+                value={form.contactEmail}
+                onChange={handleInput}
+                placeholder="hr@company.com"
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg 
+                          focus:ring-2 focus:ring-[#02C39A]"
+                required
+              />
+            </div>
 
             {/* Department */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Department</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Department
+              </label>
               <select
                 name="department"
                 value={form.department}
@@ -190,17 +261,20 @@ export default function EditeJobPosting() {
                 className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
               >
                 <option value="">Select department</option>
-                {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                    </option>
-                    ))}
+
+                {departments.map((dep) => (
+                  <option key={dep.id} value={dep.id}>
+                    {dep.name}
+                  </option>
+                ))}
               </select>
             </div>
 
             {/* Employment Type */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Employment Type</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Employment Type
+              </label>
               <select
                 name="employmentType"
                 value={form.employmentType}
@@ -216,7 +290,9 @@ export default function EditeJobPosting() {
 
             {/* Posted Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Posted Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Posted Date
+              </label>
               <input
                 type="date"
                 name="postedDate"
@@ -226,9 +302,11 @@ export default function EditeJobPosting() {
               />
             </div>
 
-             {/* Closing Date */}
+            {/* Closing Date */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Closing Date</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Closing Date
+              </label>
               <input
                 type="date"
                 name="closingDate"
@@ -240,7 +318,9 @@ export default function EditeJobPosting() {
 
             {/* Status */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Status</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Status
+              </label>
               <select
                 name="status"
                 value={form.status}
@@ -258,7 +338,9 @@ export default function EditeJobPosting() {
           <div className="space-y-6">
             {/* Vacancies */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Available Vacancies</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Available Vacancies
+              </label>
               <input
                 type="number"
                 name="availableVacancies"
@@ -271,7 +353,9 @@ export default function EditeJobPosting() {
 
             {/* Job Description */}
             <div>
-              <label className="text-sm font-medium text-[#333333]">Job Description</label>
+              <label className="text-sm font-medium text-[#333333]">
+                Job Description
+              </label>
               <textarea
                 name="description"
                 rows="6"
@@ -282,8 +366,7 @@ export default function EditeJobPosting() {
               />
             </div>
 
-
-            {/* Avatar Upload */}
+            {/* Avatar Upload
             <div>
               <label className="text-sm font-medium text-[#333333]">Job Avatar</label>
               <input
@@ -292,7 +375,7 @@ export default function EditeJobPosting() {
                 onChange={handleFileChange}
                 className="mt-2 w-full text-sm text-[#9B9B9B]"
               />
-            </div>
+            </div> */}
           </div>
 
           {/* ACTION BUTTONS */}

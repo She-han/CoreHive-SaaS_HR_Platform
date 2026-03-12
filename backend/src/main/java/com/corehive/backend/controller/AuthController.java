@@ -107,10 +107,18 @@ public class AuthController {
     @PostMapping("/change-password")
     public ResponseEntity<ApiResponse<String>> changePassword(
             @RequestBody ChangePasswordRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            HttpServletRequest httpRequest) {
 
-        // Note: You need to extract userId from token or pass it in request
-        // For simplicity assuming request has userId or logic handles it.
+        // Get user email from JWT token (set by JwtRequestFilter)
+        String userEmail = (String) httpRequest.getAttribute("userEmail");
+        
+        log.info("Change password request from: {} with userId: {}", userEmail, request.getUserId());
+
+        // If userId is null, try to find user by email from JWT token
+        if (request.getUserId() == null && userEmail != null) {
+            log.info("UserId is null, attempting to find user by email: {}", userEmail);
+            return ResponseEntity.ok(authService.changePasswordByEmail(userEmail, request.getNewPassword()));
+        }
 
         return ResponseEntity.ok(authService.changePassword(request.getUserId(), request.getNewPassword()));
     }
@@ -218,7 +226,7 @@ public class AuthController {
 
         // No server-side action needed for JWT stateless
         // Just tell frontend to clear token
-        ApiResponse<String> response = ApiResponse.success("Logout successful. Please clear your token.", null);
+        ApiResponse<String> response = ApiResponse.success(null, "Logout successful. Please clear your token.");
         return ResponseEntity.ok(response);
     }
 

@@ -7,20 +7,18 @@ import com.corehive.backend.dto.request.OrganizationSignupRequest;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.LoginResponse;
 import com.corehive.backend.model.*;
-import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.OrganizationRepository;
-import com.corehive.backend.repository.SystemUserRepository;
+import com.corehive.backend.repository.*;
 import com.corehive.backend.util.JwtUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.time.LocalDateTime;
 
 /**
  * Authentication Service
@@ -39,6 +37,11 @@ public class AuthService {
     private final JwtUtil jwtUtil; // For JWT operations
     private final EmailService emailService;
     private final FileStorageService fileStorageService;
+    private final ExtendedModuleRepository extendedModuleRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final BillingPlanRepository billingPlanRepository;
+    private final ObjectMapper objectMapper;
+    private final SubscriptionRepository subscriptionRepository;
 
     /**
      * Organization Registration (Company Signup)
@@ -84,6 +87,9 @@ public class AuthService {
                     .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
                     .status(OrganizationStatus.PENDING_APPROVAL)
+                    .billingPlan(request.getSelectedPlanName()) // Store selected plan
+                    .billingPricePerUserPerMonth(request.getSelectedPlanPrice() != null ? 
+                        java.math.BigDecimal.valueOf(request.getSelectedPlanPrice()) : null)
                     .moduleQrAttendanceMarking(request.getModuleQrAttendanceMarking())
                     .moduleFaceRecognitionAttendanceMarking(request.getModuleFaceRecognitionAttendanceMarking())
                     .moduleEmployeeFeedback(request.getModuleEmployeeFeedback())
@@ -93,6 +99,86 @@ public class AuthService {
 
             organizationRepository.save(organization);
 
+            // Handle extended modules - either from selected billing plan or custom plan
+            List<Long> moduleIdsToAssign = new ArrayList<>();
+            
+            // Priority 1: Check if user selected custom modules (Custom Plan flow)
+            if (request.getCustomModules() != null && !request.getCustomModules().isEmpty()) {
+                try {
+                    log.info("Processing custom modules: {}", request.getCustomModules());
+                    
+                    // Parse the customModules JSON string to List<Long>
+                    moduleIdsToAssign = objectMapper.readValue(
+                        request.getCustomModules(), 
+                        new TypeReference<List<Long>>(){}
+                    );
+                    
+                    log.info("Parsed custom module IDs: {}", moduleIdsToAssign);
+                } catch (Exception e) {
+                    log.error("Error parsing custom modules", e);
+                }
+            }
+            // Priority 2: If no custom modules, check if a billing plan was selected
+            else if (request.getSelectedPlanId() != null) {
+                try {
+                    log.info("Fetching modules from billing plan ID: {}", request.getSelectedPlanId());
+                    
+                    Optional<BillingPlan> planOpt = billingPlanRepository.findById(request.getSelectedPlanId());
+                    if (planOpt.isPresent()) {
+                        BillingPlan plan = planOpt.get();
+                        if (plan.getModuleIds() != null && !plan.getModuleIds().isEmpty()) {
+                            moduleIdsToAssign = new ArrayList<>(plan.getModuleIds());
+                            log.info("Found {} modules in billing plan '{}': {}", 
+                                    moduleIdsToAssign.size(), plan.getName(), moduleIdsToAssign);
+                        } else {
+                            log.info("Billing plan '{}' has no extended modules", plan.getName());
+                        }
+                    } else {
+                        log.warn("Billing plan with ID {} not found", request.getSelectedPlanId());
+                    }
+                } catch (Exception e) {
+                    log.error("Error fetching billing plan modules", e);
+                }
+            }
+            
+            // Assign modules to organization if any were found
+            if (!moduleIdsToAssign.isEmpty()) {
+                try {
+                    log.info("Assigning {} modules to organization {}", moduleIdsToAssign.size(), organization.getName());
+                    
+                    for (Long moduleId : moduleIdsToAssign) {
+                        Optional<ExtendedModule> moduleOpt = extendedModuleRepository.findById(moduleId);
+                        
+                        if (moduleOpt.isPresent()) {
+                            ExtendedModule module = moduleOpt.get();
+                            
+                            OrganizationModule orgModule = OrganizationModule.builder()
+                                    .organization(organization)
+                                    .extendedModule(module)
+                                    .isEnabled(true)
+                                    .subscribedAt(LocalDateTime.now())
+                                    .build();
+                            
+                            organizationModuleRepository.save(orgModule);
+                            log.info("Added module '{}' to organization '{}'", module.getName(), organization.getName());
+                        } else {
+                            log.warn("Module with ID {} not found", moduleId);
+                        }
+                    }
+                    
+                    // Mark modules as configured
+                    organization.setModulesConfigured(true);
+                    organizationRepository.save(organization);
+                    log.info("Organization modules configured successfully");
+                    
+                } catch (Exception e) {
+                    log.error("Error assigning modules to organization", e);
+                    // Continue with registration even if module assignment fails
+                }
+            } else {
+                log.info("No extended modules to assign for organization {}", organization.getName());
+            }
+
             // Create ORG_ADMIN user
             String tempPassword = generateTemporaryPassword();
             AppUser orgAdmin = AppUser.builder()
@@ -101,6 +187,7 @@ public class AuthService {
                     .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.ORG_ADMIN)
                     .isActive(false) // Inactive until sys_admin approval
+                    .isPasswordChangeRequired(true)
                     .build();
 
             appUserRepository.save(orgAdmin);
@@ -112,7 +199,7 @@ public class AuthService {
             );
 
             log.info("Organization signup successful: {} (UUID: {})", request.getOrganizationName(), organizationUuid);
-            return ApiResponse.success("Organization registered successfully. Please wait for admin approval.", null);
+            return ApiResponse.success(null, "Organization registered successfully. Please wait for admin approval.");
 
         } catch (Exception e) {
             log.error("Organization signup failed", e);
@@ -125,31 +212,137 @@ public class AuthService {
      * @param request Email + Password
      * @return JWT token with user details or error message
      */
+
+    @Transactional
     public ApiResponse<LoginResponse> login(LoginRequest request) {
         try {
-            log.info("Login attempt for email: {}", request.getEmail());
+            String email = request.getEmail();
+            String password = request.getPassword();
 
-            // 1. Check if this is a System User (Platform Admin)
-            Optional<SystemUser> systemUser = systemUserRepository.findByEmail(request.getEmail());
+            log.info("Processing login for email: {}", email);
 
-            if (systemUser.isPresent()) {
-                return handleSystemUserLogin(systemUser.get(), request.getPassword());
+            // Try System Admin login first
+            Optional<SystemUser> systemUserOpt = systemUserRepository.findByEmail(email);
+            if (systemUserOpt.isPresent()) {
+                SystemUser systemUser = systemUserOpt.get();
+
+                if (!passwordEncoder.matches(password, systemUser.getPasswordHash())) {
+                    log.warn("Invalid password for system admin: {}", email);
+                    return ApiResponse.error("Invalid email or password");
+                }
+
+                if (!systemUser.getIsActive()) {
+                    return ApiResponse.error("Account is deactivated");
+                }
+
+                // Build user details map for JWT
+                Map<String, Object> userDetails = new HashMap<>();
+                userDetails.put("userId", systemUser.getId());
+                userDetails.put("email", email);
+                userDetails.put("role", "SYS_ADMIN");
+
+                String token = jwtUtil.generateToken(userDetails, "SYSTEM");
+
+                LoginResponse response = LoginResponse.builder()
+                        .token(token)
+                        .email(email)
+                        .role("SYS_ADMIN")
+                        .userType("SYSTEM")
+                        .passwordChangeRequired(systemUser.getIsPasswordChangeRequired() != null ? systemUser.getIsPasswordChangeRequired() : false)
+                        .build();
+
+                log.info("System admin login successful: {}", email);
+                return ApiResponse.success(response, "Login successful");
             }
 
-            // 2. Check if this is an App User (Organization User)
-            Optional<AppUser> appUser = appUserRepository.findByEmail(request.getEmail());
+            // Try Organization User login
+            Optional<AppUser> appUserOpt = appUserRepository.findByEmail(email);
+            if (appUserOpt.isPresent()) {
+                AppUser appUser = appUserOpt.get();
 
-            if (appUser.isPresent()) {
-                return handleAppUserLogin(appUser.get(), request.getPassword());
+                if (!passwordEncoder.matches(password, appUser.getPasswordHash())) {
+                    log.warn("Invalid password for app user: {}", email);
+                    return ApiResponse.error("Invalid email or password");
+                }
+
+                if (!appUser.getIsActive()) {
+                    return ApiResponse.error("Account is deactivated");
+                }
+
+                // Get organization
+                Organization organization = organizationRepository
+                        .findByOrganizationUuid(appUser.getOrganizationUuid())
+                        .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+                // ⭐ NEW: Check subscription status
+                boolean requiresPayment = false;
+                boolean hasActiveSubscription = false;
+
+                if (organization.getStatus() == OrganizationStatus.PENDING_APPROVAL) {
+                    return ApiResponse.error("Your organization is pending approval");
+                }
+
+                // ⭐ Check if organization status is APPROVED_PENDING_PAYMENT
+                if (organization.getStatus() == OrganizationStatus.APPROVED_PENDING_PAYMENT) {
+                    requiresPayment = true;
+                    log.info("Organization {} requires payment activation (APPROVED_PENDING_PAYMENT)", 
+                            organization.getOrganizationUuid());
+                }
+
+                // Check if organization needs payment setup
+                Optional<Subscription> subscriptionOpt = subscriptionRepository
+                        .findByOrganizationUuid(organization.getOrganizationUuid());
+
+                if (subscriptionOpt.isEmpty() && organization.getStatus() == OrganizationStatus.ACTIVE) {
+                    // Active org without subscription - should not happen but handle gracefully
+                    requiresPayment = true;
+                    log.warn("Active organization missing subscription: {}", organization.getOrganizationUuid());
+                } else if (subscriptionOpt.isPresent()) {
+                    Subscription subscription = subscriptionOpt.get();
+                    hasActiveSubscription = subscription.isActive();
+
+                    if (!hasActiveSubscription && organization.getStatus() == OrganizationStatus.ACTIVE) {
+                        requiresPayment = true;
+                        log.info("Subscription inactive - payment required");
+                    }
+                }
+
+                // Generate JWT token
+                Map<String, Object> userDetails = new HashMap<>();
+                userDetails.put("userId", appUser.getId());
+                userDetails.put("email", email);
+                userDetails.put("role", appUser.getRole().name());
+                userDetails.put("organizationUuid", appUser.getOrganizationUuid());
+
+                String token = jwtUtil.generateToken(userDetails, "ORG_USER");
+
+                // Build response
+                LoginResponse response = LoginResponse.builder()
+                        .token(token)
+                        .userId(appUser.getId()) // ⭐ ADDED MISSING userId
+                        .email(email)
+                        .role(appUser.getRole().name())
+                        .userType("ORG_USER")
+                        .organizationUuid(appUser.getOrganizationUuid())
+                        .organizationName(organization.getName())
+                        .passwordChangeRequired(appUser.getIsPasswordChangeRequired())
+                        .modulesConfigured(organization.getModulesConfigured())
+                        .requiresPayment(requiresPayment) // ⭐ NEW FIELD
+                        .hasActiveSubscription(hasActiveSubscription) // ⭐ NEW FIELD
+                        .build();
+
+                log.info("Organization user login successful: {} (Status: {}, Payment Required: {})",
+                        email, organization.getStatus(), requiresPayment);
+
+                return ApiResponse.success(response, "Login successful");
             }
 
-            // 3. User not found
-            log.warn("Login failed - user not found: {}", request.getEmail());
+            log.warn("No user found with email: {}", email);
             return ApiResponse.error("Invalid email or password");
 
         } catch (Exception e) {
-            log.error("Error during login for email: {}", request.getEmail(), e);
-            return ApiResponse.error("Login failed. Please try again.");
+            log.error("Login error", e);
+            return ApiResponse.error("An error occurred during login");
         }
     }
 
@@ -183,7 +376,7 @@ public class AuthService {
             emailService.sendForgotPasswordEmail(email, tempPassword);
 
             log.info("Password reset successfully for: {}", email);
-            return ApiResponse.success("A temporary password has been sent to your email.", null);
+            return ApiResponse.success(null, "A temporary password has been sent to your email.");
 
         } catch (Exception e) {
             log.error("Error during password reset", e);
@@ -220,17 +413,18 @@ public class AuthService {
                 .token(token)
                 .userId(systemUser.getId())
                 .email(systemUser.getEmail())
-                .userType("SYSTEM_ADMIN")
+                .userType("SYSTEM")
                 .role(systemUser.getRole())
                 .organizationUuid(null) // System admin -> no org uuid
                 .organizationName(null)
                 .modulesConfigured(true) // System admin -> no modules
-
+                .requiresPayment(false)
+                .hasActiveSubscription(true)
                 .moduleConfig(null)
                 .build();
 
         log.info("System user login successful: {}", systemUser.getEmail());
-        return ApiResponse.success("Login successful", response);
+        return ApiResponse.success(response, "Login successful");
     }
 
 
@@ -287,7 +481,35 @@ public class AuthService {
         // 6. Build module configuration map
         Map<String, Boolean> moduleConfig = buildModuleConfig(organization);
 
-        // 7. Build response - FIXED: Include all required fields
+        // 7. Check subscription status for payment requirements
+        boolean requiresPayment = false;
+        boolean hasActiveSubscription = false;
+        
+        if (organization.getStatus() == OrganizationStatus.APPROVED_PENDING_PAYMENT) {
+            requiresPayment = true;
+            log.info("Organization {} requires payment activation (APPROVED_PENDING_PAYMENT)", 
+                    organization.getOrganizationUuid());
+        }
+        
+        Optional<Subscription> subscriptionOpt = subscriptionRepository
+                .findByOrganizationUuid(organization.getOrganizationUuid());
+        
+        if (subscriptionOpt.isPresent()) {
+            Subscription subscription = subscriptionOpt.get();
+            hasActiveSubscription = subscription.isActive();
+            
+            if (!hasActiveSubscription && organization.getStatus() == OrganizationStatus.ACTIVE) {
+                requiresPayment = true;
+            }
+        } else if (organization.getStatus() == OrganizationStatus.ACTIVE) {
+            // Active org without subscription - should not happen
+            requiresPayment = true;
+            log.warn("Active organization missing subscription: {}", organization.getOrganizationUuid());
+        }
+
+        // 8. Build response - FIXED: Include all required fields
+        boolean passwordChangeRequired = Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired());
+        
         LoginResponse response = LoginResponse.builder()
                 .token(token)
                 .userId(appUser.getId())
@@ -298,18 +520,29 @@ public class AuthService {
                 .organizationName(organization.getName())
                 .modulesConfigured(Boolean.TRUE.equals(organization.getModulesConfigured())) // FIXED: Proper boolean check
                 .moduleConfig(moduleConfig)
-                .isPasswordChangeRequired(Boolean.TRUE.equals(appUser.getIsPasswordChangeRequired()))
+                .passwordChangeRequired(passwordChangeRequired)
+                .requiresPayment(requiresPayment)
+                .hasActiveSubscription(hasActiveSubscription)
                 .build();
 
-        log.info("App user login successful: {} (Org: {})", appUser.getEmail(), organization.getName());
-        return ApiResponse.success("Login successful", response);
+        log.info("🔍 [AuthService] App user login - Email: {}, PasswordChangeRequired: {}, RequiresPayment: {}, ModulesConfigured: {}", 
+                 appUser.getEmail(), passwordChangeRequired, requiresPayment, organization.getModulesConfigured());
+        return ApiResponse.success(response, "Login successful");
     }
 
     @Transactional
     public ApiResponse<String> changePassword(Long userId, String newPassword) {
         try {
+            log.info("Changing password for userId: {}", userId);
+            
+            if (userId == null) {
+                log.error("UserId is null in changePassword");
+                return ApiResponse.error("User ID is required");
+            }
+            
             Optional<AppUser> userOpt = appUserRepository.findById(userId);
             if (userOpt.isEmpty()) {
+                log.error("User not found with id: {}", userId);
                 return ApiResponse.error("User not found");
             }
 
@@ -317,15 +550,55 @@ public class AuthService {
 
             // Update password
             user.setPasswordHash(passwordEncoder.encode(newPassword));
-            user.setIsPasswordChangeRequired(false); // Flag එක false කරනවා
+            user.setIsPasswordChangeRequired(false); // Flag -> false
 
             appUserRepository.save(user);
 
-            return ApiResponse.success("Password changed successfully", null);
+            log.info("Password changed successfully for user: {}", user.getEmail());
+            return ApiResponse.success(null, "Password changed successfully");
         } catch (Exception e) {
             log.error("Error changing password", e);
             return ApiResponse.error("Failed to change password");
         }
+    }
+
+    /**
+     * Change password by email (fallback when userId is not available)
+     */
+    @Transactional
+    public ApiResponse<String> changePasswordByEmail(String email, String newPassword) {
+        try {
+            log.info("Changing password by email: {}", email);
+            
+            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                log.error("User not found with email: {}", email);
+                return ApiResponse.error("User not found");
+            }
+
+            AppUser user = userOpt.get();
+
+            // Update password
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            user.setIsPasswordChangeRequired(false);
+
+            appUserRepository.save(user);
+
+            log.info("Password changed successfully for user: {}", user.getEmail());
+            return ApiResponse.success(null, "Password changed successfully");
+        } catch (Exception e) {
+            log.error("Error changing password by email", e);
+            return ApiResponse.error("Failed to change password: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Extract organization UUID from HttpServletRequest attributes
+     * @param request HttpServletRequest with organizationUuid attribute set by JWT filter
+     * @return organization UUID string
+     */
+    public String getOrganizationUuidFromRequest(jakarta.servlet.http.HttpServletRequest request) {
+        return (String) request.getAttribute("organizationUuid");
     }
 
     /**
@@ -365,7 +638,7 @@ public class AuthService {
             organizationRepository.save(organization);
 
             log.info("Modules configured successfully for organization: {}", organizationUuid);
-            return ApiResponse.success("Modules configured successfully", null);
+            return ApiResponse.success(null, "Modules configured successfully");
 
         } catch (Exception e) {
             log.error("Error configuring modules for organization: {}", organizationUuid, e);
@@ -414,12 +687,29 @@ public class AuthService {
         moduleConfig.put("notificationSystem", true);
         moduleConfig.put("basicDashboard", true);
 
-        // Extended modules (based on organization selection)
-
+        // Extended modules (based on organization boolean flags)
         moduleConfig.put("employeeFeedback", organization.getModuleEmployeeFeedback());
         moduleConfig.put("hiringManagement", organization.getModuleHiringManagement());
         moduleConfig.put("qrAttendance", organization.getModuleQrAttendanceMarking());
         moduleConfig.put("faceRecognitionAttendance",organization.getModuleFaceRecognitionAttendanceMarking());
+
+        // AI Insights module (module_id = 5) - Check organization_modules table
+        boolean hasAIInsights = false;
+        try {
+            List<OrganizationModule> enabledModules = organizationModuleRepository
+                    .findEnabledByOrganizationUuid(organization.getOrganizationUuid());
+            
+            // Check if AI Insights module (ID = 5) is enabled
+            hasAIInsights = enabledModules.stream()
+                    .anyMatch(om -> om.getExtendedModule().getModuleId() == 5L && om.getIsEnabled());
+            
+            log.info("AI Insights module check for organization {}: {}", 
+                    organization.getOrganizationUuid(), hasAIInsights);
+        } catch (Exception e) {
+            log.error("Error checking AI Insights module for organization {}: {}", 
+                    organization.getOrganizationUuid(), e.getMessage());
+        }
+        moduleConfig.put("aiInsights", hasAIInsights);
 
         return moduleConfig;
     }
@@ -446,15 +736,17 @@ public class AuthService {
                 .token(token)
                 .userId(user.getId())
                 .email(user.getEmail())
-                .userType("SYSTEM_ADMIN")
+                .userType("SYSTEM")
                 .role(user.getRole())
                 .organizationUuid(null)
                 .organizationName(null)
                 .modulesConfigured(true)
+                .requiresPayment(false)
+                .hasActiveSubscription(true)
                 .moduleConfig(null)
                 .build();
 
-        return ApiResponse.success("User details retrieved", response);
+        return ApiResponse.success(response, "User details retrieved");
     }
 
     /**
@@ -490,6 +782,6 @@ public class AuthService {
                 .moduleConfig(moduleConfig)
                 .build();
 
-        return ApiResponse.success("User details retrieved", response);
+        return ApiResponse.success(response, "User details retrieved");
     }
 }

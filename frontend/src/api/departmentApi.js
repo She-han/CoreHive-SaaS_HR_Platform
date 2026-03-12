@@ -1,5 +1,6 @@
-import axios from './axios';
+import axios from "./axios";
 
+const BASE = "http://localhost:8080/api";
 /**
  * Department API Service
  * Handles all API calls for department operations
@@ -8,32 +9,54 @@ import axios from './axios';
 /**
  * Get all departments for the organization
  */
-export const getAllDepartments = async () => {
+export const getAllDepartments = async (token) => {
   try {
-    const response = await axios.get('/org-admin/departments');
+    const response = await axios.get(`${BASE}/org-admin/departments`, {
+      headers: {
+        Authorization: `Bearer ${token}` // send token
+      }
+    });
     return response.data;
   } catch (error) {
-    console.error('Error fetching departments:', error);
+    console.error("Error fetching departments:", error);
     throw error;
   }
 };
 
-export const createDepartment = async (deptData) => {
-  try{
-    const response = await axios.post('/org-admin/departments', deptData);
+export const createDepartment = async (deptData, token) => {
+  try {
+    const response = await axios.post(
+      `${BASE}/org-admin/departments`,
+      deptData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}` // send token
+        }
+      }
+    );
     return response.data;
-  }catch{
-    console.error('Error creating department:',error);
+  } catch (error) {
+    console.error("Error creating department:", error);
     throw error;
   }
 };
 
-export const updateDepartment = async (id,deptData) => {
-  try{
+export const updateDepartment = async (id, deptData) => {
+  try {
     const response = await axios.put(`/org-admin/departments/${id}`, deptData);
     return response.data;
-  }catch(error){
-    console.error('Error creating department:',error);
+  } catch (error) {
+    console.error("Error creating department:", error);
+    throw error;
+  }
+};
+
+export const deleteDepartment = async (id) => {
+  try {
+    const response = await axios.delete(`/org-admin/departments/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting department:", error);
     throw error;
   }
 };
@@ -41,6 +64,6 @@ export const updateDepartment = async (id,deptData) => {
 export default {
   getAllDepartments,
   createDepartment,
-  updateDepartment
-
+  updateDepartment,
+  deleteDepartment
 };

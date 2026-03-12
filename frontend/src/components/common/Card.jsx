@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /**
  * Reusable Card Component
@@ -8,37 +8,37 @@ const Card = ({
   children,
   title,
   subtitle,
-  className = '',
-  bodyClassName = '',
-  padding = 'default',
-  shadow = 'default',
+  className = "",
+  bodyClassName = "",
+  padding = "default",
+  shadow = "default",
   ...props
 }) => {
   // Padding variants
   const paddingClasses = {
-    none: '',
-    sm: 'p-4',
-    default: 'p-6',
-    lg: 'p-8',
-    xl: 'p-10'
+    none: "",
+    sm: "p-4",
+    default: "p-6",
+    lg: "p-8",
+    xl: "p-10"
   };
-  
+
   // Shadow variants
   const shadowClasses = {
-    none: '',
-    sm: 'shadow-sm',
-    default: 'shadow-card',
-    lg: 'shadow-lg',
-    xl: 'shadow-xl'
+    none: "",
+    sm: "shadow-sm",
+    default: "shadow-card",
+    lg: "shadow-lg",
+    xl: "shadow-xl"
   };
-  
+
   const cardClasses = `
     bg-background-white rounded-xl border border-gray-100 
     ${shadowClasses[shadow]} 
     ${paddingClasses[padding]} 
     ${className}
   `;
-  
+
   return (
     <div className={cardClasses} {...props}>
       {/* Card header */}
@@ -49,18 +49,12 @@ const Card = ({
               {title}
             </h3>
           )}
-          {subtitle && (
-            <p className="text-text-secondary">
-              {subtitle}
-            </p>
-          )}
+          {subtitle && <p className="text-text-secondary">{subtitle}</p>}
         </div>
       )}
-      
+
       {/* Card body */}
-      <div className={bodyClassName}>
-        {children}
-      </div>
+      <div className={bodyClassName}>{children}</div>
     </div>
   );
 };

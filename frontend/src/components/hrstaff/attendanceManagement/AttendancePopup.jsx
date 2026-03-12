@@ -6,29 +6,27 @@ export default function AttendancePopup({ data, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
-
       <div className="w-full max-w-sm bg-white/90 backdrop-blur-lg rounded-2xl shadow-2xl animate-scaleIn overflow-hidden">
-
         {/* Header */}
         <div className="bg-gradient-to-r from-[#02C39A] to-[#0C397A] text-white px-5 py-4 flex justify-between items-center">
-          <h2 className="text-lg font-semibold tracking-wide">Attendance Summary</h2>
+          <h2 className="text-lg font-semibold tracking-wide">
+            Attendance Summary
+          </h2>
           <button onClick={onClose}>
             <X className="w-6 h-6 text-white hover:text-gray-200 transition" />
           </button>
         </div>
 
         {/* Content */}
-  
+
         <div className="p-6 space-y-4 text-gray-700">
-          
           <DetailRow label="Date" value={data.date} />
           <DetailRow label="Check In" value={data.checkIn} />
           <DetailRow label="Check Out" value={data.checkOut} />
           <DetailRow label="Hours Worked" value={data.worked} />
 
-            
           {/* <DetailRow label="Late minutes" value={data.lateMinutes > 0 ? `${data.lateMinutes} minutes` : "On Time"} /> */}
-          
+
           <div className="flex items-center justify-between">
             <span className="font-medium text-gray-600">Status</span>
             <StatusBadge status={data.status} />
@@ -48,7 +46,6 @@ export default function AttendancePopup({ data, onClose }) {
             Close
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -74,7 +71,9 @@ function StatusBadge({ status }) {
   };
 
   return (
-    <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${colors[status] || "bg-gray-200 text-gray-700"}`}>
+    <span
+      className={`px-3 py-1 rounded-lg text-sm font-semibold ${colors[status] || "bg-gray-200 text-gray-700"}`}
+    >
       {status}
     </span>
   );

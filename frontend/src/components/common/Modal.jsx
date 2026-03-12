@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
-import Button from './Button';
+import React, { useEffect } from "react";
+import { X } from "lucide-react";
+import Button from "./Button";
 
 /**
  * Reusable Modal Component
@@ -11,59 +11,59 @@ const Modal = ({
   onClose,
   title,
   children,
-  size = 'md',
+  size = "md",
   showCloseButton = true,
   closeOnOverlayClick = true,
-  className = '',
+  className = "",
   ...props
 }) => {
   // Size classes
   const sizeClasses = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-full mx-4'
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+    full: "max-w-full mx-4"
   };
-  
+
   // Close modal on Escape key press
   useEffect(() => {
     const handleEscape = (event) => {
-      if (event.key === 'Escape' && isOpen) {
+      if (event.key === "Escape" && isOpen) {
         onClose();
       }
     };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
-  
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
-    
+
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
-  
+
   if (!isOpen) return null;
-  
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto ">
       {/* Backdrop */}
-      <div 
-        className="absolute bg-black/30 inset-0 transition-all duration-100  backdrop-blur-sm"
+      <div
+        className="fixed bg-black/30 inset-0 transition-all duration-50 backdrop-blur-sm"
         onClick={closeOnOverlayClick ? onClose : undefined}
       />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
-        <div 
+        <div
           className={`
             relative w-full ${sizeClasses[size]} bg-white
             rounded-xl shadow-xl transform transition-all animate-slide-up translate-z-80
@@ -79,7 +79,7 @@ const Modal = ({
                   {title}
                 </h3>
               )}
-              
+
               {showCloseButton && (
                 <Button
                   variant="ghost"
@@ -91,11 +91,9 @@ const Modal = ({
               )}
             </div>
           )}
-          
+
           {/* Content */}
-          <div className="p-6">
-            {children}
-          </div>
+          <div className="p-6">{children}</div>
         </div>
       </div>
     </div>

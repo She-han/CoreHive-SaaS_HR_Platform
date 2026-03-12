@@ -1,92 +1,92 @@
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { Bars3Icon } from '@heroicons/react/24/outline';
-import { useSelector } from 'react-redux';
-import { selectUser } from '../../store/slices/authSlice';
-import Sidebar from './Sidebar';
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { Bars3Icon } from "@heroicons/react/24/outline";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../store/slices/authSlice";
+import Sidebar from "./Sidebar";
 import { Bell, Calendar, Clock, Search, ChevronDown } from "lucide-react";
 
 // Theme colors
 const THEME = {
-  primary: '#02C39A',
-  secondary: '#05668D',
-  dark: '#0C397A',
-  background: '#F1FDF9',
-  success: '#1ED292',
-  text: '#333333',
-  muted: '#9B9B9B'
+  primary: "#02C39A",
+  secondary: "#05668D",
+  dark: "#0C397A",
+  background: "#F1FDF9",
+  success: "#1ED292",
+  text: "#333333",
+  muted: "#9B9B9B"
 };
 
 // Memoized Header Date/Time Component for performance
 const HeaderDateTime = memo(({ date, time }) => (
-  <div 
+  <div
     className="hidden md:flex items-center gap-3 px-4 py-2.5 rounded-xl"
-    style={{ 
-      backgroundColor: THEME.background, 
+    style={{
+      backgroundColor: THEME.background,
       border: `1px solid ${THEME.primary}`,
-      boxShadow: '0 2px 4px rgba(2, 195, 154, 0.1)'
+      boxShadow: "0 2px 4px rgba(2, 195, 154, 0.1)"
     }}
   >
-    <div className="flex items-center gap-1.5" style={{ color: THEME.secondary }}>
+    <div
+      className="flex items-center gap-1.5"
+      style={{ color: THEME.secondary }}
+    >
       <Calendar className="w-4 h-4" />
       <span className="text-sm font-medium">{date}</span>
     </div>
-    <div 
-      className="w-px h-4"
-      style={{ backgroundColor: THEME.primary }}
-    />
-    <div className="flex items-center gap-1.5" style={{ color: THEME.secondary }}>
+    <div className="w-px h-4" style={{ backgroundColor: THEME.primary }} />
+    <div
+      className="flex items-center gap-1.5"
+      style={{ color: THEME.secondary }}
+    >
       <Clock className="w-4 h-4" />
       <span className="text-sm font-medium">{time}</span>
     </div>
   </div>
 ));
-HeaderDateTime.displayName = 'HeaderDateTime';
+HeaderDateTime.displayName = "HeaderDateTime";
 
 // Memoized Notification Button
 const NotificationButton = memo(() => (
-  <button 
+  <button
     className="relative p-2.5 rounded-xl transition-all duration-200 hover:shadow-md"
-    style={{ 
+    style={{
       backgroundColor: THEME.background,
-      color: THEME.secondary 
+      color: THEME.secondary
     }}
   >
     <Bell className="w-5 h-5" />
-    <span 
+    <span
       className="absolute top-1.5 right-1.5 block w-2.5 h-2.5 rounded-full ring-2 ring-white animate-pulse"
       style={{ backgroundColor: THEME.success }}
     />
   </button>
 ));
-NotificationButton.displayName = 'NotificationButton';
-
+NotificationButton.displayName = "NotificationButton";
 
 // Memoized User Welcome Component
 const UserWelcome = memo(({ user }) => {
-
-   // Extract username from email
-  const userName = useMemo(() => 
-    user?.email?.split('@')[0] || 'Admin',
+  // Extract username from email
+  const userName = useMemo(
+    () => user?.email?.split("@")[0] || "Admin",
     [user?.email]
   );
-  
-  const displayName = useMemo(() => 
-    user?.firstName || user?.role?.replace('_', ' ') || 'User',
+
+  const displayName = useMemo(
+    () => user?.firstName || user?.role?.replace("_", " ") || "User",
     [user?.firstName, user?.role]
   );
-  
+
   return (
     <div className="hidden lg:flex items-center gap-3">
       <div className="text-right">
         <p className="text-sm font-medium" style={{ color: THEME.text }}>
           Welcome, <span style={{ color: THEME.primary }}>{userName}</span>!
         </p>
-   
       </div>
     </div>
   );
 });
-UserWelcome.displayName = 'UserWelcome';
+UserWelcome.displayName = "UserWelcome";
 
 /**
  * Dashboard Layout with Sidebar
@@ -97,7 +97,7 @@ const DashboardLayout = ({ children, title }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   const { user } = useSelector((state) => state.auth);
 
   // Update time every minute for performance
@@ -111,27 +111,27 @@ const DashboardLayout = ({ children, title }) => {
 
   // Memoized date/time formatting
   const formattedDateTime = useMemo(() => {
-    const options = { 
-      weekday: 'short', 
-      month: 'short', 
-      day: 'numeric' 
+    const options = {
+      weekday: "short",
+      month: "short",
+      day: "numeric"
     };
-    const date = currentTime.toLocaleDateString('en-US', options);
-    const time = currentTime.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
+    const date = currentTime.toLocaleDateString("en-US", options);
+    const time = currentTime.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
     });
     return { date, time };
   }, [currentTime]);
 
   // Memoized toggle handlers
   const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed(prev => !prev);
+    setSidebarCollapsed((prev) => !prev);
   }, []);
 
   const toggleMobileMenu = useCallback(() => {
-    setMobileMenuOpen(prev => !prev);
+    setMobileMenuOpen((prev) => !prev);
   }, []);
 
   const closeMobileMenu = useCallback(() => {
@@ -139,7 +139,10 @@ const DashboardLayout = ({ children, title }) => {
   }, []);
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: THEME.background }}>
+    <div
+      className="flex h-screen"
+      style={{ backgroundColor: THEME.background }}
+    >
       {/* Mobile sidebar overlay */}
       {mobileMenuOpen && (
         <div
@@ -154,21 +157,23 @@ const DashboardLayout = ({ children, title }) => {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
-        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <Sidebar isCollapsed={false} />
       </div>
 
       {/* Main content area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header 
+        <header
           className="flex items-center justify-between h-16 px-4 lg:px-6 shadow-sm relative z-10"
-          style={{ 
-            backgroundColor: '#FFFFFF', 
+          style={{
+            backgroundColor: "#FFFFFF",
             borderBottom: `3px solid ${THEME.primary}`,
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)"
           }}
         >
           <div className="flex items-center gap-4">
@@ -176,9 +181,9 @@ const DashboardLayout = ({ children, title }) => {
             <button
               onClick={toggleMobileMenu}
               className="p-2 rounded-xl transition-all duration-200 lg:hidden hover:shadow-md"
-              style={{ 
+              style={{
                 backgroundColor: THEME.background,
-                color: THEME.secondary 
+                color: THEME.secondary
               }}
             >
               <Bars3Icon className="w-6 h-6" />
@@ -188,15 +193,13 @@ const DashboardLayout = ({ children, title }) => {
             <button
               onClick={toggleSidebar}
               className="hidden lg:flex items-center justify-center p-2 rounded-xl transition-all duration-200 hover:shadow-md"
-              style={{ 
+              style={{
                 backgroundColor: THEME.background,
-                color: THEME.secondary 
+                color: THEME.secondary
               }}
             >
               <Bars3Icon className="w-5 h-5" />
             </button>
-
-         
           </div>
 
           {/* Right side items */}
@@ -208,15 +211,15 @@ const DashboardLayout = ({ children, title }) => {
             <NotificationButton />
 
             {/* DateTime Display */}
-            <HeaderDateTime 
-              date={formattedDateTime.date} 
-              time={formattedDateTime.time} 
+            <HeaderDateTime
+              date={formattedDateTime.date}
+              time={formattedDateTime.time}
             />
           </div>
         </header>
 
         {/* Main content */}
-        <main 
+        <main
           className="flex-1 overflow-y-auto"
           style={{ backgroundColor: THEME.background }}
         >

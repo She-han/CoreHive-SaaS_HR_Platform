@@ -1,0 +1,377 @@
+import React, { useState } from "react";
+import { createSurvey } from "../../../api/feedbackservice.js"; // ✅ token-based API
+import { useNavigate } from "react-router-dom";
+import { FiPlus, FiTrash2, FiArrowLeft } from "react-icons/fi";
+import Swal from "sweetalert2";
+
+export default function CreateSurvey() {
+  const token =
+    localStorage.getItem("corehive_token") ||
+    sessionStorage.getItem("corehive_token");
+  const navigate = useNavigate();
+
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    is_anonymous: false,
+    questions: []
+  });
+
+  // Add a new question
+  const addQuestion = () => {
+    setForm({
+      ...form,
+      questions: [
+        ...form.questions,
+        {
+          question_text: "",
+          question_type: "TEXT",
+          options: [],
+          position: form.questions.length + 1
+        }
+      ]
+    });
+  };
+
+  // Remove a question
+  const removeQuestion = (index) => {
+    let updated = [...form.questions];
+    updated.splice(index, 1);
+    updated = updated.map((q, i) => ({ ...q, position: i + 1 }));
+    setForm({ ...form, questions: updated });
+  };
+
+  // Update a question's field
+  const updateQuestion = (index, key, value) => {
+    const updated = [...form.questions];
+    updated[index][key] = value;
+
+    if (key === "question_type") {
+      if (value === "TEXT") updated[index].options = [];
+      if (value === "MCQ") updated[index].options = [];
+      if (value === "RATING")
+        updated[index].options = ["1", "2", "3", "4", "5"];
+    }
+
+    setForm({ ...form, questions: updated });
+  };
+
+  // Update MCQ options
+  const updateOptions = (index, value) => {
+    const updated = [...form.questions];
+    updated[index].options = value.split(",").map((o) => o.trim());
+    setForm({ ...form, questions: updated });
+  };
+
+  // Validate form
+  const validateForm = () => {
+    // Title validation
+    if (!form.title.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Title Required',
+        text: 'Please enter a survey title',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Description validation
+    if (!form.description.trim()) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Description Required',
+        text: 'Please enter a survey description',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Start date validation
+    if (!form.start_date) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Start Date Required',
+        text: 'Please select a start date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // End date validation
+    if (!form.end_date) {
+      Swal.fire({
+        icon: 'error',
+        title: 'End Date Required',
+        text: 'Please select an end date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // End date should be after start date
+    if (new Date(form.end_date) < new Date(form.start_date)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Date Range',
+        text: 'End date must be after or equal to start date',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Questions validation
+    if (form.questions.length === 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'No Questions',
+        text: 'Please add at least one question to the survey',
+        confirmButtonColor: '#02C39A',
+      });
+      return false;
+    }
+
+    // Validate each question
+    for (let i = 0; i < form.questions.length; i++) {
+      const q = form.questions[i];
+      
+      if (!q.question_text.trim()) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Question Required',
+          text: `Question ${i + 1} text is required`,
+          confirmButtonColor: '#02C39A',
+        });
+        return false;
+      }
+
+      if (q.question_type === 'MCQ' && (!q.options || q.options.length === 0)) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Options Required',
+          text: `Question ${i + 1}: Multiple choice questions must have options`,
+          confirmButtonColor: '#02C39A',
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Submit survey (token-based)
+  const handleSubmit = async () => {
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      await createSurvey(form, token); // ✅ token passed here
+      Swal.fire({
+        icon: 'success',
+        title: 'Success!',
+        text: 'Survey created successfully',
+        confirmButtonColor: '#02C39A',
+        timer: 2000,
+        showConfirmButton: false
+      });
+      setTimeout(() => {
+        navigate("/hr_staff/FeedBackManagement");
+      }, 2000);
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Creation Failed',
+        text: err.message || 'Failed to create survey',
+        confirmButtonColor: '#02C39A',
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gradient-to-br from-[#F3F8FA] to-[#E8EEF3]">
+      {/* HEADER */}
+      <div className="p-6 bg-white/90 backdrop-blur-md border-b shadow-sm sticky top-0 z-20 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-[#333333]">
+            Create New Survey
+          </h1>
+          <p className="text-[#9B9B9B]">
+            Build a customized survey with multiple question types.
+          </p>
+        </div>
+
+        <button
+          onClick={() => navigate("/hr_staff/FeedBackManagement")}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm transition-all"
+        >
+          <FiArrowLeft /> Back
+        </button>
+      </div>
+
+      {/* SCROLLABLE AREA */}
+      <div className="flex-1 overflow-y-auto p-8 space-y-8">
+        {/* SURVEY DETAILS */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+          <h2 className="text-xl font-bold text-[#0D2847] mb-4">
+            Survey Details
+          </h2>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Enter survey title... *"
+              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+            />
+            <textarea
+              placeholder="Enter survey description... *"
+              className="w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              required
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Start Date */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-medium text-gray-600">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                  value={form.start_date}
+                  min={getTodayDate()}
+                  onChange={(e) =>
+                    setForm({ ...form, start_date: e.target.value })
+                  }
+                  required
+                />
+              </div>
+
+              {/* End Date */}
+              <div className="flex flex-col">
+                <label className="mb-1 text-sm font-medium text-gray-600">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  className="p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[#02C39A]"
+                  value={form.end_date}
+                  min={form.start_date || getTodayDate()}
+                  onChange={(e) =>
+                    setForm({ ...form, end_date: e.target.value })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 text-[#0D2847]">
+              <input
+                type="checkbox"
+                checked={form.is_anonymous}
+                onChange={(e) =>
+                  setForm({ ...form, is_anonymous: e.target.checked })
+                }
+                className="h-5 w-5"
+              />
+              Allow Anonymous Responses
+            </label>
+          </div>
+        </div>
+
+        {/* QUESTIONS SECTION */}
+        <div>
+          <h2 className="text-2xl font-bold text-[#0D2847] mb-4">Questions</h2>
+
+          {form.questions.map((q, index) => (
+            <div
+              key={index}
+              className="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mb-6 hover:shadow-2xl transition-all"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-[#0D2847]">
+                  Question {index + 1}
+                </h3>
+                <button
+                  className="text-red-600 hover:text-red-800 transition"
+                  onClick={() => removeQuestion(index)}
+                >
+                  <FiTrash2 size={22} />
+                </button>
+              </div>
+
+              <input
+                type="text"
+                placeholder="Type your question here... *"
+                className="w-full p-3 border rounded-lg shadow-sm mb-3"
+                value={q.question_text}
+                onChange={(e) =>
+                  updateQuestion(index, "question_text", e.target.value)
+                }
+                required
+              />
+
+              <select
+                className="w-full p-3 border rounded-lg shadow-sm mb-3"
+                value={q.question_type}
+                onChange={(e) =>
+                  updateQuestion(index, "question_type", e.target.value)
+                }
+              >
+                <option value="TEXT">Text Answer</option>
+                <option value="MCQ">Multiple Choice</option>
+                <option value="RATING">Rating (1–5)</option>
+              </select>
+
+              {q.question_type === "MCQ" && (
+                <input
+                  type="text"
+                  placeholder="Enter options (comma separated) *"
+                  className="w-full p-3 border rounded-lg shadow-sm"
+                  value={q.options.join(", ")}
+                  onChange={(e) => updateOptions(index, e.target.value)}
+                  required
+                />
+              )}
+
+              {q.question_type === "RATING" && (
+                <div className="mt-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
+                  ⭐ Rating scale automatically set to: <b>1 → 5</b>
+                </div>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={addQuestion}
+            className="mt-4 px-6 py-3 bg-[#02C39A] text-white rounded-xl shadow-lg flex items-center gap-2 hover:bg-[#029575] transition-all"
+          >
+            <FiPlus /> Add Question
+          </button>
+
+          <button
+            onClick={handleSubmit}
+            className="mt-6 w-full bg-[#05668D] text-white p-4 rounded-xl text-lg font-semibold shadow-lg hover:bg-[#044d6a] transition-all"
+          >
+            Create Survey
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

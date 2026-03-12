@@ -1,14 +1,29 @@
 package com.corehive.backend.controller;
 
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.model.Attendance;
+import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.LeaveRequest;
+import com.corehive.backend.model.Payslip;
+import com.corehive.backend.repository.AttendanceRepository;
+import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.repository.LeaveRepository;
+import com.corehive.backend.repository.PayslipRepository;
+import com.corehive.backend.repository.OrganizationRepository;
+import com.corehive.backend.repository.OrganizationModuleRepository;
+import com.corehive.backend.model.Organization;
+import com.corehive.backend.model.OrganizationModule;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Dashboard Controller
@@ -18,8 +33,15 @@ import java.util.Map;
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class DashboardController {
+
+    private final EmployeeRepository employeeRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final LeaveRepository leaveRepository;
+    private final PayslipRepository payslipRepository;
+    private final OrganizationRepository organizationRepository;
+    private final OrganizationModuleRepository organizationModuleRepository;
 
     /**
      * Get Dashboard Data
@@ -55,7 +77,7 @@ public class DashboardController {
             ));
 
             ApiResponse<Map<String, Object>> response =
-                    ApiResponse.success("Dashboard data retrieved successfully", dashboardData);
+                    ApiResponse.success(dashboardData, "Dashboard data retrieved successfully");
 
             return ResponseEntity.ok(response);
 
@@ -128,13 +150,95 @@ public class DashboardController {
     private Map<String, Object> prepareOrgAdminDashboard(String orgUuid) {
         Map<String, Object> data = new HashMap<>();
 
-        // TODO: Implement real statistics from database
-        data.put("totalEmployees", 45);
-        data.put("activeEmployees", 42);
-        data.put("pendingLeaveRequests", 8);
-        data.put("monthlyPayrollTotal", 2500000.00);
-        data.put("departmentCount", 5);
-        data.put("newHiresThisMonth", 3);
+        // Get real statistics from database
+        List<Employee> allEmployees = employeeRepository.findByOrganizationUuid(orgUuid);
+        long totalEmployees = allEmployees.size();
+        long activeEmployees = allEmployees.stream().filter(e -> e.getIsActive() != null && e.getIsActive()).count();
+        
+        // Get pending leave requests
+        List<LeaveRequest> allLeaves = leaveRepository.findAll();
+        long pendingLeaveRequests = allLeaves.stream()
+                .filter(lr -> lr.getOrganizationUuid().equals(orgUuid))
+                .filter(lr -> lr.getStatus() == LeaveRequest.LeaveStatus.PENDING)
+                .count();
+        
+        // Get today's attendance
+        LocalDate today = LocalDate.now();
+        List<Attendance> todayAttendance = attendanceRepository
+                .findByOrganizationUuidAndAttendanceDate(orgUuid, today);
+        long attendanceToday = todayAttendance.stream()
+                .filter(a -> a.getCheckInTime() != null)
+                .count();
+        long absentToday = totalEmployees - attendanceToday;
+        
+        data.put("totalEmployees", totalEmployees);
+        data.put("activeEmployees", activeEmployees);
+        data.put("pendingLeaveRequests", pendingLeaveRequests);
+        data.put("attendanceToday", attendanceToday);
+        data.put("absentToday", absentToday);
+        
+        // --- NEW STATISTICS ---
+        
+        // 1. Calculate Monthly Payroll Total (Current Month) - APPROVED payslips only
+        int currentMonth = today.getMonthValue();
+        int currentYear = today.getYear();
+        
+        List<Payslip> monthlyPayslips = payslipRepository.findByOrganizationUuid(orgUuid).stream()
+                .filter(p -> p.getMonth() == currentMonth && p.getYear() == currentYear)
+                .filter(p -> p.getStatus() == Payslip.PayslipStatus.APPROVED || 
+                             p.getStatus() == Payslip.PayslipStatus.PAID)
+                .collect(Collectors.toList());
+                
+        double monthlyPayrollTotal = monthlyPayslips.stream()
+                .mapToDouble(p -> p.getNetSalary() != null ? p.getNetSalary().doubleValue() : 0.0)
+                .sum();
+        
+        data.put("monthlyPayrollTotal", monthlyPayrollTotal);
+        log.info("Monthly payroll total for org {}: {} (from {} approved payslips)", 
+                orgUuid, monthlyPayrollTotal, monthlyPayslips.size());
+
+        // 2. Department-wise User Count
+        Map<String, Long> employeesByDepartment = allEmployees.stream()
+                .filter(e -> e.getDepartment() != null && e.getDepartment().getName() != null)
+                .collect(Collectors.groupingBy(
+                        e -> e.getDepartment().getName(),
+                        Collectors.counting()
+                ));
+        data.put("employeesByDepartment", employeesByDepartment);
+        log.info("Department distribution for org {}: {}", orgUuid, employeesByDepartment);
+
+        // 3. Designation-wise User Count (designation is a String field, not an object)
+        Map<String, Long> employeesByDesignation = allEmployees.stream()
+                .filter(e -> e.getDesignation() != null && !e.getDesignation().trim().isEmpty())
+                .collect(Collectors.groupingBy(
+                        Employee::getDesignation,
+                        Collectors.counting()
+                ));
+        data.put("employeesByDesignation", employeesByDesignation);
+        log.info("Designation distribution for org {}: {}", orgUuid, employeesByDesignation);
+
+        // 4. Check available modules (Quick Action / Feature check support)
+        // Similar logic to AuthService but simplified for dashboard flags
+        Organization org = organizationRepository.findByOrganizationUuid(orgUuid).orElse(null);
+        if (org != null) {
+            Map<String, Boolean> features = new HashMap<>();
+            features.put("faceAttendance", org.getModuleFaceRecognitionAttendanceMarking());
+            features.put("qrAttendance", org.getModuleQrAttendanceMarking());
+            features.put("feedback", org.getModuleEmployeeFeedback());
+            features.put("hiring", org.getModuleHiringManagement());
+            
+            // Check AI Insights
+             boolean hasAIInsights = false;
+             try {
+                 List<OrganizationModule> enabledModules = organizationModuleRepository
+                         .findEnabledByOrganizationUuid(orgUuid);
+                 hasAIInsights = enabledModules.stream()
+                         .anyMatch(om -> om.getExtendedModule().getModuleId() == 5L && om.getIsEnabled());
+             } catch (Exception e) { /* ignore */ }
+             features.put("aiInsights", hasAIInsights);
+             
+             data.put("features", features);
+        }
 
         // Quick actions for org admin
         data.put("quickActions", Map.of(
@@ -155,13 +259,34 @@ public class DashboardController {
     private Map<String, Object> prepareHrStaffDashboard(String orgUuid) {
         Map<String, Object> data = new HashMap<>();
 
-        // TODO: Implement real statistics
-        data.put("totalEmployees", 45);
-        data.put("pendingLeaveRequests", 8);
-        data.put("attendanceToday", 38);
-        data.put("absentToday", 4);
-        data.put("lateArrivals", 2);
-        data.put("birthdays", 1);
+        // Get real statistics
+        List<Employee> allEmployees = employeeRepository.findByOrganizationUuid(orgUuid);
+        long totalEmployees = allEmployees.size();
+        
+        // Get pending leave requests
+        List<LeaveRequest> allLeaves = leaveRepository.findAll();
+        long pendingLeaveRequests = allLeaves.stream()
+                .filter(lr -> lr.getOrganizationUuid().equals(orgUuid))
+                .filter(lr -> lr.getStatus() == LeaveRequest.LeaveStatus.PENDING)
+                .count();
+        
+        // Get today's attendance
+        LocalDate today = LocalDate.now();
+        List<Attendance> todayAttendance = attendanceRepository
+                .findByOrganizationUuidAndAttendanceDate(orgUuid, today);
+        long attendanceToday = todayAttendance.stream()
+                .filter(a -> a.getCheckInTime() != null)
+                .count();
+        long absentToday = totalEmployees - attendanceToday;
+        long lateArrivals = todayAttendance.stream()
+                .filter(a -> a.getStatus() == Attendance.AttendanceStatus.LATE)
+                .count();
+        
+        data.put("totalEmployees", totalEmployees);
+        data.put("pendingLeaveRequests", pendingLeaveRequests);
+        data.put("attendanceToday", attendanceToday);
+        data.put("absentToday", absentToday);
+        data.put("lateArrivals", lateArrivals);
 
         // Quick actions for HR staff
         data.put("quickActions", Map.of(

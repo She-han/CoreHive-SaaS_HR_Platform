@@ -10,10 +10,11 @@ Endpoints:
 - DELETE /api/face/deregister/{org}/{emp} - Remove registration
 - GET /api/face/health - Service health check
 - GET /api/face/stats/{org} - Organization statistics
+- GET /api/face/photo/{org}/{emp} - Get employee photo
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import os
 import uuid
 import shutil
@@ -340,3 +341,45 @@ async def deregister_employee_face(organization_uuid: str, employee_id: str):
     else:
         logger.warning(f"❌ Deregistration failed: {message}")
         raise HTTPException(status_code=404, detail=message)
+
+
+@router.get("/photo/{organization_uuid}/{employee_id}")
+async def get_employee_photo(organization_uuid: str, employee_id: str):
+    """
+    Get employee photo.
+    Returns the photo as JPEG image response.
+    Used by ID card generator and employee modal.
+    """
+    logger.info(f"📷 Photo request: employee={employee_id}, org={organization_uuid}")
+    
+    try:
+        embedding_service = get_embedding_service()
+        photo_bytes = embedding_service.storage.get_photo(
+            organization_uuid=organization_uuid,
+            employee_id=str(employee_id)
+        )
+        
+        if photo_bytes:
+            logger.info(f"✅ Photo found for employee {employee_id}")
+            return Response(
+                content=photo_bytes,
+                media_type="image/jpeg",
+                headers={
+                    "Cache-Control": "public, max-age=3600",
+                    "Content-Disposition": f"inline; filename={employee_id}.jpg"
+                }
+            )
+        else:
+            logger.warning(f"⚠️ Photo not found for employee {employee_id}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Photo not found for employee {employee_id}"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error retrieving photo: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve photo: {str(e)}"
+        )

@@ -1,24 +1,44 @@
 package com.corehive.backend.service;
 
-import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
-import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
-import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
+import com.corehive.backend.dto.attendance.*;
+import com.corehive.backend.dto.response.QrAttendanceResponse;
+import com.corehive.backend.exception.attendanceException.AttendanceAlreadyCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotCheckedInException;
+import com.corehive.backend.exception.attendanceException.AttendanceNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
+import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Attendance.AttendanceStatus;
 import com.corehive.backend.model.Attendance.VerificationType;
+import com.corehive.backend.model.AttendanceConfiguration;
 import com.corehive.backend.model.Employee;
+import com.corehive.backend.model.LeaveRequest;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
+import com.corehive.backend.repository.LeaveRequestRepository;
+import com.corehive.backend.util.JwtUtil;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,10 +49,502 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final AttendanceConfigurationService attendanceConfigurationService;
+    private final JwtUtil jwtUtil;
 
     private static final LocalTime OFFICE_START_TIME = LocalTime.of(9, 0);
     private static final LocalTime LATE_THRESHOLD = LocalTime.of(9, 30);
     private static final LocalTime HALF_DAY_THRESHOLD = LocalTime.of(13, 0);
+    private static final long MIN_CHECKOUT_DELAY_MINUTES = 5;
+
+
+    //GET ATTENDANCE DETAILS FOR A WEEK/////////////////////////////////////
+    private long calculateWorkingMinutes(Attendance attendance) {
+
+        if (attendance.getCheckInTime() == null ||
+                attendance.getCheckOutTime() == null) {
+            return 0;
+        }
+
+        return Duration.between(
+                attendance.getCheckInTime(),
+                attendance.getCheckOutTime()
+        ).toMinutes();
+    }
+
+    private long calculateLateMinutes(Attendance attendance) {
+
+        if (attendance.getStatus() != Attendance.AttendanceStatus.LATE ||
+                attendance.getCheckInTime() == null) {
+            return 0;
+        }
+
+        //assume office start at 9am
+        LocalTime officeStart = LocalTime.of(9, 0);
+
+        return Math.max(
+                0,
+                Duration.between(
+                        officeStart,
+                        attendance.getCheckInTime().toLocalTime()
+                ).toMinutes()
+        );
+    }
+
+
+    private Map<String, Object> buildAttendanceRow(Attendance attendance) {
+
+        Map<String, Object> row = new HashMap<>();
+
+        Employee emp = attendance.getEmployee();
+
+        row.put("employeeId", emp.getId());
+        row.put("name", emp.getFirstName() + " " + emp.getLastName());
+        row.put("dept", emp.getDepartment() != null
+                ? emp.getDepartment().getName()
+                : "N/A");
+
+        row.put("date", attendance.getAttendanceDate());
+
+        // Check if employee has approved leave on this date
+        boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(
+                emp.getId(), 
+                attendance.getAttendanceDate()
+        );
+
+        // If employee has approved leave, show ON_LEAVE status
+        row.put("status", hasApprovedLeave ? "ON_LEAVE" : attendance.getStatus().name());
+
+        row.put("checkIn", attendance.getCheckInTime());
+        row.put("checkOut", attendance.getCheckOutTime());
+
+        // Calculate working minutes
+        row.put("workingMinutes", calculateWorkingMinutes(attendance));
+
+        row.put("lateMinutes", calculateLateMinutes(attendance));
+
+        return row;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////
+
+    //GET TODAY SUMMARY BY STATUS WITH COUNT
+    public Map<String, Long> getTodaySummary(String orgUuid, LocalDate date) {
+
+        // If frontend does not send date → use today
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        List<Object[]> results =
+                attendanceRepository.countByStatus(orgUuid, targetDate);
+
+        // 🔑 MUST MATCH FRONTEND KEYS
+        Map<String, Long> summary = new HashMap<>();
+        summary.put("PRESENT", 0L);
+        summary.put("LATE", 0L);
+        summary.put("ON_LEAVE", 0L);
+        summary.put("HALF_DAY", 0L);
+        summary.put("ABSENT", 0L);
+        summary.put("WORK_FROM_HOME", 0L);
+
+        for (Object[] row : results) {
+            AttendanceStatus status = (AttendanceStatus) row[0];
+            Long count = (Long) row[1];
+
+            switch (status) {
+                case PRESENT -> summary.put("PRESENT", count);
+                case LATE -> summary.put("LATE", count);
+                case ON_LEAVE -> summary.put("ON_LEAVE", count);
+                case ABSENT -> summary.put("ABSENT", count);
+                case WORK_FROM_HOME -> summary.put("WORK_FROM_HOME", count);
+
+                // ❌ HALF_DAY intentionally ignored (not shown in cards)
+                case HALF_DAY -> { }
+            }
+        }
+
+        // Add count of employees with approved leaves on this date
+        List<Long> employeeIdsOnLeave = leaveRequestRepository
+                .findEmployeeIdsWithApprovedLeaveOnDate(orgUuid, targetDate);
+        
+        // Update ON_LEAVE count to include employees with approved leave requests
+        summary.put("ON_LEAVE", summary.get("ON_LEAVE") + employeeIdsOnLeave.size());
+
+        return summary;
+    }
+
+
+    //GET ATTENDANCE BY DATE
+    public List<Map<String, Object>> getAttendanceForDate(
+            String orgUuid,
+            LocalDate date
+    ) {
+
+        if (date == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
+
+        List<Attendance> records =
+                attendanceRepository.findByOrgAndDate(orgUuid, date);
+
+        // Convert entities → response objects (NO MAPPER)
+        return records.stream()
+                .map(this::buildAttendanceRow)
+                .toList();
+    }
+
+    // =========================================================
+    // GET ALL EMPLOYEES WITH TODAY'S ATTENDANCE STATUS
+    // Used in CHECK-IN TAB (Admin / HR)
+    // =========================================================
+    public List<TodayAttendanceDTO> getEmployeesForCheckIn(String orgUuid, LocalDate targetDate) {
+
+        // 1. Fetch all ACTIVE employees for the organization
+        //    Inactive employees should not be shown in attendance screens
+        List<Employee> employees = employeeRepository
+                .findByOrganizationUuidAndIsActiveTrue(orgUuid);
+
+        // 2. Use the provided target date
+        LocalDate date = targetDate;
+
+        // 3. For each employee, check if attendance exists for the date
+        return employees.stream().map(emp -> {
+
+            // Fetch attendance record for the specified date (if any)
+            Attendance att = attendanceRepository
+                    .findByEmployeeIdAndAttendanceDate(emp.getId(), date)
+                    .orElse(null);
+
+            // Check if employee has approved leave on this date
+            boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(emp.getId(), date);
+
+            // 4. Build response DTO with attendance status
+            return TodayAttendanceDTO.builder()
+                    .id(att != null ? att.getId() : null) // Attendance ID
+                    .employeeId(emp.getId())
+                    .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                    .employeeCode(emp.getEmployeeCode())
+
+                    // If attendance exists → show times
+                    // If not → keep null
+                    .checkInTime(att != null ? att.getCheckInTime() : null)
+                    .checkOutTime(att != null ? att.getCheckOutTime() : null)
+
+                    // Status logic:
+                    // - If employee has approved leave → ON_LEAVE
+                    // - If attendance exists → show actual status
+                    // - If not → NOT_CHECKED_IN
+                    .status(hasApprovedLeave ? "ON_LEAVE" : 
+                            (att != null ? att.getStatus().name() : "NOT_CHECKED_IN"))
+
+                    // Attendance is complete only if both check-in & check-out exist
+                    .isComplete(att != null && att.isComplete())
+                    .build();
+        }).toList();
+    }
+
+    // =========================================================
+    // MANUAL CHECK-IN
+    // Admin / HR marks check-in for an employee
+    // =========================================================
+    public void manualCheckIn(String orgUuid, Long employeeId, String manualTime, LocalDate targetDate) {
+
+        // 1. Validate employee exists
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() ->
+                        new EmployeeNotFoundException("Employee not found")
+                );
+
+        // 2. Validate employee belongs to the same organization
+        if (!employee.getOrganizationUuid().equals(orgUuid)) {
+            throw new OrganizationNotFoundException("Invalid organization");
+        }
+
+        // 3. Use the provided target date
+        LocalDate date = targetDate;
+
+        // 4. Prevent duplicate check-ins for the same day
+        if (attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, date)
+                .isPresent()) {
+
+            throw new AttendanceAlreadyCheckedInException(
+                    "Employee already checked in for this date"
+            );
+        }
+
+        // 5. Get check-in time: manual or current time
+        LocalDateTime checkInDateTime;
+        if (manualTime != null && !manualTime.isEmpty()) {
+            // Parse manual time (HH:mm format) and combine with the target date
+            LocalTime time = LocalTime.parse(manualTime);
+            checkInDateTime = LocalDateTime.of(date, time);
+        } else {
+            // Use current local time with target date
+            checkInDateTime = LocalDateTime.of(date, LocalTime.now());
+        }
+        LocalTime checkInTime = checkInDateTime.toLocalTime();
+
+
+        // 6. Determine status based on attendance configuration
+        Attendance.AttendanceStatus status = determineStatusFromConfig(employeeId, orgUuid, checkInTime);
+
+        // 7. Create new attendance record
+        Attendance attendance = Attendance.builder()
+                .organizationUuid(orgUuid)
+                .employeeId(employeeId)
+                .attendanceDate(date)
+                .checkInTime(checkInDateTime)
+                .status(status)
+                .verificationType(Attendance.VerificationType.MANUAL)
+                .build();
+
+        // 8. Save attendance
+        attendanceRepository.save(attendance);
+    }
+
+    // =========================================================
+// GET PENDING CHECK-OUTS (Admin / HR)
+// Employees who checked in today but not checked out
+// =========================================================
+    @Transactional(readOnly = true)
+    public List<TodayAttendanceDTO> getPendingCheckouts(String orgUuid, LocalDate targetDate) {
+
+        if (orgUuid == null || orgUuid.isBlank()) {
+            throw new OrganizationNotFoundException("Organization UUID is required");
+        }
+
+        LocalDate date = targetDate;
+
+        List<Attendance> pendingAttendances =
+                attendanceRepository.findPendingCheckouts(orgUuid, date);
+
+        return pendingAttendances.stream()
+                .map(att -> {
+                    Employee emp = att.getEmployee();
+
+                    if (emp == null) {
+                        throw new EmployeeNotFoundException(
+                                "Employee not found for attendance ID: " + att.getId()
+                        );
+                    }
+
+                    // Check if employee has approved leave on this date
+                    boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(emp.getId(), date);
+
+                    return TodayAttendanceDTO.builder()
+                            .id(att.getId())
+                            .employeeId(emp.getId())
+                            .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                            .employeeCode(emp.getEmployeeCode())
+                            .checkInTime(att.getCheckInTime())
+                            .checkOutTime(null) // explicitly pending
+                            .status(hasApprovedLeave ? "ON_LEAVE" : att.getStatus().name())
+                            .isComplete(false)
+                            .build();
+                })
+                .toList();
+    }
+
+
+    // =========================================================
+    // MANUAL CHECK-OUT
+    // Admin / HR marks check-out for an employee
+    // =========================================================
+    public TodayAttendanceDTO manualCheckOut(String orgUuid, Long employeeId, String manualTime, LocalDate targetDate) {
+
+        LocalDate date = targetDate;
+        
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, date)
+                .orElseThrow(() -> new AttendanceNotCheckedInException("Not checked in for this date"));
+
+        if (attendance.getCheckOutTime() != null) {
+            throw new AttendanceAlreadyCheckedInException("Already checked out");
+        }
+
+        // Set checkout time: manual or current time
+        LocalDateTime checkOutDateTime;
+        if (manualTime != null && !manualTime.isEmpty()) {
+            // Parse manual time (HH:mm format) and combine with the target date
+            LocalTime time = LocalTime.parse(manualTime);
+            checkOutDateTime = LocalDateTime.of(date, time);
+        } else {
+            // Use current local time with target date
+            checkOutDateTime = LocalDateTime.of(date, LocalTime.now());
+        }
+        attendance.setCheckOutTime(checkOutDateTime);
+
+        // Re-evaluate attendance status based on both check-in and check-out times
+        // This handles early departure (HALF_DAY if left before morning threshold)
+        LocalTime checkInTime = attendance.getCheckInTime().toLocalTime();
+        LocalTime checkOutTime = checkOutDateTime.toLocalTime();
+        Attendance.AttendanceStatus updatedStatus = determineStatusFromConfig(
+                employeeId, orgUuid, checkInTime, checkOutTime
+        );
+        attendance.setStatus(updatedStatus);
+
+        // Calculate OT hours based on configuration
+        calculateAndSetOtHours(attendance, employeeId, orgUuid, checkOutTime);
+
+        attendanceRepository.save(attendance);
+
+        Employee emp = attendance.getEmployee();
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(attendance.getEmployeeId())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .employeeCode(emp.getEmployeeCode())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime()) // ✅ IMPORTANT
+                .status(attendance.getStatus().name())
+                .isComplete(true)
+                .build();
+    }
+
+    // =========================================================
+    // UPDATE ATTENDANCE STATUS
+    // =========================================================
+    @Transactional
+    public TodayAttendanceDTO updateAttendanceStatus(
+            String orgUuid,
+            Long employeeId,
+            Attendance.AttendanceStatus newStatus,
+            LocalDateTime newCheckInTime
+    ) {
+        LocalDate today = LocalDate.now();
+
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
+
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, today)
+                .orElse(null);
+
+        if (attendance == null) {
+            // If no record exists, create it
+            attendance = Attendance.builder()
+                    .organizationUuid(orgUuid)
+                    .employeeId(employeeId)
+                    .attendanceDate(today)
+                    .status(newStatus)
+                    .checkInTime(newCheckInTime) // optional, if passed
+                    .verificationType(Attendance.VerificationType.MANUAL)
+                    .build();
+
+            // Prevent check-in for ABSENT or ON_LEAVE
+            if ((newStatus == Attendance.AttendanceStatus.ABSENT ||
+                    newStatus == Attendance.AttendanceStatus.ON_LEAVE)
+                    && newCheckInTime != null) {
+                throw new IllegalArgumentException("Cannot log check-in for ABSENT or ON_LEAVE status");
+            }
+
+
+        } else {
+            // Update status if record exists
+            if (attendance.getCheckOutTime() != null) {
+                throw new IllegalStateException("Cannot change status after checkout");
+            }
+
+            attendance.setStatus(newStatus);
+
+            // If you pass check-in time, update it
+            if (newCheckInTime != null) {
+                attendance.setCheckInTime(newCheckInTime);
+            }
+        }
+
+        attendanceRepository.save(attendance);
+
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(emp.getId())
+                .employeeCode(emp.getEmployeeCode())
+                .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .status(attendance.getStatus().name())
+                .isComplete(attendance.isComplete())
+                .build();
+    }
+
+    // =========================================================
+    // UPDATE ATTENDANCE RECORD (Edit existing or create new)
+    // Allows manual editing of check-in, check-out times and status
+    // =========================================================
+    @Transactional
+    public TodayAttendanceDTO updateAttendanceRecord(
+            String orgUuid,
+            Long employeeId,
+            LocalDate date,
+            LocalDateTime checkInTime,
+            LocalDateTime checkOutTime,
+            String statusStr
+    ) {
+        // Validate employee
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new EmployeeNotFoundException("Employee not found"));
+
+        if (!employee.getOrganizationUuid().equals(orgUuid)) {
+            throw new OrganizationNotFoundException("Employee does not belong to this organization");
+        }
+
+        // Parse status
+        Attendance.AttendanceStatus status = statusStr != null 
+                ? Attendance.AttendanceStatus.valueOf(statusStr) 
+                : null;
+
+        // Find or create attendance record
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndAttendanceDate(employeeId, date)
+                .orElse(null);
+
+        if (attendance == null) {
+            // Create new attendance record
+            attendance = Attendance.builder()
+                    .organizationUuid(orgUuid)
+                    .employeeId(employeeId)
+                    .attendanceDate(date)
+                    .checkInTime(checkInTime)
+                    .checkOutTime(checkOutTime)
+                    .status(status != null ? status : Attendance.AttendanceStatus.PRESENT)
+                    .verificationType(Attendance.VerificationType.MANUAL)
+                    .build();
+        } else {
+            // Update existing record
+            if (checkInTime != null) {
+                attendance.setCheckInTime(checkInTime);
+            }
+            if (checkOutTime != null) {
+                attendance.setCheckOutTime(checkOutTime);
+            }
+            if (status != null) {
+                attendance.setStatus(status);
+            }
+        }
+
+        // Recalculate OT hours if both times are set
+        if (attendance.getCheckInTime() != null && attendance.getCheckOutTime() != null) {
+            LocalTime checkOut = attendance.getCheckOutTime().toLocalTime();
+            calculateAndSetOtHours(attendance, employeeId, orgUuid, checkOut);
+        }
+
+        // Save attendance
+        attendanceRepository.save(attendance);
+
+        // Return DTO
+        return TodayAttendanceDTO.builder()
+                .id(attendance.getId())
+                .employeeId(employee.getId())
+                .employeeName(employee.getFirstName() + " " + employee.getLastName())
+                .employeeCode(employee.getEmployeeCode())
+                .checkInTime(attendance.getCheckInTime())
+                .checkOutTime(attendance.getCheckOutTime())
+                .status(attendance.getStatus().name())
+                .isComplete(attendance.isComplete())
+                .build();
+    }
+
 
     /**
      * Mark CHECK-IN only - won't allow if already checked in today
@@ -363,6 +875,11 @@ public class AttendanceService {
             workingHours = String.format("%d hrs %d mins", hours, minutes);
         }
 
+        String otHours = null;
+        if (attendance.getOtHours() != null) {
+            otHours = attendance.getOtHours().toString();
+        }
+
         return AttendanceHistoryResponse.builder()
                 .id(attendance.getId())
                 .date(attendance.getAttendanceDate())
@@ -372,6 +889,7 @@ public class AttendanceService {
                 .verificationType(attendance.getVerificationType() != null ?
                         attendance.getVerificationType().name() : null)
                 .workingHours(workingHours)
+                .otHours(otHours)
                 .build();
     }
 
@@ -385,4 +903,569 @@ public class AttendanceService {
         if (hour < 17) return "afternoon";
         return "evening";
     }
+
+    /**
+     * Determines attendance status based on check-in time and attendance configuration
+     * Applies priority-based configuration (Employee > Designation > Department > Organization)
+     * This version is used during CHECK-IN (no checkout time available yet)
+     */
+    private Attendance.AttendanceStatus determineStatusFromConfig(Long employeeId, String orgUuid, LocalTime checkInTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                // Compare check-in time with configured thresholds
+                if (checkInTime.isAfter(config.getAbsentThreshold())) {
+                    return Attendance.AttendanceStatus.ABSENT;
+                } else if (checkInTime.isAfter(config.getEveningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                } else if (checkInTime.isAfter(config.getLateThreshold())) {
+                    return Attendance.AttendanceStatus.LATE;
+                } else {
+                    return Attendance.AttendanceStatus.PRESENT;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load attendance configuration for employee {}: {}", employeeId, e.getMessage());
+        }
+
+        // Fallback to default logic if no configuration found
+        return determineAttendanceStatus(checkInTime);
+    }
+
+    /**
+     * Re-evaluates attendance status during CHECK-OUT based on both check-in and check-out times
+     * Applies priority-based configuration (Employee > Designation > Department > Organization)
+     * This version checks for early departure (half-day due to early checkout)
+     */
+    private Attendance.AttendanceStatus determineStatusFromConfig(Long employeeId, String orgUuid, LocalTime checkInTime, LocalTime checkOutTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                
+                // First, check if it's an early departure (checked in on time but left early)
+                // This should be checked FIRST as it's a special case
+                if (checkInTime.isBefore(config.getLateThreshold()) && 
+                    checkOutTime.isBefore(config.getMorningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                }
+                
+                // Then check regular check-in based status
+                if (checkInTime.isAfter(config.getAbsentThreshold())) {
+                    return Attendance.AttendanceStatus.ABSENT;
+                } else if (checkInTime.isAfter(config.getEveningHalfDayThreshold())) {
+                    return Attendance.AttendanceStatus.HALF_DAY;
+                } else if (checkInTime.isAfter(config.getLateThreshold())) {
+                    return Attendance.AttendanceStatus.LATE;
+                } else {
+                    return Attendance.AttendanceStatus.PRESENT;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load attendance configuration for employee {}: {}", employeeId, e.getMessage());
+        }
+
+        // Fallback to default logic if no configuration found
+        return determineAttendanceStatus(checkInTime);
+    }
+
+    /**
+     * Calculates and sets OT hours based on attendance configuration
+     * OT is calculated only if checkout time is after the configured OT start time
+     */
+    private void calculateAndSetOtHours(Attendance attendance, Long employeeId, String orgUuid, LocalTime checkOutTime) {
+        try {
+            // Get applicable configuration for this employee
+            Optional<com.corehive.backend.model.AttendanceConfiguration> configOpt =
+                    attendanceConfigurationService.getApplicableConfiguration(employeeId, orgUuid);
+
+            if (configOpt.isPresent()) {
+                com.corehive.backend.model.AttendanceConfiguration config = configOpt.get();
+                if (config.getOtStartTime() != null) {
+                    // Check if checkout is after OT start time
+                    if (checkOutTime.isAfter(config.getOtStartTime())) {
+                        // Calculate OT hours as difference between checkout and OT start time
+                        Duration otDuration = Duration.between(config.getOtStartTime(), checkOutTime);
+                        double otHours = otDuration.toMinutes() / 60.0;
+
+                        // Set OT hours (rounded to 2 decimal places)
+                        attendance.setOtHours(java.math.BigDecimal.valueOf(otHours)
+                                .setScale(2, java.math.RoundingMode.HALF_UP));
+
+                        log.info("OT hours calculated for employee {}: {} hours", employeeId, otHours);
+                    } else {
+                        // No OT if checkout before OT start time
+                        attendance.setOtHours(java.math.BigDecimal.ZERO);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to calculate OT hours for employee {}: {}", employeeId, e.getMessage());
+            // Don't fail the checkout if OT calculation fails
+            attendance.setOtHours(java.math.BigDecimal.ZERO);
+        }
+    }
+
+    //Get today on-leave employee count
+    public int getTodayOnLeaveCount(String organizationUuid) {
+
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID cannot be null or empty");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        return attendanceRepository.countByOrganizationUuidAndAttendanceDateAndStatus(
+                organizationUuid,
+                today,
+                Attendance.AttendanceStatus.ON_LEAVE
+        );
+    }
+
+    // =========================================================
+    // MARK ABSENT EMPLOYEES
+    // Called by scheduled job to mark employees who haven't checked in as ABSENT
+    // =========================================================
+    @Transactional
+    public int markAbsentEmployees(String orgUuid, LocalDate date) {
+        log.info("Starting to mark absent employees for organization: {} on date: {}", orgUuid, date);
+
+        // Get all active employees for the organization
+        List<Employee> employees = employeeRepository.findByOrganizationUuidAndIsActiveTrue(orgUuid);
+        
+        int markedCount = 0;
+
+        for (Employee employee : employees) {
+            try {
+                // Check if attendance record exists for this employee on this date
+                Optional<Attendance> existingAttendance = attendanceRepository
+                        .findByEmployeeIdAndAttendanceDate(employee.getId(), date);
+
+                // If no attendance record exists or check-in is null, mark as absent
+                if (existingAttendance.isEmpty() || existingAttendance.get().getCheckInTime() == null) {
+                    
+                    // Check if employee has approved leave on this date
+                    boolean hasApprovedLeave = leaveRequestRepository.hasApprovedLeaveOnDate(employee.getId(), date);
+                    
+                    // Skip if employee is on leave
+                    if (hasApprovedLeave) {
+                        log.debug("Employee {} is on approved leave on {}, skipping absent marking", 
+                                employee.getId(), date);
+                        continue;
+                    }
+
+                    // Get attendance configuration to check absent threshold
+                    Optional<AttendanceConfiguration> configOpt = attendanceConfigurationService
+                            .getApplicableConfiguration(employee.getId(), orgUuid);
+
+                    if (configOpt.isPresent()) {
+                        AttendanceConfiguration config = configOpt.get();
+                        
+                        // Create or update attendance record with ABSENT status
+                        Attendance attendance;
+                        if (existingAttendance.isPresent()) {
+                            attendance = existingAttendance.get();
+                            attendance.setStatus(AttendanceStatus.ABSENT);
+                        } else {
+                            attendance = Attendance.builder()
+                                    .organizationUuid(orgUuid)
+                                    .employeeId(employee.getId())
+                                    .attendanceDate(date)
+                                    .status(AttendanceStatus.ABSENT)
+                                    .verificationType(VerificationType.MANUAL)
+                                    .notes("Auto-marked as absent by system")
+                                    .build();
+                        }
+
+                        attendanceRepository.save(attendance);
+                        markedCount++;
+                        
+                        log.debug("Marked employee {} ({}) as absent for date {}", 
+                                employee.getId(), employee.getFirstName() + " " + employee.getLastName(), date);
+                    } else {
+                        log.warn("No attendance configuration found for employee {}, skipping", employee.getId());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error marking employee {} as absent: {}", employee.getId(), e.getMessage());
+            }
+        }
+
+        log.info("Completed marking absent employees. Total marked: {}", markedCount);
+        return markedCount;
+    }
+
+    // ***********************************************
+// Mark attendance using PERMANENT QR
+// ***********************************************
+
+    @Transactional
+    public QrAttendanceResponse markAttendanceViaQr(
+            String qrToken,
+            String ip,
+            String deviceInfo
+    ) throws BadRequestException {
+
+        // 1️⃣ Resolve employee using SHORT QR token
+        Employee employee = (Employee) employeeRepository
+                .findByQrToken(qrToken)
+                .orElseThrow(() -> new BadRequestException("Invalid QR"));
+
+        if (!Boolean.TRUE.equals(employee.getIsActive())) {
+            throw new BadRequestException("Employee inactive");
+        }
+
+        Long employeeId = employee.getId();
+        String orgUuid = employee.getOrganizationUuid();
+        LocalDate today = LocalDate.now();
+
+        // 2️⃣ Check existing attendance for today
+        Attendance attendance = attendanceRepository
+                .findByEmployeeIdAndOrganizationUuidAndAttendanceDate(
+                        employeeId, orgUuid, today
+                )
+                .orElse(null);
+
+        String action;
+
+        // ================= FIRST SCAN → CHECK-IN =================
+        if (attendance == null) {
+
+            attendance = Attendance.builder()
+                    .employeeId(employeeId)
+                    .organizationUuid(orgUuid)
+                    .attendanceDate(today)
+                    .checkInTime(LocalDateTime.now())
+                    .status(Attendance.AttendanceStatus.PRESENT)   // ✅ REQUIRED
+                    .verificationType(Attendance.VerificationType.QR_CODE)
+                    .ipAddress(ip)
+                    .deviceInfo(deviceInfo)
+                    .build();
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_IN";
+        }
+
+        // ================= SECOND SCAN → CHECK-OUT =================
+        else if (attendance.getCheckOutTime() == null) {
+
+            LocalDateTime checkInTime = attendance.getCheckInTime();
+            LocalDateTime now = LocalDateTime.now();
+
+            long minutesBetween = ChronoUnit.MINUTES.between(checkInTime, now);
+
+            if (minutesBetween < MIN_CHECKOUT_DELAY_MINUTES) {
+                throw new BadRequestException(
+                        "Checkout allowed only after "
+                                + MIN_CHECKOUT_DELAY_MINUTES
+                                + " minutes from check-in"
+                );
+            }
+
+            attendance.setCheckOutTime(now);
+            attendance.setVerificationType(Attendance.VerificationType.QR_CODE);
+            attendance.setIpAddress(ip);
+            attendance.setDeviceInfo(deviceInfo);
+
+            attendanceRepository.save(attendance);
+            action = "CHECK_OUT";
+        }
+
+        // ================= THIRD SCAN → SAFE NO-OP =================
+        else {
+            action = "ALREADY_COMPLETED";
+        }
+
+        // 3️⃣ Response
+        return QrAttendanceResponse.builder()
+                .employeeId(employeeId)
+                .attendanceDate(today)
+                .action(action)
+                .message(
+                        switch (action) {
+                            case "CHECK_IN" -> "Check-in successful";
+                            case "CHECK_OUT" -> "Check-out successful";
+                            default -> "Attendance already completed for today";
+                        }
+                )
+                .build();
+    }
+
+    //=========Get Attendance summary report for date range===========//
+    @Transactional(readOnly = true)
+    public List<AttendanceSummaryReportDTO> generateAttendanceSummaryReport(
+            String orgUuid,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        // 1️⃣ Get all ACTIVE employees
+        List<Employee> employees =
+                employeeRepository.findByOrganizationUuidAndIsActiveTrue(orgUuid);
+
+        long totalDays = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+
+        return employees.stream().map(emp -> {
+
+            // 2️⃣ Count attendance status
+            List<Object[]> counts =
+                    attendanceRepository.countStatusByEmployee(
+                            orgUuid, emp.getId(), startDate, endDate
+                    );
+
+            long present = 0, absent = 0, late = 0, halfDay = 0, leave = 0;
+
+            for (Object[] row : counts) {
+                Attendance.AttendanceStatus status =
+                        (Attendance.AttendanceStatus) row[0];
+                long count = (long) row[1];
+
+                switch (status) {
+                    case PRESENT -> present = count;
+                    case ABSENT -> absent = count;
+                    case LATE -> late = count;
+                    case HALF_DAY -> halfDay = count;
+                    case ON_LEAVE -> leave = count;
+                }
+            }
+
+            // 3️⃣ Attendance percentage
+            double percentage =
+                    totalDays == 0 ? 0 :
+                            ((double) present / totalDays) * 100;
+
+            return AttendanceSummaryReportDTO.builder()
+                    .employeeId(emp.getId())
+                    .employeeCode(emp.getEmployeeCode())
+                    .employeeName(emp.getFirstName() + " " + emp.getLastName())
+                    .department(
+                            emp.getDepartment() != null
+                                    ? emp.getDepartment().getName()
+                                    : "N/A"
+                    )
+                    .designation(emp.getDesignation())
+                    .totalWorkingDays(totalDays)
+                    .present(present)
+                    .absent(absent)
+                    .late(late)
+                    .halfDay(halfDay)
+                    .leave(leave)
+                    .attendancePercentage(
+                            Math.round(percentage * 10.0) / 10.0
+                    )
+                    .build();
+
+        }).toList();
+    }
+
+    //=========Get Day-wise attendance details for selected employee
+    @Transactional(readOnly = true)
+    public List<AttendanceDetailReportDTO> generateEmployeeAttendanceDetail(
+            String orgUuid,
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+
+        List<Attendance> records =
+                attendanceRepository.findByOrganizationUuidAndAttendanceDateBetween(
+                                orgUuid, startDate, endDate
+                        ).stream()
+                        .filter(a -> a.getEmployeeId().equals(employeeId))
+                        .toList();
+
+        return records.stream().map(att -> {
+
+            String workingHours = null;
+            if (att.getCheckInTime() != null && att.getCheckOutTime() != null) {
+                Duration d =
+                        Duration.between(att.getCheckInTime(), att.getCheckOutTime());
+                workingHours =
+                        d.toHours() + "h " + d.toMinutesPart() + "m";
+            }
+
+            return AttendanceDetailReportDTO.builder()
+                    .date(att.getAttendanceDate())
+                    .day(att.getAttendanceDate().getDayOfWeek().name())
+                    .checkInTime(att.getCheckInTime())
+                    .checkOutTime(att.getCheckOutTime())
+                    .workingHours(workingHours)
+                    .status(att.getStatus().name())
+                    .remarks(att.getNotes())
+                    .build();
+        }).toList();
+    }
+
+    //=========Generate Attendance Summary Excel===========//
+    public ByteArrayResource generateAttendanceSummaryExcel(
+            String orgUuid,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        try {
+            // 1️⃣ Reuse existing summary logic
+            List<AttendanceSummaryReportDTO> report =
+                    generateAttendanceSummaryReport(orgUuid, startDate, endDate);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Attendance Summary");
+
+            // 2️⃣ Header style
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            // 3️⃣ Header row
+            String[] headers = {
+                    "Employee Code", "Employee Name", "Department", "Designation",
+                    "Total Working Days", "Present", "Absent", "Late",
+                    "Half Day", "Leave", "Attendance %"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // 4️⃣ Data rows
+            int rowIndex = 1;
+            for (AttendanceSummaryReportDTO dto : report) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(dto.getEmployeeCode());
+                row.createCell(1).setCellValue(dto.getEmployeeName());
+                row.createCell(2).setCellValue(dto.getDepartment());
+                row.createCell(3).setCellValue(dto.getDesignation());
+                row.createCell(4).setCellValue(dto.getTotalWorkingDays());
+                row.createCell(5).setCellValue(dto.getPresent());
+                row.createCell(6).setCellValue(dto.getAbsent());
+                row.createCell(7).setCellValue(dto.getLate());
+                row.createCell(8).setCellValue(dto.getHalfDay());
+                row.createCell(9).setCellValue(dto.getLeave());
+                row.createCell(10).setCellValue(dto.getAttendancePercentage());
+            }
+
+            // 5️⃣ Auto size
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            workbook.close();
+
+            return new ByteArrayResource(out.toByteArray());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Excel generation failed", e);
+        }
+    }
+
+    //=========Generate Employee Attendance Detail Excel===========//
+    public ByteArrayResource generateEmployeeAttendanceDetailExcel(
+            String orgUuid,
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) {
+        try {
+            List<AttendanceDetailReportDTO> details =
+                    generateEmployeeAttendanceDetail(orgUuid, employeeId, startDate, endDate);
+
+            Workbook workbook = new XSSFWorkbook();
+            Sheet sheet = workbook.createSheet("Attendance Details");
+
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+
+            String[] headers = {
+                    "Date", "Day", "Check-In", "Check-Out",
+                    "Working Hours", "Status", "Remarks"
+            };
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int rowIndex = 1;
+            for (AttendanceDetailReportDTO dto : details) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(dto.getDate().toString());
+                row.createCell(1).setCellValue(dto.getDay());
+                row.createCell(2).setCellValue(
+                        dto.getCheckInTime() != null ? dto.getCheckInTime().toString() : "-"
+                );
+                row.createCell(3).setCellValue(
+                        dto.getCheckOutTime() != null ? dto.getCheckOutTime().toString() : "-"
+                );
+                row.createCell(4).setCellValue(dto.getWorkingHours());
+                row.createCell(5).setCellValue(dto.getStatus());
+                row.createCell(6).setCellValue(dto.getRemarks());
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            workbook.close();
+
+            return new ByteArrayResource(out.toByteArray());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Excel generation failed", e);
+        }
+    }
+
+    /**
+     * Get monthly attendance chart data for dashboard charts
+     * Returns daily attendance counts (present, absent, late) for a specific month
+     */
+    public List<Map<String, Object>> getMonthlyAttendanceChartData(String organizationUuid, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+        
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            Map<String, Long> dailyCounts = attendanceRepository
+                .findByOrganizationUuidAndAttendanceDate(organizationUuid, date)
+                .stream()
+                .filter(attendance -> attendance.getStatus() != null)  // Filter out null status
+                .collect(Collectors.groupingBy(
+                    attendance -> attendance.getStatus().name(),
+                    Collectors.counting()
+                ));
+            
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("day", date.getDayOfMonth());
+            dayData.put("date", date.toString());
+            dayData.put("present", dailyCounts.getOrDefault("PRESENT", 0L).intValue());
+            dayData.put("absent", dailyCounts.getOrDefault("ABSENT", 0L).intValue());
+            dayData.put("late", dailyCounts.getOrDefault("LATE", 0L).intValue());
+            dayData.put("onLeave", dailyCounts.getOrDefault("ON_LEAVE", 0L).intValue());
+            dayData.put("halfDay", dailyCounts.getOrDefault("HALF_DAY", 0L).intValue());
+            
+            chartData.add(dayData);
+        }
+        
+        return chartData;
+    }
+
+
 }

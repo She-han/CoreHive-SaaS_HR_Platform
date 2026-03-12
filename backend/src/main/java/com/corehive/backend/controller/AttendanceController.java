@@ -4,6 +4,11 @@ import com.corehive.backend.dto.attendance.AttendanceHistoryResponse;
 import com.corehive.backend.dto.attendance.FaceAttendanceRequest;
 import com.corehive.backend.dto.attendance.FaceAttendanceResponse;
 import com.corehive.backend.dto.attendance.TodayAttendanceDTO;
+import com.corehive.backend.dto.request.ManualTimeRequest;
+import com.corehive.backend.dto.request.QrAttendanceRequest;
+import com.corehive.backend.dto.request.UpdateAttendanceRequest;
+import com.corehive.backend.dto.request.UpdateAttendanceStatusRequest;
+import com.corehive.backend.dto.response.QrAttendanceResponse;
 import com.corehive.backend.model.AppUser;
 import com.corehive.backend.model.Attendance;
 import com.corehive.backend.model.Employee;
@@ -11,11 +16,18 @@ import com.corehive.backend.repository.AppUserRepository;
 import com.corehive.backend.repository.AttendanceRepository;
 import com.corehive.backend.repository.EmployeeRepository;
 import com.corehive.backend.service.AttendanceService;
+import com.corehive.backend.util.StandardResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.BadRequestException;
+import org.springframework.core.io.Resource;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -34,6 +46,190 @@ public class AttendanceController {
     private final AppUserRepository appUserRepository;
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
+
+    /**
+     * Load attendance for a single day
+     * Frontend calls this 7 times (Sun → Sat)
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceByDate(
+            @RequestParam("date") LocalDate date,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance loaded",
+                        attendanceService.getAttendanceForDate(orgUuid, date)
+                )
+        );
+    }
+
+    //GET SUMMARY BY STATUS WITH COUNT
+    @GetMapping("/summary")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayAttendanceSummary(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance summary loaded",
+                        attendanceService.getTodaySummary(orgUuid, date)
+                )
+        );
+    }
+
+
+    // CHECK-IN TAB LOAD
+    @GetMapping("/check-in/list")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getCheckInList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Employees loaded",
+                        attendanceService.getEmployeesForCheckIn(orgUuid, targetDate)
+                )
+        );
+    }
+
+    // MANUAL CHECK-IN
+    @PostMapping("/check-in/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> manualCheckIn(
+            HttpServletRequest request,
+            @PathVariable Long employeeId,
+            @RequestBody(required = false) ManualTimeRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        String manualTime = (req != null) ? req.getManualTime() : null;
+        LocalDate targetDate = (req != null && req.getDate() != null) 
+                ? LocalDate.parse(req.getDate()) 
+                : LocalDate.now();
+
+        attendanceService.manualCheckIn(orgUuid, employeeId, manualTime, targetDate);
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Check-in successful", null)
+        );
+    }
+
+    // CHECK-OUT TAB LOAD
+    @GetMapping("/check-out/list")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getCheckOutList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Pending check-outs loaded",
+                        attendanceService.getPendingCheckouts(orgUuid, targetDate)
+                )
+        );
+    }
+
+    // MANUAL CHECK-OUT
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    @PostMapping("/check-out/{employeeId}")
+    public ResponseEntity<StandardResponse> manualCheckOut(
+            HttpServletRequest request,
+            @PathVariable Long employeeId,
+            @RequestBody(required = false) ManualTimeRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        String manualTime = (req != null) ? req.getManualTime() : null;
+        LocalDate targetDate = (req != null && req.getDate() != null) 
+                ? LocalDate.parse(req.getDate()) 
+                : LocalDate.now();
+
+        TodayAttendanceDTO dto = attendanceService.manualCheckOut(orgUuid, employeeId, manualTime, targetDate);
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Check-out successful", dto) // ✅ RETURN DATA
+        );
+    }
+
+    //GET ALL TODAY ATTENDANCE
+    @GetMapping("/check-out/today")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayCheckOutList(
+            HttpServletRequest request,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+        List<TodayAttendanceDTO> employees = attendanceService.getEmployeesForCheckIn(orgUuid, targetDate);
+        return ResponseEntity.ok(new StandardResponse(200, "Today's attendance loaded", employees));
+    }
+
+    // UPDATE ATTENDANCE RECORD
+    @PutMapping("/update")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> updateAttendance(
+            HttpServletRequest request,
+            @RequestBody UpdateAttendanceRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+        
+        TodayAttendanceDTO updated = attendanceService.updateAttendanceRecord(
+                orgUuid,
+                req.getEmployeeId(),
+                req.getDate(),
+                req.getCheckInTime(),
+                req.getCheckOutTime(),
+                req.getStatus()
+        );
+
+        return ResponseEntity.ok(
+                new StandardResponse(200, "Attendance updated successfully", updated)
+        );
+    }
+
+
+    // =========================================================
+    // UPDATE ATTENDANCE STATUS
+    // =========================================================
+    @PutMapping("/status/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public StandardResponse updateAttendanceStatus(
+            HttpServletRequest request,
+            @PathVariable Long employeeId,
+            @RequestBody UpdateAttendanceStatusRequest req
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        TodayAttendanceDTO updated = attendanceService.updateAttendanceStatus(
+                orgUuid,
+                employeeId,
+                Attendance.AttendanceStatus.valueOf(req.getStatus()),
+                req.getCheckInTime()
+        );
+
+        return new StandardResponse(200, "Attendance status updated", updated);
+    }
+
+
+
 
     /**
      * Mark CHECK-IN using face recognition - KIOSK MODE
@@ -502,4 +698,168 @@ public class AttendanceController {
         }
         return request.getRemoteAddr();
     }
+
+    //************************************************//
+    // GET MONTHLY ATTENDANCE DATA FOR CHARTS
+    //************************************************//
+    @GetMapping("/monthly-chart-data")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getMonthlyAttendanceChartData(
+            @RequestParam("year") int year,
+            @RequestParam("month") int month, // 1-12
+            HttpServletRequest request
+    ) {
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
+        
+        try {
+            var monthlyData = attendanceService.getMonthlyAttendanceChartData(organizationUuid, year, month);
+            return new ResponseEntity<>(
+                new StandardResponse(200, "Monthly attendance chart data fetched successfully", monthlyData),
+                HttpStatus.OK
+            );
+        } catch (Exception e) {
+            log.error("Error fetching monthly attendance chart data: ", e);
+            return new ResponseEntity<>(
+                new StandardResponse(500, "Failed to fetch monthly attendance data", null),
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    //************************************************//
+    // get count of today's ON_LEAVE employees
+    //************************************************//
+    @GetMapping("/today/on-leave-count")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getTodayOnLeaveCount(HttpServletRequest request) {
+
+        String organizationUuid = (String) request.getAttribute("organizationUuid");
+
+        int onLeaveCount = attendanceService.getTodayOnLeaveCount(organizationUuid);
+
+        return new ResponseEntity<>(
+                new StandardResponse(
+                        200,
+                        "Fetched today's ON_LEAVE employee count successfully",
+                        onLeaveCount
+                ),
+                HttpStatus.OK
+        );
+    }
+
+    //QR attendance
+    @PostMapping("/qr/mark")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> markAttendanceViaQr(
+            @Valid @RequestBody QrAttendanceRequest request,
+            HttpServletRequest http
+    ) throws BadRequestException {
+        QrAttendanceResponse response = attendanceService.markAttendanceViaQr(
+                request.getQrToken(),
+                http.getRemoteAddr(),
+                http.getHeader("User-Agent")
+        );
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        response.getMessage(),
+                        response
+                )
+        );
+    }
+
+    //=========Get Attendance summary report for date range===========//
+    @GetMapping("/report/summary")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceSummaryReport(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid =
+                (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance summary report generated",
+                        attendanceService.generateAttendanceSummaryReport(
+                                orgUuid, startDate, endDate
+                        )
+                )
+        );
+    }
+
+    //=========Get Day-wise attendance details for selected employee
+    @GetMapping("/report/details/{employeeId}")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<StandardResponse> getAttendanceDetailReport(
+            @PathVariable Long employeeId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid =
+                (String) request.getAttribute("organizationUuid");
+
+        return ResponseEntity.ok(
+                new StandardResponse(
+                        200,
+                        "Attendance detail report generated",
+                        attendanceService.generateEmployeeAttendanceDetail(
+                                orgUuid, employeeId, startDate, endDate
+                        )
+                )
+        );
+    }
+
+    //=========Get Attendance summary excel report for date range===========//
+    @GetMapping("/report/summary/excel")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<Resource> downloadSummaryExcel(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        Resource file =
+                attendanceService.generateAttendanceSummaryExcel(
+                        orgUuid, startDate, endDate
+                );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=attendance-summary.xlsx")
+                .header(HttpHeaders.CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(file);
+    }
+
+    //=========Get Day-wise attendance details excel report for selected employee
+    @GetMapping("/report/details/{employeeId}/excel")
+    @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
+    public ResponseEntity<Resource> downloadDetailExcel(
+            @PathVariable Long employeeId,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            HttpServletRequest request
+    ) {
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        Resource file =
+                attendanceService.generateEmployeeAttendanceDetailExcel(
+                        orgUuid, employeeId, startDate, endDate
+                );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=attendance-details-" + employeeId + ".xlsx")
+                .header(HttpHeaders.CONTENT_TYPE,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(file);
+    }
+
+
 }

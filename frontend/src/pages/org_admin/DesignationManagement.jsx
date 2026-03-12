@@ -1,39 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  PlusIcon, 
-  PencilIcon, 
-  TrashIcon, 
+import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
   BriefcaseIcon,
   MagnifyingGlassIcon,
   ArrowPathIcon,
   EyeIcon
-} from '@heroicons/react/24/outline';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-import Modal from '../../components/common/Modal';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import Alert from '../../components/common/Alert';
-import * as designationApi from '../../api/designationApi';
-import DashboardLayout from '../../components/layout/DashboardLayout';
+} from "@heroicons/react/24/outline";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+import Modal from "../../components/common/Modal";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import * as designationApi from "../../api/designationApi";
+
 
 export const DesignationManagement = () => {
   const [loading, setLoading] = useState(false);
   const [designations, setDesignations] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedDesignation, setSelectedDesignation] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState({ name: '', isActive: true });
+  const [formData, setFormData] = useState({ name: "", isActive: true });
   const [formErrors, setFormErrors] = useState({});
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
   useEffect(() => {
     fetchDesignations();
@@ -47,66 +45,121 @@ export const DesignationManagement = () => {
         setDesignations(response.data);
       }
     } catch (error) {
-      showAlert('error', 'Failed to fetch designations');
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to fetch designations",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const showAlert = (type, message) => {
-    setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
-  };
-
   const validateForm = () => {
     const errors = {};
     if (!formData.name?.trim()) {
-      errors.name = 'Designation name is required';
+      errors.name = "Designation name is required";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     setLoading(true);
     try {
       if (isEditing) {
-        await designationApi.updateDesignation(selectedDesignation.id, formData);
-        showAlert('success', 'Designation updated successfully');
+        await designationApi.updateDesignation(
+          selectedDesignation.id,
+          formData
+        );
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Designation updated successfully",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
       } else {
         await designationApi.createDesignation(formData);
-        showAlert('success', 'Designation created successfully');
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Designation created successfully",
+          confirmButtonColor: "#02C39A",
+          timer: 2000,
+          showConfirmButton: false
+        });
       }
       setIsModalOpen(false);
       fetchDesignations();
       resetForm();
     } catch (error) {
-      showAlert('error', error.response?.data?.message || 'Operation failed');
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.response?.data?.message || "Operation failed",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Are you sure?",
+      text: "This designation will be permanently deleted",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#02C39A",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel"
+    });
+
+    if (!result.isConfirmed) return;
+
     setLoading(true);
     try {
       await designationApi.deleteDesignation(selectedDesignation.id);
-      showAlert('success', 'Designation deleted successfully');
-      setIsDeleteModalOpen(false);
+      Swal.fire({
+        icon: "success",
+        title: "Deleted!",
+        text: "Designation deleted successfully",
+        confirmButtonColor: "#02C39A",
+        timer: 2000,
+        showConfirmButton: false
+      });
       setSelectedDesignation(null);
       fetchDesignations();
     } catch (error) {
-      showAlert('error', 'Failed to delete designation');
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Failed to delete designation",
+        confirmButtonColor: "#02C39A"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({ name: '', isActive: true });
+    setFormData({ name: "", isActive: true });
     setFormErrors({});
     setSelectedDesignation(null);
     setIsEditing(false);
@@ -114,9 +167,9 @@ export const DesignationManagement = () => {
 
   const openEditModal = (designation) => {
     setSelectedDesignation(designation);
-    setFormData({ 
+    setFormData({
       name: designation.name,
-      isActive: designation.isActive !== undefined ? designation.isActive : true 
+      isActive: designation.isActive !== undefined ? designation.isActive : true
     });
     setIsEditing(true);
     setIsModalOpen(true);
@@ -127,9 +180,9 @@ export const DesignationManagement = () => {
     setIsViewModalOpen(true);
   };
 
-  const openDeleteModal = (designation) => {
+  const handleDeleteClick = async (designation) => {
     setSelectedDesignation(designation);
-    setIsDeleteModalOpen(true);
+    await handleDelete();
   };
 
   const handleRefresh = async () => {
@@ -137,27 +190,35 @@ export const DesignationManagement = () => {
   };
 
   // Filter designations based on search and status
-  const filteredDesignations = designations.filter(designation => {
-    const matchesSearch = 
-      designation.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = 
-      filterStatus === 'all' ||
-      (filterStatus === 'active' && designation.isActive) ||
-      (filterStatus === 'inactive' && !designation.isActive);
+  const filteredDesignations = designations.filter((designation) => {
+    const matchesSearch = designation.name
+      ?.toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" && designation.isActive) ||
+      (filterStatus === "inactive" && !designation.isActive);
     return matchesSearch && matchesStatus;
   });
 
   return (
-    <DashboardLayout>
-      <div className='p-4'>
+    
+      <div className="p-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row p-6 justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Designation Management</h1>
-            <p className="text-gray-600 mt-1">Manage job titles and designations</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Designation Management
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Manage job titles and designations
+            </p>
           </div>
           <Button
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
             className="flex items-center gap-2"
           >
             <PlusIcon className="w-5 h-5" />
@@ -171,12 +232,12 @@ export const DesignationManagement = () => {
             type={alert.type}
             message={alert.message}
             isOpen={alert.show}
-            onClose={() => setAlert({ show: false, type: '', message: '' })}
+            onClose={() => setAlert({ show: false, type: "", message: "" })}
           />
         )}
 
         {/* Filters */}
-        <Card>
+        <Card className="bg-white">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -190,19 +251,24 @@ export const DesignationManagement = () => {
                 />
               </div>
             </div>
-         
           </div>
         </Card>
 
         {/* Designations Table */}
-        <Card>
+        <Card className="bg-white mt-4">
           <div className="overflow-x-auto">
             <table className="w-full table-auto">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Created At</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                    Name
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                    Created At
+                  </th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -214,22 +280,29 @@ export const DesignationManagement = () => {
                   </tr>
                 ) : filteredDesignations.length > 0 ? (
                   filteredDesignations.map((designation) => (
-                    <tr key={designation.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr
+                      key={designation.id}
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <BriefcaseIcon className="w-5 h-5 text-gray-400" />
-                          <span className="text-sm font-medium text-gray-900">{designation.name}</span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {designation.name}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <span className="text-sm text-gray-700">
-                          {designation.createdAt 
-                            ? new Date(designation.createdAt).toLocaleDateString('en-US', { 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric' 
+                          {designation.createdAt
+                            ? new Date(
+                                designation.createdAt
+                              ).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric"
                               })
-                            : 'N/A'}
+                            : "N/A"}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -249,7 +322,7 @@ export const DesignationManagement = () => {
                             <PencilIcon className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => openDeleteModal(designation)}
+                            onClick={() => handleDeleteClick(designation)}
                             className="p-1 text-red-600 hover:text-red-800 hover:bg-red-100 rounded"
                             title="Delete"
                           >
@@ -272,34 +345,45 @@ export const DesignationManagement = () => {
         </Card>
 
         {/* Add/Edit Modal */}
-        <Modal 
-          isOpen={isModalOpen} 
-          onClose={() => { setIsModalOpen(false); resetForm(); }} 
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            resetForm();
+          }}
           title={isEditing ? "Edit Designation" : "Add New Designation"}
           size="md"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
-            <Input 
-              label="Designation Name" 
-              value={formData.name} 
-              onChange={(e) => setFormData({...formData, name: e.target.value})} 
+            <Input
+              label="Designation Name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               error={formErrors.name}
-              required 
+              required
               icon={BriefcaseIcon}
               placeholder="e.g., Senior Software Engineer"
             />
-            
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => { setIsModalOpen(false); resetForm(); }} 
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}
                 type="button"
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : (isEditing ? 'Update Designation' : 'Add Designation')}
+                {loading
+                  ? "Saving..."
+                  : isEditing
+                    ? "Update Designation"
+                    : "Add Designation"}
               </Button>
             </div>
           </form>
@@ -308,7 +392,10 @@ export const DesignationManagement = () => {
         {/* View Modal */}
         <Modal
           isOpen={isViewModalOpen}
-          onClose={() => { setIsViewModalOpen(false); setSelectedDesignation(null); }}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedDesignation(null);
+          }}
           title="Designation Details"
           size="md"
         >
@@ -318,23 +405,31 @@ export const DesignationManagement = () => {
                 <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                   <BriefcaseIcon className="w-10 h-10 text-blue-500" />
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{selectedDesignation.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {selectedDesignation.name}
+                    </h3>
                     <p className="text-sm text-gray-500">Job Title</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Designation Name</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Designation Name
+                    </label>
                     <p className="text-gray-900">{selectedDesignation.name}</p>
                   </div>
-           
+
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Created At</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Created At
+                    </label>
                     <p className="text-gray-900">
-                      {selectedDesignation.createdAt 
-                        ? new Date(selectedDesignation.createdAt).toLocaleDateString() 
-                        : 'N/A'}
+                      {selectedDesignation.createdAt
+                        ? new Date(
+                            selectedDesignation.createdAt
+                          ).toLocaleDateString()
+                        : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -343,7 +438,10 @@ export const DesignationManagement = () => {
               <div className="flex justify-end gap-3 pt-4">
                 <Button
                   variant="outline"
-                  onClick={() => { setIsViewModalOpen(false); setSelectedDesignation(null); }}
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    setSelectedDesignation(null);
+                  }}
                 >
                   Close
                 </Button>
@@ -359,39 +457,7 @@ export const DesignationManagement = () => {
             </div>
           )}
         </Modal>
-
-        {/* Delete Confirmation Modal */}
-        <Modal 
-          isOpen={isDeleteModalOpen} 
-          onClose={() => { setIsDeleteModalOpen(false); setSelectedDesignation(null); }} 
-          title="Delete Designation"
-        >
-          {selectedDesignation && (
-            <div className="space-y-4">
-              <p className="text-gray-900">
-                Are you sure you want to delete <strong>{selectedDesignation.name}</strong>?
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => { setIsDeleteModalOpen(false); setSelectedDesignation(null); }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  variant="danger" 
-                  onClick={handleDelete} 
-                  disabled={loading}
-                >
-                  {loading ? 'Deleting...' : 'Delete'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </Modal>
       </div>
-    </DashboardLayout>
+    
   );
 };
-

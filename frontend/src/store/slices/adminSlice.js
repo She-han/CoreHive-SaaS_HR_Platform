@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as adminApi from '../../api/adminApi';
-import toast from 'react-hot-toast';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import * as adminApi from "../../api/adminApi";
+import toast from "react-hot-toast";
 
 /**
  * Admin Slice
@@ -17,7 +17,7 @@ const initialState = {
     totalPages: 0,
     currentPage: 0
   },
-  
+
   // Platform statistics
   platformStats: {
     totalOrganizations: 0,
@@ -25,23 +25,23 @@ const initialState = {
     pendingOrganizations: 0,
     totalEmployees: 0
   },
-  
+
   // Loading states
   isLoading: false,
   isApprovalsLoading: false,
   isOrganizationsLoading: false,
   isStatsLoading: false,
-  
+
   // Error states
   error: null,
-  
+
   // UI states
   selectedOrganization: null,
   filters: {
-    status: 'ALL',
-    searchTerm: '',
-    sortBy: 'createdAt',
-    sortDir: 'desc'
+    status: "ALL",
+    searchTerm: "",
+    sortBy: "createdAt",
+    sortDir: "desc"
   }
 };
 
@@ -51,7 +51,7 @@ const initialState = {
 
 // Fetch pending approvals
 export const fetchPendingApprovals = createAsyncThunk(
-  'admin/fetchPendingApprovals',
+  "admin/fetchPendingApprovals",
   async (_, { rejectWithValue }) => {
     try {
       const response = await adminApi.getPendingApprovals();
@@ -61,14 +61,16 @@ export const fetchPendingApprovals = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch pending approvals');
+      return rejectWithValue(
+        error.message || "Failed to fetch pending approvals"
+      );
     }
   }
 );
 
 // Fetch all organizations
 export const fetchAllOrganizations = createAsyncThunk(
-  'admin/fetchAllOrganizations',
+  "admin/fetchAllOrganizations",
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await adminApi.getAllOrganizations(params);
@@ -78,19 +80,19 @@ export const fetchAllOrganizations = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch organizations');
+      return rejectWithValue(error.message || "Failed to fetch organizations");
     }
   }
 );
 
 // Approve organization
 export const approveOrganization = createAsyncThunk(
-  'admin/approveOrganization',
+  "admin/approveOrganization",
   async (organizationUuid, { rejectWithValue, dispatch }) => {
     try {
       const response = await adminApi.approveOrganization(organizationUuid);
       if (response.success) {
-        toast.success('Organization approved successfully!');
+        toast.success("Organization approved successfully!");
         // Refresh pending approvals
         dispatch(fetchPendingApprovals());
         return organizationUuid;
@@ -99,7 +101,7 @@ export const approveOrganization = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.message || 'Failed to approve organization';
+      const message = error.message || "Failed to approve organization";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -108,12 +110,12 @@ export const approveOrganization = createAsyncThunk(
 
 // Reject organization
 export const rejectOrganization = createAsyncThunk(
-  'admin/rejectOrganization',
+  "admin/rejectOrganization",
   async (organizationUuid, { rejectWithValue, dispatch }) => {
     try {
       const response = await adminApi.rejectOrganization(organizationUuid);
       if (response.success) {
-        toast.success('Organization rejected successfully!');
+        toast.success("Organization rejected successfully!");
         // Refresh pending approvals
         dispatch(fetchPendingApprovals());
         return organizationUuid;
@@ -122,7 +124,7 @@ export const rejectOrganization = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.message || 'Failed to reject organization';
+      const message = error.message || "Failed to reject organization";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -131,12 +133,17 @@ export const rejectOrganization = createAsyncThunk(
 
 // Change organization status
 export const changeOrganizationStatus = createAsyncThunk(
-  'admin/changeOrganizationStatus',
+  "admin/changeOrganizationStatus",
   async ({ organizationUuid, status }, { rejectWithValue, dispatch }) => {
     try {
-      const response = await adminApi.changeOrganizationStatus(organizationUuid, status);
+      const response = await adminApi.changeOrganizationStatus(
+        organizationUuid,
+        status
+      );
       if (response.success) {
-        toast.success(`Organization status changed to ${status.toLowerCase()}!`);
+        toast.success(
+          `Organization status changed to ${status.toLowerCase()}!`
+        );
         // Refresh organizations list
         dispatch(fetchAllOrganizations());
         return { organizationUuid, status };
@@ -145,7 +152,7 @@ export const changeOrganizationStatus = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      const message = error.message || 'Failed to change organization status';
+      const message = error.message || "Failed to change organization status";
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -154,7 +161,7 @@ export const changeOrganizationStatus = createAsyncThunk(
 
 // Fetch platform statistics
 export const fetchPlatformStatistics = createAsyncThunk(
-  'admin/fetchPlatformStatistics',
+  "admin/fetchPlatformStatistics",
   async (_, { rejectWithValue }) => {
     try {
       const response = await adminApi.getPlatformStatistics();
@@ -164,7 +171,9 @@ export const fetchPlatformStatistics = createAsyncThunk(
         return rejectWithValue(response.message);
       }
     } catch (error) {
-      return rejectWithValue(error.message || 'Failed to fetch platform statistics');
+      return rejectWithValue(
+        error.message || "Failed to fetch platform statistics"
+      );
     }
   }
 );
@@ -173,29 +182,29 @@ export const fetchPlatformStatistics = createAsyncThunk(
  * Admin Slice Definition
  */
 const adminSlice = createSlice({
-  name: 'admin',
+  name: "admin",
   initialState,
   reducers: {
     // Clear error
     clearError: (state) => {
       state.error = null;
     },
-    
+
     // Set selected organization
     setSelectedOrganization: (state, action) => {
       state.selectedOrganization = action.payload;
     },
-    
+
     // Update filters
     updateFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    
+
     // Reset filters
     resetFilters: (state) => {
       state.filters = initialState.filters;
     },
-    
+
     // Reset admin state
     resetAdminState: (state) => {
       return initialState;
@@ -216,7 +225,7 @@ const adminSlice = createSlice({
         state.isApprovalsLoading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch All Organizations
       .addCase(fetchAllOrganizations.pending, (state) => {
         state.isOrganizationsLoading = true;
@@ -230,7 +239,7 @@ const adminSlice = createSlice({
         state.isOrganizationsLoading = false;
         state.error = action.payload;
       })
-      
+
       // Approve Organization
       .addCase(approveOrganization.pending, (state) => {
         state.isLoading = true;
@@ -239,14 +248,14 @@ const adminSlice = createSlice({
         state.isLoading = false;
         // Remove from pending approvals
         state.pendingApprovals = state.pendingApprovals.filter(
-          org => org.organizationUuid !== action.payload
+          (org) => org.organizationUuid !== action.payload
         );
       })
       .addCase(approveOrganization.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Reject Organization
       .addCase(rejectOrganization.pending, (state) => {
         state.isLoading = true;
@@ -255,14 +264,14 @@ const adminSlice = createSlice({
         state.isLoading = false;
         // Remove from pending approvals
         state.pendingApprovals = state.pendingApprovals.filter(
-          org => org.organizationUuid !== action.payload
+          (org) => org.organizationUuid !== action.payload
         );
       })
       .addCase(rejectOrganization.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Change Organization Status
       .addCase(changeOrganizationStatus.pending, (state) => {
         state.isLoading = true;
@@ -272,7 +281,7 @@ const adminSlice = createSlice({
         // Update organization status in the list
         const { organizationUuid, status } = action.payload;
         const orgIndex = state.allOrganizations.content.findIndex(
-          org => org.organizationUuid === organizationUuid
+          (org) => org.organizationUuid === organizationUuid
         );
         if (orgIndex !== -1) {
           state.allOrganizations.content[orgIndex].status = status;
@@ -282,7 +291,7 @@ const adminSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Fetch Platform Statistics
       .addCase(fetchPlatformStatistics.pending, (state) => {
         state.isStatsLoading = true;
@@ -296,16 +305,16 @@ const adminSlice = createSlice({
         state.isStatsLoading = false;
         state.error = action.payload;
       });
-  },
+  }
 });
 
 // Export actions
-export const { 
-  clearError, 
-  setSelectedOrganization, 
-  updateFilters, 
+export const {
+  clearError,
+  setSelectedOrganization,
+  updateFilters,
   resetFilters,
-  resetAdminState 
+  resetAdminState
 } = adminSlice.actions;
 
 // Export selectors

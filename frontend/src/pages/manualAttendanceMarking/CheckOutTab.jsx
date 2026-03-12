@@ -1,0 +1,303 @@
+import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+import {
+  getTodayAttendance,
+  manualCheckOut,
+  updateAttendanceRecord
+} from "../../api/manualAttendanceService";
+import { Clock, CheckCircle, Edit } from "lucide-react";
+import EditAttendanceModal from "../../components/attendance/EditAttendanceModal";
+
+const CheckOutTab = ({ token, selectedDate }) => {
+// Professional Status Styles Configuration
+// Full Status Styles for Your Enum
+const STATUS_STYLES = {
+  PRESENT: {
+    bg: "bg-green-50",
+    text: "text-green-700",
+    border: "border-green-200",
+    dot: "bg-green-500",
+    label: "Present"
+  },
+  LATE: {
+    bg: "bg-amber-50",
+    text: "text-amber-700",
+    border: "border-amber-200",
+    dot: "bg-amber-500",
+    label: "Late Entry"
+  },
+  HALF_DAY: {
+    bg: "bg-yellow-50",
+    text: "text-yellow-700",
+    border: "border-yellow-200",
+    dot: "bg-yellow-500",
+    label: "Half Day"
+  },
+  WORK_FROM_HOME: {
+    bg: "bg-purple-50",
+    text: "text-purple-700",
+    border: "border-purple-200",
+    dot: "bg-purple-500",
+    label: "Work From Home"
+  },
+  DEFAULT: {
+    bg: "bg-gray-50",
+    text: "text-gray-600",
+    border: "border-gray-200",
+    dot: "bg-gray-400",
+    label: "Checked In"
+  }
+};
+
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [manualTimes, setManualTimes] = useState({});
+  const [editingEmployee, setEditingEmployee] = useState(null);
+
+  const fetchTodayAttendance = async () => {
+    if (!token || !selectedDate) return;
+    setLoading(true);
+    try {
+      const data = await getTodayAttendance(token, selectedDate);
+      // Filter to show only employees who have checked in
+      const filtered = data.filter(
+        (emp) => emp.checkInTime !== null && emp.status !== "ABSENT" && emp.status !== "ON_LEAVE"
+      );
+      setEmployees(filtered);
+    } catch (err) {
+      console.error("Error fetching attendance:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && selectedDate) {
+      fetchTodayAttendance();
+    }
+  }, [token, selectedDate]); // Add token to trigger reload when available
+
+  const handleCheckOut = async (employeeId) => {
+    try {
+      const selectedTime = manualTimes[employeeId];
+      await manualCheckOut(employeeId, token, selectedTime, selectedDate);
+      // Clear the manual time after check-out
+      setManualTimes(prev => {
+        const updated = { ...prev };
+        delete updated[employeeId];
+        return updated;
+      });
+      // Refresh the list to show updated checkout times and status
+      await fetchTodayAttendance();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Checked Out!',
+        text: 'Employee has been checked out successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Check-Out Failed',
+        text: err.message || 'Failed to check out employee'
+      });
+    }
+  };
+
+  const handleSaveEdit = async (data) => {
+    try {
+      await updateAttendanceRecord(
+        data.employeeId,
+        data.date,
+        data.checkInTime,
+        data.checkOutTime,
+        data.status,
+        token
+      );
+      setEditingEmployee(null);
+      await fetchTodayAttendance();
+      
+      await Swal.fire({
+        icon: 'success',
+        title: 'Updated!',
+        text: 'Attendance updated successfully',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Update Failed',
+        text: err.message || 'Failed to update attendance'
+      });
+    }
+  };
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm mt-4 bg-white">
+      <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <thead className="bg-[#F1FDF9]">
+          <tr>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Employee Information
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Check-In
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Check-Out
+            </th>
+            <th className="p-4 text-left text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Status
+            </th>
+            <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Actions
+            </th>
+            <th className="p-4 text-center text-[#05668D] font-bold uppercase tracking-wider text-[11px]">
+              Edit
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {loading ? (
+            <tr>
+              <td colSpan="5" className="text-center p-12">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 border-4 border-[#02C39A] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-[#9B9B9B] font-medium">
+                    Fetching records...
+                  </span>
+                </div>
+              </td>
+            </tr>
+          ) : employees.length === 0 ? (
+            <tr>
+              <td colSpan="5" className="text-center p-12 text-[#9B9B9B]">
+                No active attendance records found today.
+              </td>
+            </tr>
+          ) : (
+            employees.map((emp) => {
+              const style = STATUS_STYLES[emp.status] || STATUS_STYLES.DEFAULT;
+
+              return (
+                <tr
+                  key={emp.employeeId}
+                  className="hover:bg-[#F1FDF9]/30 transition-colors"
+                >
+                  {/* Info Column */}
+                  <td className="p-4">
+                    <div className="font-bold text-[#333333] leading-tight">
+                      {emp.employeeName}
+                    </div>
+                    <div className="text-[10px] text-[#9B9B9B] font-bold uppercase tracking-widest mt-1">
+                      {emp.employeeCode}
+                    </div>
+                  </td>
+
+                  {/* Check-In Column */}
+                  <td className="p-4 text-[#333333]">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Clock size={14} className="text-[#02C39A]" />
+                      {emp.checkInTime
+                        ? new Date(emp.checkInTime).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true
+                          })
+                        : "--:--"}
+                    </div>
+                  </td>
+
+                  {/* Check-Out Column */}
+                  <td className="p-4">
+                    {emp.checkOutTime ? (
+                      <div className="flex items-center gap-2 text-[#05668D] font-bold">
+                        <CheckCircle size={14} className="text-[#05668D]" />
+                        {new Date(emp.checkOutTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true
+                        })}
+                      </div>
+                    ) : (
+                      <input
+                        type="time"
+                        value={manualTimes[emp.employeeId] || ''}
+                        onChange={(e) => setManualTimes({ ...manualTimes, [emp.employeeId]: e.target.value })}
+                        className="px-3 py-1 border border-[#05668D] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#05668D]"
+                        placeholder="Select time"
+                      />
+                    )}
+                  </td>
+
+                  {/* Status Column with Professional Badge */}
+                  <td className="p-4">
+                    <span
+                      className={`
+                      inline-flex items-center px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border
+                      ${style.bg} ${style.text} ${style.border}
+                    `}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full mr-2 ${style.dot} ${emp.status === "PRESENT" ? "animate-pulse" : ""}`}
+                      ></span>
+                      {style.label}
+                    </span>
+                  </td>
+
+                  {/* Action Column */}
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleCheckOut(emp.employeeId)}
+                      disabled={!!emp.checkOutTime}
+                      className={`
+                        group relative inline-flex items-center justify-center gap-2 w-36 h-9 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all duration-200
+                        ${
+                          emp.checkOutTime
+                            ? "bg-gray-50 border-gray-200 text-[#9B9B9B] cursor-not-allowed"
+                            : "bg-white border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white hover:shadow-md active:scale-95"
+                        }
+                      `}
+                    >
+                      {emp.checkOutTime ? (
+                        <>COMPLETED</>
+                      ) : (
+                        <>MANUAL CHECK-OUT</>
+                      )}
+                    </button>
+                  </td>
+
+                  {/* Edit Button Column */}
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => setEditingEmployee(emp)}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#05668D] text-[#05668D] hover:bg-[#05668D] hover:text-white transition-all text-xs font-medium"
+                    >
+                      <Edit size={14} />
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+
+      {/* Edit Attendance Modal */}
+      {editingEmployee && (
+        <EditAttendanceModal
+          employee={editingEmployee}
+          selectedDate={selectedDate}
+          onClose={() => setEditingEmployee(null)}
+          onSave={handleSaveEdit}
+        />
+      )}
+    </div>
+  );
+};
+
+export default CheckOutTab;

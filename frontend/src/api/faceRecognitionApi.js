@@ -3,19 +3,21 @@
  * Connects to Python AI Service + Java Backend
  */
 
-const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
+const AI_SERVICE_URL =
+  import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8001";
 // FIX: Use VITE_API_BASE_URL (same as axios.js and .env.development)
-const JAVA_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const JAVA_BACKEND_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 // ===== Helper Functions =====
 
 const getAuthToken = () => {
-  return localStorage.getItem('token') || sessionStorage.getItem('token');
+  return localStorage.getItem("token") || sessionStorage.getItem("token");
 };
 
 const base64ToBlob = (base64) => {
-  const byteString = atob(base64.split(',')[1]);
-  const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+  const byteString = atob(base64.split(",")[1]);
+  const mimeString = base64.split(",")[0].split(":")[1].split(";")[0];
   const ab = new ArrayBuffer(byteString.length);
   const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) {
@@ -31,21 +33,21 @@ const base64ToBlob = (base64) => {
  */
 export const registerFace = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();
-  formData.append('employee_id', String(employeeId));
-  formData.append('organization_uuid', organizationUuid);
-  formData.append('image', imageBlob, 'face.jpg');
+  formData.append("employee_id", String(employeeId));
+  formData.append("organization_uuid", organizationUuid);
+  formData.append("image", imageBlob, "face.jpg");
 
   const response = await fetch(`${AI_SERVICE_URL}/api/face/register`, {
-    method: 'POST',
-    body: formData,
+    method: "POST",
+    body: formData
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.detail || 'Face registration failed');
+    throw new Error(data.detail || "Face registration failed");
   }
-  
+
   return data;
 };
 
@@ -54,20 +56,20 @@ export const registerFace = async (employeeId, organizationUuid, imageBlob) => {
  */
 export const identifyFace = async (organizationUuid, imageBlob) => {
   const formData = new FormData();
-  formData.append('organization_uuid', organizationUuid);
-  formData.append('image', imageBlob, 'live.jpg');
+  formData.append("organization_uuid", organizationUuid);
+  formData.append("image", imageBlob, "live.jpg");
 
   const response = await fetch(`${AI_SERVICE_URL}/api/face/identify`, {
-    method: 'POST',
-    body: formData,
+    method: "POST",
+    body: formData
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.detail || 'Face identification failed');
+    throw new Error(data.detail || "Face identification failed");
   }
-  
+
   return data;
 };
 
@@ -76,28 +78,31 @@ export const identifyFace = async (organizationUuid, imageBlob) => {
  */
 export const verifyFace = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();
-  formData.append('employee_id', String(employeeId));
-  formData.append('organization_uuid', organizationUuid);
-  formData.append('live_image', imageBlob, 'live.jpg');
+  formData.append("employee_id", String(employeeId));
+  formData.append("organization_uuid", organizationUuid);
+  formData.append("live_image", imageBlob, "live.jpg");
 
   const response = await fetch(`${AI_SERVICE_URL}/api/face/verify`, {
-    method: 'POST',
-    body: formData,
+    method: "POST",
+    body: formData
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.detail || 'Face verification failed');
+    throw new Error(data.detail || "Face verification failed");
   }
-  
+
   return data;
 };
 
 /**
  * Check face registration status
  */
-export const checkFaceRegistrationStatus = async (employeeId, organizationUuid) => {
+export const checkFaceRegistrationStatus = async (
+  employeeId,
+  organizationUuid
+) => {
   const response = await fetch(
     `${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`
   );
@@ -110,14 +115,14 @@ export const checkFaceRegistrationStatus = async (employeeId, organizationUuid) 
 export const deregisterFace = async (employeeId, organizationUuid) => {
   const response = await fetch(
     `${AI_SERVICE_URL}/api/face/deregister/${organizationUuid}/${employeeId}`,
-    { method: 'DELETE' }
+    { method: "DELETE" }
   );
-  
+
   if (!response.ok) {
     const data = await response.json();
-    throw new Error(data.detail || 'Deregistration failed');
+    throw new Error(data.detail || "Deregistration failed");
   }
-  
+
   return await response.json();
 };
 
@@ -126,14 +131,18 @@ export const deregisterFace = async (employeeId, organizationUuid) => {
 /**
  * Mark CHECK-IN in database (after face identified)
  */
-export const markCheckIn = async (employeeId, organizationUuid, verificationConfidence) => {
+export const markCheckIn = async (
+  employeeId,
+  organizationUuid,
+  verificationConfidence
+) => {
   const token = getAuthToken();
-  
+
   const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-in`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
       employeeId: employeeId,
@@ -144,25 +153,29 @@ export const markCheckIn = async (employeeId, organizationUuid, verificationConf
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to save check-in');
+    throw new Error(data.message || "Failed to save check-in");
   }
-  
+
   return data;
 };
 
 /**
  * Mark CHECK-OUT in database (after face identified)
  */
-export const markCheckOut = async (employeeId, organizationUuid, verificationConfidence) => {
+export const markCheckOut = async (
+  employeeId,
+  organizationUuid,
+  verificationConfidence
+) => {
   const token = getAuthToken();
-  
+
   const response = await fetch(`${JAVA_BACKEND_URL}/attendance/check-out`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
       employeeId: employeeId,
@@ -173,25 +186,29 @@ export const markCheckOut = async (employeeId, organizationUuid, verificationCon
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to save check-out');
+    throw new Error(data.message || "Failed to save check-out");
   }
-  
+
   return data;
 };
 
 /**
  * Mark attendance in database (legacy - auto check-in/out)
  */
-export const markAttendanceInDatabase = async (employeeId, organizationUuid, verificationConfidence) => {
+export const markAttendanceInDatabase = async (
+  employeeId,
+  organizationUuid,
+  verificationConfidence
+) => {
   const token = getAuthToken();
-  
+
   const response = await fetch(`${JAVA_BACKEND_URL}/attendance/mark-face`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
       employeeId: employeeId,
@@ -202,11 +219,11 @@ export const markAttendanceInDatabase = async (employeeId, organizationUuid, ver
   });
 
   const data = await response.json();
-  
+
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to save attendance');
+    throw new Error(data.message || "Failed to save attendance");
   }
-  
+
   return data;
 };
 
@@ -215,10 +232,10 @@ export const markAttendanceInDatabase = async (employeeId, organizationUuid, ver
  */
 export const getTodayAttendance = async () => {
   const token = getAuthToken();
-  
+
   const response = await fetch(`${JAVA_BACKEND_URL}/attendance/today`, {
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     }
   });
 
@@ -230,16 +247,16 @@ export const getTodayAttendance = async () => {
  */
 export const getAttendanceHistory = async (startDate, endDate) => {
   const token = getAuthToken();
-  
+
   let url = `${JAVA_BACKEND_URL}/attendance/history`;
   const params = new URLSearchParams();
-  if (startDate) params.append('startDate', startDate);
-  if (endDate) params.append('endDate', endDate);
+  if (startDate) params.append("startDate", startDate);
+  if (endDate) params.append("endDate", endDate);
   if (params.toString()) url += `?${params.toString()}`;
 
   const response = await fetch(url, {
     headers: {
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     }
   });
 
@@ -258,51 +275,55 @@ export const identifyAndCheckIn = async (organizationUuid, base64Image) => {
     const imageBlob = base64ToBlob(base64Image);
 
     // Step 1: Identify face with Python AI
-    console.log('Step 1: Identifying face...');
+    console.log("Step 1: Identifying face...");
     const identifyResult = await identifyFace(organizationUuid, imageBlob);
 
     if (!identifyResult.identified) {
       return {
         success: false,
-        step: 'identification',
+        step: "identification",
         identified: false,
-        message: identifyResult.message || 'Face not recognized',
+        message: identifyResult.message || "Face not recognized",
         similarity: identifyResult.similarity
       };
     }
 
-    console.log('Step 1 Complete: Face identified!', identifyResult.employee_id, identifyResult.similarity);
+    console.log(
+      "Step 1 Complete: Face identified!",
+      identifyResult.employee_id,
+      identifyResult.similarity
+    );
 
     // Step 2: Save check-in in Java Backend
-    console.log('Step 2: Saving check-in...');
+    console.log("Step 2: Saving check-in...");
     const attendanceResult = await markCheckIn(
       identifyResult.employee_id,
       organizationUuid,
-      identifyResult.similarity_percent || `${(identifyResult.similarity * 100).toFixed(1)}%`
+      identifyResult.similarity_percent ||
+        `${(identifyResult.similarity * 100).toFixed(1)}%`
     );
 
-    console.log('Step 2 Complete: Check-in saved!', attendanceResult);
+    console.log("Step 2 Complete: Check-in saved!", attendanceResult);
 
     return {
       success: true,
-      step: 'complete',
+      step: "complete",
       identified: true,
       employeeId: identifyResult.employee_id,
       similarity: identifyResult.similarity,
-      message: attendanceResult.message || 'Check-in successful!',
+      message: attendanceResult.message || "Check-in successful!",
       data: {
         identification: identifyResult,
         attendance: attendanceResult
       }
     };
-
   } catch (error) {
-    console.error('Check-in error:', error);
+    console.error("Check-in error:", error);
     return {
       success: false,
-      step: 'error',
+      step: "error",
       identified: false,
-      message: error.message || 'Failed to mark check-in',
+      message: error.message || "Failed to mark check-in",
       error: error
     };
   }
@@ -316,49 +337,52 @@ export const identifyAndCheckOut = async (organizationUuid, base64Image) => {
     const imageBlob = base64ToBlob(base64Image);
 
     // Step 1: Identify face
-    console.log('Step 1: Identifying face for checkout...');
+    console.log("Step 1: Identifying face for checkout...");
     const identifyResult = await identifyFace(organizationUuid, imageBlob);
 
     if (!identifyResult.identified) {
       return {
         success: false,
-        step: 'identification',
+        step: "identification",
         identified: false,
-        message: identifyResult.message || 'Face not recognized'
+        message: identifyResult.message || "Face not recognized"
       };
     }
 
-    console.log('Step 1 Complete: Face identified!', identifyResult.employee_id);
+    console.log(
+      "Step 1 Complete: Face identified!",
+      identifyResult.employee_id
+    );
 
     // Step 2: Save check-out
-    console.log('Step 2: Saving check-out...');
+    console.log("Step 2: Saving check-out...");
     const attendanceResult = await markCheckOut(
       identifyResult.employee_id,
       organizationUuid,
-      identifyResult.similarity_percent || `${(identifyResult.similarity * 100).toFixed(1)}%`
+      identifyResult.similarity_percent ||
+        `${(identifyResult.similarity * 100).toFixed(1)}%`
     );
 
-    console.log('Step 2 Complete: Check-out saved!', attendanceResult);
+    console.log("Step 2 Complete: Check-out saved!", attendanceResult);
 
     return {
       success: true,
-      step: 'complete',
+      step: "complete",
       identified: true,
       employeeId: identifyResult.employee_id,
-      message: attendanceResult.message || 'Check-out successful!',
+      message: attendanceResult.message || "Check-out successful!",
       data: {
         identification: identifyResult,
         attendance: attendanceResult
       }
     };
-
   } catch (error) {
-    console.error('Check-out error:', error);
+    console.error("Check-out error:", error);
     return {
       success: false,
-      step: 'error',
+      step: "error",
       identified: false,
-      message: error.message || 'Failed to mark check-out',
+      message: error.message || "Failed to mark check-out",
       error: error
     };
   }
@@ -367,54 +391,62 @@ export const identifyAndCheckOut = async (organizationUuid, base64Image) => {
 /**
  * LEGACY: Verify Face + Mark Attendance (auto check-in/out)
  */
-export const verifyAndMarkAttendance = async (employeeId, organizationUuid, base64Image) => {
+export const verifyAndMarkAttendance = async (
+  employeeId,
+  organizationUuid,
+  base64Image
+) => {
   try {
     const imageBlob = base64ToBlob(base64Image);
 
     // Step 1: Verify face with Python AI
-    console.log('Step 1: Verifying face...');
-    const verifyResult = await verifyFace(employeeId, organizationUuid, imageBlob);
+    console.log("Step 1: Verifying face...");
+    const verifyResult = await verifyFace(
+      employeeId,
+      organizationUuid,
+      imageBlob
+    );
 
     if (!verifyResult.verified) {
       return {
         success: false,
-        step: 'verification',
+        step: "verification",
         verified: false,
-        message: verifyResult.message || 'Face not matched',
+        message: verifyResult.message || "Face not matched",
         similarity: verifyResult.similarity
       };
     }
 
-    console.log('Step 1 Complete: Face verified!', verifyResult.similarity);
+    console.log("Step 1 Complete: Face verified!", verifyResult.similarity);
 
     // Step 2: Save attendance in Java Backend
-    console.log('Step 2: Saving attendance...');
+    console.log("Step 2: Saving attendance...");
     const attendanceResult = await markAttendanceInDatabase(
       employeeId,
       organizationUuid,
-      verifyResult.similarity_percent || `${(verifyResult.similarity * 100).toFixed(1)}%`
+      verifyResult.similarity_percent ||
+        `${(verifyResult.similarity * 100).toFixed(1)}%`
     );
 
-    console.log('Step 2 Complete: Attendance saved!', attendanceResult);
+    console.log("Step 2 Complete: Attendance saved!", attendanceResult);
 
     return {
       success: true,
-      step: 'complete',
+      step: "complete",
       verified: true,
-      message: attendanceResult.message || 'Attendance marked successfully!',
+      message: attendanceResult.message || "Attendance marked successfully!",
       data: {
         verification: verifyResult,
         attendance: attendanceResult
       }
     };
-
   } catch (error) {
-    console.error('Attendance marking error:', error);
+    console.error("Attendance marking error:", error);
     return {
       success: false,
-      step: 'error',
+      step: "error",
       verified: false,
-      message: error.message || 'Failed to mark attendance',
+      message: error.message || "Failed to mark attendance",
       error: error
     };
   }
@@ -423,12 +455,16 @@ export const verifyAndMarkAttendance = async (employeeId, organizationUuid, base
 /**
  * Register face from base64 image
  */
-export const registerFaceFromBase64 = async (employeeId, organizationUuid, base64Image) => {
+export const registerFaceFromBase64 = async (
+  employeeId,
+  organizationUuid,
+  base64Image
+) => {
   try {
     const imageBlob = base64ToBlob(base64Image);
     return await registerFace(employeeId, organizationUuid, imageBlob);
   } catch (error) {
-    console.error('Face registration error:', error);
+    console.error("Face registration error:", error);
     throw error;
   }
 };
@@ -441,10 +477,10 @@ export const checkFaceServiceHealth = async () => {
     const response = await fetch(`${AI_SERVICE_URL}/api/face/health`);
     return await response.json();
   } catch (error) {
-    return { 
-      status: 'unhealthy', 
+    return {
+      status: "unhealthy",
       error: error.message,
-      dependencies_installed: false 
+      dependencies_installed: false
     };
   }
 };

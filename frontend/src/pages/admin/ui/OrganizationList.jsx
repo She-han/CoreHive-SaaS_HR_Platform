@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, memo } from "react";
+import Swal from "sweetalert2";
 import {
   Search,
   Users,
@@ -70,7 +71,7 @@ const OrganizationRow = memo(({ org, onViewDetails }) => (
     </td>
 
     <td className="text-center">
-      {org.billing || "$0/mo"}
+      {org.billingPrice ? `LKR ${org.billingPrice.toFixed(2)}` : (org.billing || "LKR 0")}
     </td>
 
     <td className="text-center">
@@ -148,13 +149,25 @@ export default function OrganizationList() {
     fetchOrganizations();
   }, [fetchOrganizations]);
 
+  const handleDeleteSuccess = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedOrg(null);
+    Swal.fire({
+      icon: "success",
+      title: "Deleted!",
+      text: "Organization deleted successfully",
+      confirmButtonColor: "#02C39A",
+      timer: 3000
+    });
+    fetchOrganizations();
+  }, [fetchOrganizations]);
+
   const filteredData = organizations.filter((org) => {
     const matchesSearch =
       org.name?.toLowerCase().includes(search.toLowerCase()) ||
       org.email?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || org.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || org.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -221,7 +234,7 @@ export default function OrganizationList() {
                 <th className="text-center">Plan</th>
                 <th className="text-center">Users</th>
                 <th className="text-center">Status</th>
-                <th className="text-center">Billing</th>
+                <th className="text-center">Billing(user/month)</th>
                 <th className="text-center">Created</th>
                 <th className="text-center">Actions</th>
               </tr>
@@ -287,6 +300,7 @@ export default function OrganizationList() {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         organization={selectedOrg}
+        onOrganizationDeleted={handleDeleteSuccess}
       />
     </>
   );

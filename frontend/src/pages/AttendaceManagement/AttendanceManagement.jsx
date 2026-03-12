@@ -1,14 +1,15 @@
 import { useState } from "react";
 import MonitorAttendance from "./MonitorAttendance";
-import MarkDailyAttendance from "./MarkDailyAttendance";
-import MonthlyReport from "./MonthlyReport";
+import Reports from "./AttendaceReports";
 
 export default function AttendanceManagement() {
   const [activeTab, setActiveTab] = useState("monitor");
 
   return (
-    
-    <div className="w-full h-screen bg-white shadow-md flex flex-col p-8">
+    <div
+      style={{ backgroundColor: "#F1FDF9" }}
+      className="w-full bg-white shadow-md flex flex-col p-8"
+    >
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 shrink-0">
         <div>
@@ -20,48 +21,13 @@ export default function AttendanceManagement() {
           </p>
         </div>
 
-        {/* TABS */}
-        <div className="flex gap-3 mt-4 md:mt-0">
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "monitor"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("monitor")}
-          >
-            Monitor
-          </button>
-
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "daily"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("daily")}
-          >
-            Mark Daily Attendance
-          </button>
-
-          <button
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === "monthly"
-                ? "bg-[#02C39A] text-white"
-                : "bg-[#F1FDF9] text-[#333333] border border-[#9B9B9B]"
-            }`}
-            onClick={() => setActiveTab("monthly")}
-          >
-            Monthly Report
-          </button>
-        </div>
+      
       </div>
 
       {/* CONTENT */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "monitor" && <MonitorAttendance />}
-        {activeTab === "daily" && <MarkDailyAttendance />}
-        {activeTab === "monthly" && <MonthlyReport />}
+        
       </div>
     </div>
   );

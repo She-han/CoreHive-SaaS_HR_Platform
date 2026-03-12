@@ -1,24 +1,64 @@
 package com.corehive.backend.controller;
 
+import com.corehive.backend.dto.request.LeaveRequestDTO;
+import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.LeaveRequestResponseDTO;
+import com.corehive.backend.dto.response.LeaveTypeResponseDTO;
 import com.corehive.backend.model.LeaveRequest;
+import com.corehive.backend.service.AuthService;
 import com.corehive.backend.service.LeaveService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/leaves")
+@RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
+@RequiredArgsConstructor
 public class LeaveController {
     private final LeaveService leaveService;
+    private final AuthService authService;
 
-    public LeaveController(LeaveService leaveService) {
-        this.leaveService = leaveService;
+    // ==================== EMPLOYEE ENDPOINTS ====================
+
+    /**
+     * Employee submits a leave request
+     */
+    @PostMapping("/employee/leave-requests")
+    public ResponseEntity<ApiResponse<LeaveRequestResponseDTO>> submitLeaveRequest(
+            @RequestBody LeaveRequestDTO requestDTO) {
+        ApiResponse<LeaveRequestResponseDTO> response = leaveService.submitLeaveRequest(requestDTO);
+        return ResponseEntity.ok(response);
     }
 
+    /**
+     * Employee gets their leave request history
+     */
+    @GetMapping("/employee/leave-requests/{employeeId}")
+    public ResponseEntity<ApiResponse<List<LeaveRequestResponseDTO>>> getEmployeeLeaveRequests(
+            @PathVariable Long employeeId) {
+        ApiResponse<List<LeaveRequestResponseDTO>> response = leaveService.getEmployeeLeaveRequests(employeeId);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Get leave types for organization
+     */
+    @GetMapping("/employee/leave-types")
+    public ResponseEntity<ApiResponse<List<LeaveTypeResponseDTO>>> getLeaveTypes(HttpServletRequest request) {
+        String organizationUuid = authService.getOrganizationUuidFromRequest(request);
+        ApiResponse<List<LeaveTypeResponseDTO>> response = leaveService.getLeaveTypes(organizationUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    // ==================== HR/ADMIN ENDPOINTS ====================
+
     //HR can view all leave requests
-    @GetMapping
+    @GetMapping("/leaves")
     public List<LeaveRequest> getAllLeaves() {
         return leaveService.getAllLeaves();
     }

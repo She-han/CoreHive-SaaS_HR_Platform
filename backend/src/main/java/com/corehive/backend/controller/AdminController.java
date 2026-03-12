@@ -1,9 +1,10 @@
 package com.corehive.backend.controller;
 
-import com.corehive.backend.dto.response.ApiResponse;
-import com.corehive.backend.dto.response.OrganizationSummaryResponse;
-import com.corehive.backend.dto.response.PlatformStatistics;
+import com.corehive.backend.dto.response.*;
+import com.corehive.backend.model.BillingPlan;
+import com.corehive.backend.repository.BillingPlanRepository;
 import com.corehive.backend.service.OrganizationService;
+import com.corehive.backend.service.ReportService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +12,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -30,6 +33,8 @@ import java.util.List;
 public class AdminController {
 
     private final OrganizationService organizationService;
+    private final ReportService reportService;
+    private final BillingPlanRepository billingPlanRepository;
 
     /**
      * Get Pending Organization Approvals
@@ -218,6 +223,38 @@ public class AdminController {
     }
 
     /**
+     * Delete Organization Permanently
+     * DELETE /api/admin/organizations/{organizationUuid}
+     *
+     * Permanently delete an organization and all its related data
+     */
+    @DeleteMapping("/organizations/{organizationUuid}")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<String>> deleteOrganization(
+            @PathVariable String organizationUuid,
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Organization deletion request from admin: {} for org: {}", adminEmail, organizationUuid);
+
+        try {
+            ApiResponse<String> response = organizationService.deleteOrganization(organizationUuid);
+
+            HttpStatus httpStatus = response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+
+            log.info("Organization {} deletion by {}: {}", 
+                    organizationUuid, adminEmail, response.isSuccess() ? "SUCCESS" : "FAILED");
+
+            return ResponseEntity.status(httpStatus).body(response);
+
+        } catch (Exception e) {
+            log.error("Error deleting organization {} by admin: {}", organizationUuid, adminEmail, e);
+            ApiResponse<String> errorResponse = ApiResponse.error("Failed to delete organization");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * Get Platform Statistics
      * GET /api/admin/statistics
      *
@@ -235,7 +272,7 @@ public class AdminController {
             PlatformStatistics stats = organizationService.getPlatformStatistics();
 
             ApiResponse<PlatformStatistics> response =
-                    ApiResponse.success("Platform statistics retrieved successfully", stats);
+                    ApiResponse.success(stats, "Platform statistics retrieved successfully");
 
             log.info("Platform statistics retrieved - Total Orgs: {}, Active: {}, Pending: {}, Employees: {}",
                     stats.getTotalOrganizations(), stats.getActiveOrganizations(), 
@@ -296,5 +333,146 @@ public class AdminController {
                         status.equalsIgnoreCase("DORMANT") ||
                         status.equalsIgnoreCase("SUSPENDED")
         );
+    }
+
+    // ==================== REPORT ENDPOINTS ====================
+
+    /**
+     * Get Organizations Report
+     * GET /api/sys_admin/reports/organizations
+     *
+     * Generate report of organizations with filters for billing plan, extended modules, date range
+     */
+    @GetMapping("/reports/organizations")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<OrganizationsReportDTO>> getOrganizationsReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String billingPlan,
+            @RequestParam(required = false) List<String> extendedModules,
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Organizations report request from admin: {} - Filters: startDate={}, endDate={}, plan={}, modules={}",
+                adminEmail, startDate, endDate, billingPlan, extendedModules);
+
+        try {
+            OrganizationsReportDTO report = reportService.getOrganizationsReport(
+                    startDate, endDate, billingPlan, extendedModules);
+
+            ApiResponse<OrganizationsReportDTO> response =
+                    ApiResponse.success(report, "Organizations report generated successfully");
+
+            log.info("Organizations report generated for admin: {} - Total: {}",
+                    adminEmail, report.getTotalOrganizations());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error generating organizations report for admin: {}", adminEmail, e);
+            ApiResponse<OrganizationsReportDTO> errorResponse =
+                    ApiResponse.error("Failed to generate organizations report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get Revenue Report
+     * GET /api/sys_admin/reports/revenue
+     *
+     * Generate revenue report with actual PaymentTransaction data
+     */
+    @GetMapping("/reports/revenue")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<RevenueReportDTO>> getRevenueReport(
+            @RequestParam(defaultValue = "THIS_MONTH") String timePeriod,
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Revenue report request from admin: {} - Time Period: {}", adminEmail, timePeriod);
+
+        try {
+            RevenueReportDTO report = reportService.getRevenueReport(timePeriod);
+
+            ApiResponse<RevenueReportDTO> response =
+                    ApiResponse.success(report, "Revenue report generated successfully");
+
+            log.info("Revenue report generated for admin: {} - Total Revenue: {}, Transactions: {}",
+                    adminEmail, report.getTotalRevenue(), report.getTotalTransactions());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error generating revenue report for admin: {}", adminEmail, e);
+            ApiResponse<RevenueReportDTO> errorResponse =
+                    ApiResponse.error("Failed to generate revenue report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get Module Usage Report
+     * GET /api/sys_admin/reports/module-usage
+     *
+     * Generate module adoption report from OrganizationModule table
+     */
+    @GetMapping("/reports/module-usage")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<ModuleUsageReportDTO>> getModuleUsageReport(
+            @RequestParam(defaultValue = "ALL") String timePeriod,
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Module usage report request from admin: {} - Time Period: {}", adminEmail, timePeriod);
+
+        try {
+            ModuleUsageReportDTO report = reportService.getModuleUsageReport(timePeriod);
+
+            ApiResponse<ModuleUsageReportDTO> response =
+                    ApiResponse.success(report, "Module usage report generated successfully");
+
+            log.info("Module usage report generated for admin: {} - Total Modules: {}, Active Subscriptions: {}",
+                    adminEmail, report.getModuleUsages().size(), report.getTotalActiveModuleSubscriptions());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error generating module usage report for admin: {}", adminEmail, e);
+            ApiResponse<ModuleUsageReportDTO> errorResponse =
+                    ApiResponse.error("Failed to generate module usage report: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get All Billing Plans
+     * GET /api/sys_admin/billing-plans
+     *
+     * Returns all billing plans from database for filter dropdowns
+     */
+    @GetMapping("/billing-plans")
+    @PreAuthorize("hasRole('SYS_ADMIN')")
+    public ResponseEntity<ApiResponse<List<BillingPlan>>> getAllBillingPlans(
+            HttpServletRequest request) {
+
+        String adminEmail = (String) request.getAttribute("userEmail");
+        log.info("Get all billing plans request from admin: {}", adminEmail);
+
+        try {
+            List<BillingPlan> plans = billingPlanRepository.findAll();
+
+            ApiResponse<List<BillingPlan>> response =
+                    ApiResponse.success(plans, "Billing plans retrieved successfully");
+
+            log.info("Billing plans retrieved for admin: {} - Total: {}", adminEmail, plans.size());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("Error retrieving billing plans for admin: {}", adminEmail, e);
+            ApiResponse<List<BillingPlan>> errorResponse =
+                    ApiResponse.error("Failed to retrieve billing plans: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

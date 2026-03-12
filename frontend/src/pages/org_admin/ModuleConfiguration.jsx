@@ -1,30 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Settings, 
-  CheckCircle2, 
+import React, { useState, useEffect } from "react";
+import {
+  Settings,
+  CheckCircle2,
   XCircle,
   Save,
   RefreshCw,
-  QrCode, 
+  QrCode,
   ScanFace,
-  MessageSquare, 
+  MessageSquare,
   UserPlus,
   Shield,
   Zap
-} from 'lucide-react';
+} from "lucide-react";
 
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import * as moduleApi from '../../api/moduleApi';
+import DashboardLayout from "../../components/layout/DashboardLayout";
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Alert from "../../components/common/Alert";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import * as moduleApi from "../../api/moduleApi";
 
 const ModuleConfiguration = () => {
   // State management
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [alert, setAlert] = useState({ show: false, type: "", message: "" });
   const [originalConfig, setOriginalConfig] = useState(null);
   const [moduleConfig, setModuleConfig] = useState({
     moduleQrAttendanceMarking: false,
@@ -32,60 +32,64 @@ const ModuleConfiguration = () => {
     moduleEmployeeFeedback: false,
     moduleHiringManagement: false
   });
-  const [organizationName, setOrganizationName] = useState('');
+  const [organizationName, setOrganizationName] = useState("");
 
   // All available modules with their details
   const allModules = [
     {
-      key: 'moduleFaceRecognitionAttendanceMarking',
-      name: 'Face Recognition Attendance',
-      description: 'Automate employee check-ins using biometric facial recognition technology',
+      key: "moduleFaceRecognitionAttendanceMarking",
+      name: "Face Recognition Attendance",
+      description:
+        "Automate employee check-ins using biometric facial recognition technology",
       icon: ScanFace,
-      color: 'purple',
+      color: "purple",
       features: [
-        'Touchless check-in/check-out',
-        'Liveness detection',
-        'Real-time attendance tracking',
-        'Integration with payroll systems'
+        "Touchless check-in/check-out",
+        "Liveness detection",
+        "Real-time attendance tracking",
+        "Integration with payroll systems"
       ]
     },
     {
-      key: 'moduleQrAttendanceMarking',
-      name: 'QR Code Attendance',
-      description: 'Enable quick and secure attendance marking via scannable QR codes',
+      key: "moduleQrAttendanceMarking",
+      name: "QR Code Attendance",
+      description:
+        "Enable quick and secure attendance marking via scannable QR codes",
       icon: QrCode,
-      color: 'blue',
+      color: "blue",
       features: [
-        'Secure code generation and rotation',
-        'Geo-fencing for location verification',
-        'Offline marking capabilities',
-        'Scan history and audit logs'
+        "Secure code generation and rotation",
+        "Geo-fencing for location verification",
+        "Offline marking capabilities",
+        "Scan history and audit logs"
       ]
     },
     {
-      key: 'moduleEmployeeFeedback',
-      name: 'Employee Feedback',
-      description: 'Collect employee feedback, conduct surveys, and measure satisfaction',
+      key: "moduleEmployeeFeedback",
+      name: "Employee Feedback",
+      description:
+        "Collect employee feedback, conduct surveys, and measure satisfaction",
       icon: MessageSquare,
-      color: 'green',
+      color: "green",
       features: [
-        'Employee surveys',
-        'Anonymous feedback',
-        'Sentiment analysis',
-        'Feedback analytics'
+        "Employee surveys",
+        "Anonymous feedback",
+        "Sentiment analysis",
+        "Feedback analytics"
       ]
     },
     {
-      key: 'moduleHiringManagement',
-      name: 'Hiring Management',
-      description: 'Streamline your recruitment process with applicant tracking',
+      key: "moduleHiringManagement",
+      name: "Hiring Management",
+      description:
+        "Streamline your recruitment process with applicant tracking",
       icon: UserPlus,
-      color: 'orange',
+      color: "orange",
       features: [
-        'Job posting management',
-        'Applicant tracking',
-        'Interview scheduling',
-        'Candidate evaluation'
+        "Job posting management",
+        "Applicant tracking",
+        "Interview scheduling",
+        "Candidate evaluation"
       ]
     }
   ];
@@ -101,17 +105,19 @@ const ModuleConfiguration = () => {
       const response = await moduleApi.getModuleConfig();
       if (response.success && response.data) {
         const config = {
-          moduleQrAttendanceMarking: response.data.moduleQrAttendanceMarking || false,
-          moduleFaceRecognitionAttendanceMarking: response.data.moduleFaceRecognitionAttendanceMarking || false,
+          moduleQrAttendanceMarking:
+            response.data.moduleQrAttendanceMarking || false,
+          moduleFaceRecognitionAttendanceMarking:
+            response.data.moduleFaceRecognitionAttendanceMarking || false,
           moduleEmployeeFeedback: response.data.moduleEmployeeFeedback || false,
           moduleHiringManagement: response.data.moduleHiringManagement || false
         };
         setModuleConfig(config);
         setOriginalConfig(config);
-        setOrganizationName(response.data.organizationName || '');
+        setOrganizationName(response.data.organizationName || "");
       }
     } catch (error) {
-      showAlert('error', 'Failed to load module configuration');
+      showAlert("error", "Failed to load module configuration");
     } finally {
       setLoading(false);
     }
@@ -119,12 +125,12 @@ const ModuleConfiguration = () => {
 
   const showAlert = (type, message) => {
     setAlert({ show: true, type, message });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+    setTimeout(() => setAlert({ show: false, type: "", message: "" }), 4000);
   };
 
   // Handle module toggle
   const handleModuleToggle = (moduleKey) => {
-    setModuleConfig(prev => ({
+    setModuleConfig((prev) => ({
       ...prev,
       [moduleKey]: !prev[moduleKey]
     }));
@@ -134,7 +140,7 @@ const ModuleConfiguration = () => {
   const hasChanges = () => {
     if (!originalConfig) return false;
     return Object.keys(moduleConfig).some(
-      key => moduleConfig[key] !== originalConfig[key]
+      (key) => moduleConfig[key] !== originalConfig[key]
     );
   };
 
@@ -145,12 +151,15 @@ const ModuleConfiguration = () => {
       const response = await moduleApi.updateModuleConfig(moduleConfig);
       if (response.success) {
         setOriginalConfig({ ...moduleConfig });
-        showAlert('success', 'Module configuration updated successfully!');
+        showAlert("success", "Module configuration updated successfully!");
       } else {
-        showAlert('error', response.message || 'Failed to update configuration');
+        showAlert(
+          "error",
+          response.message || "Failed to update configuration"
+        );
       }
     } catch (error) {
-      showAlert('error', 'Failed to save module configuration');
+      showAlert("error", "Failed to save module configuration");
     } finally {
       setSaving(false);
     }
@@ -160,40 +169,48 @@ const ModuleConfiguration = () => {
   const handleReset = () => {
     if (originalConfig) {
       setModuleConfig({ ...originalConfig });
-      showAlert('info', 'Changes discarded');
+      showAlert("info", "Changes discarded");
     }
   };
 
   // Separate modules into active and available
-  const activeModules = allModules.filter(module => moduleConfig[module.key]);
-  const availableModules = allModules.filter(module => !moduleConfig[module.key]);
+  const activeModules = allModules.filter((module) => moduleConfig[module.key]);
+  const availableModules = allModules.filter(
+    (module) => !moduleConfig[module.key]
+  );
 
   // Get color classes based on module color
   const getColorClasses = (color, isActive) => {
     const colors = {
       purple: {
-        bg: isActive ? 'bg-purple-100' : 'bg-gray-100',
-        icon: isActive ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-500',
-        border: isActive ? 'border-purple-500' : 'border-gray-200',
-        badge: 'bg-purple-100 text-purple-800'
+        bg: isActive ? "bg-purple-100" : "bg-gray-100",
+        icon: isActive
+          ? "bg-purple-500 text-white"
+          : "bg-gray-200 text-gray-500",
+        border: isActive ? "border-purple-500" : "border-gray-200",
+        badge: "bg-purple-100 text-purple-800"
       },
       blue: {
-        bg: isActive ? 'bg-blue-100' : 'bg-gray-100',
-        icon: isActive ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500',
-        border: isActive ? 'border-blue-500' : 'border-gray-200',
-        badge: 'bg-blue-100 text-blue-800'
+        bg: isActive ? "bg-blue-100" : "bg-gray-100",
+        icon: isActive ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-500",
+        border: isActive ? "border-blue-500" : "border-gray-200",
+        badge: "bg-blue-100 text-blue-800"
       },
       green: {
-        bg: isActive ? 'bg-green-100' : 'bg-gray-100',
-        icon: isActive ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500',
-        border: isActive ? 'border-green-500' : 'border-gray-200',
-        badge: 'bg-green-100 text-green-800'
+        bg: isActive ? "bg-green-100" : "bg-gray-100",
+        icon: isActive
+          ? "bg-green-500 text-white"
+          : "bg-gray-200 text-gray-500",
+        border: isActive ? "border-green-500" : "border-gray-200",
+        badge: "bg-green-100 text-green-800"
       },
       orange: {
-        bg: isActive ? 'bg-orange-100' : 'bg-gray-100',
-        icon: isActive ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-500',
-        border: isActive ? 'border-orange-500' : 'border-gray-200',
-        badge: 'bg-orange-100 text-orange-800'
+        bg: isActive ? "bg-orange-100" : "bg-gray-100",
+        icon: isActive
+          ? "bg-orange-500 text-white"
+          : "bg-gray-200 text-gray-500",
+        border: isActive ? "border-orange-500" : "border-gray-200",
+        badge: "bg-orange-100 text-orange-800"
       }
     };
     return colors[color] || colors.blue;
@@ -203,11 +220,11 @@ const ModuleConfiguration = () => {
   const ModuleCard = ({ module, isActive }) => {
     const Icon = module.icon;
     const colors = getColorClasses(module.color, isActive);
-    
+
     return (
       <div
         className={`border-2 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${colors.border} ${
-          isActive ? colors.bg : 'bg-white hover:bg-gray-50'
+          isActive ? colors.bg : "bg-white hover:bg-gray-50"
         }`}
         onClick={() => handleModuleToggle(module.key)}
       >
@@ -215,7 +232,7 @@ const ModuleConfiguration = () => {
           <div className={`p-3 rounded-lg ${colors.icon}`}>
             <Icon className="w-6 h-6" />
           </div>
-          
+
           <div className="flex items-center gap-2">
             {isActive ? (
               <span className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
@@ -230,19 +247,19 @@ const ModuleConfiguration = () => {
             )}
           </div>
         </div>
-        
+
         <h3 className="font-semibold text-gray-900 mb-2 text-lg">
           {module.name}
         </h3>
-        
-        <p className="text-gray-600 text-sm mb-4">
-          {module.description}
-        </p>
-        
+
+        <p className="text-gray-600 text-sm mb-4">{module.description}</p>
+
         <ul className="space-y-2">
           {module.features.map((feature, index) => (
             <li key={index} className="text-xs text-gray-500 flex items-center">
-              <Zap className={`w-3 h-3 mr-2 ${isActive ? 'text-yellow-500' : 'text-gray-400'}`} />
+              <Zap
+                className={`w-3 h-3 mr-2 ${isActive ? "text-yellow-500" : "text-gray-400"}`}
+              />
               {feature}
             </li>
           ))}
@@ -251,16 +268,16 @@ const ModuleConfiguration = () => {
         <div className="mt-4 pt-4 border-t border-gray-200">
           <button
             className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              isActive 
-                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                : 'bg-green-100 text-green-700 hover:bg-green-200'
+              isActive
+                ? "bg-red-100 text-red-700 hover:bg-red-200"
+                : "bg-green-100 text-green-700 hover:bg-green-200"
             }`}
             onClick={(e) => {
               e.stopPropagation();
               handleModuleToggle(module.key);
             }}
           >
-            {isActive ? 'Deactivate Module' : 'Activate Module'}
+            {isActive ? "Deactivate Module" : "Activate Module"}
           </button>
         </div>
       </div>
@@ -284,18 +301,18 @@ const ModuleConfiguration = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              
               Module Configuration
             </h1>
             <p className="text-gray-600 mt-1">
-              Manage extended modules for {organizationName || 'your organization'}
+              Manage extended modules for{" "}
+              {organizationName || "your organization"}
             </p>
           </div>
-          
+
           <div className="flex gap-3">
             {hasChanges() && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleReset}
                 className="flex items-center gap-2"
               >
@@ -303,7 +320,7 @@ const ModuleConfiguration = () => {
                 Discard Changes
               </Button>
             )}
-            <Button 
+            <Button
               onClick={handleSave}
               disabled={!hasChanges() || saving}
               className="flex items-center gap-2"
@@ -323,12 +340,12 @@ const ModuleConfiguration = () => {
           </div>
         </div>
 
-                {/* Alert */}
+        {/* Alert */}
         {alert.show && (
-          <Alert 
-            type={alert.type} 
+          <Alert
+            type={alert.type}
             message={alert.message}
-            onClose={() => setAlert({ show: false, type: '', message: '' })}
+            onClose={() => setAlert({ show: false, type: "", message: "" })}
           />
         )}
 
@@ -341,7 +358,7 @@ const ModuleConfiguration = () => {
             </p>
           </div>
         )}
-        
+
         {/* Summary Card */}
         <Card className="bg-white">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -353,19 +370,25 @@ const ModuleConfiguration = () => {
               const isActive = moduleConfig[module.key];
               const Icon = module.icon;
               return (
-                <div 
+                <div
                   key={module.key}
                   className={`flex items-center gap-3 p-3 rounded-lg ${
-                    isActive ? 'bg-green-100' : 'bg-gray-100'
+                    isActive ? "bg-green-100" : "bg-gray-100"
                   }`}
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
+                  <Icon
+                    className={`w-5 h-5 ${isActive ? "text-green-600" : "text-gray-400"}`}
+                  />
                   <div>
-                    <p className={`text-sm font-medium ${isActive ? 'text-green-800' : 'text-gray-600'}`}>
+                    <p
+                      className={`text-sm font-medium ${isActive ? "text-green-800" : "text-gray-600"}`}
+                    >
                       {module.name}
                     </p>
-                    <p className={`text-xs ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                      {isActive ? 'Enabled' : 'Disabled'}
+                    <p
+                      className={`text-xs ${isActive ? "text-green-600" : "text-gray-500"}`}
+                    >
+                      {isActive ? "Enabled" : "Disabled"}
                     </p>
                   </div>
                 </div>
@@ -373,10 +396,6 @@ const ModuleConfiguration = () => {
             })}
           </div>
         </Card>
-
-
-
-
 
         {/* Active Modules Section */}
         <div>
@@ -389,7 +408,7 @@ const ModuleConfiguration = () => {
               {activeModules.length} active
             </span>
           </div>
-          
+
           {activeModules.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               {activeModules.map((module) => (
@@ -420,7 +439,7 @@ const ModuleConfiguration = () => {
               {availableModules.length} available
             </span>
           </div>
-          
+
           {availableModules.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               {availableModules.map((module) => (
@@ -440,7 +459,7 @@ const ModuleConfiguration = () => {
           )}
         </div>
 
-                {/* Basic Features Info */}
+        {/* Basic Features Info */}
         <Card className="bg-gradient-to-r from-primary-50 to-blue-50 border-primary-200">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-primary-500 rounded-lg text-white">
@@ -451,18 +470,16 @@ const ModuleConfiguration = () => {
                 Core Features Always Included
               </h3>
               <p className="text-gray-600 text-sm">
-                Employee Management, Payroll Processing, Leave Management, Basic Attendance Tracking, 
-                Reports & Analytics, and Notifications are always enabled for your organization.
+                Employee Management, Payroll Processing, Leave Management, Basic
+                Attendance Tracking, Reports & Analytics, and Notifications are
+                always enabled for your organization.
               </p>
             </div>
           </div>
         </Card>
-
-
       </div>
     </DashboardLayout>
   );
 };
 
 export default ModuleConfiguration;
-

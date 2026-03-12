@@ -36,8 +36,11 @@ public class Employee {
         @Column(name = "last_name", nullable = false, length = 100)
         private String lastName;
 
-        @Column(name = "email", length = 200)
+        @Column(name = "email", length = 200 , unique = true)
         private String email;
+
+    @Column(name = "designation", nullable = true, length = 100)
+    private String designation;
 
         @Column(name = "phone", length = 50)
         private String phone;
@@ -46,8 +49,8 @@ public class Employee {
         @Column(name = "national_id", length = 50)
         private String nationalId;
 
-        @Column(name = "designation", length = 100)
-        private String designation;
+    @Column(name = "bank_acc_no", length = 50)
+    private String bankAccNo;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "department_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -75,11 +78,17 @@ public class Employee {
         @Column(name = "salary_type", columnDefinition = "ENUM('MONTHLY','DAILY') DEFAULT 'MONTHLY'")
         private SalaryType salaryType = SalaryType.MONTHLY;
 
-        @Column(name = "leave_count")
-        private Integer leaveCount = 0;
 
-        public enum SalaryType {
+        @Column(name = "qr_token", length = 64, unique = true)
+        private String qrToken;
+
+        @Column(name = "profile_image", length = 500)
+        private String profileImage;
+
+
+    public enum SalaryType {
                 MONTHLY,
                 DAILY
         }
+
 }

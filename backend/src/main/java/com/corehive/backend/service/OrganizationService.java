@@ -1,16 +1,14 @@
 package com.corehive.backend.service;
 
+import com.corehive.backend.dto.EmployeeRequestDTO;
 import com.corehive.backend.dto.request.UpdateModuleConfigRequest;
 import com.corehive.backend.dto.response.ModuleConfigResponse;
 import com.corehive.backend.dto.response.ApiResponse;
 import com.corehive.backend.dto.response.OrganizationSummaryResponse;
+import com.corehive.backend.exception.hrReportsException.ResourceNotFoundException;
 import com.corehive.backend.dto.response.PlatformStatistics;
-import com.corehive.backend.model.AppUser;
-import com.corehive.backend.model.Organization;
-import com.corehive.backend.model.OrganizationStatus;
-import com.corehive.backend.model.AppUserRole;
-import com.corehive.backend.repository.AppUserRepository;
-import com.corehive.backend.repository.OrganizationRepository;
+import com.corehive.backend.model.*;
+import com.corehive.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +34,22 @@ public class OrganizationService {
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final EmployeeRepository employeeRepository;
+    private final OrganizationModuleService organizationModuleService;
+    private final OrganizationModuleRepository organizationModuleRepository;
+    private final DepartmentRepository departmentRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final PayslipRepository payslipRepository;
+    private final PayrollConfigurationRepository payrollConfigurationRepository;
+    private final AttendanceConfigurationRepository attendanceConfigurationRepository;
+    private final LeaveTypeRepository leaveTypeRepository;
+    private final AllowanceRepository allowanceRepository;
+    private final DeductionRepository deductionRepository;
+    private final DesignationRepository designationRepository;
+    private final SupportTicketRepository supportTicketRepository;
     /**
      * Get all pending organization approvals
      */
@@ -49,7 +64,7 @@ public class OrganizationService {
                     .collect(Collectors.toList());
 
             log.info("Found {} pending organizations", response.size());
-            return ApiResponse.success("Pending approvals retrieved successfully", response);
+            return ApiResponse.success(response, "Pending approvals retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching pending approvals", e);
@@ -76,7 +91,7 @@ public class OrganizationService {
 
             // Status check
             if (!organization.isPendingApproval()) {
-                log.warn("Organization {} is not in pending approval status. Current status: {}", 
+                log.warn("Organization {} is not in pending approval status. Current status: {}",
                         organizationUuid, organization.getStatus());
                 return ApiResponse.error("Organization is not in pending approval status. Current status: " + organization.getStatus());
             }
@@ -91,19 +106,19 @@ public class OrganizationService {
             String tempPassword = UUID.randomUUID().toString().substring(0, 8);
             String hashedPassword = passwordEncoder.encode(tempPassword);
 
-            organization.setStatus(OrganizationStatus.ACTIVE);
+            organization.setStatus(OrganizationStatus.APPROVED_PENDING_PAYMENT);
             organizationRepository.save(organization);
             log.info("Organization status updated successfully to ACTIVE: {}", organization.getName());
 
             // Admin user activate - SIMPLIFIED VERSION USING ONLY STRING METHOD
             log.info("Starting user activation process for organization: {}", organizationUuid);
-            
+
             // Use only the string method since that works correctly
             List<AppUser> adminUsers = appUserRepository
                     .findByOrganizationUuidAndRole(organizationUuid, AppUserRole.ORG_ADMIN.name());
-            log.info("Found {} admin users using string role '{}' for organization: {}", 
+            log.info("Found {} admin users using string role '{}' for organization: {}",
                     adminUsers.size(), AppUserRole.ORG_ADMIN.name(), organizationUuid);
-            
+
             if (adminUsers.isEmpty()) {
                 log.warn("No ORG_ADMIN users found for organization: {}", organizationUuid);
                 // Let's also try to find all users for this organization to debug
@@ -112,11 +127,11 @@ public class OrganizationService {
                 for (AppUser user : allUsers) {
                     log.info("User found: email={}, role={}, isActive={}", user.getEmail(), user.getRole(), user.getIsActive());
                 }
-                
+
                 // Continue with approval but note that no admin users were activated
-                log.info("Organization approved successfully: {} ({}) - No admin users found to activate", 
+                log.info("Organization approved successfully: {} ({}) - No admin users found to activate",
                         organization.getName(), organizationUuid);
-                return ApiResponse.success("Organization approved successfully (no admin users found to activate)", null);
+                return ApiResponse.success(null, "Organization approved successfully (no admin users found to activate)");
             }
 
             log.info("Activating {} admin users for organization: {}", adminUsers.size(), organizationUuid);
@@ -125,7 +140,7 @@ public class OrganizationService {
                 try {
                     boolean wasActive = adminUser.getIsActive();
                     log.info("Processing admin user: {} (currently active: {})", adminUser.getEmail(), wasActive);
-                    
+
                     adminUser.setIsActive(true);
                     adminUser.setPasswordHash(hashedPassword);
                     AppUser savedUser = appUserRepository.save(adminUser);
@@ -135,7 +150,7 @@ public class OrganizationService {
                     } catch (Exception e) {
                         System.err.println("Failed to send email: " + e.getMessage());
                     }
-                    log.info("Admin user activated successfully: {} (was active: {}, now active: {})", 
+                    log.info("Admin user activated successfully: {} (was active: {}, now active: {})",
                             savedUser.getEmail(), wasActive, savedUser.getIsActive());
                 } catch (Exception e) {
                     log.error("Error activating admin user: {}", adminUser.getEmail(), e);
@@ -143,9 +158,9 @@ public class OrganizationService {
                 }
             }
 
-            log.info("Organization approved successfully: {} ({}) - Activated {} admin users", 
+            log.info("Organization approved successfully: {} ({}) - Activated {} admin users",
                     organization.getName(), organizationUuid, activatedCount);
-            return ApiResponse.success("Organization approved successfully", null);
+            return ApiResponse.success(null, "Organization approved successfully");
 
         } catch (Exception e) {
             log.error("Error approving organization: {} - Exception: {}", organizationUuid, e.getMessage(), e);
@@ -173,12 +188,12 @@ public class OrganizationService {
                 return ApiResponse.error("Organization is not in pending approval status");
             }
 
-            // Status update 
+            // Status update
             organization.setStatus(OrganizationStatus.SUSPENDED);
             organizationRepository.save(organization);
 
             log.info("Organization rejected: {} ({})", organization.getName(), organizationUuid);
-            return ApiResponse.success("Organization rejected", null);
+            return ApiResponse.success(null, "Organization rejected");
 
         } catch (Exception e) {
             log.error("Error rejecting organization: {}", organizationUuid, e);
@@ -209,7 +224,7 @@ public class OrganizationService {
             log.info("Retrieved {} organizations (page {} of {})",
                     responseList.size(), pageable.getPageNumber() + 1, response.getTotalPages());
 
-            return ApiResponse.success("Organizations retrieved successfully", response);
+            return ApiResponse.success(response, "Organizations retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching organizations", e);
@@ -252,7 +267,7 @@ public class OrganizationService {
             organization.setStatus(targetStatus);
             organizationRepository.save(organization);
 
-            // Status users activate/deactivate 
+            // Status users activate/deactivate
             List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
             boolean shouldActivateUsers = targetStatus.allowsLogin();
 
@@ -262,7 +277,7 @@ public class OrganizationService {
             }
 
             log.info("Organization status changed: {} -> {}", organization.getName(), targetStatus.getDisplayName());
-            return ApiResponse.success("Organization status updated successfully", null);
+            return ApiResponse.success(null, "Organization status updated successfully");
 
         } catch (Exception e) {
             log.error("Error changing organization status: {}", organizationUuid, e);
@@ -287,7 +302,7 @@ public class OrganizationService {
             OrganizationSummaryResponse response = convertToSummaryResponse(organization);
 
             log.info("Organization details retrieved: {}", organization.getName());
-            return ApiResponse.success("Organization details retrieved successfully", response);
+            return ApiResponse.success(response, "Organization details retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching organization details: {}", organizationUuid, e);
@@ -321,7 +336,7 @@ public class OrganizationService {
                     .build();
 
             log.info("Module configuration retrieved for: {}", organization.getName());
-            return ApiResponse.success("Module configuration retrieved successfully", response);
+            return ApiResponse.success(response, "Module configuration retrieved successfully");
 
         } catch (Exception e) {
             log.error("Error fetching module configuration: {}", organizationUuid, e);
@@ -367,6 +382,10 @@ public class OrganizationService {
 
             Organization savedOrg = organizationRepository.save(organization);
 
+            // Sync with organization_modules table
+            log.info("Syncing organization modules with organization_modules table");
+            organizationModuleService.syncOrganizationModules(organizationUuid);
+
             ModuleConfigResponse response = ModuleConfigResponse.builder()
                     .organizationUuid(savedOrg.getOrganizationUuid())
                     .organizationName(savedOrg.getName())
@@ -378,7 +397,7 @@ public class OrganizationService {
                     .build();
 
             log.info("Module configuration updated successfully for: {}", organization.getName());
-            return ApiResponse.success("Module configuration updated successfully", response);
+            return ApiResponse.success(response, "Module configuration updated successfully");
 
         } catch (Exception e) {
             log.error("Error updating module configuration: {}", organizationUuid, e);
@@ -387,23 +406,55 @@ public class OrganizationService {
     }
 
     /**
+     * Get organization name by organization UUID
+     * Used internally (PDFs, audits, reports)
+     */
+    public String getOrganizationName(String organizationUuid) {
+
+        if (organizationUuid == null || organizationUuid.isBlank()) {
+            throw new IllegalArgumentException("Organization UUID is required");
+        }
+
+        Organization organization = organizationRepository
+                .findByOrganizationUuid(organizationUuid)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Organization not found for UUID: " + organizationUuid
+                        )
+                );
+
+        return organization.getName();
+    }
+
+
+
+    /**
      * Get Platform Statistics for System Admin Dashboard
      * Returns real-time statistics from the database
      */
     public PlatformStatistics getPlatformStatistics() {
         log.info("Fetching platform statistics from database");
-        
+
         try {
-            // Count organizations by status
+            // Count organizations by status using enum values
             long totalOrganizations = organizationRepository.count();
-            long activeOrganizations = organizationRepository.countByStatus("ACTIVE");
-            long pendingOrganizations = organizationRepository.countByStatus("PENDING_APPROVAL");
-            long dormantOrganizations = organizationRepository.countByStatus("DORMANT");
-            long suspendedOrganizations = organizationRepository.countByStatus("SUSPENDED");
+            long activeOrganizations = organizationRepository.countByStatus(OrganizationStatus.ACTIVE);
+            long pendingOrganizations = organizationRepository.countByStatus(OrganizationStatus.PENDING_APPROVAL);
+            long dormantOrganizations = organizationRepository.countByStatus(OrganizationStatus.DORMANT);
+            long suspendedOrganizations = organizationRepository.countByStatus(OrganizationStatus.SUSPENDED);
+
+            // Calculate total employees from employee count ranges in organizations
+            List<Organization> allOrganizations = organizationRepository.findAll();
+            long estimatedTotalEmployees = allOrganizations.stream()
+                    .mapToLong(org -> estimateEmployeeCount(org.getEmployeeCountRange()))
+                    .sum();
+
+            // Also get actual employee count from AppUser table for comparison
+            long actualEmployees = appUserRepository.count();
             
-            // Count total employees (AppUsers) across all organizations
-            long totalEmployees = appUserRepository.count();
-            
+            // Use actual count if available, otherwise use estimated
+            long totalEmployees = actualEmployees > 0 ? actualEmployees : estimatedTotalEmployees;
+
             PlatformStatistics stats = PlatformStatistics.builder()
                     .totalOrganizations(totalOrganizations)
                     .activeOrganizations(activeOrganizations)
@@ -413,12 +464,13 @@ public class OrganizationService {
                     .totalEmployees(totalEmployees)
                     .totalSystemUsers(0L) // Can be updated when SystemUser count is needed
                     .build();
-            
-            log.info("Platform statistics fetched - Total: {}, Active: {}, Pending: {}, Employees: {}",
-                    totalOrganizations, activeOrganizations, pendingOrganizations, totalEmployees);
-            
+
+            log.info("Platform statistics fetched - Total Orgs: {}, Active: {}, Pending: {}, Dormant: {}, Suspended: {}, Employees: {} (actual: {}, estimated: {})",
+                    totalOrganizations, activeOrganizations, pendingOrganizations, 
+                    dormantOrganizations, suspendedOrganizations, totalEmployees, actualEmployees, estimatedTotalEmployees);
+
             return stats;
-            
+
         } catch (Exception e) {
             log.error("Error fetching platform statistics", e);
             // Return empty stats instead of throwing exception
@@ -431,6 +483,39 @@ public class OrganizationService {
                     .totalEmployees(0L)
                     .totalSystemUsers(0L)
                     .build();
+        }
+    }
+
+    /**
+     * Estimate employee count from range string
+     * e.g., "1-50" returns midpoint 25, "50-100" returns 75
+     */
+    private long estimateEmployeeCount(String range) {
+        if (range == null || range.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            // Handle ranges like "1-50", "50-100", "100-500", "500+"
+            if (range.contains("+")) {
+                // For "500+" assume 750
+                String number = range.replace("+", "").trim();
+                return Long.parseLong(number) + 250;
+            } else if (range.contains("-")) {
+                // For "1-50" get midpoint
+                String[] parts = range.split("-");
+                if (parts.length == 2) {
+                    long min = Long.parseLong(parts[0].trim());
+                    long max = Long.parseLong(parts[1].trim());
+                    return (min + max) / 2;
+                }
+            }
+            
+            // If it's just a number, return it
+            return Long.parseLong(range.trim());
+        } catch (Exception e) {
+            log.warn("Could not parse employee count range: {}", range);
+            return 25; // Default to 25 if parsing fails
         }
     }
 
@@ -462,8 +547,10 @@ public class OrganizationService {
                 .businessRegistrationNumber(org.getBusinessRegistrationNumber())
                 .businessRegistrationDocument(org.getBusinessRegistrationDocument())
                 .employeeCountRange(org.getEmployeeCountRange())
-                .plan(org.getPlan() != null ? org.getPlan() : "Starter")
-                .billing(calculateBilling(org.getPlan()))
+                .plan(org.getBillingPlan() != null ? org.getBillingPlan() : "Starter")
+                .billing(calculateBilling(org.getBillingPlan()))
+                .billingPrice(org.getBillingPricePerUserPerMonth() != null ? 
+                    org.getBillingPricePerUserPerMonth().doubleValue() : null)
                 .createdAt(org.getCreatedAt())
                 .userCount(userCount)
                 .moduleQrAttendanceMarking(org.getModuleQrAttendanceMarking())
@@ -472,6 +559,270 @@ public class OrganizationService {
                         .moduleHiringManagement(org.getModuleHiringManagement())
                         .modulesConfigured(org.getModulesConfigured())
                         .build();
+    }
+
+    /**
+     * Get employee by email (for current user profile)
+     */
+    public ApiResponse<Employee> getEmployeeByEmail(String organizationUuid, String email) {
+        try {
+            log.info("Fetching employee with email: {} for organization: {}", email, organizationUuid);
+
+            Optional<Employee> employeeOpt = employeeRepository.findByEmailAndOrganizationUuid(email, organizationUuid);
+
+            if (employeeOpt.isEmpty()) {
+                log.warn("Employee not found with email: {}", email);
+                return ApiResponse.error("Employee profile not found");
+            }
+
+            Employee employee = employeeOpt.get();
+            log.info("Employee profile retrieved successfully for: {}", email);
+            return ApiResponse.success(employee, "Employee profile retrieved successfully");
+
+        } catch (Exception e) {
+            log.error("Error fetching employee with email: {}", email, e);
+            return ApiResponse.error("Failed to retrieve employee profile");
+        }
+    }
+
+    /**
+     * Update employee by email (for current user profile)
+     */
+    @Transactional
+    public ApiResponse<Employee> updateEmployeeByEmail(String organizationUuid, String email, EmployeeRequestDTO request) {
+        try {
+            log.info("Updating employee with email: {} for organization: {}", email, organizationUuid);
+
+            Optional<Employee> employeeOpt = employeeRepository.findByEmailAndOrganizationUuid(email, organizationUuid);
+
+            if (employeeOpt.isEmpty()) {
+                log.warn("Employee not found with email: {}", email);
+                return ApiResponse.error("Employee profile not found");
+            }
+
+            Employee employee = employeeOpt.get();
+
+            // Employees can only update limited fields (not email, salary, department, etc.)
+            employee.setFirstName(request.getFirstName());
+            employee.setLastName(request.getLastName());
+            employee.setPhone(request.getPhone());
+            employee.setUpdatedAt(LocalDateTime.now());
+
+            Employee savedEmployee = employeeRepository.save(employee);
+
+            log.info("Employee profile updated successfully for: {}", email);
+            return ApiResponse.success(savedEmployee, "Profile updated successfully");
+
+        } catch (Exception e) {
+            log.error("Error updating employee with email: {}", email, e);
+            return ApiResponse.error("Failed to update profile: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Permanently delete an organization and all related data
+     * Only accessible by System Admin
+     */
+    @Transactional
+    public ApiResponse<String> deleteOrganization(String organizationUuid) {
+        try {
+            log.info("Attempting to delete organization: {}", organizationUuid);
+
+            Organization organization = organizationRepository.findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
+
+            String orgName = organization.getName();
+            int totalDeleted = 0;
+
+            // Delete support tickets
+            try {
+                int count = supportTicketRepository.deleteByOrganizationUuid(organizationUuid);
+                log.info("Deleted {} support tickets", count);
+                totalDeleted += count;
+            } catch (Exception e) {
+                log.warn("No support tickets to delete or error: {}", e.getMessage());
+            }
+
+            // Delete attendance records
+            try {
+                List<Attendance> attendances = attendanceRepository.findByOrganizationUuid(organizationUuid);
+                if (!attendances.isEmpty()) {
+                    attendanceRepository.deleteAll(attendances);
+                    log.info("Deleted {} attendance records", attendances.size());
+                    totalDeleted += attendances.size();
+                }
+            } catch (Exception e) {
+                log.warn("No attendance records to delete or error: {}", e.getMessage());
+            }
+
+            // Delete leave requests
+            try {
+                List<LeaveRequest> leaveRequests = leaveRequestRepository.findByOrganizationUuid(organizationUuid);
+                if (!leaveRequests.isEmpty()) {
+                    leaveRequestRepository.deleteAll(leaveRequests);
+                    log.info("Deleted {} leave requests", leaveRequests.size());
+                    totalDeleted += leaveRequests.size();
+                }
+            } catch (Exception e) {
+                log.warn("No leave requests to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payslips
+            try {
+                List<Payslip> payslips = payslipRepository.findByOrganizationUuid(organizationUuid);
+                if (!payslips.isEmpty()) {
+                    payslipRepository.deleteAll(payslips);
+                    log.info("Deleted {} payslips", payslips.size());
+                    totalDeleted += payslips.size();
+                }
+            } catch (Exception e) {
+                log.warn("No payslips to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payroll configuration
+            try {
+                payrollConfigurationRepository.findByOrganizationUuid(organizationUuid)
+                        .ifPresent(config -> {
+                            payrollConfigurationRepository.delete(config);
+                            log.info("Deleted payroll configuration");
+                        });
+            } catch (Exception e) {
+                log.warn("No payroll configuration to delete or error: {}", e.getMessage());
+            }
+
+            // Delete attendance configurations
+            try {
+                List<AttendanceConfiguration> configs = attendanceConfigurationRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!configs.isEmpty()) {
+                    attendanceConfigurationRepository.deleteAll(configs);
+                    log.info("Deleted {} attendance configurations", configs.size());
+                    totalDeleted += configs.size();
+                }
+            } catch (Exception e) {
+                log.warn("No attendance configurations to delete or error: {}", e.getMessage());
+            }
+
+            // Delete leave types
+            try {
+                List<LeaveType> leaveTypes = leaveTypeRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!leaveTypes.isEmpty()) {
+                    leaveTypeRepository.deleteAll(leaveTypes);
+                    log.info("Deleted {} leave types", leaveTypes.size());
+                    totalDeleted += leaveTypes.size();
+                }
+            } catch (Exception e) {
+                log.warn("No leave types to delete or error: {}", e.getMessage());
+            }
+
+            // Delete allowances
+            try {
+                List<Allowance> allowances = allowanceRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!allowances.isEmpty()) {
+                    allowanceRepository.deleteAll(allowances);
+                    log.info("Deleted {} allowances", allowances.size());
+                    totalDeleted += allowances.size();
+                }
+            } catch (Exception e) {
+                log.warn("No allowances to delete or error: {}", e.getMessage());
+            }
+
+            // Delete deductions
+            try {
+                List<Deduction> deductions = deductionRepository.findByOrganizationUuidAndIsActiveTrue(organizationUuid);
+                if (!deductions.isEmpty()) {
+                    deductionRepository.deleteAll(deductions);
+                    log.info("Deleted {} deductions", deductions.size());
+                    totalDeleted += deductions.size();
+                }
+            } catch (Exception e) {
+                log.warn("No deductions to delete or error: {}", e.getMessage());
+            }
+
+            // Delete designations
+            try {
+                List<Designation> designations = designationRepository.findByOrganizationUuid(organizationUuid);
+                if (!designations.isEmpty()) {
+                    designationRepository.deleteAll(designations);
+                    log.info("Deleted {} designations", designations.size());
+                    totalDeleted += designations.size();
+                }
+            } catch (Exception e) {
+                log.warn("No designations to delete or error: {}", e.getMessage());
+            }
+
+            // Delete employees
+            List<Employee> employees = employeeRepository.findByOrganizationUuid(organizationUuid);
+            if (!employees.isEmpty()) {
+                employeeRepository.deleteAll(employees);
+                log.info("Deleted {} employees", employees.size());
+                totalDeleted += employees.size();
+            }
+
+            // Delete departments
+            try {
+                List<Department> departments = departmentRepository.findByOrganizationUuid(organizationUuid);
+                if (!departments.isEmpty()) {
+                    departmentRepository.deleteAll(departments);
+                    log.info("Deleted {} departments", departments.size());
+                    totalDeleted += departments.size();
+                }
+            } catch (Exception e) {
+                log.warn("No departments to delete or error: {}", e.getMessage());
+            }
+
+            // Delete payment transactions
+            try {
+                List<PaymentTransaction> transactions = paymentTransactionRepository.findByOrganizationUuid(organizationUuid);
+                if (!transactions.isEmpty()) {
+                    paymentTransactionRepository.deleteAll(transactions);
+                    log.info("Deleted {} payment transactions", transactions.size());
+                    totalDeleted += transactions.size();
+                }
+            } catch (Exception e) {
+                log.warn("No payment transactions to delete or error: {}", e.getMessage());
+            }
+
+            // Delete subscription
+            try {
+                subscriptionRepository.findByOrganizationUuid(organizationUuid)
+                        .ifPresent(subscription -> {
+                            subscriptionRepository.delete(subscription);
+                            log.info("Deleted subscription");
+                        });
+            } catch (Exception e) {
+                log.warn("No subscription to delete or error: {}", e.getMessage());
+            }
+
+            // Delete organization modules
+            List<OrganizationModule> organizationModules = organizationModuleRepository.findByOrganizationUuid(organizationUuid);
+            if (!organizationModules.isEmpty()) {
+                organizationModuleRepository.deleteAll(organizationModules);
+                log.info("Deleted {} organization modules", organizationModules.size());
+                totalDeleted += organizationModules.size();
+            }
+
+            // Delete users
+            List<AppUser> users = appUserRepository.findByOrganizationUuid(organizationUuid);
+            if (!users.isEmpty()) {
+                appUserRepository.deleteAll(users);
+                log.info("Deleted {} users", users.size());
+                totalDeleted += users.size();
+            }
+
+            // Finally, delete the organization
+            organizationRepository.delete(organization);
+            log.info("Successfully deleted organization: {} ({}) - Total {} related records deleted", 
+                    orgName, organizationUuid, totalDeleted);
+
+            return ApiResponse.success(null, "Organization and all related data deleted successfully");
+
+        } catch (ResourceNotFoundException e) {
+            log.error("Organization not found: {}", organizationUuid);
+            return ApiResponse.error("Organization not found");
+        } catch (Exception e) {
+            log.error("Error deleting organization: {} - {}", organizationUuid, e.getMessage(), e);
+            return ApiResponse.error("Failed to delete organization: " + e.getMessage());
+        }
     }
 
 }

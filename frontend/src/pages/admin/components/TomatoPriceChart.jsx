@@ -6,7 +6,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  ResponsiveContainer
 } from "recharts";
 
 const data = [
@@ -15,7 +15,7 @@ const data = [
   { month: "Mar", tenants: 68 },
   { month: "Apr", tenants: 85 },
   { month: "May", tenants: 95 },
-  { month: "Jun", tenants: 78 },
+  { month: "Jun", tenants: 78 }
 ];
 
 export default function TomatoPriceChart() {
@@ -27,7 +27,6 @@ export default function TomatoPriceChart() {
 
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart data={data}>
-            
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" />
           <YAxis />

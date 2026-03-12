@@ -1,29 +1,29 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { 
-  Settings, 
-  CheckCircle2, 
-  ArrowRight, 
-  BarChart3, 
-  MessageSquare, 
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  Settings,
+  CheckCircle2,
+  ArrowRight,
+  BarChart3,
+  MessageSquare,
   UserPlus,
-  QrCode, 
+  QrCode,
   ScanFace
-} from 'lucide-react';
+} from "lucide-react";
 
-import { 
-  configureModules, 
-  selectUser, 
-  selectIsModuleConfigLoading, 
-  selectError 
-} from '../../store/slices/authSlice';
+import {
+  configureModules,
+  selectUser,
+  selectIsModuleConfigLoading,
+  selectError
+} from "../../store/slices/authSlice";
 
-import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
-import Alert from '../../components/common/Alert';
-import Navbar from '../../components/layout/Navbar';
-import Footer from '../../components/layout/Footer';
+import Button from "../../components/common/Button";
+import Card from "../../components/common/Card";
+import Alert from "../../components/common/Alert";
+import Navbar from "../../components/layout/Navbar";
+import Footer from "../../components/layout/Footer";
 
 /**
  * Module Configuration Page
@@ -32,11 +32,11 @@ import Footer from '../../components/layout/Footer';
 const ModuleConfigPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const user = useSelector(selectUser);
   const isLoading = useSelector(selectIsModuleConfigLoading);
   const error = useSelector(selectError);
-  
+
   // Module configuration state
   const [moduleConfig, setModuleConfig] = useState({
     moduleQrAttendanceMarking: false,
@@ -44,121 +44,129 @@ const ModuleConfigPage = () => {
     moduleEmployeeFeedback: false,
     moduleHiringManagement: false
   });
-  
+
   // Module information
   const moduleInfo = [
     {
-      key: 'moduleFaceRecognitionAttendanceMarking',
-      name: 'Face Recognition Attendance',
-      description: 'Automate employee check-ins using biometric facial recognition technology',
+      key: "moduleFaceRecognitionAttendanceMarking",
+      name: "Face Recognition Attendance",
+      description:
+        "Automate employee check-ins using biometric facial recognition technology",
       icon: ScanFace, // Assuming a suitable icon like a user with a checkmark or a camera icon
       features: [
-        'Touchless check-in/check-out',
-        'Liveness detection',
-        'Real-time attendance tracking',
-        'Integration with payroll systems',
-        'Mobile and kiosk deployment options'
+        "Touchless check-in/check-out",
+        "Liveness detection",
+        "Real-time attendance tracking",
+        "Integration with payroll systems",
+        "Mobile and kiosk deployment options"
       ]
     },
     {
-      key: 'moduleQrAttendanceMarking',
-      name: 'QR Code Attendance',
-      description: 'Enable quick and secure attendance marking via scannable QR codes',
+      key: "moduleQrAttendanceMarking",
+      name: "QR Code Attendance",
+      description:
+        "Enable quick and secure attendance marking via scannable QR codes",
       icon: QrCode, // Assuming a suitable icon like a QR code graphic
       features: [
-        'Secure code generation and rotation',
-        'Geo-fencing for location verification',
-        'Offline marking capabilities',
-        'Scan history and audit logs',
-        'Employee self-service portals'
+        "Secure code generation and rotation",
+        "Geo-fencing for location verification",
+        "Offline marking capabilities",
+        "Scan history and audit logs",
+        "Employee self-service portals"
       ]
     },
     {
-      key: 'moduleEmployeeFeedback',
-      name: 'Employee Feedback',
-      description: 'Collect employee feedback, conduct surveys, and measure satisfaction',
+      key: "moduleEmployeeFeedback",
+      name: "Employee Feedback",
+      description:
+        "Collect employee feedback, conduct surveys, and measure satisfaction",
       icon: MessageSquare,
       features: [
-        'Employee surveys',
-        'Anonymous feedback',
-        'Sentiment analysis',
-        'Pulse surveys',
-        'Feedback analytics'
+        "Employee surveys",
+        "Anonymous feedback",
+        "Sentiment analysis",
+        "Pulse surveys",
+        "Feedback analytics"
       ]
     },
     {
-      key: 'moduleHiringManagement',
-      name: 'Hiring Management',
-      description: 'Streamline your recruitment process with applicant tracking',
+      key: "moduleHiringManagement",
+      name: "Hiring Management",
+      description:
+        "Streamline your recruitment process with applicant tracking",
       icon: UserPlus,
       features: [
-        'Job posting management',
-        'Applicant tracking',
-        'Interview scheduling',
-        'Candidate evaluation',
-        'Hiring analytics'
+        "Job posting management",
+        "Applicant tracking",
+        "Interview scheduling",
+        "Candidate evaluation",
+        "Hiring analytics"
       ]
     }
   ];
-  
+
   // Handle module toggle
   const handleModuleToggle = (moduleKey) => {
-    setModuleConfig(prev => ({
+    setModuleConfig((prev) => ({
       ...prev,
       [moduleKey]: !prev[moduleKey]
     }));
   };
-  
-// Handle form submission - FIXED VERSION
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    console.log('Submitting module configuration...');
-    const resultAction = await dispatch(configureModules(moduleConfig));
-    
-    if (configureModules.fulfilled.match(resultAction)) {
-      console.log(' Modules configured successfully, navigating to org_admin dashboard...');
-      
-      // After module config, redirect to ORG_ADMIN dashboard
-      setTimeout(() => {
-        navigate('/org_admin/dashboard', { replace: true });
-      }, 500);
-    } else {
-      console.error(' Module configuration failed:', resultAction.payload);
-    }
-  } catch (error) {
-    console.error(' Module configuration error:', error);
-  }
-};
 
-// Skip configuration (basic modules only) - FIXED VERSION
-const handleSkip = async () => {
-  const basicConfig = {
-    modulePerformanceTracking: false,
-    moduleEmployeeFeedback: false,
-    moduleHiringManagement: false
-  };
-  
-  try {
-    console.log('⏭Skipping module configuration...');
-    const resultAction = await dispatch(configureModules(basicConfig));
-    
-    if (configureModules.fulfilled.match(resultAction)) {
-      console.log(' Basic configuration saved, navigating to org_admin dashboard...');
-      
-      // Redirect to ORG_ADMIN dashboard with basic modules
-      setTimeout(() => {
-        navigate('/org_admin/dashboard', { replace: true });
-      }, 500);
-    } else {
-      console.error(' Basic configuration failed:', resultAction.payload);
+  // Handle form submission - FIXED VERSION
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      console.log("Submitting module configuration...");
+      const resultAction = await dispatch(configureModules(moduleConfig));
+
+      if (configureModules.fulfilled.match(resultAction)) {
+        console.log(
+          " Modules configured successfully, navigating to org_admin dashboard..."
+        );
+
+        // After module config, redirect to ORG_ADMIN dashboard
+        setTimeout(() => {
+          navigate("/org_admin/dashboard", { replace: true });
+        }, 500);
+      } else {
+        console.error(" Module configuration failed:", resultAction.payload);
+      }
+    } catch (error) {
+      console.error(" Module configuration error:", error);
     }
-  } catch (error) {
-    console.error(' Basic configuration error:', error);
-  }
-};
-  
+  };
+
+  // Skip configuration (basic modules only) - FIXED VERSION
+  const handleSkip = async () => {
+    const basicConfig = {
+      modulePerformanceTracking: false,
+      moduleEmployeeFeedback: false,
+      moduleHiringManagement: false
+    };
+
+    try {
+      console.log("⏭Skipping module configuration...");
+      const resultAction = await dispatch(configureModules(basicConfig));
+
+      if (configureModules.fulfilled.match(resultAction)) {
+        console.log(
+          " Basic configuration saved, navigating to org_admin dashboard..."
+        );
+
+        // Redirect to ORG_ADMIN dashboard with basic modules
+        setTimeout(() => {
+          navigate("/org_admin/dashboard", { replace: true });
+        }, 500);
+      } else {
+        console.error(" Basic configuration failed:", resultAction.payload);
+      }
+    } catch (error) {
+      console.error(" Basic configuration error:", error);
+    }
+  };
+
   return (
     <>
     <Navbar/>
@@ -189,13 +197,7 @@ const handleSkip = async () => {
             />
           )}
           
-          <div className="mb-6">
-            <Alert 
-              type="info"
-              title="Basic Features Included"
-              message="Employee Management, Payroll, Leave Management, Attendance Tracking, Reports, and Notifications are already enabled for your organization."
-            />
-          </div>
+     
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Module selection title */}

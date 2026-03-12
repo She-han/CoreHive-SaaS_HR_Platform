@@ -3,6 +3,7 @@ package com.corehive.backend.controller;
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
 import com.corehive.backend.dto.request.UpdateDepartmentRequest;
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.DepartmentDTO;
 import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.service.DepartmentService;
@@ -33,35 +34,29 @@ public class DepartmentController {
      */
     @GetMapping
     @PreAuthorize("hasRole('ORG_ADMIN') or hasRole('HR_STAFF')")
-    public ResponseEntity<ApiResponse<List<Department>>> getAllDepartments(HttpServletRequest httpRequest) {
+    public ResponseEntity<ApiResponse<List<DepartmentDTO>>> getAllDepartments(HttpServletRequest httpRequest) {
         try {
-            log.info("GET /api/org-admin/departments - Getting all departments");
-
             String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
-            String userEmail = (String) httpRequest.getAttribute("userEmail");
-            
-            log.info("Departments request from user: {} for organization: {}", userEmail, organizationUuid);
 
             if (organizationUuid == null) {
-                log.warn("Organization UUID not found for user: {}", userEmail);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.error("Access denied: Organization not found"));
+                        .body(ApiResponse.error("Access denied: Organization not found"));
             }
 
             // Ensure default departments exist
             departmentService.ensureDefaultDepartments(organizationUuid);
-            
-            List<Department> departments = departmentService.getDepartmentsByOrganization(organizationUuid);
-            
-            log.info("Found {} departments for organization: {}", departments.size(), organizationUuid);
-            return ResponseEntity.ok(ApiResponse.success("Departments retrieved successfully", departments));
+
+            // Return DTOs
+            List<DepartmentDTO> departmentsDTO = departmentService.getDepartmentsDTOByOrganization(organizationUuid);
+
+            return ResponseEntity.ok(ApiResponse.success(departmentsDTO, "Departments retrieved successfully"));
 
         } catch (Exception e) {
-            log.error("Error getting departments", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error: " + e.getMessage()));
+                    .body(ApiResponse.error("Internal server error: " + e.getMessage()));
         }
     }
+
 
     @PostMapping
     @PreAuthorize("hasRole('ORG_ADMIN')")
@@ -73,7 +68,7 @@ public class DepartmentController {
 
             Department createdDept = departmentService.createDepartment(organizationUuid, request);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success("Department created successfully", createdDept)
+                    .body(ApiResponse.success(createdDept, "Department created successfully")
             );
 
         } catch (Exception e) {
@@ -105,6 +100,29 @@ public class DepartmentController {
             log.error("Error updating department", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("Internal server error: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteDepartment(
+            HttpServletRequest httpRequest,
+            @PathVariable Long id) {
+        try {
+            String organizationUuid = (String) httpRequest.getAttribute("organizationUuid");
+
+            ApiResponse<Void> response = departmentService.deleteDepartment(organizationUuid, id);
+
+            if(response.isSuccess()){
+                return ResponseEntity.ok(response);
+            }else{
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+        } catch (Exception e) {
+            log.error("Error deleting department", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Internal server error: " + e.getMessage()));
         }
     }
 }

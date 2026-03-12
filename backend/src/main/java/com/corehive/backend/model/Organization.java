@@ -42,14 +42,17 @@ public class Organization {
     private String businessRegistrationDocument;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private OrganizationStatus status = OrganizationStatus.PENDING_APPROVAL;
 
     @Column(name = "employee_count_range", nullable = false, length = 50)
     private String employeeCountRange;
 
-    @Column(name = "plan", length = 50)
-    private String plan = "Starter";
+    @Column(name = "billing_plan", length = 100)
+    private String billingPlan;
+
+    @Column(name = "billing_price_per_user_per_month", precision = 10, scale = 2)
+    private java.math.BigDecimal billingPricePerUserPerMonth;
 
     // Module flags
     @Column(name = "module_qr_attendance_marking")
@@ -65,7 +68,7 @@ public class Organization {
     private Boolean moduleHiringManagement = false;
 
     @Column(name = "modules_configured")
-    private Boolean modulesConfigured = false;
+    private Boolean modulesConfigured = true;
 
     // Audit fields
     @CreationTimestamp

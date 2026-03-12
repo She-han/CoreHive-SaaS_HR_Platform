@@ -20,4 +20,5 @@ public class AttendanceHistoryResponse {
     private String status;
     private String verificationType;
     private String workingHours;
+    private String otHours;
 }

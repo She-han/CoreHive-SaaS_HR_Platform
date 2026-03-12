@@ -3,6 +3,7 @@ package com.corehive.backend.service;
 import com.corehive.backend.dto.request.CreateDepartmentRequest;
 import com.corehive.backend.dto.request.UpdateDepartmentRequest;
 import com.corehive.backend.dto.response.ApiResponse;
+import com.corehive.backend.dto.response.DepartmentDTO;
 import com.corehive.backend.dto.response.UpdateDepartmentResponse;
 import com.corehive.backend.model.Department;
 import com.corehive.backend.repository.DepartmentRepository;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing departments
@@ -83,9 +85,24 @@ public class DepartmentService {
     /**
      * Get all departments for an organization
      */
-    public List<Department> getDepartmentsByOrganization(String organizationUuid) {
-        return departmentRepository.findByOrganizationUuid(organizationUuid);
+    // Replace getDepartmentsByOrganization() in controller with DTO mapping
+    public List<DepartmentDTO> getDepartmentsDTOByOrganization(String organizationUuid) {
+        List<Department> departments = departmentRepository.findByOrganizationUuid(organizationUuid);
+
+        return departments.stream()
+                .map(dep -> new DepartmentDTO(
+                        dep.getId(),
+                        dep.getOrganizationUuid(),
+                        dep.getName(),
+                        dep.getCode(),
+                        dep.getManagerId(),
+                        dep.getIsActive(),
+                        dep.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
+
+
 
     /**
      * Validate if department exists for organization
@@ -193,5 +210,30 @@ public class DepartmentService {
                 .map(Department::getName)
                 .orElse("Unknown Department");
     }
+    /**
+     * Delete a department
+     */
+    @Transactional
+    public ApiResponse<Void> deleteDepartment(String organizationUuid, Long id) {
+        try {
+            Optional<Department> departmentOpt = departmentRepository.findById(id);
 
+            if (departmentOpt.isEmpty()) {
+                return ApiResponse.error("Department not found");
+            }
+
+            Department department = departmentOpt.get();
+
+            if (!department.getOrganizationUuid().equals(organizationUuid)) {
+                return ApiResponse.error("Unauthorized to delete this department");
+            }
+
+            departmentRepository.delete(department);
+            return ApiResponse.success(null, "Department deleted successfully");
+
+        } catch (Exception e) {
+            log.error("Error deleting department", e);
+            return ApiResponse.error("Failed to delete department: " + e.getMessage());
+        }
+    }
 }

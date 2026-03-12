@@ -3,37 +3,52 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { isValidPhoneNumber } from 'react-phone-number-input';
 import apiClient from "../../../api/axios";
 import * as designationApi from "../../../api/designationApi";
-import { Camera, RefreshCw, Check, User, X, Plus, ChevronDown } from "lucide-react";
+import * as leaveTypeApi from "../../../api/leaveTypeApi";
+import {
+  Camera,
+  RefreshCw,
+  Check,
+  User,
+  X,
+  Plus,
+  ChevronDown
+} from "lucide-react";
 
 // ===== Face Registration API =====
-const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
+const AI_SERVICE_URL =
+  import.meta.env.VITE_AI_SERVICE_URL || "http://localhost:8001";
 
 const registerFaceWithAI = async (employeeId, organizationUuid, imageBlob) => {
   const formData = new FormData();
-  formData.append('employee_id', String(employeeId));
-  formData.append('organization_uuid', organizationUuid);
-  formData.append('image', imageBlob, 'face.jpg');
+  formData.append("employee_id", String(employeeId));
+  formData.append("organization_uuid", organizationUuid);
+  formData.append("image", imageBlob, "face.jpg");
 
   const response = await fetch(`${AI_SERVICE_URL}/api/face/register`, {
-    method: 'POST',
-    body: formData,
+    method: "POST",
+    body: formData
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.detail || 'Face registration failed');
+  if (!response.ok) throw new Error(data.detail || "Face registration failed");
   return data;
 };
 
 const checkFaceStatus = async (employeeId, organizationUuid) => {
   try {
-    const response = await fetch(`${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`);
+    const response = await fetch(
+      `${AI_SERVICE_URL}/api/face/status/${organizationUuid}/${employeeId}`
+    );
     if (!response.ok) return { registered: false };
-    
+
     const data = await response.json();
     console.log("Face status check result:", data);
-    
+
     return data;
   } catch (error) {
     console.error("Face status check failed:", error);
@@ -42,8 +57,8 @@ const checkFaceStatus = async (employeeId, organizationUuid) => {
 };
 
 const base64ToBlob = (base64) => {
-  const byteString = atob(base64.split(',')[1]);
-  const mimeString = base64.split(',')[0].split(':')[1].split(';')[0];
+  const byteString = atob(base64.split(",")[1]);
+  const mimeString = base64.split(",")[0].split(":")[1].split(";")[0];
   const ab = new ArrayBuffer(byteString.length);
   const ia = new Uint8Array(ab);
   for (let i = 0; i < byteString.length; i++) {
@@ -55,65 +70,139 @@ const base64ToBlob = (base64) => {
 export default function AddEmployee() {
   const navigate = useNavigate();
   const webcamRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     designation: "",
-    employeeCode: "",
     department: "",
     email: "",
     phone: "",
-    nationalId: "",  // ADD THIS
+    nationalId: "",
+    bankAccNo: "",
     salaryType: "MONTHLY",
     basicSalary: "",
-    leaveCount: "",
+    
     dateJoined: "",
     status: "Active",
+    leaveBalances: []
   });
 
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
   const [showDesignationDropdown, setShowDesignationDropdown] = useState(false);
   const [filteredDesignations, setFilteredDesignations] = useState([]);
-  
+
   const [showFaceCapture, setShowFaceCapture] = useState(false);
   const [capturedFace, setCapturedFace] = useState(null);
   const [faceRegistered, setFaceRegistered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const [organizationUuid, setOrganizationUuid] = useState(null);
   const designationInputRef = useRef(null);
- 
+
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('corehive_user') || '{}');
+    const user = JSON.parse(localStorage.getItem("corehive_user") || "{}");
     setOrganizationUuid(user.organizationUuid);
-    
-    apiClient.get("/org-admin/departments")
-      .then(res => {
+
+    apiClient
+      .get("/org-admin/departments")
+      .then((res) => {
         console.log("Departments loaded:", res.data);
         setDepartments(res.data.data || res.data);
       })
-      .catch(err => console.error("Error loading departments", err));
-    
-    designationApi.getAllDesignations()
-      .then(res => {
+      .catch((err) => console.error("Error loading departments", err));
+
+    designationApi
+      .getAllDesignations()
+      .then((res) => {
         console.log("Designations loaded:", res.data);
         setDesignations(res.data.data || res.data);
         setFilteredDesignations(res.data.data || res.data);
       })
-      .catch(err => console.error("Error loading designations", err));
+      .catch((err) => console.error("Error loading designations", err));
+
+    leaveTypeApi
+      .getActiveLeaveTypes()
+      .then((res) => {
+        console.log("Leave types loaded:", res.data);
+        const types = res.data.data || res.data;
+        setLeaveTypes(types);
+        setFormData((prev) => ({
+          ...prev,
+          leaveBalances: types.map((lt) => ({
+            leaveTypeId: lt.id,
+            leaveTypeName: lt.name,
+            leaveTypeCode: lt.code,
+            balance: lt.defaultDaysPerYear || 0
+          }))
+        }));
+      })
+      .catch((err) => console.error("Error loading leave types", err));
   }, []);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // ===== Fetch next auto-generated employee code =====
+  useEffect(() => {
+    if (!organizationUuid) return;
+
+    const fetchNextCode = async () => {
+      try {
+        const response = await apiClient.get("/employees/next-code");
+        const code = response.data.data || response.data;
+        setFormData((prev) => ({
+          ...prev,
+          employeeCode: code
+        }));
+      } catch (err) {
+        console.error("Failed to fetch employee code", err);
+        Swal.fire("Error", "Failed to generate employee code", "error");
+      }
+    };
+
+    fetchNextCode();
+  }, [organizationUuid]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error when user types
+    if (formErrors[name]) {
+      setFormErrors({ ...formErrors, [name]: "" });
+    }
+  };
+
+  const handlePhoneChange = (value) => {
+    setFormData({ ...formData, phone: value || "" });
+    // Clear phone error when user types
+    if (formErrors.phone) {
+      setFormErrors({ ...formErrors, phone: "" });
+    }
+  };
+
+  const handleLeaveBalanceChange = (leaveTypeId, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      leaveBalances: prev.leaveBalances.map((lb) =>
+        lb.leaveTypeId === leaveTypeId
+          ? { ...lb, balance: parseInt(value) || 0 }
+          : lb
+      )
+    }));
+  };
 
   const handleDesignationChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, designation: value });
     
+    // Clear error when user types
+    if (formErrors.designation) {
+      setFormErrors({ ...formErrors, designation: "" });
+    }
+
     if (value.trim()) {
-      const filtered = designations.filter(d =>
+      const filtered = designations.filter((d) =>
         d.name.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredDesignations(filtered);
@@ -133,14 +222,14 @@ export default function AddEmployee() {
     try {
       const response = await designationApi.createDesignation({ name });
       const newDesignation = response.data.data || response.data;
-      
+
       setDesignations([...designations, newDesignation]);
       setFormData({ ...formData, designation: newDesignation.name });
       setShowDesignationDropdown(false);
-      
+
       Swal.fire({
-        icon: 'success',
-        title: 'Designation Created!',
+        icon: "success",
+        title: "Designation Created!",
         text: `"${newDesignation.name}" has been added.`,
         timer: 2000,
         showConfirmButton: false
@@ -148,9 +237,9 @@ export default function AddEmployee() {
     } catch (error) {
       console.error("Error creating designation:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Failed to create designation. Please try again.',
+        icon: "error",
+        title: "Error",
+        text: "Failed to create designation. Please try again."
       });
     }
   };
@@ -169,22 +258,85 @@ export default function AddEmployee() {
   const confirmFace = () => {
     setShowFaceCapture(false);
     Swal.fire({
-      icon: 'success',
-      title: 'Photo Captured!',
-      text: 'Face photo will be registered after saving employee.',
+      icon: "success",
+      title: "Photo Captured!",
+      text: "Face photo will be registered after saving employee.",
+      confirmButtonColor: "#02C39A",
       timer: 2000,
       showConfirmButton: false
     });
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = "First name is required";
+    } else if (formData.firstName.length < 2) {
+      errors.firstName = "First name must be at least 2 characters";
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = "Last name is required";
+    } else if (formData.lastName.length < 2) {
+      errors.lastName = "Last name must be at least 2 characters";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (!isValidPhoneNumber(formData.phone, 'LK')) {
+      errors.phone = "Please enter a valid Sri Lankan phone number (10 digits)";
+    }
+
+    if (!formData.nationalId.trim()) {
+      errors.nationalId = "National ID is required";
+    } else {
+      const nicPattern12 = /^\d{12}$/; // 12 digits
+      const nicPattern10 = /^\d{9}[Vv]$/; // 9 digits + V or v
+      if (!nicPattern12.test(formData.nationalId) && !nicPattern10.test(formData.nationalId)) {
+        errors.nationalId = "National ID must be either 12 digits or 9 digits followed by 'V'";
+      }
+    }
+
+    if (!formData.designation.trim()) {
+      errors.designation = "Designation is required";
+    }
+
+    if (!formData.department) {
+      errors.department = "Department is required";
+    }
+
+    if (!formData.basicSalary || formData.basicSalary <= 0) {
+      errors.basicSalary = "Please enter a valid salary amount";
+    }
+
+    if (!formData.dateJoined) {
+      errors.dateJoined = "Date joined is required";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return; // Don't show alert, just highlight errors
+    }
+    
     setIsSubmitting(true);
 
     try {
       // Check if designation exists, if not create it first
       const designationExists = designations.some(
-        d => d.name.toLowerCase() === formData.designation.toLowerCase()
+        (d) => d.name.toLowerCase() === formData.designation.toLowerCase()
       );
 
       if (!designationExists && formData.designation.trim()) {
@@ -193,23 +345,24 @@ export default function AddEmployee() {
 
       // Map frontend field names to backend DTO field names
       const employeeData = {
-        employeeCode: formData.employeeCode,
         firstName: formData.firstName,
         lastName: formData.lastName,
         designation: formData.designation,
         department: formData.department,
         email: formData.email,
         phone: formData.phone,
-        nationalId: formData.nationalId,  // ADD THIS
+        nationalId: formData.nationalId,
+        bankAccNo: formData.bankAccNo,
         salaryType: formData.salaryType,
         basicSalary: formData.basicSalary,
-        leaveCount: formData.leaveCount,
+      
         dateOfJoining: formData.dateJoined,
         status: formData.status,
+        leaveBalances: formData.leaveBalances
       };
-      
+
       console.log("Sending employee data:", employeeData);
-      
+
       const response = await apiClient.post("/employees", employeeData);
       const savedEmployee = response.data.data || response.data;
       console.log("Employee saved:", savedEmployee);
@@ -219,16 +372,20 @@ export default function AddEmployee() {
         try {
           console.log("Registering face for employee:", savedEmployee.id);
           const imageBlob = base64ToBlob(capturedFace);
-          await registerFaceWithAI(savedEmployee.id, organizationUuid, imageBlob);
+          await registerFaceWithAI(
+            savedEmployee.id,
+            organizationUuid,
+            imageBlob
+          );
           setFaceRegistered(true);
           console.log("Face registered successfully!");
         } catch (faceError) {
           console.error("Face registration failed:", faceError);
           Swal.fire({
-            icon: 'warning',
-            title: 'Employee Added',
-            text: 'Employee saved but face registration failed. You can register face later.',
-            confirmButtonColor: "#02C39A",
+            icon: "warning",
+            title: "Employee Added",
+            text: "Employee saved but face registration failed. You can register face later.",
+            confirmButtonColor: "#02C39A"
           });
           navigate("/hr_staff/employeemanagement");
           return;
@@ -238,22 +395,23 @@ export default function AddEmployee() {
       // Success
       Swal.fire({
         title: "Success!",
-        text: capturedFace 
-          ? "Employee added and face registered successfully!" 
+        text: capturedFace
+          ? "Employee added and face registered successfully!"
           : "Employee added successfully!",
         icon: "success",
-        confirmButtonColor: "#02C39A",
+        confirmButtonColor: "#02C39A"
       }).then(() => {
         navigate("/hr_staff/employeemanagement");
       });
-
     } catch (error) {
       console.error("Error adding employee:", error);
       Swal.fire({
         title: "Error",
-        text: error.response?.data?.message || "Failed to add employee. Please try again.",
+        text:
+          error.response?.data?.message ||
+          "Failed to add employee. Please try again.",
         icon: "error",
-        confirmButtonColor: "#d33",
+        confirmButtonColor: "#d33"
       });
     } finally {
       setIsSubmitting(false);
@@ -263,38 +421,98 @@ export default function AddEmployee() {
   const videoConstraints = {
     width: 480,
     height: 360,
-    facingMode: "user",
+    facingMode: "user"
   };
 
   return (
-    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full  bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
-
         <div className="p-6">
-          <h1 className="text-3xl font-bold text-[#0C397A] text-center">Add Employee</h1>
-          <p className="text-gray-500 text-center mt-1">Fill in the employee details</p>
+          <h1 className="text-3xl font-bold text-[#0C397A] text-center">
+            Add Employee
+          </h1>
+          <p className="text-gray-500 text-center mt-1">
+            Fill in the employee details
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-
           {/* PERSONAL INFO */}
           <Box title="Personal Information">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Employee Code" required>
-                <input name="employeeCode" placeholder="EMP-001" value={formData.employeeCode} onChange={handleChange} className="input-box" required />
+                <input
+                  name="employeeCode"
+                  value={formData.employeeCode || "Generating..."}
+                  readOnly
+                  className="input-box bg-gray-100 cursor-not-allowed"
+                />
               </Field>
               <Field label="First Name" required>
-                <input name="firstName" placeholder="John" value={formData.firstName} onChange={handleChange} className="input-box" required />
+                <input
+                  name="firstName"
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.firstName ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.firstName && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.firstName}
+                  </p>
+                )}
               </Field>
               <Field label="Last Name" required>
-                <input name="lastName" placeholder="Doe" value={formData.lastName} onChange={handleChange} className="input-box" required />
+                <input
+                  name="lastName"
+                  placeholder="Doe"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.lastName ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.lastName && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.lastName}
+                  </p>
+                )}
               </Field>
-              
-              {/* National ID Field - ADD THIS */}
+
+              {/* National ID Field */}
               <Field label="National ID" required>
-                <input name="nationalId" placeholder="199812345678" value={formData.nationalId} onChange={handleChange} className="input-box" required />
+                <input
+                  name="nationalId"
+                  placeholder="199812345678"
+                  value={formData.nationalId}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.nationalId ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.nationalId && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.nationalId}
+                  </p>
+                )}
               </Field>
-              
+
+              {/* Bank Account Number Field */}
+              <Field label="Bank Account Number">
+                <input
+                  name="bankAccNo"
+                  placeholder="1234567890"
+                  value={formData.bankAccNo}
+                  onChange={handleChange}
+                  className="input-box"
+                />
+              </Field>
+
               <Field label="Designation" required>
                 <div className="relative">
                   <input
@@ -304,12 +522,14 @@ export default function AddEmployee() {
                     value={formData.designation}
                     onChange={handleDesignationChange}
                     onFocus={() => setShowDesignationDropdown(true)}
-                    className="input-box pr-10"
+                    className={`input-box pr-10 ${
+                      formErrors.designation ? "border-red-500" : ""
+                    }`}
                     required
                     autoComplete="off"
                   />
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                  
+
                   {showDesignationDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredDesignations.length > 0 ? (
@@ -328,34 +548,87 @@ export default function AddEmployee() {
                           No designations found
                         </div>
                       )}
-                      
-                      {formData.designation.trim() && !designations.some(d => d.name.toLowerCase() === formData.designation.toLowerCase()) && (
-                        <div
-                          onClick={() => createNewDesignation(formData.designation)}
-                          className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add "{formData.designation}" as new designation
-                        </div>
-                      )}
+
+                      {formData.designation.trim() &&
+                        !designations.some(
+                          (d) =>
+                            d.name.toLowerCase() ===
+                            formData.designation.toLowerCase()
+                        ) && (
+                          <div
+                            onClick={() =>
+                              createNewDesignation(formData.designation)
+                            }
+                            className="px-4 py-2 hover:bg-green-50 cursor-pointer text-green-600 font-medium border-t border-gray-200 flex items-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add "{formData.designation}" as new designation
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>
+                {formErrors.designation && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.designation}
+                  </p>
+                )}
               </Field>
-              
+
               <Field label="Department" required>
-                <select name="department" value={formData.department} onChange={handleChange} className="input-box" required>
+                <select
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.department ? "border-red-500" : ""
+                  }`}
+                  required
+                >
                   <option value="">Select Department</option>
-                  {departments.map(dep => (
-                    <option key={dep.id} value={dep.id}>{dep.name}</option>
+                  {departments.map((dep) => (
+                    <option key={dep.id} value={dep.id}>
+                      {dep.name}
+                    </option>
                   ))}
                 </select>
+                {formErrors.department && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.department}
+                  </p>
+                )}
               </Field>
               <Field label="Email" required>
-                <input type="email" name="email" placeholder="example@mail.com" value={formData.email} onChange={handleChange} className="input-box" required />
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="example@mail.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.email ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.email && (
+                  <p className="text-red-600 text-sm mt-1">{formErrors.email}</p>
+                )}
               </Field>
               <Field label="Phone Number" required>
-                <input name="phone" placeholder="0771234567" value={formData.phone} onChange={handleChange} className="input-box" required />
+                <PhoneInput
+                  international
+                  defaultCountry="LK"
+                  countries={['LK']}
+                  value={formData.phone}
+                  onChange={handlePhoneChange}
+                  placeholder="Enter phone number"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {formErrors.phone && (
+                  <p className="text-red-600 text-sm mt-1">{formErrors.phone}</p>
+                )}
               </Field>
             </div>
           </Box>
@@ -364,27 +637,99 @@ export default function AddEmployee() {
           <Box title="Job & Salary Details">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <Field label="Salary Type" required>
-                <select name="salaryType" value={formData.salaryType} onChange={handleChange} className="input-box" required>
+                <select
+                  name="salaryType"
+                  value={formData.salaryType}
+                  onChange={handleChange}
+                  className="input-box"
+                  required
+                >
                   <option value="MONTHLY">Monthly</option>
                   <option value="DAILY">Daily</option>
                 </select>
               </Field>
               <Field label="Basic Salary" required>
-                <input type="number" name="basicSalary" placeholder="50000" value={formData.basicSalary} onChange={handleChange} className="input-box" required />
+                <input
+                  type="number"
+                  name="basicSalary"
+                  placeholder="50000"
+                  value={formData.basicSalary}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.basicSalary ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.basicSalary && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.basicSalary}
+                  </p>
+                )}
               </Field>
-              <Field label="Leave Count" required>
-                <input type="number" name="leaveCount" placeholder="12" value={formData.leaveCount} onChange={handleChange} className="input-box" required />
-              </Field>
+           
               <Field label="Date Joined" required>
-                <input type="date" name="dateJoined" value={formData.dateJoined} onChange={handleChange} className="input-box" required />
+                <input
+                  type="date"
+                  name="dateJoined"
+                  value={formData.dateJoined}
+                  onChange={handleChange}
+                  className={`input-box ${
+                    formErrors.dateJoined ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {formErrors.dateJoined && (
+                  <p className="text-red-600 text-sm mt-1">
+                    {formErrors.dateJoined}
+                  </p>
+                )}
               </Field>
+            </div>
+          </Box>
+
+          {/* LEAVE BALANCES */}
+          <Box title="Leave Balances">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {formData.leaveBalances.map((leaveBalance) => (
+                <Field
+                  key={leaveBalance.leaveTypeId}
+                  label={`${leaveBalance.leaveTypeName} (${leaveBalance.leaveTypeCode})`}
+                  required
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    value={leaveBalance.balance}
+                    onChange={(e) =>
+                      handleLeaveBalanceChange(
+                        leaveBalance.leaveTypeId,
+                        e.target.value
+                      )
+                    }
+                    className="input-box"
+                    placeholder="0"
+                    required
+                  />
+                </Field>
+              ))}
+              {formData.leaveBalances.length === 0 && (
+                <p className="text-gray-500 col-span-3 text-center py-4">
+                  No leave types available. Please add leave types first.
+                </p>
+              )}
             </div>
           </Box>
 
           {/* STATUS */}
           <Box title="Employment Status">
             <Field label="Status" required>
-              <select name="status" value={formData.status} onChange={handleChange} className="input-box" required>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+                className="input-box"
+                required
+              >
                 <option value="Active">Active</option>
                 <option value="NonActive">NonActive</option>
               </select>
@@ -395,7 +740,8 @@ export default function AddEmployee() {
           <Box title="Face Registration (Optional - For Attendance)">
             <div className="space-y-4">
               <p className="text-gray-600 text-sm">
-                Capture employee's face photo for face recognition attendance system.
+                Capture employee's face photo for face recognition attendance
+                system.
               </p>
 
               {!showFaceCapture && !capturedFace && (
@@ -447,7 +793,11 @@ export default function AddEmployee() {
               {capturedFace && (
                 <div className="space-y-4">
                   <div className="relative max-w-md">
-                    <img src={capturedFace} alt="Captured Face" className="rounded-xl w-full" />
+                    <img
+                      src={capturedFace}
+                      alt="Captured Face"
+                      className="rounded-xl w-full"
+                    />
                     <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
                       <Check className="w-4 h-4" />
                       Captured
@@ -477,7 +827,9 @@ export default function AddEmployee() {
               {capturedFace && !showFaceCapture && (
                 <div className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-2 rounded-lg w-fit">
                   <User className="w-5 h-5" />
-                  <span className="font-medium">Face photo ready for registration</span>
+                  <span className="font-medium">
+                    Face photo ready for registration
+                  </span>
                 </div>
               )}
             </div>
@@ -504,7 +856,7 @@ export default function AddEmployee() {
                 Saving...
               </>
             ) : (
-              'Save Employee'
+              "Save Employee"
             )}
           </button>
         </div>

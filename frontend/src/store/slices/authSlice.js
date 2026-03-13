@@ -47,16 +47,13 @@ export const signupOrganization = createAsyncThunk(
       const response = await authApi.signupOrganization(signupData);
 
       if (response.success) {
-        toast.success(response.message);
         return response.data;
       } else {
-        toast.error(response.message);
         return rejectWithValue(response.message);
       }
     } catch (error) {
       const message =
         error.response?.data?.message || "Signup failed. Please try again.";
-      toast.error(message);
       return rejectWithValue(message);
     }
   }
@@ -69,13 +66,11 @@ export const loginUser = createAsyncThunk(
       const response = await authApi.loginUser(loginData);
 
       // Backend returns: { success: true, data: LoginResponse }
-      toast.success("Login successful! Welcome to CoreHive.");
       return response; // Return the LoginResponse object directly
     } catch (error) {
       const message =
         error.response?.data?.message ||
         "Login failed. Please check your credentials.";
-      toast.error(message);
       return rejectWithValue(message);
     }
   }

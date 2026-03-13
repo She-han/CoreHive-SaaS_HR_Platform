@@ -23,6 +23,7 @@ import { selectUser } from '../../store/slices/authSlice';
 import {
   getSubscriptionDetails,
   cancelSubscription,
+  reactivateSubscription,
   changePlan
 } from '../../api/subscriptionApi';
 import { getAllBillingPlans } from '../../api/adminApi';
@@ -138,6 +139,48 @@ const SubscriptionManagement = () => {
         icon: 'error',
         title: 'Cancellation Failed',
         text: err.message || 'Failed to cancel subscription. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Reactivate Subscription?',
+      text: 'Your subscription will be reactivated and auto-billing will continue from your next billing date.',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Reactivate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#02C39A',
+      cancelButtonColor: '#6B7280'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setProcessing(true);
+      const response = await reactivateSubscription(user.organizationUuid);
+
+      if (response.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Subscription Reactivated',
+          text: 'Your subscription has been reactivated successfully.',
+          confirmButtonColor: '#02C39A'
+        });
+        loadData();
+      } else {
+        throw new Error(response.message || 'Failed to reactivate subscription');
+      }
+    } catch (err) {
+      console.error('Error reactivating subscription:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Reactivation Failed',
+        text: err.message || 'Failed to reactivate subscription. Please try again.',
         confirmButtonColor: '#02C39A'
       });
     } finally {
@@ -403,6 +446,15 @@ const SubscriptionManagement = () => {
               >
                 {showPlanChange ? 'Hide Plans' : 'Change Plan'}
               </Button>
+              {subscriptionData?.subscription?.status === 'CANCELED' ? (
+                <Button
+                  variant="primary"
+                  onClick={handleReactivateSubscription}
+                  disabled={processing}
+                >
+                  Reactivate Subscription
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 onClick={handleCancelSubscription}

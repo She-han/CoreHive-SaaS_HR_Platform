@@ -62,6 +62,18 @@ public class SubscriptionController {
     }
 
     /**
+     * Reactivate cancelled subscription
+     * POST /api/subscription/reactivate/{organizationUuid}
+     */
+    @PostMapping("/reactivate/{organizationUuid}")
+    public ResponseEntity<ApiResponse<String>> reactivateSubscription(
+            @PathVariable String organizationUuid) {
+        log.info("Reactivating subscription for organization: {}", organizationUuid);
+        ApiResponse<String> response = subscriptionManagementService.reactivateSubscription(organizationUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Change subscription plan
      * PUT /api/subscription/plan/{organizationUuid}
      */

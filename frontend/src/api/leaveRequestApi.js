@@ -8,8 +8,11 @@ import apiClient from "./axios";
 export const getAllLeaveRequests = async () => {
   try {
     const response = await apiClient.get("/leave-requests");
-    return response.data.data;
+    return response.data?.data || [];
   } catch (error) {
+    if (error.response?.status === 404) {
+      return [];
+    }
     console.error("Error fetching leave requests:", error);
     throw new Error(error.response?.data?.message || error.message);
   }

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 /**
  * Authentication Service
@@ -51,11 +52,24 @@ public class AuthService {
     @Transactional
     public ApiResponse<String> signupOrganization(OrganizationSignupRequest request) {
         try {
-            log.info("Processing organization signup for: {}", request.getAdminEmail());
+            String normalizedEmail = normalizeEmail(request.getAdminEmail());
+            log.info("Processing organization signup for: {}", normalizedEmail);
 
-            // Check if email already exists
-            if (organizationRepository.existsByEmail(request.getAdminEmail())) {
-                return ApiResponse.error("Email already registered");
+            // Check if email already exists and heal inconsistent state if needed.
+            Optional<Organization> existingOrganization = organizationRepository.findByEmailIgnoreCase(normalizedEmail);
+            if (existingOrganization.isPresent()) {
+                Optional<AppUser> existingAppUser = appUserRepository.findByEmailIgnoreCase(normalizedEmail);
+                if (existingAppUser.isEmpty()) {
+                    String tempPassword = createOrRepairOrgAdminAccount(existingOrganization.get(), normalizedEmail);
+                    emailService.sendForgotPasswordEmail(normalizedEmail, tempPassword);
+                    return ApiResponse.error("Email already registered. We repaired your admin account and sent a temporary password to your email.");
+                }
+
+                return ApiResponse.error("Email already registered. Please login or use Forgot Password.");
+            }
+
+            if (systemUserRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+                return ApiResponse.error("Email already registered. Please use a different email address.");
             }
 
             // Generate organization UUID
@@ -82,7 +96,7 @@ public class AuthService {
             Organization organization = Organization.builder()
                     .organizationUuid(organizationUuid)
                     .name(request.getOrganizationName())
-                    .email(request.getAdminEmail())
+                    .email(normalizedEmail)
                     .businessRegistrationNumber(request.getBusinessRegistrationNumber())
                     .businessRegistrationDocument(brDocumentPath) // NEW FIELD
                     .employeeCountRange(request.getEmployeeCountRange())
@@ -183,7 +197,7 @@ public class AuthService {
             String tempPassword = generateTemporaryPassword();
             AppUser orgAdmin = AppUser.builder()
                     .organizationUuid(organizationUuid)
-                    .email(request.getAdminEmail())
+                    .email(normalizedEmail)
                     .passwordHash(passwordEncoder.encode(tempPassword))
                     .role(AppUserRole.ORG_ADMIN)
                     .isActive(false) // Inactive until sys_admin approval
@@ -194,7 +208,7 @@ public class AuthService {
 
             // Send email
             emailService.sendOrganizationRegistrationEmail(
-                    request.getAdminEmail(),
+                    normalizedEmail,
                     request.getOrganizationName()
             );
 
@@ -216,13 +230,13 @@ public class AuthService {
     @Transactional
     public ApiResponse<LoginResponse> login(LoginRequest request) {
         try {
-            String email = request.getEmail();
+            String email = normalizeEmail(request.getEmail());
             String password = request.getPassword();
 
             log.info("Processing login for email: {}", email);
 
             // Try System Admin login first
-            Optional<SystemUser> systemUserOpt = systemUserRepository.findByEmail(email);
+            Optional<SystemUser> systemUserOpt = systemUserRepository.findByEmailIgnoreCase(email);
             if (systemUserOpt.isPresent()) {
                 SystemUser systemUser = systemUserOpt.get();
 
@@ -256,9 +270,17 @@ public class AuthService {
             }
 
             // Try Organization User login
-            Optional<AppUser> appUserOpt = appUserRepository.findByEmail(email);
+            Optional<AppUser> appUserOpt = appUserRepository.findByEmailIgnoreCase(email);
             if (appUserOpt.isPresent()) {
                 AppUser appUser = appUserOpt.get();
+
+                Organization organization = organizationRepository
+                        .findByOrganizationUuid(appUser.getOrganizationUuid())
+                        .orElseThrow(() -> new RuntimeException("Organization not found"));
+
+                if (organization.getStatus() == OrganizationStatus.PENDING_APPROVAL) {
+                    return ApiResponse.error("Your organization is pending approval");
+                }
 
                 if (!passwordEncoder.matches(password, appUser.getPasswordHash())) {
                     log.warn("Invalid password for app user: {}", email);
@@ -266,21 +288,12 @@ public class AuthService {
                 }
 
                 if (!appUser.getIsActive()) {
-                    return ApiResponse.error("Account is deactivated");
+                    return ApiResponse.error("Your account is inactive. Please contact support.");
                 }
-
-                // Get organization
-                Organization organization = organizationRepository
-                        .findByOrganizationUuid(appUser.getOrganizationUuid())
-                        .orElseThrow(() -> new RuntimeException("Organization not found"));
 
                 // ⭐ NEW: Check subscription status
                 boolean requiresPayment = false;
                 boolean hasActiveSubscription = false;
-
-                if (organization.getStatus() == OrganizationStatus.PENDING_APPROVAL) {
-                    return ApiResponse.error("Your organization is pending approval");
-                }
 
                 // ⭐ Check if organization status is APPROVED_PENDING_PAYMENT
                 if (organization.getStatus() == OrganizationStatus.APPROVED_PENDING_PAYMENT) {
@@ -337,6 +350,11 @@ public class AuthService {
                 return ApiResponse.success(response, "Login successful");
             }
 
+            Optional<Organization> organizationByEmail = organizationRepository.findByEmailIgnoreCase(email);
+            if (organizationByEmail.isPresent()) {
+                return ApiResponse.error("Email is registered, but login account is not ready. Please use Forgot Password to receive a temporary password.");
+            }
+
             log.warn("No user found with email: {}", email);
             return ApiResponse.error("Invalid email or password");
 
@@ -349,11 +367,21 @@ public class AuthService {
     @Transactional
     public ApiResponse<String> forgotPassword(ForgotPasswordRequest request) {
         try {
-            String email = request.getEmail();
+            String email = normalizeEmail(request.getEmail());
             log.info("Processing forgot password request for: {}", email);
 
             // 1. Find the user (Checking AppUser table)
-            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+            Optional<AppUser> userOpt = appUserRepository.findByEmailIgnoreCase(email);
+
+            if (userOpt.isEmpty()) {
+                Optional<Organization> organizationOpt = organizationRepository.findByEmailIgnoreCase(email);
+                if (organizationOpt.isPresent()) {
+                    String tempPassword = createOrRepairOrgAdminAccount(organizationOpt.get(), email);
+                    emailService.sendForgotPasswordEmail(email, tempPassword);
+                    log.info("Repaired missing org admin account and sent temp password for: {}", email);
+                    return ApiResponse.success(null, "A temporary password has been sent to your email.");
+                }
+            }
 
             if (userOpt.isEmpty()) {
                 // Security Note: Usually we shouldn't reveal if email exists, 
@@ -568,11 +596,12 @@ public class AuthService {
     @Transactional
     public ApiResponse<String> changePasswordByEmail(String email, String newPassword) {
         try {
-            log.info("Changing password by email: {}", email);
+            String normalizedEmail = normalizeEmail(email);
+            log.info("Changing password by email: {}", normalizedEmail);
             
-            Optional<AppUser> userOpt = appUserRepository.findByEmail(email);
+            Optional<AppUser> userOpt = appUserRepository.findByEmailIgnoreCase(normalizedEmail);
             if (userOpt.isEmpty()) {
-                log.error("User not found with email: {}", email);
+                log.error("User not found with email: {}", normalizedEmail);
                 return ApiResponse.error("User not found");
             }
 
@@ -726,7 +755,7 @@ public class AuthService {
      * Helper method - Current system user details
      */
     private ApiResponse<LoginResponse> getCurrentSystemUser(String email, String token) {
-        Optional<SystemUser> userOpt = systemUserRepository.findByEmail(email);
+        Optional<SystemUser> userOpt = systemUserRepository.findByEmailIgnoreCase(email);
         if (userOpt.isEmpty()) {
             return ApiResponse.error("User not found");
         }
@@ -755,7 +784,7 @@ public class AuthService {
     private ApiResponse<LoginResponse> getCurrentOrgUser(String email, String token) {
         String orgUuid = jwtUtil.extractOrganizationUuid(token);
 
-        Optional<AppUser> userOpt = appUserRepository.findByOrganizationUuidAndEmail(orgUuid, email);
+        Optional<AppUser> userOpt = appUserRepository.findByOrganizationUuidAndEmailIgnoreCase(orgUuid, email);
         if (userOpt.isEmpty()) {
             return ApiResponse.error("User not found");
         }
@@ -783,5 +812,25 @@ public class AuthService {
                 .build();
 
         return ApiResponse.success(response, "User details retrieved");
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String createOrRepairOrgAdminAccount(Organization organization, String normalizedEmail) {
+        String tempPassword = generateTemporaryPassword();
+
+        AppUser repairedOrgAdmin = AppUser.builder()
+                .organizationUuid(organization.getOrganizationUuid())
+                .email(normalizedEmail)
+                .passwordHash(passwordEncoder.encode(tempPassword))
+                .role(AppUserRole.ORG_ADMIN)
+                .isActive(!OrganizationStatus.PENDING_APPROVAL.equals(organization.getStatus()))
+                .isPasswordChangeRequired(true)
+                .build();
+
+        appUserRepository.save(repairedOrgAdmin);
+        return tempPassword;
     }
 }

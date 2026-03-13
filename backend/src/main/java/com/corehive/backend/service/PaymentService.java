@@ -9,17 +9,21 @@ import com.corehive.backend.model.*;
 import com.corehive.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,6 +37,102 @@ public class PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrganizationRepository organizationRepository;
     private final AppUserRepository appUserRepository;
+
+    /**
+     * Process subscriptions that reached next billing date.
+     * This creates a renewal transaction and marks subscription as PAST_DUE
+     * until the renewal payment is confirmed by the gateway webhook.
+     */
+    @Scheduled(cron = "0 */30 * * * *")
+    @Transactional
+    public void processDueSubscriptionRenewals() {
+        LocalDateTime now = LocalDateTime.now();
+        List<SubscriptionStatus> dueStatuses = Arrays.asList(SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL, SubscriptionStatus.PAST_DUE);
+
+        List<Subscription> dueSubscriptions = subscriptionRepository
+                .findByStatusInAndNextBillingDateLessThanEqual(dueStatuses, now);
+
+        if (dueSubscriptions.isEmpty()) {
+            return;
+        }
+
+        log.info("Processing {} due subscriptions at {}", dueSubscriptions.size(), now);
+
+        for (Subscription subscription : dueSubscriptions) {
+            try {
+                if (subscription.getStatus() == SubscriptionStatus.CANCELED
+                        || subscription.getStatus() == SubscriptionStatus.SUSPENDED) {
+                    continue;
+                }
+
+                if (paymentTransactionRepository.existsBySubscriptionIdAndTransactionTypeAndStatus(
+                        subscription.getId(), TransactionType.RENEWAL, PaymentStatus.PENDING)) {
+                    log.debug("Skipping subscription {} - pending renewal transaction already exists", subscription.getId());
+                    continue;
+                }
+
+                Organization organization = organizationRepository
+                        .findByOrganizationUuid(subscription.getOrganizationUuid())
+                        .orElse(null);
+
+                if (organization == null) {
+                    log.warn("Skipping renewal for subscription {} - organization not found", subscription.getId());
+                    continue;
+                }
+
+                BigDecimal renewalAmount = calculateRenewalAmount(subscription, organization);
+                String renewalOrderId = "RNL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+                PaymentTransaction renewalTransaction = PaymentTransaction.builder()
+                        .transactionUuid(UUID.randomUUID().toString())
+                        .organizationUuid(subscription.getOrganizationUuid())
+                        .subscriptionId(subscription.getId())
+                        .amount(renewalAmount)
+                        .currency(payHereConfig.getCurrency())
+                        .transactionType(TransactionType.RENEWAL)
+                        .paymentGateway("PAYHERE")
+                        .gatewayOrderId(renewalOrderId)
+                        .status(PaymentStatus.PENDING)
+                        .billingEmail(organization.getEmail())
+                        .metadata("Auto renewal triggered by due-date scheduler")
+                        .build();
+
+                // Gateway recurring charge trigger integration can be added here.
+                if (subscription.getPayhereSubscriptionId() == null || subscription.getPayhereSubscriptionId().isBlank()) {
+                    renewalTransaction.setStatus(PaymentStatus.FAILED);
+                    renewalTransaction.setErrorMessage("No PayHere subscription token available for recurring charge");
+                }
+
+                paymentTransactionRepository.save(renewalTransaction);
+
+                subscription.setStatus(SubscriptionStatus.PAST_DUE);
+                subscription.setUpdatedAt(now);
+                subscriptionRepository.save(subscription);
+
+                log.info("Renewal transaction created for subscription {} with order {} and amount {}",
+                        subscription.getId(), renewalOrderId, renewalAmount);
+
+            } catch (Exception ex) {
+                log.error("Failed to process due renewal for subscription {}", subscription.getId(), ex);
+            }
+        }
+    }
+
+    private BigDecimal calculateRenewalAmount(Subscription subscription, Organization organization) {
+        BigDecimal perUserPrice = organization.getBillingPricePerUserPerMonth() != null
+                ? organization.getBillingPricePerUserPerMonth()
+                : subscription.getPlanPrice();
+
+        if (perUserPrice == null) {
+            perUserPrice = BigDecimal.valueOf(500);
+        }
+
+        long activeUsers = Math.max(1L,
+                appUserRepository.countByOrganizationUuidAndIsActiveTrue(subscription.getOrganizationUuid()));
+
+        subscription.setActiveUserCount((int) activeUsers);
+        return perUserPrice.multiply(BigDecimal.valueOf(activeUsers)).setScale(2, RoundingMode.HALF_UP);
+    }
 
     /**
      * Initiate payment for subscription
@@ -255,8 +355,14 @@ public class PaymentService {
                         .orElseThrow(() -> new RuntimeException("Subscription not found"));
 
                 subscription.setStatus(SubscriptionStatus.ACTIVE);
+                subscription.setIsTrial(false);
                 subscription.setLastPaymentDate(LocalDateTime.now());
                 subscription.setLastPaymentAmount(transaction.getAmount());
+                subscription.setNextBillingDate(LocalDateTime.now().plusMonths(1));
+                subscription.setActiveUserCount((int) Math.max(
+                    1L,
+                    appUserRepository.countByOrganizationUuidAndIsActiveTrue(subscription.getOrganizationUuid())
+                ));
                 
                 // 🔄 Store PayHere subscription ID for recurring payments
                 String payhereSubscriptionId = params.get("subscription_id");
@@ -281,6 +387,17 @@ public class PaymentService {
             } else {
                 transaction.setStatus(PaymentStatus.FAILED);
                 transaction.setErrorMessage("Payment failed with status code: " + statusCode);
+
+                Subscription subscription = subscriptionRepository
+                        .findById(transaction.getSubscriptionId())
+                        .orElse(null);
+
+                if (subscription != null) {
+                    subscription.setStatus(SubscriptionStatus.PAST_DUE);
+                    subscription.setUpdatedAt(LocalDateTime.now());
+                    subscriptionRepository.save(subscription);
+                }
+
                 log.warn("Payment failed for order: {}", orderId);
             }
 

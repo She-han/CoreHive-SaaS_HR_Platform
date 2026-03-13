@@ -17,12 +17,14 @@ public interface SystemUserRepository extends JpaRepository<SystemUser, Long> {
      * Use when Login
      */
     Optional<SystemUser> findByEmail(String email);
+    Optional<SystemUser> findByEmailIgnoreCase(String email);
 
     /**
      * Email address existence check
      * Registration validation
      */
     boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
 
     /**
      * Active system users count

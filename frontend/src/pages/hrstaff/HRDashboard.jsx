@@ -439,11 +439,16 @@ const HRDashboard = () => {
         setTotalOnLeaveEmployees(count);
         return count;
       }),
-      getAllLeaveRequests().then((data) => {
-        // Get only pending requests, sorted by date, max 4
-        const pending = data?.filter(req => req.status === 'PENDING') || [];
-        setLeaveRequests(pending.slice(0, 4));
-      }),
+      getAllLeaveRequests()
+        .then((data) => {
+          // Get only pending requests, sorted by date, max 4
+          const pending = data?.filter(req => req.status === 'PENDING') || [];
+          setLeaveRequests(pending.slice(0, 4));
+        })
+        .catch((err) => {
+          console.warn("Leave requests unavailable. Showing empty list.", err);
+          setLeaveRequests([]);
+        }),
       getAllFeedbacks().then((response) => {
         // Get only unread feedbacks, max 4
         const unread = response.data?.filter(f => !f.markedAsRead) || [];

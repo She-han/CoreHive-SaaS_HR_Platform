@@ -34,4 +34,6 @@ public interface AttendanceConfigurationRepository extends JpaRepository<Attenda
     
     Optional<AttendanceConfiguration> findByOrganizationUuidAndApplicationTypeAndIsActiveTrue(
             String organizationUuid, AttendanceConfiguration.ApplicationType applicationType);
+
+        void deleteByOrganizationUuidAndEmployeeId(String organizationUuid, Long employeeId);
 }

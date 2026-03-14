@@ -1,7 +1,9 @@
 import axios from "axios";
 import apiClient from "./axios";
 
-const BASE = "http://localhost:8080/api/attendance";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const BASE = `${API_BASE_URL}/attendance`;
 
 export const getCheckInList = async (token, date = null) => {
   const params = date ? { date } : {};

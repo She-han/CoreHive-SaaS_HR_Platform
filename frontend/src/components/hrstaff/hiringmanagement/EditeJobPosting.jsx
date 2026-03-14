@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import { getSingleJobPosting } from "../../../api/hiringService";
-import { getAllDepartments } from "../../../api/departmentApi";
-import { updateJobPosting } from "../../../api/hiringService";
+import { getSingleJobPosting, updateJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
-import { selectUser } from "../../../store/slices/authSlice";
+import { selectAuth } from "../../../store/slices/authSlice";
 
 export default function EditeJobPosting() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [jobPosting, setJobPosting] = useState(null);
-  const [departments, setDepartments] = useState([]);
 
-  const user = useSelector(selectUser); // get token from Redux
-  const token = user?.token;
+  const { token } = useSelector(selectAuth); // get token from Redux
 
   const [form, setForm] = useState({
     title: "",
     contactEmail: "",
-    department: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
     postedDate: "",
@@ -33,6 +26,8 @@ export default function EditeJobPosting() {
 
   // Load job posting data
   useEffect(() => {
+    if (!token) return;
+
     getSingleJobPosting(id, token)
       .then((data) => {
         setJobPosting(data);
@@ -40,7 +35,6 @@ export default function EditeJobPosting() {
         setForm({
           title: data.title || "",
           contactEmail: data.contactEmail || "",
-          department: String(data.department || ""),
           employmentType: data.employmentType || "FULL_TIME",
           status: data.status || "OPEN",
           postedDate: data.postedDate || "",
@@ -51,21 +45,6 @@ export default function EditeJobPosting() {
       })
       .catch(console.error);
   }, [id, token]);
-
-  // Load departments for the dropdown
-  useEffect(() => {
-    if (token) {
-      getAllDepartments(token)
-        .then((res) => {
-          console.log("Departments API response:", res);
-          setDepartments(res.data?.data || res.data || []);
-        })
-        .catch((err) => {
-          console.error("Failed to load departments", err);
-          setDepartments([]);
-        });
-    }
-  }, [token]);
 
   // Simple email validation
   function isValidEmail(email) {
@@ -88,13 +67,14 @@ export default function EditeJobPosting() {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    if (!token) {
+      Swal.fire("Unauthorized", "Please login first.", "warning");
+      return;
+    }
+
     // Validate required fields using SweetAlert
     if (!form.title.trim()) {
       Swal.fire("Required!", "Job title is required.", "warning");
-      return;
-    }
-    if (!form.department) {
-      Swal.fire("Required!", "Please select a department.", "warning");
       return;
     }
     if (!form.employmentType) {
@@ -149,7 +129,6 @@ export default function EditeJobPosting() {
         payload = new FormData();
         payload.append("title", form.title);
         payload.append("contactEmail", form.contactEmail.toLowerCase());
-        payload.append("departmentId", form.department); // ✅ FIX
         payload.append("employmentType", form.employmentType);
         payload.append("status", form.status);
         payload.append("postedDate", form.postedDate);
@@ -161,7 +140,6 @@ export default function EditeJobPosting() {
         payload = {
           title: form.title,
           contactEmail: form.contactEmail.toLowerCase(),
-          departmentId: form.department,
           employmentType: form.employmentType,
           status: form.status,
           postedDate: form.postedDate,
@@ -198,7 +176,7 @@ export default function EditeJobPosting() {
   }
 
   return (
-    <div className="w-full h-screen bg-[#F1FDF9] flex justify-center items-center p-6">
+    <div className="w-full bg-[#F1FDF9] flex justify-center items-center p-6">
       <div className="w-full max-w-5xl h-full bg-white shadow-xl rounded-2xl border border-gray-200 flex flex-col">
         {/* HEADER */}
         <div className="px-8 py-8 text-center">
@@ -247,27 +225,6 @@ export default function EditeJobPosting() {
                           focus:ring-2 focus:ring-[#02C39A]"
                 required
               />
-            </div>
-
-            {/* Department */}
-            <div>
-              <label className="text-sm font-medium text-[#333333]">
-                Department
-              </label>
-              <select
-                name="department"
-                value={form.department}
-                onChange={handleInput}
-                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
-              >
-                <option value="">Select department</option>
-
-                {departments.map((dep) => (
-                  <option key={dep.id} value={dep.id}>
-                    {dep.name}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Employment Type */}

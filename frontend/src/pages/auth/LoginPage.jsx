@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Mail, Lock, ArrowRight, Building2, AlertCircle } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import Swal from "sweetalert2";
 
 import {
   loginUser,
   clearError,
   selectIsAuthenticated,
-  selectIsLoading,
-  selectError
+  selectIsLoading
 } from "../../store/slices/authSlice";
 
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input"; 
 import Card from "../../components/common/Card";
-import Alert from "../../components/common/Alert";
 import ReCaptcha from "../../components/common/ReCaptcha";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
@@ -28,7 +26,6 @@ const LoginPage = () => {
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isLoading = useSelector(selectIsLoading);
-  const error = useSelector(selectError);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -206,10 +203,15 @@ const LoginPage = () => {
         }
       } else {
         // Login failed
+        const errorMessage =
+          resultAction.payload ||
+          resultAction.error?.message ||
+          "Invalid email or password";
+
         Swal.fire({
           icon: 'error',
           title: 'Login Failed',
-          text: resultAction.error?.message || 'Invalid email or password',
+          text: errorMessage,
           confirmButtonColor: '#02C39A',
         });
         recaptchaRef.current?.reset();
@@ -248,15 +250,6 @@ const LoginPage = () => {
           </div>
 
           <Card className="animate-slide-up bg-white shadow-md">
-            {error && (
-              <Alert
-                type="error"
-                message={error}
-                onClose={() => dispatch(clearError())}
-                className="mb-6"
-              />
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-6">
               <Input
                 label="Email Address"

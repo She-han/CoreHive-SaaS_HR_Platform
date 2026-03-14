@@ -35,4 +35,6 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest , Lon
            "AND :date BETWEEN lr.startDate AND lr.endDate")
     List<Long> findEmployeeIdsWithApprovedLeaveOnDate(@Param("orgUuid") String orgUuid,
                                                        @Param("date") LocalDate date);
+
+       void deleteByOrganizationUuidAndEmployee_Id(String organizationUuid, Long employeeId);
 }

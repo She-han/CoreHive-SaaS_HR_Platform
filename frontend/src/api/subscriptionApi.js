@@ -45,6 +45,19 @@ export const cancelSubscription = async (organizationUuid) => {
 };
 
 /**
+ * Reactivate subscription
+ */
+export const reactivateSubscription = async (organizationUuid) => {
+  try {
+    const response = await axios.post(`/subscription/reactivate/${organizationUuid}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error reactivating subscription:', error);
+    throw error;
+  }
+};
+
+/**
  * Change subscription plan
  */
 export const changePlan = async (organizationUuid, planId, customModules = [], totalPrice = null) => {
@@ -110,6 +123,7 @@ export default {
   checkSubscription,
   getSubscriptionDetails,
   cancelSubscription,
+  reactivateSubscription,
   changePlan,
   getAvailablePlans,
   activateSubscription,

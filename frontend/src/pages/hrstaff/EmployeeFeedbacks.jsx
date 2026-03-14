@@ -4,7 +4,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Modal from '../../components/common/Modal';
 import * as feedbackApi from '../../api/feedbackApi';
 import Swal from 'sweetalert2';
-import { FaCheck, FaReply, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaCheck, FaReply, FaSearch } from 'react-icons/fa';
 
 const THEME = {
   primary: '#02C39A',
@@ -372,7 +372,7 @@ const EmployeeFeedbacks = () => {
                   Employee: {selectedFeedback.employeeName}
                 </p>
                 <p className="text-sm text-gray-600 mb-2">
-                  Type: {formatFeedbackType(selectedFeedback.feedbackType)} | Rating: {getRatingStars(selectedFeedback.rating)}
+                  Type: {formatFeedbackType(selectedFeedback.feedbackType)} | Rating: {getRatingText(selectedFeedback.rating)}
                 </p>
                 <p className="text-sm text-gray-700">{selectedFeedback.message}</p>
               </div>

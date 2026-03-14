@@ -137,6 +137,40 @@ public class SubscriptionManagementService {
     }
 
     /**
+     * Reactivate subscription after cancellation
+     */
+    @Transactional
+    public ApiResponse<String> reactivateSubscription(String organizationUuid) {
+        try {
+            Subscription subscription = subscriptionRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Subscription not found"));
+
+            if (subscription.getStatus() != SubscriptionStatus.CANCELED
+                    && subscription.getStatus() != SubscriptionStatus.SUSPENDED) {
+                return ApiResponse.error("Only canceled or suspended subscriptions can be reactivated");
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+            subscription.setUpdatedAt(now);
+
+            if (subscription.getNextBillingDate() == null) {
+                subscription.setNextBillingDate(now.plusMonths(1));
+            }
+
+            subscriptionRepository.save(subscription);
+
+            log.info("Subscription reactivated for organization: {}", organizationUuid);
+            return ApiResponse.success("Subscription reactivated successfully");
+
+        } catch (Exception e) {
+            log.error("Error reactivating subscription for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to reactivate subscription: " + e.getMessage());
+        }
+    }
+
+    /**
      * Change subscription plan
      */
     @Transactional

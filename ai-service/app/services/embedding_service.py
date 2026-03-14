@@ -27,7 +27,9 @@ class EmbeddingService:
     
     def __init__(self):
         self.model_name = "Facenet"
-        self.similarity_threshold = 0.6
+        self.similarity_threshold = 0.82
+        self.ambiguity_margin = 0.04
+        self.duplicate_registration_threshold = 0.93
         self.storage = get_storage_service()
         
         # Cache embeddings in memory for faster lookups
@@ -64,7 +66,8 @@ class EmbeddingService:
             )
             
             if result and len(result) > 0:
-                embedding = np.array(result[0]["embedding"])
+                embedding = np.array(result[0]["embedding"], dtype=np.float32)
+                embedding = self._normalize_embedding(embedding)
                 logger.info(f"Embedding extracted: {embedding.shape}")
                 return embedding
             
@@ -140,6 +143,37 @@ class EmbeddingService:
             
             # 3. Load existing embeddings for organization
             org_embeddings = self.storage.get_embedding(organization_uuid) or {}
+
+            # Guardrail: block registering the same face under multiple employee IDs.
+            closest_employee = None
+            closest_similarity = -1.0
+            for existing_emp_id, data in org_embeddings.items():
+                if str(existing_emp_id) == str(employee_id):
+                    continue
+
+                existing_embedding = self._extract_embedding_from_data(data, str(existing_emp_id))
+                if existing_embedding is None:
+                    continue
+
+                existing_embedding = self._normalize_embedding(np.array(existing_embedding, dtype=np.float32))
+                similarity = self._cosine_similarity(embedding, existing_embedding)
+
+                if similarity > closest_similarity:
+                    closest_similarity = similarity
+                    closest_employee = existing_emp_id
+
+            if closest_similarity >= self.duplicate_registration_threshold:
+                logger.warning(
+                    "Duplicate face registration rejected: emp=%s too similar to emp=%s (%.2f%%)",
+                    employee_id,
+                    closest_employee,
+                    closest_similarity * 100,
+                )
+                return (
+                    False,
+                    "This face looks too similar to an already registered employee. "
+                    "Please capture a clear face image of the correct employee and try again."
+                )
             
             # 4. Add/update employee embedding (consistent format)
             org_embeddings[str(employee_id)] = {
@@ -193,8 +227,7 @@ class EmbeddingService:
                     logger.debug(f"Dict keys: {list(first_value.keys())}")
             
             # 3. Find best match
-            best_match_id = None
-            best_similarity = 0.0
+            similarities = []
             
             for emp_id, data in org_embeddings.items():
                 try:
@@ -205,25 +238,53 @@ class EmbeddingService:
                         logger.warning(f"Skipping employee {emp_id} - invalid embedding data")
                         continue
                     
+                    stored_embedding = self._normalize_embedding(np.array(stored_embedding, dtype=np.float32))
                     similarity = self._cosine_similarity(input_embedding, stored_embedding)
                     
                     logger.debug(f"Employee {emp_id}: similarity = {similarity:.4f}")
                     
-                    if similarity > best_similarity:
-                        best_similarity = similarity
-                        best_match_id = emp_id
+                    similarities.append((str(emp_id), float(similarity)))
                         
                 except Exception as emp_error:
                     logger.warning(f"Error processing employee {emp_id}: {emp_error}")
                     continue
             
-            # 4. Check threshold
-            if best_match_id and best_similarity >= self.similarity_threshold:
+            if not similarities:
+                return None, 0.0, "No valid registered embeddings found"
+
+            similarities.sort(key=lambda x: x[1], reverse=True)
+            best_match_id, best_similarity = similarities[0]
+            second_best_similarity = similarities[1][1] if len(similarities) > 1 else 0.0
+
+            logger.info(
+                "Top matches: %s",
+                [f"{emp_id}:{sim:.2%}" for emp_id, sim in similarities[:3]]
+            )
+
+            # 4. Check threshold and ambiguity margin
+            if best_similarity >= self.similarity_threshold and (
+                best_similarity - second_best_similarity
+            ) >= self.ambiguity_margin:
                 logger.info(f"Employee identified: {best_match_id} (confidence: {best_similarity:.2%})")
                 return best_match_id, best_similarity, "Employee identified successfully"
-            else:
-                logger.warning(f"Best match {best_match_id} below threshold: {best_similarity:.2%} < {self.similarity_threshold:.2%}")
+
+            if best_similarity < self.similarity_threshold:
+                logger.warning(
+                    "Best match below threshold: %s (%.2f%% < %.2f%%)",
+                    best_match_id,
+                    best_similarity * 100,
+                    self.similarity_threshold * 100,
+                )
                 return None, best_similarity, "Face not recognized"
+
+            logger.warning(
+                "Ambiguous face match: best=%s(%.2f%%), second=%.2f%%, margin=%.2f%%",
+                best_match_id,
+                best_similarity * 100,
+                second_best_similarity * 100,
+                (best_similarity - second_best_similarity) * 100,
+            )
+            return None, best_similarity, "Ambiguous match. Please align face and try again."
                 
         except Exception as e:
             logger.error(f"Failed to identify employee: {e}", exc_info=True)
@@ -283,9 +344,11 @@ class EmbeddingService:
             org_embeddings = self.storage.get_embedding(organization_uuid) or {}
             
             employee_id_str = str(employee_id)
+            had_embedding = employee_id_str in org_embeddings
+            had_photo = self.storage.get_photo(organization_uuid, employee_id_str) is not None
             
             # 2. Remove employee
-            if employee_id_str in org_embeddings:
+            if had_embedding:
                 del org_embeddings[employee_id_str]
                 
                 # 3. Save updated embeddings
@@ -304,6 +367,16 @@ class EmbeddingService:
                 logger.info(f"Employee {employee_id} deregistered from org {organization_uuid}")
                 return True, "Face deregistered successfully"
             else:
+                # Embedding can be missing while photo still exists (orphaned file).
+                if had_photo:
+                    self.storage.delete_photo(organization_uuid, employee_id_str)
+                    logger.info(
+                        "Removed orphaned face photo for employee %s in org %s (embedding entry missing)",
+                        employee_id,
+                        organization_uuid,
+                    )
+                    return True, "Face photo removed; embedding entry was not found"
+
                 return False, "Employee not found or not registered"
                 
         except Exception as e:
@@ -340,7 +413,19 @@ class EmbeddingService:
     
     def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
         """Calculate cosine similarity between two vectors."""
-        return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+        a_norm = np.linalg.norm(a)
+        b_norm = np.linalg.norm(b)
+        if a_norm == 0 or b_norm == 0:
+            return 0.0
+        similarity = float(np.dot(a, b) / (a_norm * b_norm))
+        return max(-1.0, min(1.0, similarity))
+
+    def _normalize_embedding(self, embedding: np.ndarray) -> np.ndarray:
+        """L2-normalize embedding to stabilize cosine comparison."""
+        norm = np.linalg.norm(embedding)
+        if norm == 0:
+            return embedding
+        return embedding / norm
     
     def clear_cache(self, organization_uuid: str = None):
         """Clear embedding cache. Useful after manual data changes."""

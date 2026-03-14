@@ -60,11 +60,11 @@ public class SecurityConfig {
                         // Public endpoints (can access without authentication)
                         .requestMatchers("/api/auth/signup", "/api/auth/login", "/api/auth/forgot-password").permitAll()
                         .requestMatchers("/actuator/health").permitAll() // Health check
-                        .requestMatchers("/api/public/").permitAll() // Future public APIs
+                        .requestMatchers("/api/public/**").permitAll() // Future public APIs
                         .requestMatchers("/api/test").permitAll() // Test endpoint
                         .requestMatchers("/api/billing-plans", "/api/billing-plans/**").permitAll() // Billing plans for signup
                         .requestMatchers("/api/modules/active").permitAll() // Active modules for signup
-                        .requestMatchers("/api/job-postings").permitAll()
+                        
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // Allow public access to uploaded files (images load without auth headers)
 
@@ -91,11 +91,12 @@ public class SecurityConfig {
 
                         // Designations - allow both ORG_ADMIN and HR_STAFF
                         .requestMatchers("/api/org-admin/designations", "/api/org-admin/designations/**").hasAnyRole("ORG_ADMIN", "HR_STAFF")
-
+                        
                         // ORG_ADMIN endpoints - ADD THIS SECTION
                         .requestMatchers("/api/org-admin/**").hasRole("ORG_ADMIN")
 
                         .requestMatchers("/api/hr-staff/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
+                        .requestMatchers("/api/orgs/job-postings", "/api/orgs/job-postings/**").hasAnyRole("HR_STAFF", "ORG_ADMIN")
                         .requestMatchers("/api/leave-requests").hasAnyRole("HR_STAFF", "ORG_ADMIN")
 
                         // Organization-level endpoints
@@ -135,6 +136,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:3000",      // React development server
                 "http://localhost:3001",      // Alternative port
+                "http://localhost:5173",      // Vite development server
                 "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net" // production frontend url
         ));
 

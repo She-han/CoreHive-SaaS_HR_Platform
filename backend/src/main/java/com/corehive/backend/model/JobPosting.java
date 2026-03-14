@@ -1,8 +1,6 @@
 package com.corehive.backend.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -35,11 +33,6 @@ public class JobPosting {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
-    private Department department;
-
 
     @Enumerated(EnumType.STRING)
     @Column(name = "employment_type", length = 20, nullable = false)

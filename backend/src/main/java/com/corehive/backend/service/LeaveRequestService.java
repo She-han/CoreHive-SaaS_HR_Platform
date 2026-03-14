@@ -146,12 +146,6 @@ public class LeaveRequestService {
         List<LeaveRequest> requests =
                 leaveRequestRepo.findByOrganizationUuid(orgUuid);
 
-        if (requests.isEmpty()) {
-            throw new LeaveRequestNotFoundException(
-                    "No leave requests found for organization: " + orgUuid
-            );
-        }
-
         return requests.stream()
                 .map(req -> LeaveRequestResponseDTO.builder()
                         .id(req.getId())

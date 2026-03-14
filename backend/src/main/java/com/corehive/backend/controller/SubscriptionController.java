@@ -19,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/subscription")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class SubscriptionController {
 
     private final SubscriptionManagementService subscriptionManagementService;
@@ -58,6 +58,18 @@ public class SubscriptionController {
             @PathVariable String organizationUuid) {
         log.info("Cancelling subscription for organization: {}", organizationUuid);
         ApiResponse<String> response = subscriptionManagementService.cancelSubscription(organizationUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Reactivate cancelled subscription
+     * POST /api/subscription/reactivate/{organizationUuid}
+     */
+    @PostMapping("/reactivate/{organizationUuid}")
+    public ResponseEntity<ApiResponse<String>> reactivateSubscription(
+            @PathVariable String organizationUuid) {
+        log.info("Reactivating subscription for organization: {}", organizationUuid);
+        ApiResponse<String> response = subscriptionManagementService.reactivateSubscription(organizationUuid);
         return ResponseEntity.ok(response);
     }
 

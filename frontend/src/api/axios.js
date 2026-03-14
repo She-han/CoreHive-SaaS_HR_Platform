@@ -94,9 +94,25 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const { response, request, message } = error;
+    const requestUrl = error.config?.url || "";
+    const locallyHandledAuthEndpoints = [
+      "/auth/login",
+      "/auth/signup",
+      "/auth/forgot-password",
+      "/auth/reset-password",
+      "/auth/change-password"
+    ];
+    const isLocallyHandledAuthRequest = locallyHandledAuthEndpoints.some(
+      (endpoint) => requestUrl.includes(endpoint)
+    );
 
     // Log error
     console.error("❌ API Error:", error);
+
+    // Auth pages handle their own error popups to avoid duplicate alerts.
+    if (response && isLocallyHandledAuthRequest) {
+      return Promise.reject(error);
+    }
 
     // Response error handling
     if (response) {

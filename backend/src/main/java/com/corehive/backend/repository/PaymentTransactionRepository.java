@@ -2,6 +2,7 @@ package com.corehive.backend.repository;
 
 import com.corehive.backend.model.PaymentStatus;
 import com.corehive.backend.model.PaymentTransaction;
+import com.corehive.backend.model.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,4 +17,6 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     
     // Find pending transactions for a subscription (to prevent duplicates)
     List<PaymentTransaction> findBySubscriptionIdAndStatus(Long subscriptionId, PaymentStatus status);
+
+    boolean existsBySubscriptionIdAndTransactionTypeAndStatus(Long subscriptionId, TransactionType transactionType, PaymentStatus status);
 }

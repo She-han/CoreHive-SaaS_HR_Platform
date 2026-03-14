@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 
 
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 @RestController
 @Slf4j
 @RequestMapping("/api/employees")

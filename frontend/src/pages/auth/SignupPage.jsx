@@ -2,6 +2,7 @@ import React, { useState, useEffect , useRef} from 'react';
 import ReCaptcha from '../../components/common/ReCaptcha';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import Swal from 'sweetalert2';
 import { getAllBillingPlans } from '../../api/billingPlansApi';
 import { getActiveModules } from '../../api/extendedModulesApi';
 import { 
@@ -18,14 +19,12 @@ import {
 import {
   signupOrganization,
   clearError,
-  selectIsSignupLoading,
-  selectError
+  selectIsSignupLoading
 } from "../../store/slices/authSlice";
 
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
-import Alert from "../../components/common/Alert";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 
@@ -38,7 +37,6 @@ const SignupPage = () => {
   const navigate = useNavigate();
 
   const isLoading = useSelector(selectIsSignupLoading);
-  const error = useSelector(selectError);
 
   const recaptchaRef = useRef(null);
   const [recaptchaToken, setRecaptchaToken] = useState(null);
@@ -375,11 +373,23 @@ const handleSubmit = async (e) => {
     if (signupOrganization.fulfilled.match(resultAction)) {
       setIsSuccess(true);
     } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Registration Failed',
+        text: resultAction.payload || 'Unable to complete registration. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
       recaptchaRef.current?.reset();
       setRecaptchaToken(null);
     }
   } catch (error) {
     console.error('Signup error:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Registration Failed',
+      text: error?.message || 'Unable to complete registration. Please try again.',
+      confirmButtonColor: '#02C39A'
+    });
     recaptchaRef.current?.reset();
     setRecaptchaToken(null);
   }
@@ -475,16 +485,6 @@ const handleSubmit = async (e) => {
           </div>
 
           <Card className="animate-slide-up bg-white shadow-md">
-            {/* API Error Alert */}
-            {error && (
-              <Alert
-                type="error"
-                message={error}
-                onClose={() => dispatch(clearError())}
-                className="mb-6"
-              />
-            )}
-
             <form onSubmit={handleSubmit}>
               {/* Step 1: Company Information */}
               {currentStep === 1 && (

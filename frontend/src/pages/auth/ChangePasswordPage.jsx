@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Lock, CheckCircle } from "lucide-react";
 import Swal from "sweetalert2";
-import { selectUser } from "../../store/slices/authSlice";
+import { selectUser, updateUser } from "../../store/slices/authSlice";
 import { apiPost } from "../../api/axios"; // Your axios helper
 
 import Button from "../../components/common/Button";
@@ -13,6 +13,7 @@ import Navbar from "../../components/layout/Navbar";
 
 export const ChangePasswordPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const user = useSelector(selectUser);
 
   const [passwords, setPasswords] = useState({
@@ -97,24 +98,28 @@ export const ChangePasswordPage = () => {
           allowEscapeKey: false
         });
 
-        // Update Redux state to mark password change as complete
-        const updatedUser = { ...user, passwordChangeRequired: false };
-        localStorage.setItem("corehive_user", JSON.stringify(updatedUser));
+        // Sync Redux (and localStorage via reducer) before redirect decisions.
+        dispatch(updateUser({ passwordChangeRequired: false }));
 
         setTimeout(() => {
-          if (user.role === "ORG_ADMIN") {
+          const nextUser = {
+            ...user,
+            passwordChangeRequired: false
+          };
+
+          if (nextUser.role === "ORG_ADMIN") {
             // Check if needs payment or module configuration
-            if (user.requiresPayment) {
+            if (nextUser.requiresPayment) {
               console.log("🔀 Redirecting to payment gateway...");
               navigate("/payment-gateway", { replace: true });
-            } else if (!user.modulesConfigured) {
+            } else if (!nextUser.modulesConfigured) {
               console.log("🔀 Redirecting to module configuration...");
               navigate("/configure-modules", { replace: true });
             } else {
               console.log("🔀 Redirecting to dashboard...");
               navigate("/org_admin/dashboard", { replace: true });
             }
-          } else if (user.role === "HR_STAFF") {
+          } else if (nextUser.role === "HR_STAFF") {
             navigate("/hr_staff/dashboard", { replace: true });
           } else {
             navigate("/employee/profile", { replace: true });

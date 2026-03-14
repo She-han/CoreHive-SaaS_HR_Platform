@@ -20,12 +20,14 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
      * Use when login
      */
     Optional<AppUser> findByEmail(String email);
+    Optional<AppUser> findByEmailIgnoreCase(String email);
 
     /**
      * Find by Organization UUID & email 
      * Can find specific user in Multi-tenant environment
      */
     Optional<AppUser> findByOrganizationUuidAndEmail(String organizationUuid, String email);
+    Optional<AppUser> findByOrganizationUuidAndEmailIgnoreCase(String organizationUuid, String email);
 
     /**
      * Find  all Organization users

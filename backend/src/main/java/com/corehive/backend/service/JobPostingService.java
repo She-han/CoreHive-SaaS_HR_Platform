@@ -4,16 +4,13 @@ import com.corehive.backend.dto.request.JobPostingRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
 import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.dto.response.JobPostingResponseDTO;
-import com.corehive.backend.exception.departmentException.DepartmentNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
-import com.corehive.backend.model.Department;
 import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
-import com.corehive.backend.repository.DepartmentRepository;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.util.mappers.JobPostingMapper;
 import org.springframework.data.domain.Page;
@@ -30,12 +27,10 @@ import java.util.Optional;
 public class JobPostingService {
     private final JobPostingRepository jobPostingRepository;
     private final JobPostingMapper jobPostingMapper;
-    private final DepartmentRepository departmentRepository;
 
-    public JobPostingService(JobPostingRepository jobPostingRepository, JobPostingMapper jobPostingMapper, DepartmentRepository departmentRepository) {
+    public JobPostingService(JobPostingRepository jobPostingRepository, JobPostingMapper jobPostingMapper) {
         this.jobPostingRepository = jobPostingRepository;
         this.jobPostingMapper = jobPostingMapper;
-        this.departmentRepository = departmentRepository;
     }
 
     //************************************************//
@@ -103,25 +98,10 @@ public class JobPostingService {
             throw new InvalidJobPostingException("Job posting request cannot be null");
         }
 
-        // 3) Fetch & validate department
-        Department department = departmentRepository
-                .findById(req.getDepartmentId())
-                .orElseThrow(() -> new DepartmentNotFoundException(
-                        "Department with id " + req.getDepartmentId() + " not found"
-                ));
-
-        // (Optional but recommended)
-        if (!department.getOrganizationUuid().equals(organizationUuid)) {
-            throw new InvalidJobPostingException(
-                    "Department does not belong to this organization"
-            );
-        }
-
         // 4) Map DTO → Entity (simple fields only)
         JobPosting jobPosting = jobPostingMapper.toEntity(req);
 
         // 5) Set relationships & system-controlled fields
-        jobPosting.setDepartment(department);
         jobPosting.setOrganizationUuid(organizationUuid);
         jobPosting.setPostedBy(userId);
         jobPosting.setCreatedAt(LocalDateTime.now());
@@ -188,20 +168,11 @@ public class JobPostingService {
                         "Job posting with id " + id + " not found in this organization"
                 ));
 
-        // 4) Fetch & validate department
-        Department department = departmentRepository
-                .findById(req.getDepartmentId())
-                .orElseThrow(() -> new DepartmentNotFoundException(
-                        "Department with id " + req.getDepartmentId() + " not found"
-                ));
-
         // 5) Map updatable fields
         jobPostingMapper.updateEntityFromDto(req, existing);
 
-
         // 6) Set relationship & system-controlled fields
         existing.setOrganizationUuid(organizationUuid);
-        existing.setDepartment(department);
         existing.setPostedBy(Long.valueOf(userId));
 
         // 7) Save & return

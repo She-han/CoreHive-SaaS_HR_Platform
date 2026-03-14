@@ -1,6 +1,4 @@
 import axios from "./axios";
-
-const BASE = "http://localhost:8080/api";
 /**
  * Department API Service
  * Handles all API calls for department operations
@@ -11,7 +9,7 @@ const BASE = "http://localhost:8080/api";
  */
 export const getAllDepartments = async (token) => {
   try {
-    const response = await axios.get(`${BASE}/org-admin/departments`, {
+    const response = await axios.get(`/org-admin/departments`, {
       headers: {
         Authorization: `Bearer ${token}` // send token
       }
@@ -26,7 +24,7 @@ export const getAllDepartments = async (token) => {
 export const createDepartment = async (deptData, token) => {
   try {
     const response = await axios.post(
-      `${BASE}/org-admin/departments`,
+      `/org-admin/departments`,
       deptData,
       {
         headers: {

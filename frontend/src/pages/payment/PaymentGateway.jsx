@@ -1,40 +1,33 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import {
-  CreditCard,
   Shield,
   CheckCircle,
   AlertCircle,
   Clock,
-  ArrowRight,
   Lock
 } from 'lucide-react';
 
 import { selectUser } from '../../store/slices/authSlice';
+import { updateUser } from '../../store/slices/authSlice';
+import { getOrganizationBillingInfo } from '../../api/subscriptionApi';
 import { initiatePayment } from '../../api/paymentApi';
-import { checkSubscription, getOrganizationBillingInfo, activateSubscription } from '../../api/subscriptionApi';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import Alert from '../../components/common/Alert';
-import SubscriptionDetailsModal from '../../components/subscription/SubscriptionDetailsModal';
-import Swal from 'sweetalert2';
 
 const PaymentGateway = () => {
   const navigate = useNavigate();
-  const location = useLocation();
+  const dispatch = useDispatch();
   const user = useSelector(selectUser);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [billingInfo, setBillingInfo] = useState(null);
-  const [processingPayment, setProcessingPayment] = useState(false);
   const [activatingTrial, setActivatingTrial] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [hasExistingSubscription, setHasExistingSubscription] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated and has org_uuid
@@ -75,137 +68,68 @@ const PaymentGateway = () => {
       setActivatingTrial(true);
       setError(null);
 
-      const response = await activateSubscription(user.organizationUuid);
-
-      if (response.success) {
-        // Show success message
-        await Swal.fire({
-          icon: 'success',
-          title: 'Subscription Activated!',
-          text: 'Your 30-day free trial has started. Welcome to CoreHive!',
-          confirmButtonColor: '#10B981',
-          confirmButtonText: 'Go to Dashboard'
-        });
-
-        // Redirect to dashboard
-        navigate('/org_admin/dashboard', { replace: true });
-      } else {
-        setError(response.message || 'Failed to activate subscription');
-      }
-    } catch (err) {
-      console.error('Subscription activation error:', err);
-      setError('Failed to activate subscription. Please try again.');
-    } finally {
-      setActivatingTrial(false);
-    }
-  };
-
-  const handleProceedToPayHere = async () => {
-    if (!billingInfo) return;
-
-    // 🔒 Prevent double submission
-    if (processingPayment) {
-      console.log("Payment already processing, ignoring duplicate click");
-      return;
-    }
-
-    // ✅ Check if subscription already exists
-    try {
-      const subscriptionCheck = await checkSubscription(user.organizationUuid);
-      
-      if (subscriptionCheck.success && subscriptionCheck.data.hasSubscription) {
-        // Subscription exists - show modal instead of payment
-        console.log("Existing subscription found, showing details modal");
-        setHasExistingSubscription(true);
-        setShowSubscriptionModal(true);
-        return;
-      }
-    } catch (err) {
-      console.error("Error checking subscription:", err);
-      // Continue with payment if check fails
-    }
-
-    // Initialize PayHere payment flow
-    try {
-      setProcessingPayment(true);
       const response = await initiatePayment(user.organizationUuid, user.email);
 
       if (!response.success || !response.data) {
-        setError(response.message || 'Failed to initialize payment');
-        setProcessingPayment(false);
+        setError(response.message || 'Failed to activate subscription');
+        return;
+      }
+
+      if (!window.payhere) {
+        setError('PayHere SDK not loaded. Please refresh and try again.');
         return;
       }
 
       const paymentData = response.data;
 
-      // ✅ Check if PayHere SDK is loaded
-      if (!window.payhere) {
-        setError('Payment gateway not loaded. Please refresh the page and try again.');
-        console.error('PayHere SDK not loaded');
-        setProcessingPayment(false);
-        return;
-      }
-
-      // Configure PayHere callbacks
       window.payhere.onCompleted = function (orderId) {
-        console.log("Payment completed. OrderID:", orderId);
-        setProcessingPayment(false);
-        // Redirect to success page
-        navigate('/payment/success?order_id=' + orderId, { replace: true });
+        // Keep guard state aligned while moving to success flow.
+        dispatch(updateUser({
+          requiresPayment: true,
+          hasActiveSubscription: false
+        }));
+        navigate(`/payment/success?order_id=${orderId}`, { replace: true });
       };
 
       window.payhere.onDismissed = function () {
-        console.log("Payment dismissed");
-        setProcessingPayment(false);
-        setError('Payment was cancelled. Please try again.');
+        navigate('/payment/cancel', { replace: true });
       };
 
-      window.payhere.onError = function (error) {
-        console.log("Payment Error:", error);
-        setProcessingPayment(false);
-        setError('Payment failed: ' + error);
+      window.payhere.onError = function (errorMessage) {
+        setError(`Payment failed: ${errorMessage}`);
       };
 
-      // Prepare payment object according to PayHere JS SDK documentation
       const payment = {
-        "sandbox": true, // Set to false in production
-        "merchant_id": paymentData.paymentData.merchant_id,
-        "return_url": undefined, // Important: must be undefined for JS SDK
-        "cancel_url": undefined, // Important: must be undefined for JS SDK
-        "notify_url": paymentData.paymentData.notify_url,
-        "order_id": paymentData.orderId,
-        "items": paymentData.paymentData.items,
-        "amount": parseFloat(paymentData.amount).toFixed(2), // Format with 2 decimals
-        "currency": paymentData.currency,
-        "hash": paymentData.paymentData.hash,
-        "first_name": paymentData.paymentData.first_name,
-        "last_name": paymentData.paymentData.last_name || '',
-        "email": paymentData.paymentData.email,
-        "phone": paymentData.paymentData.phone || '',
-        "address": paymentData.paymentData.address || '',
-        "city": paymentData.paymentData.city || '',
-        "country": paymentData.paymentData.country,
-        "custom_1": paymentData.paymentData.custom_1,
-        "custom_2": paymentData.paymentData.custom_2,
-        // 🔄 Recurring subscription parameters
-        "recurrence": paymentData.paymentData.recurrence || "1 Month",
-        "duration": paymentData.paymentData.duration || "Forever"
+        sandbox: true,
+        merchant_id: paymentData.paymentData.merchant_id,
+        return_url: undefined,
+        cancel_url: undefined,
+        notify_url: paymentData.paymentData.notify_url,
+        order_id: paymentData.orderId,
+        items: paymentData.paymentData.items,
+        amount: parseFloat(paymentData.amount).toFixed(2),
+        currency: paymentData.currency,
+        hash: paymentData.paymentData.hash,
+        first_name: paymentData.paymentData.first_name,
+        last_name: paymentData.paymentData.last_name || '',
+        email: paymentData.paymentData.email,
+        phone: paymentData.paymentData.phone || '',
+        address: paymentData.paymentData.address || '',
+        city: paymentData.paymentData.city || '',
+        country: paymentData.paymentData.country || 'Sri Lanka',
+        custom_1: paymentData.paymentData.custom_1,
+        custom_2: paymentData.paymentData.custom_2,
+        recurrence: paymentData.paymentData.recurrence || '1 Month',
+        duration: paymentData.paymentData.duration || 'Forever'
       };
 
-      console.log('Starting PayHere payment:', payment);
-
-      // Show PayHere popup
       window.payhere.startPayment(payment);
     } catch (err) {
-      console.error('Payment initialization error:', err);
+      console.error('Subscription activation/payment error:', err);
       setError('Failed to initialize payment. Please try again.');
-      setProcessingPayment(false);
+    } finally {
+      setActivatingTrial(false);
     }
-  };
-
-  const handleSkipTrial = () => {
-    // Activate subscription with free trial instead of skipping
-    handleActivateSubscription();
   };
 
   if (loading) {
@@ -258,7 +182,7 @@ const PaymentGateway = () => {
             Complete Your Subscription
           </h1>
           <p className="text-text-secondary text-lg">
-            Subscribe to CoreHive with monthly recurring billing
+            Activate now and start billing from your next billing date
           </p>
         </motion.div>
 
@@ -338,8 +262,7 @@ const PaymentGateway = () => {
         
             <Card className="h-full border-0">
               <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-                
-                Payment Information
+                Activation Information
               </h3>
 
               <div className="space-y-4">
@@ -349,11 +272,10 @@ const PaymentGateway = () => {
                     <Lock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                     <div className="text-sm">
                       <div className="font-semibold text-blue-900 mb-1">
-                        Secure Payment by PayHere
+                        Auto Billing Enabled
                       </div>
                       <div className="text-blue-700">
-                        Your payment information is encrypted and secure. We use PayHere, 
-                        Sri Lanka's trusted payment gateway.
+                        No charge is taken right now. CoreHive will calculate your renewal amount on the next billing date based on plan type and active user count.
                       </div>
                     </div>
                   </div>
@@ -362,8 +284,8 @@ const PaymentGateway = () => {
                 {/* Info Notice */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="text-sm text-green-800">
-                    <strong className="block mb-2">30-Day Free Trial</strong>
-                    Start your trial now without payment. After 30 days, you'll be charged LKR {billingInfo?.price || '500'} monthly. Cancel anytime from your dashboard.
+                    <strong className="block mb-2">No Upfront Payment</strong>
+                    Activate your subscription now. Your first automatic charge will happen on the next billing date based on your current plan and active users.
                   </div>
                 </div>
 
@@ -376,7 +298,7 @@ const PaymentGateway = () => {
                       <div className="w-full border-t border-gray-300"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">Activate Trail by</span>
+                      <span className="px-2 bg-white text-gray-500">Activate Subscription</span>
                     </div>
                   </div>
 
@@ -385,10 +307,10 @@ const PaymentGateway = () => {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    onClick={handleProceedToPayHere}
-                    disabled={processingPayment || activatingTrial}
+                    onClick={handleActivateSubscription}
+                    disabled={activatingTrial}
                   >
-                    {processingPayment ? 'Processing...' : 'Pay Now with PayHere'}
+                    {activatingTrial ? 'Activating...' : 'Activate Without Payment'}
                   </Button>
                 </div>
 
@@ -412,16 +334,6 @@ const PaymentGateway = () => {
       
       </div>
 
-      {/* Subscription Details Modal */}
-      <SubscriptionDetailsModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-        organizationUuid={user?.organizationUuid}
-        onUpdate={() => {
-          // Reload billing info after subscription update
-          loadBillingInfo();
-        }}
-      />
     </div>
   );
 };

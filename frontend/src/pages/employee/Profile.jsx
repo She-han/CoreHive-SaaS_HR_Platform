@@ -5,6 +5,10 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Swal from "sweetalert2";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
@@ -63,8 +67,8 @@ export default function ProfilePage() {
       if (employee.profileImage.startsWith('http')) {
         return employee.profileImage;
       }
-      // Otherwise, prepend the backend base URL
-      return `http://localhost:8080${employee.profileImage}`;
+      // Otherwise, prepend the configured backend origin
+      return `${BACKEND_ORIGIN}${employee.profileImage}`;
     }
     return null;
   };

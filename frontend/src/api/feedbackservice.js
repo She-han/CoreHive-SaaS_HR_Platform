@@ -1,7 +1,9 @@
 import axios from "axios";
 
 // Base URL for survey-related APIs
-const BASE = "http://localhost:8080/api/orgs/surveys";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const BASE = `${API_BASE_URL}/orgs/surveys`;
 
 // ============================
 // SURVEYS

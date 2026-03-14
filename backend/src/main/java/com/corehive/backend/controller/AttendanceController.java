@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/attendance")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class AttendanceController {
 
     private final AttendanceService attendanceService;

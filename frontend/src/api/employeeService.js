@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE = "http://localhost:8080/api";
+const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 // 1) GET ALL EMPLOYEES
 export async function getAllEmployees(page = 0, size = 9, token) {

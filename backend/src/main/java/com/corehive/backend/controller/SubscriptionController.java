@@ -19,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/subscription")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class SubscriptionController {
 
     private final SubscriptionManagementService subscriptionManagementService;

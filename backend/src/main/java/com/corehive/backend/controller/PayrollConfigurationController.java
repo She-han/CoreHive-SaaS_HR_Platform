@@ -19,7 +19,7 @@ import java.util.List;
 @RequestMapping("/api/org-admin/payroll-config")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class PayrollConfigurationController {
     
     private final PayrollConfigurationService payrollConfigService;

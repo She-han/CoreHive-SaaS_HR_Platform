@@ -136,6 +136,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(Arrays.asList(
                 "http://localhost:3000",      // React development server
                 "http://localhost:3001",      // Alternative port
+                "http://localhost:5173",      // Vite development server
                 "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net" // production frontend url
         ));
 

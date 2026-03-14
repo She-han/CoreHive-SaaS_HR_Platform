@@ -13,6 +13,10 @@ import {
   updateCurrentEmployeeProfile
 } from "../../api/employeeApi";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
 const EditProfile = () => {
   const navigate = useNavigate();
 
@@ -70,7 +74,7 @@ const EditProfile = () => {
           // If it's a relative path, prepend the backend URL
           const imageUrl = employee.profileImage.startsWith('http') 
             ? employee.profileImage 
-            : `http://localhost:8080${employee.profileImage}`;
+            : `${BACKEND_ORIGIN}${employee.profileImage}`;
           setPhotoPreview(imageUrl);
         }
       } else {

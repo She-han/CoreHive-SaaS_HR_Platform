@@ -6,6 +6,10 @@ import Swal from "sweetalert2";
 import { getCurrentEmployeeProfile } from "../../api/employeeApi";
 import { EditIcon } from "lucide-react";
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
+
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
@@ -98,7 +102,7 @@ export default function EmployeeProfile() {
             <div className="w-32 h-32 rounded-full overflow-hidden bg-[var(--color-primary-500)] flex items-center justify-center">
               {employee.profileImage ? (
                 <img
-                  src={employee.profileImage.startsWith('http') ? employee.profileImage : `http://localhost:8080${employee.profileImage}`}
+                  src={employee.profileImage.startsWith('http') ? employee.profileImage : `${BACKEND_ORIGIN}${employee.profileImage}`}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />

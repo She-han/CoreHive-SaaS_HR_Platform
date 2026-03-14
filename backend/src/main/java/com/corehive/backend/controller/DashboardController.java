@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class DashboardController {
 
     private final EmployeeRepository employeeRepository;

@@ -11,7 +11,7 @@ import {
   deleteEmployee
 } from "../../../api/employeeService";
 import { useSelector } from "react-redux";
-import { selectUser } from "../../../store/slices/authSlice";
+import { selectAuth } from "../../../store/slices/authSlice";
 import { generateEmployeeIDCard } from "../../../utils/idCardGenerator";
 
 const MySwal = withReactContent(Swal);
@@ -27,21 +27,39 @@ export default function EmployeeTable({ search, filterBy }) {
   const [size, setSize] = useState(7); // items per page
   const [totalPages, setTotalPages] = useState(0);
 
-  const user = useSelector(selectUser); // get token from Redux
-  const token = user?.token;
+  const { user, token, isLoading: authLoading } = useSelector(selectAuth);
 
   useEffect(() => {
-    if (!token) return; // exit if not logged in
+    if (authLoading) return;
+    if (!token) {
+      setEmployees([]);
+      setTotalPages(0);
+      return;
+    }
+
+    let isCancelled = false;
     setLoading(true);
     getAllEmployees(page, size, token)
       .then((data) => {
-        console.log("API returned:", data);
+        if (isCancelled) return;
         setEmployees(data?.items || []);
         setTotalPages(data?.totalPages || 0);
       })
-      .catch((err) => console.error("Error for getting employees", err))
-      .finally(() => setLoading(false));
-  }, [page, size, token]); //refetch whenever page or size changes
+      .catch((err) => {
+        if (!isCancelled) {
+          console.error("Error getting employees", err);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [page, size, token, authLoading]);
 
   // Filtering Logic
   const filteredEmployees = employees.filter((emp) => {

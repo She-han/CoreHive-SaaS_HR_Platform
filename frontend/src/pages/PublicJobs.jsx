@@ -88,7 +88,7 @@ const PublicJobs = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="bg-[#02C39A] hover:bg-[#1ED292] text-white font-bold py-4 px-10 rounded-xl transition-all duration-300 shadow-lg shadow-[#02C39A]/20 active:scale-95">
+          <button className="bg-[#02C39A] hover:bg-[#1ED292] text-white font-medium py-4 px-10 rounded-xl transition-all duration-300 shadow-lg shadow-[#02C39A]/20 active:scale-95">
             Search
           </button>
         </div>

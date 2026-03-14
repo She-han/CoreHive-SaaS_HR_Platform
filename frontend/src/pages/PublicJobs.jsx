@@ -10,6 +10,7 @@ const PublicJobs = () => {
   const [jobs, setJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [employmentFilter, setEmploymentFilter] = useState("ALL");
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -31,18 +32,25 @@ const PublicJobs = () => {
     loadJobs();
   }, [page]);
 
-  // Handle Keyword Search
-useEffect(() => {
-  const term = searchTerm.toLowerCase();
+  // Handle Keyword Search + employment type filter
+  useEffect(() => {
+    const term = searchTerm.toLowerCase();
 
-  const results = jobs.filter((job) =>
-    job.title?.toLowerCase().includes(term) ||
-    job.organizationName?.toLowerCase().includes(term) ||
-    job.description?.toLowerCase().includes(term)
-  );
+    const results = jobs.filter((job) => {
+      const matchesTerm =
+        job.title?.toLowerCase().includes(term) ||
+        job.organizationName?.toLowerCase().includes(term) ||
+        job.description?.toLowerCase().includes(term);
 
-  setFilteredJobs(results);
-}, [searchTerm, jobs]);
+      const matchesEmployment =
+        employmentFilter === "ALL" ||
+        job.employmentType?.toUpperCase() === employmentFilter;
+
+      return matchesTerm && matchesEmployment;
+    });
+
+    setFilteredJobs(results);
+  }, [searchTerm, employmentFilter, jobs]);
 
 
 
@@ -93,11 +101,19 @@ useEffect(() => {
             <h2 className="text-2xl font-bold text-[#0C397A]">Current Openings</h2>
             <p className="text-[#9B9B9B] text-sm mt-1">Showing {filteredJobs.length} available positions</p>
           </div>
-          <div className="hidden md:block">
-             <button className="text-[#05668D] font-semibold flex items-center gap-2 hover:opacity-80">
-               <BriefcaseIcon size={18} />
-               Alerts Off
-             </button>
+          <div className="hidden md:flex items-center gap-3">
+            <label className="text-sm text-[#9B9B9B] font-medium">Employment Type</label>
+            <select
+              value={employmentFilter}
+              onChange={(e) => setEmploymentFilter(e.target.value)}
+              className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-[#333333] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#02C39A]"
+            >
+              <option value="ALL">All</option>
+              <option value="FULL_TIME">Full Time</option>
+              <option value="PART_TIME">Part Time</option>
+              <option value="CONTRACT">Contract</option>
+              <option value="INTERN">Intern</option>
+            </select>
           </div>
         </div>
 
@@ -122,12 +138,7 @@ useEffect(() => {
             </div>
             <h3 className="text-xl font-bold text-[#333333]">No jobs found</h3>
             <p className="text-[#9B9B9B]">Try adjusting your search keywords or clear filters.</p>
-            <button 
-              onClick={() => setSearchTerm("")}
-              className="mt-4 text-[#05668D] underline font-medium"
-            >
-              View all jobs
-            </button>
+          
           </div>
         )}
       </main>

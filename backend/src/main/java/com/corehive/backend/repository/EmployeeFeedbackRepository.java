@@ -40,5 +40,7 @@ public interface EmployeeFeedbackRepository extends JpaRepository<EmployeeFeedba
         @Param("month") int month,
         @Param("year") int year
     );
+
+       void deleteByEmployee_Id(Long employeeId);
 }
 

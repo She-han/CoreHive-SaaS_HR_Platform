@@ -21,6 +21,8 @@ public interface PayslipRepository extends JpaRepository<Payslip, Long> {
     List<Payslip> findByOrganizationUuidAndEmployeeIdAndStatus(
         String organizationUuid, Long employeeId, Payslip.PayslipStatus status
     );
+
+    void deleteByOrganizationUuidAndEmployeeId(String organizationUuid, Long employeeId);
     
     Optional<Payslip> findByOrganizationUuidAndEmployeeIdAndMonthAndYear(
         String organizationUuid, Long employeeId, Integer month, Integer year

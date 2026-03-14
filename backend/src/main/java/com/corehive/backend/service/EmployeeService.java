@@ -23,6 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -55,12 +59,24 @@ public class EmployeeService {
     private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository;
     private final LeaveTypeRepository leaveTypeRepository;
     private final AzureBlobStorageService azureBlobStorageService;
+    private final EmployeeFeedbackRepository employeeFeedbackRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
+    private final AttendanceRepository attendanceRepository;
+    private final PayslipRepository payslipRepository;
+    private final FeedbackSurveyResponseRepository feedbackSurveyResponseRepository;
+    private final AttendanceConfigurationRepository attendanceConfigurationRepository;
+    private final AllowanceRepository allowanceRepository;
+    private final DeductionRepository deductionRepository;
 
     @Value("${storage.mode:local}")
     private String storageMode;
+
+    @Value("${ai.service.url:http://localhost:8001}")
+    private String aiServiceUrl;
     
     private static final String PROFILE_IMAGES_DIR = "uploads/profile-images";
     private static final String PROFILE_IMAGES_URL_PREFIX = "/uploads/profile-images";
+    private final RestTemplate restTemplate = new RestTemplate();
 
 
 
@@ -70,7 +86,15 @@ public class EmployeeService {
                           EmailService emailService, PasswordEncoder passwordEncoder,
                           EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository,
                           LeaveTypeRepository leaveTypeRepository,
-                          AzureBlobStorageService azureBlobStorageService) {
+                          AzureBlobStorageService azureBlobStorageService,
+                          EmployeeFeedbackRepository employeeFeedbackRepository,
+                          LeaveRequestRepository leaveRequestRepository,
+                          AttendanceRepository attendanceRepository,
+                          PayslipRepository payslipRepository,
+                          FeedbackSurveyResponseRepository feedbackSurveyResponseRepository,
+                          AttendanceConfigurationRepository attendanceConfigurationRepository,
+                          AllowanceRepository allowanceRepository,
+                          DeductionRepository deductionRepository) {
         this.employeeRepository = employeeRepository;
         this.employeeMapper = employeeMapper;
         this.departmentRepository = departmentRepository;
@@ -82,6 +106,14 @@ public class EmployeeService {
         this.employeeLeaveBalanceRepository = employeeLeaveBalanceRepository;
         this.leaveTypeRepository = leaveTypeRepository;
         this.azureBlobStorageService = azureBlobStorageService;
+        this.employeeFeedbackRepository = employeeFeedbackRepository;
+        this.leaveRequestRepository = leaveRequestRepository;
+        this.attendanceRepository = attendanceRepository;
+        this.payslipRepository = payslipRepository;
+        this.feedbackSurveyResponseRepository = feedbackSurveyResponseRepository;
+        this.attendanceConfigurationRepository = attendanceConfigurationRepository;
+        this.allowanceRepository = allowanceRepository;
+        this.deductionRepository = deductionRepository;
     }
 
     //************************************************//
@@ -989,6 +1021,21 @@ public class EmployeeService {
         if (!employee.getOrganizationUuid().equals(organizationUuid)) {
             throw new InvalidEmployeeDataException("Employee does not belong to this organization");
         }
+
+        // Best-effort cleanup in AI service: remove face photo + embedding record for this employee.
+        deregisterEmployeeFaceData(organizationUuid, employeeId);
+
+        // Delete records that directly depend on employee FK or employee id.
+        employeeFeedbackRepository.deleteByEmployee_Id(employeeId);
+        leaveRequestRepository.deleteByOrganizationUuidAndEmployee_Id(organizationUuid, employeeId);
+        attendanceRepository.deleteByOrganizationUuidAndEmployeeId(organizationUuid, employeeId);
+        payslipRepository.deleteByOrganizationUuidAndEmployeeId(organizationUuid, employeeId);
+        feedbackSurveyResponseRepository.deleteByEmployeeId(employeeId);
+
+        // Delete employee-targeted rules/configurations.
+        attendanceConfigurationRepository.deleteByOrganizationUuidAndEmployeeId(organizationUuid, employeeId);
+        allowanceRepository.deleteByOrganizationUuidAndEmployeeId(organizationUuid, employeeId);
+        deductionRepository.deleteByOrganizationUuidAndEmployeeId(organizationUuid, employeeId);
         
         // Delete associated leave balances first (to avoid foreign key constraint)
         List<EmployeeLeaveBalance> leaveBalances = employeeLeaveBalanceRepository.findByEmployeeIdAndOrganizationUuid(employeeId, organizationUuid);
@@ -1006,5 +1053,66 @@ public class EmployeeService {
         // Delete employee
         employeeRepository.delete(employee);
         log.info("Successfully deleted employee with ID: {}", employeeId);
+    }
+
+    private void deregisterEmployeeFaceData(String organizationUuid, Long employeeId) {
+        String baseUrl = normalizeAiServiceBaseUrl(aiServiceUrl);
+        String endpoint = String.format(
+                "%s/api/face/deregister/%s/%s",
+                baseUrl,
+                organizationUuid,
+                employeeId
+        );
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.DELETE, null, String.class);
+            log.info(
+                    "AI face deregistration response for employee {} in org {}: status={}",
+                    employeeId,
+                    organizationUuid,
+                    response.getStatusCode().value()
+            );
+        } catch (HttpStatusCodeException ex) {
+            if (ex.getStatusCode().value() == 404) {
+                log.info(
+                        "No existing face registration found for employee {} in org {}. Skipping AI cleanup.",
+                        employeeId,
+                        organizationUuid
+                );
+                return;
+            }
+
+            log.warn(
+                    "AI face deregistration failed for employee {} in org {}: status={} body={}",
+                    employeeId,
+                    organizationUuid,
+                    ex.getStatusCode().value(),
+                    ex.getResponseBodyAsString()
+            );
+        } catch (Exception ex) {
+            log.warn(
+                    "Could not call AI face deregistration for employee {} in org {}: {}",
+                    employeeId,
+                    organizationUuid,
+                    ex.getMessage()
+            );
+        }
+    }
+
+    private String normalizeAiServiceBaseUrl(String rawUrl) {
+        if (rawUrl == null || rawUrl.isBlank()) {
+            return "http://localhost:8001";
+        }
+
+        String trimmed = rawUrl.trim();
+        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            trimmed = "https://" + trimmed;
+        }
+
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+
+        return trimmed;
     }
 }

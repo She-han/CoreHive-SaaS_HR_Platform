@@ -31,5 +31,7 @@ public interface FeedbackSurveyResponseRepository
     // Check if employee has already responded to a survey
     boolean existsBySurveyIdAndEmployeeId(Long surveyId, Long employeeId);
 
+    void deleteByEmployeeId(Long employeeId);
+
 }
 

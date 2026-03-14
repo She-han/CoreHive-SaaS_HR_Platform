@@ -36,4 +36,6 @@ public interface DeductionRepository extends JpaRepository<Deduction, Long> {
         @Param("designation") String designation,
         @Param("employeeId") Long employeeId
     );
+
+    void deleteByOrganizationUuidAndEmployeeId(String organizationUuid, Long employeeId);
 }

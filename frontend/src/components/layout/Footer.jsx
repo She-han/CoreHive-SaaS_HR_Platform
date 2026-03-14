@@ -129,10 +129,10 @@ const Footer = () => {
               </li>
               <li>
                 <Link
-                  to="/api-docs"
+                  to="/guide"
                   className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
                 >
-                  API Documentation
+                  User Guide
                 </Link>
               </li>
               <li>

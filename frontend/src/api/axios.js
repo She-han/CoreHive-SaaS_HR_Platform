@@ -161,8 +161,9 @@ apiClient.interceptors.response.use(
 
         case 401:
           // Unauthorized - Token invalid/expired
-          // Only logout if it's NOT an /error endpoint
-          if (!error.config?.url?.includes("/error")) {
+          // Only logout if it's a protected request that actually sent Authorization header.
+          const hadAuthHeader = !!error.config?.headers?.Authorization;
+          if (!error.config?.url?.includes("/error") && hadAuthHeader) {
             localStorage.removeItem("corehive_token");
             localStorage.removeItem("corehive_user");
 
@@ -175,6 +176,11 @@ apiClient.interceptors.response.use(
             }).then(() => {
               window.location.href = "/login";
             });
+          } else if (import.meta.env.DEV) {
+            console.warn(
+              "401 received for request without auth header; skipping forced logout:",
+              error.config?.url
+            );
           }
           break;
 

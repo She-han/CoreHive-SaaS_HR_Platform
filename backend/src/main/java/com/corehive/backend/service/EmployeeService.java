@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.DataAccessException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -53,6 +54,10 @@ public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository;
     private final LeaveTypeRepository leaveTypeRepository;
+    private final AzureBlobStorageService azureBlobStorageService;
+
+    @Value("${storage.mode:local}")
+    private String storageMode;
     
     private static final String PROFILE_IMAGES_DIR = "uploads/profile-images";
     private static final String PROFILE_IMAGES_URL_PREFIX = "/uploads/profile-images";
@@ -64,7 +69,8 @@ public class EmployeeService {
                           DepartmentService departmentService, AppUserRepository appUserRepository, 
                           EmailService emailService, PasswordEncoder passwordEncoder,
                           EmployeeLeaveBalanceRepository employeeLeaveBalanceRepository,
-                          LeaveTypeRepository leaveTypeRepository) {
+                          LeaveTypeRepository leaveTypeRepository,
+                          AzureBlobStorageService azureBlobStorageService) {
         this.employeeRepository = employeeRepository;
         this.employeeMapper = employeeMapper;
         this.departmentRepository = departmentRepository;
@@ -75,6 +81,7 @@ public class EmployeeService {
         this.passwordEncoder = passwordEncoder;
         this.employeeLeaveBalanceRepository = employeeLeaveBalanceRepository;
         this.leaveTypeRepository = leaveTypeRepository;
+        this.azureBlobStorageService = azureBlobStorageService;
     }
 
     //************************************************//
@@ -776,26 +783,28 @@ public class EmployeeService {
      * Save profile image to file system
      */
     private String saveProfileImage(MultipartFile file, Long employeeId, String organizationUuid) throws IOException {
-        // Create uploads directory if it doesn't exist
+        // Azure mode
+        if ("azure".equalsIgnoreCase(storageMode) && azureBlobStorageService.isAzureEnabled()) {
+            return azureBlobStorageService.uploadProfileImage(file, organizationUuid, employeeId);
+        }
+
+        // Local mode (default)
         Path uploadPath = Paths.get(PROFILE_IMAGES_DIR, organizationUuid);
-        
+
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
-        
-        // Generate unique filename
+
         String originalFilename = file.getOriginalFilename();
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
         String filename = "employee_" + employeeId + "_" + System.currentTimeMillis() + extension;
-        
-        // Save file
+
         Path filePath = uploadPath.resolve(filename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        
-        // Return relative URL path
+
         return PROFILE_IMAGES_URL_PREFIX + "/" + organizationUuid + "/" + filename;
     }
 

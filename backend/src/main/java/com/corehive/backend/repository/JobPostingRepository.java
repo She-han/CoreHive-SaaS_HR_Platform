@@ -19,7 +19,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting , Long> {
         SELECT jp
         FROM JobPosting jp
         JOIN Organization o ON jp.organizationUuid = o.organizationUuid
-        WHERE jp.status = 'OPEN'
+        WHERE jp.status = 'OPEN' AND jp.postedDate IS NOT NULL
     """)
     Page<JobPosting> findAllPublicOpenJobs(Pageable pageable);
 }

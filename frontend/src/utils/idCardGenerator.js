@@ -15,6 +15,7 @@ const THEME = {
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
 
 // Get auth token from storage
 const getAuthToken = () => {
@@ -56,10 +57,10 @@ export const generateEmployeeIDCard = async (employee, organizationName) => {
     pdf.text(organizationName.toUpperCase(), CARD_WIDTH / 2, 5, { align: 'center' });
 
     // Employee Photo Section (Left side)
-    const photoX = 5;
-    const photoY = 12;
-    const photoWidth = 20;
-    const photoHeight = 25;
+    const photoX = 4;
+    const photoY = 13;
+    const photoWidth = 22;
+    const photoHeight = 22;
 
     // Photo border
     pdf.setDrawColor(5, 102, 141); // #05668D
@@ -68,9 +69,10 @@ export const generateEmployeeIDCard = async (employee, organizationName) => {
 
     // Try to load employee photo from AI service
     try {
-      const photoBase64 = await loadImageAsBase64(employee.id, employee.organizationUuid);
+      const photoBase64 = await loadImageAsBase64(employee);
       if (photoBase64) {
-        pdf.addImage(photoBase64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
+        const imageFormat = getPdfImageFormat(photoBase64);
+        pdf.addImage(photoBase64, imageFormat, photoX, photoY, photoWidth, photoHeight);
       } else {
         // Placeholder if photo not found
         addPhotoPlaceholder(pdf, photoX, photoY, photoWidth, photoHeight);
@@ -219,28 +221,16 @@ const fetchEmployeeQRCode = async (employeeCode) => {
 };
 
 /**
- * Load image from URL or file path as base64
- * Note: For production, this should be handled by backend API
+ * Load employee photo using the same source used in EmployeeModal
  */
-const loadImageAsBase64 = async (photoPath) => {
+const loadImageAsBase64 = async (employee) => {
   try {
-    // If photoPath is already a base64 string or URL
-    if (photoPath.startsWith('data:') || photoPath.startsWith('http')) {
-      return photoPath;
+    if (!employee?.id || !employee?.organizationUuid) {
+      return null;
     }
 
-    // For local file paths, you'd need a backend endpoint to serve the image
-    // This is a placeholder - in production, create an API endpoint like:
-    // GET /api/employees/{id}/photo that returns the image
-    
-    // Extract employee ID from path if possible
-    // Example path: D:\...\uploads\employee_photos\{orgId}\{empId}.jpg
-    const pathParts = photoPath.split(/[\\\/]/);
-    const filename = pathParts[pathParts.length - 1];
-    const empId = filename.split('.')[0];
-    
-    // Call backend to get photo as base64
-    const response = await fetch(`${API_BASE}/employees/${empId}/photo`);
+    const facePhotoUrl = `${AI_SERVICE_URL}/api/face/photo/${employee.organizationUuid}/${employee.id}`;
+    const response = await fetch(facePhotoUrl);
     if (response.ok) {
       const blob = await response.blob();
       return await blobToBase64(blob);
@@ -251,6 +241,21 @@ const loadImageAsBase64 = async (photoPath) => {
     console.error('Error loading image:', error);
     return null;
   }
+};
+
+/**
+ * Determine image format for jsPDF addImage
+ */
+const getPdfImageFormat = (dataUrl) => {
+  if (typeof dataUrl !== 'string') {
+    return 'JPEG';
+  }
+
+  if (dataUrl.startsWith('data:image/png')) {
+    return 'PNG';
+  }
+
+  return 'JPEG';
 };
 
 /**

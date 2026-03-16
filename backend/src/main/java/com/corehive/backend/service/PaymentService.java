@@ -37,6 +37,7 @@ public class PaymentService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrganizationRepository organizationRepository;
     private final AppUserRepository appUserRepository;
+    private final SubscriptionManagementService subscriptionManagementService;
 
     /**
      * Process subscriptions that reached next billing date.
@@ -79,6 +80,9 @@ public class PaymentService {
                     log.warn("Skipping renewal for subscription {} - organization not found", subscription.getId());
                     continue;
                 }
+
+                // Apply any queued plan update exactly when the billing cycle rolls over.
+                subscriptionManagementService.applyPendingPlanChangeIfDue(subscription, organization);
 
                 BigDecimal renewalAmount = calculateRenewalAmount(subscription, organization);
                 String renewalOrderId = "RNL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();

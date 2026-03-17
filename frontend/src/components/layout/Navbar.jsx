@@ -28,7 +28,7 @@ const Navbar = () => {
 
   const navigationLinks = [
     { name: "Home", href: "/" },
-    { name: "Features", href: "/#features" },
+    
     { name: "Careers", href: "/careers" },
     { name: "User Guide", href: "/guide" },
     { name: "About Us", href: "/about" }
@@ -54,9 +54,7 @@ const Navbar = () => {
       return location.pathname === "/" && !location.hash;
     }
 
-    if (href === "/#features") {
-      return location.pathname === "/" && location.hash === "#features";
-    }
+  
 
     return location.pathname === href;
   };
@@ -113,7 +111,7 @@ const Navbar = () => {
               // Guest user buttons
               <div className="hidden md:flex items-center space-x-3">
                 <Link to="/login">
-                  <button className="px-4 py-2 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300">
+                  <button className="px-4 py-2 text-sm font-semibold border-1 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300">
                     Sign In
                   </button>
                 </Link>

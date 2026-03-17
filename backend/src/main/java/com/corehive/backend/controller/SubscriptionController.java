@@ -93,10 +93,20 @@ public class SubscriptionController {
         Double totalPrice = request.get("totalPrice") != null 
             ? ((Number) request.get("totalPrice")).doubleValue() 
             : null;
+
+        Boolean applyOnNextBilling = request.get("applyOnNextBilling") != null
+            ? (Boolean) request.get("applyOnNextBilling")
+            : Boolean.FALSE;
         
-        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules, totalPrice: {}", 
-                organizationUuid, newPlanId, customModules.size(), totalPrice);
-        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId, customModules, totalPrice);
+        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules, totalPrice: {}, applyOnNextBilling: {}", 
+            organizationUuid, newPlanId, customModules.size(), totalPrice, applyOnNextBilling);
+        ApiResponse<String> response = subscriptionManagementService.changePlan(
+            organizationUuid,
+            newPlanId,
+            customModules,
+            totalPrice,
+            applyOnNextBilling
+        );
         return ResponseEntity.ok(response);
     }
 

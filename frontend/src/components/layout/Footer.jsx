@@ -39,15 +39,15 @@ const Footer = () => {
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-primary-500" />
-                <span className="text-blue-100">contact@corehive.lk</span>
+                <span className="text-blue-100">corehivehr@gmail.com</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="w-4 h-4 text-primary-500" />
-                <span className="text-blue-100">+94 11 123 4567</span>
+                <span className="text-blue-100">+94 71 739 3080</span>
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-primary-500" />
-                <span className="text-blue-100">Colombo, Sri Lanka</span>
+                <span className="text-blue-100">University of Ruhuna, Sri Lanka</span>
               </div>
             </div>
           </div>
@@ -58,18 +58,18 @@ const Footer = () => {
             <ul className="space-y-2">
               <li>
                 <Link
-                  to="/features"
+                  to="/"
                   className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
                 >
-                  Features
+                  Home
                 </Link>
               </li>
               <li>
                 <Link
-                  to="/pricing"
+                  to="/careers"
                   className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
                 >
-                  Pricing
+                  Careers
                 </Link>
               </li>
               <li>
@@ -80,22 +80,8 @@ const Footer = () => {
                   About Us
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/contact"
-                  className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-                >
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/help"
-                  className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-                >
-                  Help Center
-                </Link>
-              </li>
+           
+              
             </ul>
           </div>
 
@@ -135,51 +121,18 @@ const Footer = () => {
                   User Guide
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/status"
-                  className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-                >
-                  System Status
-                </Link>
-              </li>
+            
             </ul>
           </div>
         </div>
 
         {/* Bottom footer */}
-        <div className="border-t border-blue-400 py-6 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-blue-400 py-6 flex flex-col md:flex-row justify-center items-center">
           <p className="text-blue-100 text-sm">
             © {currentYear} CoreHive. All rights reserved.
           </p>
 
-          {/* Social links */}
-          <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <a
-              href="https://github.com/corehive"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-            >
-              <Github className="w-5 h-5" />
-            </a>
-            <a
-              href="https://linkedin.com/company/corehive"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-            >
-              <Linkedin className="w-5 h-5" />
-            </a>
-            <a
-              href="https://twitter.com/corehive"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-100 hover:text-primary-500 transition-colors duration-200"
-            >
-              <Twitter className="w-5 h-5" />
-            </a>
-          </div>
+         
         </div>
       </div>
     </footer>

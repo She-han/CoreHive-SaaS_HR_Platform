@@ -60,11 +60,18 @@ export const reactivateSubscription = async (organizationUuid) => {
 /**
  * Change subscription plan
  */
-export const changePlan = async (organizationUuid, planId, customModules = [], totalPrice = null) => {
+export const changePlan = async (
+  organizationUuid,
+  planId,
+  customModules = [],
+  totalPrice = null,
+  applyOnNextBilling = false
+) => {
   try {
     const requestBody = {
       planId,
-      customModules
+      customModules,
+      applyOnNextBilling
     };
     
     // Add totalPrice if provided (for Custom plans with selected modules)
@@ -89,6 +96,32 @@ export const getAvailablePlans = async () => {
     return response.data;
   } catch (error) {
     console.error('Error getting available plans:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fallback: Get active plans from public billing plans endpoint
+ */
+export const getPublicActiveBillingPlans = async () => {
+  try {
+    const response = await axios.get('/billing-plans/active');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting public active billing plans:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fallback: Get all plans from public billing plans endpoint
+ */
+export const getPublicBillingPlans = async () => {
+  try {
+    const response = await axios.get('/billing-plans');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting public billing plans:', error);
     throw error;
   }
 };
@@ -126,6 +159,8 @@ export default {
   reactivateSubscription,
   changePlan,
   getAvailablePlans,
+  getPublicActiveBillingPlans,
+  getPublicBillingPlans,
   activateSubscription,
   getOrganizationBillingInfo
 };

@@ -747,17 +747,17 @@ const HomePage = () => {
                 </motion.div>
               </Link>
 
-              <Link to="/contact" aria-label="Contact sales team">
+              <Link to="/guide" aria-label="Contact sales team">
                 <motion.div
                   whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
                   whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
                 >
                   <Button
-                    variant="outline"
+                    variant=""
                     size="lg"
-                    className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-[#02C39A]"
+                    className="w-full border-white border-2 sm:w-auto text-white hover:bg-white hover:text-[#02C39A]"
                   >
-                    Contact Sales
+                    Learn More
                   </Button>
                 </motion.div>
               </Link>
@@ -770,7 +770,7 @@ const HomePage = () => {
               viewport={{ once: true }}
               transition={{ delay: 0.6 }}
             >
-              ✓ No setup fees ✓ 14-day free trial ✓ Cancel anytime
+              ✓ No setup fees  <t/>   ✓ 30-day free trial  <t/>   ✓ Cancel anytime
             </motion.div>
           </div>
         </AnimatedSection>

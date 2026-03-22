@@ -1,14 +1,9 @@
 package com.corehive.backend.dto.response;
 
-import com.corehive.backend.model.Department;
-import com.corehive.backend.model.Employee;
-import com.corehive.backend.model.JobPosting;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -26,8 +21,6 @@ public class JobPostingResponseDTO {
     private String title;
 
     private String description;
-
-    private Long department;
 
     private String contactEmail;
 

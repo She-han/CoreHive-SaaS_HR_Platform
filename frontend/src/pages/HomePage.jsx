@@ -2,12 +2,8 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   motion,
-  useMotionTemplate,
-  useMotionValue,
-  useSpring,
   useInView,
-  useReducedMotion,
-  AnimatePresence
+  useReducedMotion
 } from "framer-motion";
 import {
   ArrowRight,
@@ -18,8 +14,7 @@ import {
   Shield,
   Clock,
   Zap,
-  Star,
-  Package
+  Star
 } from 'lucide-react';
 
 import Marquee from '../components/common/Marquee';
@@ -29,6 +24,7 @@ import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { getAllBillingPlans } from '../api/billingPlansApi';
 import { getActiveModules } from '../api/extendedModulesApi';
+import heroVideo from '../assets/videos/hero-video.mp4';
 
 /**
  * HomePage Component
@@ -69,10 +65,6 @@ const HomePage = () => {
     fetchData();
   }, []);
   
-  // 3D Tilt Card Configuration
-  const ROTATION_RANGE = 32.5;
-  const HALF_ROTATION_RANGE = 32.5 / 2;
-
   // Memoized animation variants for performance
   const fadeInUpVariants = useMemo(
     () => ({
@@ -118,197 +110,6 @@ const HomePage = () => {
     []
   );
 
-  const TiltCard = React.memo(() => {
-    const ref = useRef(null);
-
-    const x = useMotionValue(0);
-    const y = useMotionValue(0);
-
-    const xSpring = useSpring(x, { stiffness: 300, damping: 30 });
-    const ySpring = useSpring(y, { stiffness: 300, damping: 30 });
-
-    const transform = useMotionTemplate`rotateX(${xSpring}deg) rotateY(${ySpring}deg)`;
-
-    const handleMouseMove = (e) => {
-      if (!ref.current || prefersReducedMotion) return;
-
-      const rect = ref.current.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
-
-      const mouseX = (e.clientX - rect.left) * ROTATION_RANGE;
-      const mouseY = (e.clientY - rect.top) * ROTATION_RANGE;
-
-      const rX = (mouseY / height - HALF_ROTATION_RANGE) * -1;
-      const rY = mouseX / width - HALF_ROTATION_RANGE;
-
-      x.set(rX);
-      y.set(rY);
-    };
-
-    const handleMouseLeave = () => {
-      x.set(0);
-      y.set(0);
-    };
-
-    return (
-      <motion.div
-        ref={ref}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        style={{
-          transformStyle: "preserve-3d",
-          transform: prefersReducedMotion ? undefined : transform
-        }}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative h-96 w-full max-w-[550px] mx-auto rounded-xl bg-gradient-to-br from-[#02C39A]/40 to-[#05668D]/40 shadow-2xl"
-        role="img"
-        aria-label="Interactive 3D card showcasing CoreHive platform features"
-      >
-        <div
-          style={{
-            transform: prefersReducedMotion ? undefined : "translateZ(75px)",
-            transformStyle: "preserve-3d"
-          }}
-          className="absolute inset-4 grid place-content-center rounded-xl overflow-hidden backdrop-blur-sm shadow-2xl"
-        >
-          {/* Background Image */}
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-50"
-            style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1000&auto=format&fit=crop')`
-            }}
-          />
-
-          {/* Shadow Overlay Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/40 to-black/50" />
-
-          {/* Animated Background Pattern */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-[#02C39A]/40 to-[#05668D]/30"
-            animate={{
-              backgroundPosition: ["0% 0%", "100% 100%"]
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              repeatType: "reverse",
-              ease: "linear"
-            }}
-          />
-
-          {/* Main Content */}
-          <div className="relative z-10 text-center p-6">
-            {/* Main Image Container */}
-            <motion.div
-              style={{
-                transform: prefersReducedMotion
-                  ? undefined
-                  : "translateZ(100px)"
-              }}
-              className="mx-auto mb-6 relative w-full max-w-md h-24 overflow-visible rounded-2xl"
-              whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              {/* Professional HR Illustration - 4 Icons in a Row */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex gap-3 items-center justify-center w-full px-4">
-                  {[
-                    { Icon: Users, color: "bg-[#02C39A]", delay: 0 },
-                    { Icon: BarChart3, color: "bg-[#05668D]", delay: 0.1 },
-                    { Icon: DollarSign, color: "bg-[#1ED292]", delay: 0.2 },
-                    { Icon: Clock, color: "bg-[#0C397A]", delay: 0.3 }
-                  ].map(({ Icon, color, delay }, idx) => (
-                    <motion.div
-                      key={idx}
-                      className={`${color} rounded-full flex items-center justify-center w-16 h-16 shadow-lg`}
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{
-                        delay: delay,
-                        type: "spring",
-                        stiffness: 200,
-                        damping: 15
-                      }}
-                      whileHover={{
-                        scale: 1.1,
-
-                        transition: { duration: 0.6 }
-                      }}
-                    >
-                      <Icon className="w-7 h-7 text-white" aria-hidden="true" />
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Title */}
-            <motion.h3
-              style={{
-                transform: prefersReducedMotion ? undefined : "translateZ(40px)"
-              }}
-              className="text-2xl font-bold text-white mb-2 drop-shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              Joined 500+ Companies
-            </motion.h3>
-
-            {/* Subtitle */}
-            <motion.p
-              style={{
-                transform: prefersReducedMotion ? undefined : "translateZ(30px)"
-              }}
-              className="text-lg text-white/90 mb-6 drop-shadow-md"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-            >
-              Leading Sri Lankan SMEs
-            </motion.p>
-
-            {/* Statistics Grid */}
-            <motion.div
-              style={{
-                transform: prefersReducedMotion ? undefined : "translateZ(25px)"
-              }}
-              className="grid grid-cols-3 gap-4 text-xs"
-              variants={staggerContainerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {[
-                { value: "500+", label: "Companies" },
-                { value: "15K+", label: "Employees" },
-                { value: "98%", label: "Satisfaction" }
-              ].map((stat, idx) => (
-                <motion.div
-                  key={idx}
-                  className="text-center bg-white/20 backdrop-blur-sm rounded-lg py-3 px-2"
-                  variants={fadeInUpVariants}
-                  whileHover={{
-                    scale: prefersReducedMotion ? 1 : 1.1,
-                    backgroundColor: "rgba(255, 255, 255, 0.3)"
-                  }}
-                >
-                  <div className="text-2xl font-bold text-white drop-shadow-lg">
-                    {stat.value}
-                  </div>
-                  <div className="text-white/80 text-sm">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  });
-
-  TiltCard.displayName = "TiltCard";
 
   // Reusable animated section wrapper
   const AnimatedSection = React.memo(
@@ -628,132 +429,161 @@ const HomePage = () => {
       <Navbar />
       <div className="bg-[#F1FDF9]">
         {/* Hero Section */}
-        <AnimatedSection className="relative overflow-hidden py-20 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="lg:grid lg:grid-cols-12 lg:gap-8 items-center">
-              {/* Hero content */}
-              <motion.div
-                className="lg:col-span-6"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
+        <motion.section
+          className="relative overflow-hidden py-20 lg:py-24 min-h-[78vh] flex items-center"
+        >
+          <motion.div
+            className="absolute inset-0"
+            aria-hidden="true"
+          >
+            {prefersReducedMotion ? (
+              <div
+                className="h-full w-full bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(5, 0, 0, 0.9) 45%, rgba(2, 0, 0, 0.85) 100%)"
+                }}
+              />
+            ) : (
+              <video
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
               >
-                <div>
-                  <motion.h1
-                    className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-tight"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.6 }}
-                  >
-                    Modern HR for <br />
-                    <motion.span
-                      className="text-[#02C39A]"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{
-                        delay: 0.4,
-                        type: "spring",
-                        stiffness: 200
-                      }}
-                    >
-                      Sri Lankan
-                    </motion.span>{" "}
-                    SMEs
-                  </motion.h1>
+                <source src={heroVideo} type="video/mp4" />
+              </video>
+            )}
+          </motion.div>
 
-                  <motion.p
-                    className="mt-6 text-xl text-text-secondary leading-relaxed"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                  >
-                    Streamline your workforce management with CoreHive's
-                    cloud-based HR platform. Built specifically for Sri Lankan
-                    small and medium enterprises.
-                  </motion.p>
+          <motion.div
+            className="absolute inset-0"
+            aria-hidden="true"
+          >
+            <div className="h-full w-full bg-gradient-to-br from-[#000000]/85 via-[#000000]/75 to-[#000000]/70" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(2,195,154,0.28),transparent_35%),radial-gradient(circle_at_80%_60%,rgba(30,210,146,0.2),transparent_30%)]" />
+          </motion.div>
 
-                  <motion.div
-                    className="mt-8 flex flex-col sm:flex-row gap-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7, duration: 0.6 }}
-                  >
-                    <Link to="/signup" aria-label="Start your free trial">
-                      <motion.div
-                        whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
-                        whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
-                      >
-                        <Button
-                          variant="primary"
-                          size="lg"
-                          icon={ArrowRight}
-                          iconPosition="right"
-                          className="w-full sm:w-auto"
-                        >
-                          Start Free Trial
-                        </Button>
-                      </motion.div>
-                    </Link>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+            <motion.div
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white/90 text-sm font-semibold mx-auto"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+            >
+              <Zap className="w-4 h-4 text-[#1ED292]" />
+              AI-Powered and Cloud Based HR
+            </motion.div>
 
-                    <Link to="/demo" aria-label="Watch product demo">
-                      <motion.div
-                        whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
-                        whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
-                      >
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          className="w-full sm:w-auto"
-                        >
-                          Watch Demo
-                        </Button>
-                      </motion.div>
-                    </Link>
-                  </motion.div>
-
-                  <motion.div
-                    className="mt-8 flex flex-wrap items-center gap-4 sm:gap-6 text-sm text-text-secondary"
-                    variants={staggerContainerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    {[
-                      "14-day free trial",
-                      "No credit card required",
-                      "Sri Lankan tax compliant"
-                    ].map((text, idx) => (
-                      <motion.div
-                        key={idx}
-                        className="flex items-center"
-                        variants={fadeInUpVariants}
-                      >
-                        <CheckCircle
-                          className="w-5 h-5 text-[#1ED292] mr-2"
-                          aria-hidden="true"
-                        />
-                        <span>{text}</span>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {/* Hero image/illustration - 3D Animated Card */}
-              <motion.div
-                className="mt-12 lg:mt-0 lg:col-span-6"
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            <motion.h1
+              className="mt-5 text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              Modern HR for
+              
+              <motion.span
+                className="text-[#02C39A]"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
               >
-                <div className="flex justify-center">
-                  <TiltCard />
-                </div>
-              </motion.div>
-            </div>
+                {" "} Sri Lankan
+              </motion.span>{" "}
+              SMEs
+            </motion.h1>
+
+            <motion.p
+              className="mt-6 text-xl text-white/85 leading-relaxed max-w-3xl mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              Streamline your workforce management with CoreHive's cloud-based HR platform. Built specifically for Sri Lankan small and medium enterprises.
+            </motion.p>
+
+            <motion.div
+              className="mt-8 flex flex-col sm:flex-row gap-4 justify-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.6 }}
+            >
+              <Link to="/signup" aria-label="Start your free trial">
+                <motion.div
+                  whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
+                  whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
+                >
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    icon={ArrowRight}
+                    iconPosition="right"
+                    className="w-full sm:w-auto"
+                  >
+                    Start Free Trial
+                  </Button>
+                </motion.div>
+              </Link>
+
+              <Link to="/Guide" aria-label="Watch product demo">
+                <motion.div
+                  whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
+                  whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
+                >
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto"
+                  >
+                    Watch Demo
+                  </Button>
+                </motion.div>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 md:mx-12"
+              variants={staggerContainerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {[{ value: "50+", label: "Active Companies" }, { value: "1000+", label: "Employees Can be Managed" }, { value: "99.9%", label: "Uptime SLA" }].map((item) => (
+                <motion.div
+                  key={item.label}
+                  variants={fadeInUpVariants}
+                  whileHover={prefersReducedMotion ? undefined : { scale: 1.05, rotateX: -4, rotateY: 4 }}
+                  whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+                  className="rounded-xl border border-white/25 bg-white/10 backdrop-blur-lg px-4 py-4 shadow-lg"
+                  style={{ transformStyle: "preserve-3d" }}
+                >
+                  <p className="text-2xl font-bold text-white">{item.value}</p>
+                  <p className="text-sm text-white/80">{item.label}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div
+              className="mt-8 flex flex-wrap justify-center items-center gap-4 sm:gap-6 text-sm text-white/85"
+              variants={staggerContainerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {["30-day free trial", "Most Affordable", "Zero Setup Fees"].map((text, idx) => (
+                <motion.div
+                  key={idx}
+                  className="flex items-center"
+                  variants={fadeInUpVariants}
+                >
+                  <CheckCircle className="w-5 h-5 text-[#1ED292] mr-2" aria-hidden="true" />
+                  <span>{text}</span>
+                </motion.div>
+              ))}
+            </motion.div>
           </div>
-        </AnimatedSection>
-
-        <Marquee />
+        </motion.section>
 
         {/* Features Section */}
         <AnimatedSection id="features" className="py-20 bg-white">
@@ -869,37 +699,8 @@ const HomePage = () => {
         </div>
       </AnimatedSection>
 
-        {/* Testimonials Section */}
-        <AnimatedSection className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
-                What Our Customers Say
-              </h2>
-              <p className="text-xl text-text-secondary">
-                Hear from Sri Lankan business leaders who trust CoreHive
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <TestimonialCard
-                  key={index}
-                  testimonial={testimonial}
-                  index={index}
-                />
-              ))}
-            </div>
-          </div>
-        </AnimatedSection>
-
-        {/* CTA Section */}
+      <Marquee />
+      {/* CTA Section */}
         <AnimatedSection className="py-20 bg-[#02C39A] text-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <motion.h2
@@ -946,17 +747,17 @@ const HomePage = () => {
                 </motion.div>
               </Link>
 
-              <Link to="/contact" aria-label="Contact sales team">
+              <Link to="/guide" aria-label="Contact sales team">
                 <motion.div
                   whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
                   whileTap={{ scale: prefersReducedMotion ? 1 : 0.95 }}
                 >
                   <Button
-                    variant="outline"
+                    variant=""
                     size="lg"
-                    className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-[#02C39A]"
+                    className="w-full border-white border-2 sm:w-auto text-white hover:bg-white hover:text-[#02C39A]"
                   >
-                    Contact Sales
+                    Learn More
                   </Button>
                 </motion.div>
               </Link>
@@ -969,7 +770,7 @@ const HomePage = () => {
               viewport={{ once: true }}
               transition={{ delay: 0.6 }}
             >
-              ✓ No setup fees ✓ 14-day free trial ✓ Cancel anytime
+              ✓ No setup fees  <t/>   ✓ 30-day free trial  <t/>   ✓ Cancel anytime
             </motion.div>
           </div>
         </AnimatedSection>

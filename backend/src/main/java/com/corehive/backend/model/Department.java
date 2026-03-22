@@ -46,6 +46,7 @@ public class Department {
     private Set<Employee> employees;
 
 
-    @OneToMany(mappedBy = "department", fetch = FetchType.LAZY)
+    // Job postings no longer reference departments
+    @Transient
     private Set<JobPosting> jobPostings;
 }

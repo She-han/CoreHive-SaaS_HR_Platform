@@ -108,6 +108,32 @@ public class AzureBlobStorageService {
     }
 
     /**
+     * Upload employee profile image to Azure Blob Storage
+     */
+    public String uploadProfileImage(MultipartFile file, String organizationUuid, Long employeeId) throws IOException {
+        if (!azureEnabled) {
+            throw new IllegalStateException("Azure Blob Storage is not enabled");
+        }
+
+        String extension = getFileExtension(file.getOriginalFilename());
+        String blobName = String.format("profile-images/%s/%s/%s%s",
+                organizationUuid,
+                employeeId != null ? employeeId.toString() : "unknown",
+                UUID.randomUUID(),
+                extension);
+
+        log.info("Uploading profile image to Azure Blob: {}", blobName);
+
+        BlobClient blobClient = containerClient.getBlobClient(blobName);
+        BlobHttpHeaders headers = new BlobHttpHeaders().setContentType(file.getContentType());
+
+        blobClient.upload(new ByteArrayInputStream(file.getBytes()), file.getSize(), true);
+        blobClient.setHttpHeaders(headers);
+
+        return blobClient.getBlobUrl();
+    }
+
+    /**
      * Generate SAS URL for downloading (valid for specified hours)
      */
     public String generateDownloadUrl(String blobUrl, int validHours) {

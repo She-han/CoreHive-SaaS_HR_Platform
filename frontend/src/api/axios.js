@@ -94,9 +94,25 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const { response, request, message } = error;
+    const requestUrl = error.config?.url || "";
+    const locallyHandledAuthEndpoints = [
+      "/auth/login",
+      "/auth/signup",
+      "/auth/forgot-password",
+      "/auth/reset-password",
+      "/auth/change-password"
+    ];
+    const isLocallyHandledAuthRequest = locallyHandledAuthEndpoints.some(
+      (endpoint) => requestUrl.includes(endpoint)
+    );
 
     // Log error
     console.error("❌ API Error:", error);
+
+    // Auth pages handle their own error popups to avoid duplicate alerts.
+    if (response && isLocallyHandledAuthRequest) {
+      return Promise.reject(error);
+    }
 
     // Response error handling
     if (response) {
@@ -145,8 +161,9 @@ apiClient.interceptors.response.use(
 
         case 401:
           // Unauthorized - Token invalid/expired
-          // Only logout if it's NOT an /error endpoint
-          if (!error.config?.url?.includes("/error")) {
+          // Only logout if it's a protected request that actually sent Authorization header.
+          const hadAuthHeader = !!error.config?.headers?.Authorization;
+          if (!error.config?.url?.includes("/error") && hadAuthHeader) {
             localStorage.removeItem("corehive_token");
             localStorage.removeItem("corehive_user");
 
@@ -159,6 +176,11 @@ apiClient.interceptors.response.use(
             }).then(() => {
               window.location.href = "/login";
             });
+          } else if (import.meta.env.DEV) {
+            console.warn(
+              "401 received for request without auth header; skipping forced logout:",
+              error.config?.url
+            );
           }
           break;
 

@@ -29,6 +29,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Registration time duplicate check 
      */
     Optional<Organization> findByEmail(String email);
+    Optional<Organization> findByEmailIgnoreCase(String email);
 
     /**
      * Organizations filter according to status 
@@ -53,6 +54,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, Long
      * Email already registered or not checking 
      */
     boolean existsByEmail(String email);
+    boolean existsByEmailIgnoreCase(String email);
 
     /**
      * Business Registration Number duplicate checking

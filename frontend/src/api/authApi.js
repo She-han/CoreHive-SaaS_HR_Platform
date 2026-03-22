@@ -59,7 +59,12 @@ export const loginUser = async (loginData) => {
   try {
     console.log(" Attempting login for:", loginData.email);
 
-    const response = await apiPost(AUTH_ENDPOINTS.LOGIN, loginData);
+    const payload = {
+      email: loginData.email,
+      password: loginData.password
+    };
+
+    const response = await apiPost(AUTH_ENDPOINTS.LOGIN, payload);
 
     if (response.success) {
       console.log(" Login successful for:", loginData.email);

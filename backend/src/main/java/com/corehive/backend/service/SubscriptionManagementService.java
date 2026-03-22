@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,10 +138,44 @@ public class SubscriptionManagementService {
     }
 
     /**
+     * Reactivate subscription after cancellation
+     */
+    @Transactional
+    public ApiResponse<String> reactivateSubscription(String organizationUuid) {
+        try {
+            Subscription subscription = subscriptionRepository
+                    .findByOrganizationUuid(organizationUuid)
+                    .orElseThrow(() -> new RuntimeException("Subscription not found"));
+
+            if (subscription.getStatus() != SubscriptionStatus.CANCELED
+                    && subscription.getStatus() != SubscriptionStatus.SUSPENDED) {
+                return ApiResponse.error("Only canceled or suspended subscriptions can be reactivated");
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            subscription.setStatus(SubscriptionStatus.ACTIVE);
+            subscription.setUpdatedAt(now);
+
+            if (subscription.getNextBillingDate() == null) {
+                subscription.setNextBillingDate(now.plusMonths(1));
+            }
+
+            subscriptionRepository.save(subscription);
+
+            log.info("Subscription reactivated for organization: {}", organizationUuid);
+            return ApiResponse.success("Subscription reactivated successfully");
+
+        } catch (Exception e) {
+            log.error("Error reactivating subscription for organization: {}", organizationUuid, e);
+            return ApiResponse.error("Failed to reactivate subscription: " + e.getMessage());
+        }
+    }
+
+    /**
      * Change subscription plan
      */
     @Transactional
-    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules, Double totalPrice) {
+    public ApiResponse<String> changePlan(String organizationUuid, Long newPlanId, List<Long> customModules, Double totalPrice, Boolean applyOnNextBilling) {
         try {
             Subscription subscription = subscriptionRepository
                     .findByOrganizationUuid(organizationUuid)
@@ -154,93 +189,24 @@ public class SubscriptionManagementService {
                     .findByOrganizationUuid(organizationUuid)
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
 
-            // Determine the final price to save
-            BigDecimal finalPrice;
-            if (totalPrice != null && totalPrice > 0) {
-                // Use the calculated total price (for Custom plan with modules)
-                finalPrice = BigDecimal.valueOf(totalPrice);
-                log.info("Using custom total price: {} for organization: {}", totalPrice, organizationUuid);
-            } else {
-                // Use the plan's default price
-                finalPrice = new BigDecimal(newPlan.getPrice());
+            boolean scheduleForNextBilling = Boolean.TRUE.equals(applyOnNextBilling);
+
+            if (scheduleForNextBilling) {
+                queuePlanChange(subscription, newPlan, customModules, totalPrice);
+                subscriptionRepository.save(subscription);
+
+                log.info("Plan change queued for next billing. organization: {}, plan: {}, nextBillingDate: {}",
+                        organizationUuid, newPlan.getName(), subscription.getNextBillingDate());
+
+                return ApiResponse.success("Plan change scheduled for next billing date");
             }
 
-            // Update subscription with the final calculated price
-            subscription.setPlanName(newPlan.getName());
-            subscription.setPlanPrice(finalPrice);
-            subscription.setUpdatedAt(LocalDateTime.now());
+            applyPlanToSubscriptionAndOrganization(subscription, organization, newPlan, customModules, totalPrice);
             subscriptionRepository.save(subscription);
-
-            // Update organization billing details
-            organization.setBillingPlan(newPlan.getName());
-            organization.setBillingPricePerUserPerMonth(finalPrice);
-            
-            // Determine which modules to activate
-            List<Long> modulesToActivate;
-            if ("Custom".equalsIgnoreCase(newPlan.getName()) && customModules != null && !customModules.isEmpty()) {
-                // For Custom plan, use manually selected modules
-                modulesToActivate = customModules;
-                log.info("Custom plan selected with {} modules", customModules.size());
-            } else {
-                // For predefined plans, use modules from plan_modules table
-                modulesToActivate = newPlan.getModuleIds();
-                log.info("Predefined plan '{}' selected with {} modules from plan_modules", newPlan.getName(), 
-                        modulesToActivate != null ? modulesToActivate.size() : 0);
-            }
-
-            // Clear all existing organization_modules records for this organization
-            List<OrganizationModule> existingModules = organizationModuleRepository.findByOrganization(organization);
-            if (!existingModules.isEmpty()) {
-                organizationModuleRepository.deleteAll(existingModules);
-                entityManager.flush(); // Force flush to execute DELETE before INSERT
-                log.info("Removed {} existing module subscriptions for organization: {}", 
-                        existingModules.size(), organizationUuid);
-            }
-
-            // Reset all module flags first
-            organization.setModuleQrAttendanceMarking(false);
-            organization.setModuleFaceRecognitionAttendanceMarking(false);
-            organization.setModuleEmployeeFeedback(false);
-            organization.setModuleHiringManagement(false);
-
-            // Create new organization_modules records and update boolean flags
-            if (modulesToActivate != null && !modulesToActivate.isEmpty()) {
-                for (Long moduleId : modulesToActivate) {
-                    try {
-                        ExtendedModule module = extendedModuleRepository.findById(moduleId)
-                                .orElseThrow(() -> new RuntimeException("Module not found: " + moduleId));
-
-                        // Create organization_module record
-                        OrganizationModule orgModule = OrganizationModule.builder()
-                                .organization(organization)
-                                .extendedModule(module)
-                                .isEnabled(true)
-                                .subscribedAt(LocalDateTime.now())
-                                .build();
-                        organizationModuleRepository.save(orgModule);
-
-                        // Update organization boolean flags based on module key
-                        updateOrganizationModuleFlag(organization, module.getModuleKey(), true);
-
-                        log.info("Added module '{}' (ID: {}) to organization: {}", 
-                                module.getName(), moduleId, organizationUuid);
-
-                    } catch (Exception e) {
-                        log.error("Error adding module {} to organization {}: {}", 
-                                moduleId, organizationUuid, e.getMessage());
-                        // Continue with other modules even if one fails
-                    }
-                }
-                log.info("Successfully activated {} modules for organization: {}", 
-                        modulesToActivate.size(), organizationUuid);
-            } else {
-                log.info("No modules to activate for organization: {}", organizationUuid);
-            }
-            
             organizationRepository.save(organization);
 
-            log.info("Plan changed to {} for organization: {} with final price: {}", 
-                    newPlan.getName(), organizationUuid, finalPrice);
+            log.info("Plan changed immediately to {} for organization: {}",
+                    newPlan.getName(), organizationUuid);
 
             return ApiResponse.success("Plan changed successfully");
 
@@ -248,6 +214,160 @@ public class SubscriptionManagementService {
             log.error("Error changing plan for organization: {}", organizationUuid, e);
             return ApiResponse.error("Failed to change plan: " + e.getMessage());
         }
+    }
+
+    @Transactional
+    public void applyPendingPlanChangeIfDue(Subscription subscription, Organization organization) {
+        if (subscription == null || organization == null) {
+            return;
+        }
+
+        if (subscription.getPendingPlanId() == null) {
+            return;
+        }
+
+        BillingPlan pendingPlan = billingPlanRepository
+                .findById(subscription.getPendingPlanId())
+                .orElseThrow(() -> new RuntimeException("Pending billing plan not found"));
+
+        List<Long> pendingModules = parseModuleIds(subscription.getPendingCustomModuleIds());
+        Double pendingTotalPrice = subscription.getPendingPlanPrice() != null
+                ? subscription.getPendingPlanPrice().doubleValue()
+                : null;
+
+        applyPlanToSubscriptionAndOrganization(subscription, organization, pendingPlan, pendingModules, pendingTotalPrice);
+
+        subscription.setPendingPlanId(null);
+        subscription.setPendingPlanName(null);
+        subscription.setPendingPlanPrice(null);
+        subscription.setPendingCustomModuleIds(null);
+        subscription.setUpdatedAt(LocalDateTime.now());
+
+        subscriptionRepository.save(subscription);
+        organizationRepository.save(organization);
+
+        log.info("Applied pending plan change for organization: {}", organization.getOrganizationUuid());
+    }
+
+    private void queuePlanChange(Subscription subscription, BillingPlan newPlan, List<Long> customModules, Double totalPrice) {
+        BigDecimal finalPrice = resolveFinalPrice(newPlan, totalPrice);
+        List<Long> modulesToStore = resolveModulesToActivate(newPlan, customModules);
+
+        subscription.setPendingPlanId(newPlan.getId());
+        subscription.setPendingPlanName(newPlan.getName());
+        subscription.setPendingPlanPrice(finalPrice);
+        subscription.setPendingCustomModuleIds(joinModuleIds(modulesToStore));
+        subscription.setUpdatedAt(LocalDateTime.now());
+    }
+
+    private void applyPlanToSubscriptionAndOrganization(
+            Subscription subscription,
+            Organization organization,
+            BillingPlan newPlan,
+            List<Long> customModules,
+            Double totalPrice
+    ) {
+        BigDecimal finalPrice = resolveFinalPrice(newPlan, totalPrice);
+
+        subscription.setPlanName(newPlan.getName());
+        subscription.setPlanPrice(finalPrice);
+        subscription.setUpdatedAt(LocalDateTime.now());
+
+        organization.setBillingPlan(newPlan.getName());
+        organization.setBillingPricePerUserPerMonth(finalPrice);
+
+        List<Long> modulesToActivate = resolveModulesToActivate(newPlan, customModules);
+        replaceOrganizationModules(organization, modulesToActivate);
+
+        subscription.setPendingPlanId(null);
+        subscription.setPendingPlanName(null);
+        subscription.setPendingPlanPrice(null);
+        subscription.setPendingCustomModuleIds(null);
+    }
+
+    private BigDecimal resolveFinalPrice(BillingPlan newPlan, Double totalPrice) {
+        if (totalPrice != null && totalPrice > 0) {
+            return BigDecimal.valueOf(totalPrice);
+        }
+
+        return new BigDecimal(newPlan.getPrice());
+    }
+
+    private List<Long> resolveModulesToActivate(BillingPlan newPlan, List<Long> customModules) {
+        if ("Custom".equalsIgnoreCase(newPlan.getName()) && customModules != null && !customModules.isEmpty()) {
+            return customModules;
+        }
+
+        return newPlan.getModuleIds() != null ? newPlan.getModuleIds() : Collections.emptyList();
+    }
+
+    private void replaceOrganizationModules(Organization organization, List<Long> modulesToActivate) {
+        String organizationUuid = organization.getOrganizationUuid();
+
+        List<OrganizationModule> existingModules = organizationModuleRepository.findByOrganization(organization);
+        if (!existingModules.isEmpty()) {
+            organizationModuleRepository.deleteAll(existingModules);
+            entityManager.flush();
+            log.info("Removed {} existing module subscriptions for organization: {}",
+                    existingModules.size(), organizationUuid);
+        }
+
+        organization.setModuleQrAttendanceMarking(false);
+        organization.setModuleFaceRecognitionAttendanceMarking(false);
+        organization.setModuleEmployeeFeedback(false);
+        organization.setModuleHiringManagement(false);
+
+        if (modulesToActivate == null || modulesToActivate.isEmpty()) {
+            log.info("No modules to activate for organization: {}", organizationUuid);
+            return;
+        }
+
+        for (Long moduleId : modulesToActivate) {
+            try {
+                ExtendedModule module = extendedModuleRepository.findById(moduleId)
+                        .orElseThrow(() -> new RuntimeException("Module not found: " + moduleId));
+
+                OrganizationModule orgModule = OrganizationModule.builder()
+                        .organization(organization)
+                        .extendedModule(module)
+                        .isEnabled(true)
+                        .subscribedAt(LocalDateTime.now())
+                        .build();
+                organizationModuleRepository.save(orgModule);
+
+                updateOrganizationModuleFlag(organization, module.getModuleKey(), true);
+
+                log.info("Added module '{}' (ID: {}) to organization: {}",
+                        module.getName(), moduleId, organizationUuid);
+
+            } catch (Exception e) {
+                log.error("Error adding module {} to organization {}: {}",
+                        moduleId, organizationUuid, e.getMessage());
+            }
+        }
+
+        log.info("Successfully activated {} modules for organization: {}",
+                modulesToActivate.size(), organizationUuid);
+    }
+
+    private String joinModuleIds(List<Long> moduleIds) {
+        if (moduleIds == null || moduleIds.isEmpty()) {
+            return null;
+        }
+
+        return moduleIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private List<Long> parseModuleIds(String moduleIdsCsv) {
+        if (moduleIdsCsv == null || moduleIdsCsv.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return java.util.Arrays.stream(moduleIdsCsv.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
     }
 
     /**

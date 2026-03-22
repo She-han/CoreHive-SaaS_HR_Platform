@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE = "http://localhost:8080/api";
+const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
 
 // 1) GET ALL Hiring-posts
 export const getAllJobPostings = async (page, size, token) => {

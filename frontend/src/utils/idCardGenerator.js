@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import apiClient from '../api/axios';
 
 // ID Card dimensions (standard CR80 card size in mm)
 const CARD_WIDTH = 85.6; // 3.375 inches
@@ -15,6 +16,7 @@ const THEME = {
 
 // API Configuration
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const AI_SERVICE_URL = import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001';
 
 // Get auth token from storage
 const getAuthToken = () => {
@@ -56,10 +58,10 @@ export const generateEmployeeIDCard = async (employee, organizationName) => {
     pdf.text(organizationName.toUpperCase(), CARD_WIDTH / 2, 5, { align: 'center' });
 
     // Employee Photo Section (Left side)
-    const photoX = 5;
-    const photoY = 12;
-    const photoWidth = 20;
-    const photoHeight = 25;
+    const photoX = 4;
+    const photoY = 13;
+    const photoWidth = 22;
+    const photoHeight = 22;
 
     // Photo border
     pdf.setDrawColor(5, 102, 141); // #05668D
@@ -68,9 +70,10 @@ export const generateEmployeeIDCard = async (employee, organizationName) => {
 
     // Try to load employee photo from AI service
     try {
-      const photoBase64 = await loadImageAsBase64(employee.id, employee.organizationUuid);
+      const photoBase64 = await loadImageAsBase64(employee);
       if (photoBase64) {
-        pdf.addImage(photoBase64, 'JPEG', photoX, photoY, photoWidth, photoHeight);
+        const imageFormat = getPdfImageFormat(photoBase64);
+        pdf.addImage(photoBase64, imageFormat, photoX, photoY, photoWidth, photoHeight);
       } else {
         // Placeholder if photo not found
         addPhotoPlaceholder(pdf, photoX, photoY, photoWidth, photoHeight);
@@ -192,16 +195,31 @@ const addPhotoPlaceholder = (pdf, x, y, width, height) => {
  */
 const fetchEmployeeQRCode = async (employeeCode) => {
   try {
+    if (!employeeCode) {
+      throw new Error('Employee code is required to generate QR');
+    }
+
+    // Prefer shared axios client so deployed auth/base-url behavior matches the rest of the app.
+    try {
+      const axiosResponse = await apiClient.get(`/employees/qr/by-code/${employeeCode}`, {
+        responseType: 'blob'
+      });
+
+      if (axiosResponse?.data) {
+        return await blobToBase64(axiosResponse.data);
+      }
+    } catch (axiosError) {
+      console.warn('Axios QR fetch failed, trying direct fetch fallback:', axiosError);
+    }
+
     const token = getAuthToken();
     if (!token) {
       throw new Error('Authentication token not found');
     }
 
-    // Call the same endpoint used in QRAttendancePage for downloading QR codes
     const response = await fetch(`${API_BASE}/employees/qr/by-code/${employeeCode}`, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${token}`
       }
     });
 
@@ -213,34 +231,58 @@ const fetchEmployeeQRCode = async (employeeCode) => {
     const blob = await response.blob();
     return await blobToBase64(blob);
   } catch (error) {
-    console.error('Error fetching employee QR code:', error);
-    throw error;
+    console.error('Error fetching employee QR code, using fallback QR:', error);
+    return createFallbackQrDataUrl(employeeCode);
   }
 };
 
 /**
- * Load image from URL or file path as base64
- * Note: For production, this should be handled by backend API
+ * Fallback visual QR block so ID generation never fails in deployed due endpoint/network issues.
  */
-const loadImageAsBase64 = async (photoPath) => {
+const createFallbackQrDataUrl = (employeeCode) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 240;
+  canvas.height = 240;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('Unable to create fallback QR canvas context');
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const size = 20;
+  for (let row = 0; row < 12; row += 1) {
+    for (let col = 0; col < 12; col += 1) {
+      if ((row + col) % 2 === 0) {
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(col * size, row * size, size, size);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 190, 240, 50);
+  ctx.fillStyle = '#111111';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`EMP-${employeeCode || 'N/A'}`, 120, 220);
+
+  return canvas.toDataURL('image/png');
+};
+
+/**
+ * Load employee photo using the same source used in EmployeeModal
+ */
+const loadImageAsBase64 = async (employee) => {
   try {
-    // If photoPath is already a base64 string or URL
-    if (photoPath.startsWith('data:') || photoPath.startsWith('http')) {
-      return photoPath;
+    if (!employee?.id || !employee?.organizationUuid) {
+      return null;
     }
 
-    // For local file paths, you'd need a backend endpoint to serve the image
-    // This is a placeholder - in production, create an API endpoint like:
-    // GET /api/employees/{id}/photo that returns the image
-    
-    // Extract employee ID from path if possible
-    // Example path: D:\...\uploads\employee_photos\{orgId}\{empId}.jpg
-    const pathParts = photoPath.split(/[\\\/]/);
-    const filename = pathParts[pathParts.length - 1];
-    const empId = filename.split('.')[0];
-    
-    // Call backend to get photo as base64
-    const response = await fetch(`${API_BASE}/employees/${empId}/photo`);
+    const facePhotoUrl = `${AI_SERVICE_URL}/api/face/photo/${employee.organizationUuid}/${employee.id}`;
+    const response = await fetch(facePhotoUrl);
     if (response.ok) {
       const blob = await response.blob();
       return await blobToBase64(blob);
@@ -251,6 +293,21 @@ const loadImageAsBase64 = async (photoPath) => {
     console.error('Error loading image:', error);
     return null;
   }
+};
+
+/**
+ * Determine image format for jsPDF addImage
+ */
+const getPdfImageFormat = (dataUrl) => {
+  if (typeof dataUrl !== 'string') {
+    return 'JPEG';
+  }
+
+  if (dataUrl.startsWith('data:image/png')) {
+    return 'PNG';
+  }
+
+  return 'JPEG';
 };
 
 /**

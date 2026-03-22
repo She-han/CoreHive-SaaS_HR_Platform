@@ -14,6 +14,8 @@ import java.util.Optional;
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 
+        void deleteByOrganizationUuidAndEmployeeId(String organizationUuid, Long employeeId);
+
     // ===== Single Employee Queries =====
 
     Optional<Attendance> findByEmployeeIdAndAttendanceDate(Long employeeId, LocalDate date);

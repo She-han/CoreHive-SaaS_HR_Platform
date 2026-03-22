@@ -22,6 +22,9 @@ import { ForgetPasswordPage } from "./pages/auth/ForgetPasswordPage";
 import AboutUs from "./pages/AboutUs";
 import UserGuide from "./pages/UserGuide";
 import PublicJobs from "./pages/PublicJobs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Security from "./pages/Security";
+import TermsOfService from "./pages/TermsOfService";
 
 // Middle auth pages
 import ModuleConfigPage from "./pages/auth/ModuleConfigPage";
@@ -121,6 +124,9 @@ function App() {
                 />
                 <Route path="/about" element={<AboutUs />} />
                 <Route path="/guide" element={<UserGuide />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/security" element={<Security />} />
+                <Route path="/terms" element={<TermsOfService />} />
 
                 {/* Change Password (First-time any ORG_USER) */}
                 <Route

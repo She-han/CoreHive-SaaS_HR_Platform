@@ -18,7 +18,8 @@ import java.util.Map;
  * Separate controller for current logged-in employee operations
  * This eliminates any route conflicts with /api/employees/{id}
  */
-@CrossOrigin(origins = "http://localhost:3000")
+// Allow frontend from multiple origins (local and deployed)
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 @RestController
 @Slf4j
 @RequestMapping("/api/current-employee")

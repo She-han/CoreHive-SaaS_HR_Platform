@@ -363,7 +363,7 @@ const FaceAttendancePage = () => {
         result = await markCheckIn(
           employeeId,
           organizationUuid,
-          identifyResult.confidence
+          identifyResult.similarity
         );
       } else {
         // Check-out mode
@@ -398,7 +398,7 @@ const FaceAttendancePage = () => {
         result = await markCheckOut(
           employeeId,
           organizationUuid,
-          identifyResult.confidence
+          identifyResult.similarity
         );
       }
 
@@ -409,7 +409,7 @@ const FaceAttendancePage = () => {
           success: true,
           employeeId,
           employeeName: result.employeeName || employeeName,
-          confidence: identifyResult.confidence,
+          confidence: identifyResult.similarity,
           isCheckIn: mode === "checkin",
           time: new Date().toLocaleTimeString("en-US", {
             hour: "2-digit",

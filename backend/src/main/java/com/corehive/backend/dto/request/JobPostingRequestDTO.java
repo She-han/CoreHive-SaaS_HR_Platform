@@ -1,9 +1,6 @@
 package com.corehive.backend.dto.request;
 
-import com.corehive.backend.model.Department;
-import com.corehive.backend.model.JobPosting;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -30,9 +26,6 @@ public class JobPostingRequestDTO {
     @Email(message = "Invalid email format")
     @NotBlank(message = "Contact email is required")
     private String contactEmail;
-
-    @NotNull
-    private Long departmentId;
 
     @NotNull
     private EmploymentType employmentType;

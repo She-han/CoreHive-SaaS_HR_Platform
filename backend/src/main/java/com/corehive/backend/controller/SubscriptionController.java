@@ -19,7 +19,7 @@ import java.util.Map;
 @RequestMapping("/api/subscription")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "https://corehive-frontend-app-cmbucjbga2e6amey.southeastasia-01.azurewebsites.net"})
 public class SubscriptionController {
 
     private final SubscriptionManagementService subscriptionManagementService;
@@ -62,6 +62,18 @@ public class SubscriptionController {
     }
 
     /**
+     * Reactivate cancelled subscription
+     * POST /api/subscription/reactivate/{organizationUuid}
+     */
+    @PostMapping("/reactivate/{organizationUuid}")
+    public ResponseEntity<ApiResponse<String>> reactivateSubscription(
+            @PathVariable String organizationUuid) {
+        log.info("Reactivating subscription for organization: {}", organizationUuid);
+        ApiResponse<String> response = subscriptionManagementService.reactivateSubscription(organizationUuid);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Change subscription plan
      * PUT /api/subscription/plan/{organizationUuid}
      */
@@ -81,10 +93,20 @@ public class SubscriptionController {
         Double totalPrice = request.get("totalPrice") != null 
             ? ((Number) request.get("totalPrice")).doubleValue() 
             : null;
+
+        Boolean applyOnNextBilling = request.get("applyOnNextBilling") != null
+            ? (Boolean) request.get("applyOnNextBilling")
+            : Boolean.FALSE;
         
-        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules, totalPrice: {}", 
-                organizationUuid, newPlanId, customModules.size(), totalPrice);
-        ApiResponse<String> response = subscriptionManagementService.changePlan(organizationUuid, newPlanId, customModules, totalPrice);
+        log.info("Changing plan for organization: {} to plan ID: {} with {} custom modules, totalPrice: {}, applyOnNextBilling: {}", 
+            organizationUuid, newPlanId, customModules.size(), totalPrice, applyOnNextBilling);
+        ApiResponse<String> response = subscriptionManagementService.changePlan(
+            organizationUuid,
+            newPlanId,
+            customModules,
+            totalPrice,
+            applyOnNextBilling
+        );
         return ResponseEntity.ok(response);
     }
 

@@ -23,13 +23,23 @@ import { selectUser } from '../../store/slices/authSlice';
 import {
   getSubscriptionDetails,
   cancelSubscription,
-  changePlan
+  reactivateSubscription,
+  changePlan,
+  getAvailablePlans,
+  getPublicActiveBillingPlans,
+  getPublicBillingPlans
 } from '../../api/subscriptionApi';
-import { getAllBillingPlans } from '../../api/adminApi';
 import { getActiveModules } from '../../api/extendedModulesApi';
 
 const SubscriptionManagement = () => {
   const user = useSelector(selectUser);
+  const isDeployedBuild = import.meta.env.PROD;
+
+  const normalizePlans = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+  };
   
   const [loading, setLoading] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState(null);
@@ -69,17 +79,43 @@ const SubscriptionManagement = () => {
 
   const loadPlansAndModules = async () => {
     try {
-      const [plansRes, modulesRes] = await Promise.all([
-        getAllBillingPlans(),
+      const [plansResult, modulesResult] = await Promise.allSettled([
+        getAvailablePlans(),
         getActiveModules()
       ]);
 
-      if (plansRes?.data) {
-        setBillingPlans(plansRes.data);
+      const plansRes = plansResult.status === 'fulfilled' ? plansResult.value : null;
+      let resolvedPlans = normalizePlans(plansRes);
+
+      // Fallback chain for deployed environments where subscription endpoint can return empty.
+      if (resolvedPlans.length === 0) {
+        try {
+          const publicActivePlans = await getPublicActiveBillingPlans();
+          resolvedPlans = normalizePlans(publicActivePlans);
+        } catch (fallbackError) {
+          console.warn('Public active plans fallback failed:', fallbackError);
+        }
       }
 
-      if (modulesRes?.data) {
-        setExtendedModules(modulesRes.data);
+      if (resolvedPlans.length === 0) {
+        try {
+          const publicPlans = await getPublicBillingPlans();
+          resolvedPlans = normalizePlans(publicPlans);
+        } catch (fallbackError) {
+          console.warn('Public all plans fallback failed:', fallbackError);
+        }
+      }
+
+      setBillingPlans(resolvedPlans);
+
+      if (modulesResult.status === 'fulfilled' && modulesResult.value?.data) {
+        setExtendedModules(modulesResult.value.data);
+      } else {
+        setExtendedModules([]);
+      }
+
+      if (plansResult.status === 'rejected' && modulesResult.status === 'rejected') {
+        throw new Error('Both plans and modules failed to load');
       }
     } catch (err) {
       console.error('Error loading plans and modules:', err);
@@ -138,6 +174,48 @@ const SubscriptionManagement = () => {
         icon: 'error',
         title: 'Cancellation Failed',
         text: err.message || 'Failed to cancel subscription. Please try again.',
+        confirmButtonColor: '#02C39A'
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Reactivate Subscription?',
+      text: 'Your subscription will be reactivated and auto-billing will continue from your next billing date.',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Reactivate',
+      cancelButtonText: 'Cancel',
+      confirmButtonColor: '#02C39A',
+      cancelButtonColor: '#6B7280'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setProcessing(true);
+      const response = await reactivateSubscription(user.organizationUuid);
+
+      if (response.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Subscription Reactivated',
+          text: 'Your subscription has been reactivated successfully.',
+          confirmButtonColor: '#02C39A'
+        });
+        loadData();
+      } else {
+        throw new Error(response.message || 'Failed to reactivate subscription');
+      }
+    } catch (err) {
+      console.error('Error reactivating subscription:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Reactivation Failed',
+        text: err.message || 'Failed to reactivate subscription. Please try again.',
         confirmButtonColor: '#02C39A'
       });
     } finally {
@@ -214,6 +292,11 @@ const SubscriptionManagement = () => {
              <p class="font-bold text-gray-800 mt-2">Total: LKR ${Number(customTotalPrice || 0).toFixed(2)} / month</p>
              <p class="mt-3 text-sm text-gray-600">${customModules.length} module(s) selected</p>` 
             : `<p class="text-gray-600">LKR ${selectedPlan.price} / month</p>`}
+          <p class="mt-3 text-sm ${isDeployedBuild ? 'text-amber-700' : 'text-green-700'}">
+            ${isDeployedBuild
+              ? `This change will take effect on your next billing date (${subscriptionData?.subscription?.nextBillingDate ? new Date(subscriptionData.subscription.nextBillingDate).toLocaleDateString() : 'N/A'}).`
+              : ''}
+          </p>
         </div>
       `,
       showCancelButton: true,
@@ -234,13 +317,21 @@ const SubscriptionManagement = () => {
         ? customTotalPrice 
         : null; // null means use the plan's default price
       
-      const response = await changePlan(user.organizationUuid, selectedPlan.id, customModules, finalPrice);
+      const response = await changePlan(
+        user.organizationUuid,
+        selectedPlan.id,
+        customModules,
+        finalPrice,
+        isDeployedBuild
+      );
 
       if (response.success) {
         await Swal.fire({
           icon: 'success',
-          title: 'Plan Changed!',
-          text: 'Your subscription plan has been updated successfully.',
+          title: isDeployedBuild ? 'Plan Change Scheduled!' : 'Plan Changed!',
+          text: isDeployedBuild
+            ? `Your new plan will be activated on the next billing date (${subscriptionData?.subscription?.nextBillingDate ? new Date(subscriptionData.subscription.nextBillingDate).toLocaleDateString() : 'N/A'}).`
+            : 'Your subscription plan has been updated successfully.',
           confirmButtonColor: '#02C39A'
         });
         setShowPlanChange(false);
@@ -403,6 +494,15 @@ const SubscriptionManagement = () => {
               >
                 {showPlanChange ? 'Hide Plans' : 'Change Plan'}
               </Button>
+              {subscriptionData?.subscription?.status === 'CANCELED' ? (
+                <Button
+                  variant="primary"
+                  onClick={handleReactivateSubscription}
+                  disabled={processing}
+                >
+                  Reactivate Subscription
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 onClick={handleCancelSubscription}
@@ -423,8 +523,19 @@ const SubscriptionManagement = () => {
                 {step === 1 ? 'Select Your Plan' : 'Customize Your Plan'}
               </h3>
 
+              {isDeployedBuild && (
+                <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  Plan changes are scheduled and will be applied on your next billing date.
+                </div>
+              )}
+
               {step === 1 && (
                 <>
+                  {billingPlans.length === 0 && (
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-text-secondary">
+                      No available plans found right now. Please try again in a moment.
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     {billingPlans.map((plan) => (
                       <div

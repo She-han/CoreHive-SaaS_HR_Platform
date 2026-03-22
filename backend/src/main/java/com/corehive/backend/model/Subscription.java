@@ -82,6 +82,18 @@ public class Subscription {
     @Column(name = "active_user_count")
     private Integer activeUserCount = 0;
 
+    @Column(name = "pending_plan_id")
+    private Long pendingPlanId;
+
+    @Column(name = "pending_plan_name", length = 100)
+    private String pendingPlanName;
+
+    @Column(name = "pending_plan_price", precision = 10, scale = 2)
+    private BigDecimal pendingPlanPrice;
+
+    @Column(name = "pending_custom_module_ids", length = 1000)
+    private String pendingCustomModuleIds;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

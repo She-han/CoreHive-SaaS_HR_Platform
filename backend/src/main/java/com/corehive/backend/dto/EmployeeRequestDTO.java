@@ -32,7 +32,10 @@ public class EmployeeRequestDTO {
     private String email;
 
     @NotBlank(message = "Phone number is required")
-    @Size(max = 10, message = "Phone number must not exceed 10 characters")
+        @Pattern(
+            regexp = "^\\+?[1-9]\\d{9,14}$",
+            message = "Phone number must be a valid international number (e.g., +94717393080)"
+        )
     @JsonProperty("phone")
     private String phone;
 

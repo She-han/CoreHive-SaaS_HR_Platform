@@ -48,7 +48,7 @@ public class LeaveRequest {
     @Column(nullable = false, columnDefinition = "ENUM('PENDING','APPROVED','REJECTED') DEFAULT 'PENDING'")
     private LeaveStatus status = LeaveStatus.PENDING;
 
-    @JoinColumn(name = "approved_by")
+    @Column(name = "approved_by")
     private Long approvedBy;
 
     @Column(name = "approved_at")

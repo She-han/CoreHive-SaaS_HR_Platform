@@ -36,6 +36,8 @@ public class JobPostingResponseDTO {
 
     private Integer availableVacancies;
 
+    private Long departmentId;
+
     private LocalDateTime createdAt;
 
     public enum EmploymentType {

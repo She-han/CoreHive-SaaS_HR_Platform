@@ -77,7 +77,13 @@ public class LeaveRequestService {
 
     // APPROVE / REJECT leave request
     @Transactional
-    public void approveLeave(Long requestId, Long approverId, boolean approve) throws BadRequestException {
+    public void approveLeave(
+            Long requestId,
+            Long approverUserId,
+            String approverEmail,
+            String orgUuid,
+            boolean approve
+    ) throws BadRequestException {
 
         // 1️⃣ Fetch leave request
         LeaveRequest request = leaveRequestRepo.findById(requestId)
@@ -85,10 +91,22 @@ public class LeaveRequestService {
                         new LeaveRequestNotFoundException("Leave request not found")
                 );
 
+        if (!request.getOrganizationUuid().equals(orgUuid)) {
+            throw new BadRequestException("Leave request does not belong to this organization");
+        }
+
         // 3️⃣ Prevent double approval
         if (request.getStatus() != LeaveRequest.LeaveStatus.PENDING) {
             throw new IllegalStateException("Leave request already processed");
         }
+
+        // Resolve approver as employee.id since leave_request.approved_by has FK to employee(id).
+        Employee approver = employeeRepo.findByAppUserId(approverUserId)
+            .filter(emp -> orgUuid.equals(emp.getOrganizationUuid()))
+            .or(() -> employeeRepo.findByEmailAndOrganizationUuid(approverEmail, orgUuid))
+            .orElseThrow(() -> new EmployeeNotFoundException(
+                "Approver employee profile not found for authenticated user"
+            ));
 
 
         // 3️⃣ Get employee & remaining leaves from EmployeeLeaveBalance
@@ -128,7 +146,7 @@ public class LeaveRequestService {
         }
 
         // 5️⃣ Set approver details
-        request.setApprovedBy(approverId);
+        request.setApprovedBy(approver.getId());
         request.setApprovedAt(LocalDateTime.now());
 
         // 6️⃣ Save changes

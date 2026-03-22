@@ -2,14 +2,10 @@ package com.corehive.backend.service;
 
 import com.corehive.backend.dto.request.JobPostingRequestDTO;
 import com.corehive.backend.dto.paginated.PaginatedResponseItemDTO;
-import com.corehive.backend.dto.response.EmployeeResponseDTO;
 import com.corehive.backend.dto.response.JobPostingResponseDTO;
-import com.corehive.backend.exception.employeeCustomException.EmployeeNotFoundException;
 import com.corehive.backend.exception.employeeCustomException.OrganizationNotFoundException;
 import com.corehive.backend.exception.jobPostingCustomException.InvalidJobPostingException;
-import com.corehive.backend.exception.jobPostingCustomException.JobPostingCreationException;
 import com.corehive.backend.exception.jobPostingCustomException.JobPostingNotFoundException;
-import com.corehive.backend.model.Employee;
 import com.corehive.backend.model.JobPosting;
 import com.corehive.backend.repository.JobPostingRepository;
 import com.corehive.backend.util.mappers.JobPostingMapper;
@@ -18,19 +14,23 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class JobPostingService {
     private final JobPostingRepository jobPostingRepository;
     private final JobPostingMapper jobPostingMapper;
+    private final DepartmentService departmentService;
 
-    public JobPostingService(JobPostingRepository jobPostingRepository, JobPostingMapper jobPostingMapper) {
+    public JobPostingService(
+            JobPostingRepository jobPostingRepository,
+            JobPostingMapper jobPostingMapper,
+            DepartmentService departmentService
+    ) {
         this.jobPostingRepository = jobPostingRepository;
         this.jobPostingMapper = jobPostingMapper;
+        this.departmentService = departmentService;
     }
 
     //************************************************//
@@ -98,6 +98,14 @@ public class JobPostingService {
             throw new InvalidJobPostingException("Job posting request cannot be null");
         }
 
+        if (req.getDepartmentId() == null) {
+            throw new InvalidJobPostingException("Department is required");
+        }
+
+        if (!departmentService.validateDepartment(req.getDepartmentId(), organizationUuid)) {
+            throw new InvalidJobPostingException("Invalid department for this organization");
+        }
+
         // 4) Map DTO → Entity (simple fields only)
         JobPosting jobPosting = jobPostingMapper.toEntity(req);
 
@@ -159,6 +167,14 @@ public class JobPostingService {
         // 2) Validate request
         if (req == null) {
             throw new InvalidJobPostingException("Job posting request cannot be null");
+        }
+
+        if (req.getDepartmentId() == null) {
+            throw new InvalidJobPostingException("Department is required");
+        }
+
+        if (!departmentService.validateDepartment(req.getDepartmentId(), organizationUuid)) {
+            throw new InvalidJobPostingException("Invalid department for this organization");
         }
 
         // 3) Fetch existing job posting

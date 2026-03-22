@@ -64,8 +64,11 @@ public class LeaveRequestController {
             @RequestParam boolean approve,
             HttpServletRequest request
     ) throws BadRequestException {
-        Long approverId = (Long) request.getAttribute("userId");
-        leaveRequestService.approveLeave(id, approverId, approve);
+        Long approverUserId = (Long) request.getAttribute("userId");
+        String approverEmail = (String) request.getAttribute("userEmail");
+        String orgUuid = (String) request.getAttribute("organizationUuid");
+
+        leaveRequestService.approveLeave(id, approverUserId, approverEmail, orgUuid, approve);
 
         return ResponseEntity.ok(
                 new StandardResponse(200, "Leave request updated", null)

@@ -4,17 +4,20 @@ import Swal from "sweetalert2";
 import { getSingleJobPosting, updateJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
 import { selectAuth } from "../../../store/slices/authSlice";
+import { getAllDepartments } from "../../../api/departmentApi";
 
 export default function EditeJobPosting() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [jobPosting, setJobPosting] = useState(null);
+  const [departments, setDepartments] = useState([]);
 
   const { token } = useSelector(selectAuth); // get token from Redux
 
   const [form, setForm] = useState({
     title: "",
+    departmentId: "",
     contactEmail: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
@@ -28,12 +31,19 @@ export default function EditeJobPosting() {
   useEffect(() => {
     if (!token) return;
 
+    getAllDepartments(token)
+      .then((response) => {
+        setDepartments(response?.data || []);
+      })
+      .catch(console.error);
+
     getSingleJobPosting(id, token)
       .then((data) => {
         setJobPosting(data);
 
         setForm({
           title: data.title || "",
+          departmentId: data.departmentId ? String(data.departmentId) : "",
           contactEmail: data.contactEmail || "",
           employmentType: data.employmentType || "FULL_TIME",
           status: data.status || "OPEN",
@@ -79,6 +89,10 @@ export default function EditeJobPosting() {
     }
     if (!form.employmentType) {
       Swal.fire("Required!", "Please select an employment type.", "warning");
+      return;
+    }
+    if (!form.departmentId) {
+      Swal.fire("Required!", "Please select a department.", "warning");
       return;
     }
     if (!form.postedDate) {
@@ -128,6 +142,7 @@ export default function EditeJobPosting() {
       if (avatarFile) {
         payload = new FormData();
         payload.append("title", form.title);
+        payload.append("departmentId", String(parseInt(form.departmentId, 10)));
         payload.append("contactEmail", form.contactEmail.toLowerCase());
         payload.append("employmentType", form.employmentType);
         payload.append("status", form.status);
@@ -139,6 +154,7 @@ export default function EditeJobPosting() {
       } else {
         payload = {
           title: form.title,
+          departmentId: parseInt(form.departmentId, 10),
           contactEmail: form.contactEmail.toLowerCase(),
           employmentType: form.employmentType,
           status: form.status,
@@ -242,6 +258,26 @@ export default function EditeJobPosting() {
                 <option value="PART_TIME">Part Time</option>
                 <option value="CONTRACT">Contract</option>
                 <option value="INTERN">Intern</option>
+              </select>
+            </div>
+
+            {/* Department */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Department
+              </label>
+              <select
+                name="departmentId"
+                value={form.departmentId}
+                onChange={handleInput}
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
+              >
+                <option value="">Select Department</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
               </select>
             </div>
 

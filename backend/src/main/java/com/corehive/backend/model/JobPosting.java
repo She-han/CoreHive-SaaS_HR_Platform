@@ -54,6 +54,9 @@ public class JobPosting {
     @Column(name = "available_vacancies")
     private Integer availableVacancies = 0;
 
+    @Column(name = "department_id", nullable = false)
+    private Long departmentId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 

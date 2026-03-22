@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { createJobPosting } from "../../../api/hiringService";
 import { useSelector } from "react-redux";
 import { selectAuth } from "../../../store/slices/authSlice";
+import { getAllDepartments } from "../../../api/departmentApi";
 
 export default function AddJobForm() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
     title: "",
+    departmentId: "",
     contactEmail: "",
     employmentType: "FULL_TIME",
     status: "OPEN",
@@ -21,8 +23,24 @@ export default function AddJobForm() {
 
   const [avatarFile, setAvatarFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState([]);
 
   const { token } = useSelector(selectAuth); // pull JWT from auth slice
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchDepartments = async () => {
+      try {
+        const response = await getAllDepartments(token);
+        setDepartments(response?.data || []);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+      }
+    };
+
+    fetchDepartments();
+  }, [token]);
 
   function handleInput(e) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -53,6 +71,10 @@ export default function AddJobForm() {
     }
     if (!form.employmentType) {
       Swal.fire("Required!", "Please select an employment type.", "warning");
+      return;
+    }
+    if (!form.departmentId) {
+      Swal.fire("Required!", "Please select a department.", "warning");
       return;
     }
     if (!form.postedDate) {
@@ -98,7 +120,8 @@ export default function AddJobForm() {
 
     try {
       const payload = {
-        ...form
+        ...form,
+        departmentId: parseInt(form.departmentId, 10)
       };
 
       await createJobPosting(payload, token);
@@ -219,6 +242,26 @@ export default function AddJobForm() {
                 <option value="PART_TIME">Part Time</option>
                 <option value="CONTRACT">Contract</option>
                 <option value="INTERN">Intern</option>
+              </select>
+            </div>
+
+            {/* Department */}
+            <div>
+              <label className="text-sm font-medium text-[#333333]">
+                Department
+              </label>
+              <select
+                name="departmentId"
+                value={form.departmentId}
+                onChange={handleInput}
+                className="mt-2 w-full p-3 border border-[#9B9B9B] rounded-lg"
+              >
+                <option value="">Select Department</option>
+                {departments.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </option>
+                ))}
               </select>
             </div>
 

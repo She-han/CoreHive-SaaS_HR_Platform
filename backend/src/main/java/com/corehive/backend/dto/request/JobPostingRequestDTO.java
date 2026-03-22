@@ -42,6 +42,9 @@ public class JobPostingRequestDTO {
 
     private Integer availableVacancies;
 
+    @NotNull(message = "Department is required")
+    private Long departmentId;
+
     public enum EmploymentType {
         FULL_TIME, PART_TIME, CONTRACT, INTERN
     }

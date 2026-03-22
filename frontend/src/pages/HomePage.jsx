@@ -538,7 +538,7 @@ const HomePage = () => {
                     size="lg"
                     className="w-full sm:w-auto"
                   >
-                    Watch Demo
+                    Platform Guide
                   </Button>
                 </motion.div>
               </Link>

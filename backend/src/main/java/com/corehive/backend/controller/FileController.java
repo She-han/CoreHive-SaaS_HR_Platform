@@ -100,7 +100,7 @@ public class FileController {
                         .body(Map.of("error", "Authentication required"));
             }
 
-            if (!userRole.equals("SYSTEM_ADMIN") && !userRole.equals("ORG_ADMIN")) {
+            if (!userRole.equals("SYSTEM_ADMIN") && !userRole.equals("SYS_ADMIN") && !userRole.equals("ORG_ADMIN")) {
                 log.warn("Access denied for role: {}", userRole);
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "Insufficient permissions"));

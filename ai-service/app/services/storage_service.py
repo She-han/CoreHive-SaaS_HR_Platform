@@ -118,13 +118,35 @@ class StorageService:
     
     def _get_photo_azure(self, org_uuid: str, emp_id: str) -> Optional[bytes]:
         """Get photo from Azure Blob Storage."""
-        blob_name = f"{org_uuid}/{emp_id}/photo.jpg"
+        candidate_blob_names = [
+            f"{org_uuid}/{emp_id}/photo.jpg",
+            f"{org_uuid}/{emp_id}/{emp_id}.jpg",
+            f"{org_uuid}/{emp_id}/{emp_id}.jpeg",
+            f"{org_uuid}/{emp_id}/{emp_id}.png",
+        ]
+
+        # 1) Try known file naming patterns first.
+        for blob_name in candidate_blob_names:
+            try:
+                blob_client = self.photos_container.get_blob_client(blob_name)
+                if blob_client.exists():
+                    return blob_client.download_blob().readall()
+            except Exception:
+                continue
+
+        # 2) Fallback: pick the first image blob under org/emp/ prefix.
         try:
-            blob_client = self.photos_container.get_blob_client(blob_name)
-            return blob_client.download_blob().readall()
+            prefix = f"{org_uuid}/{emp_id}/"
+            for blob in self.photos_container.list_blobs(name_starts_with=prefix):
+                name_lower = blob.name.lower()
+                if name_lower.endswith((".jpg", ".jpeg", ".png", ".webp")):
+                    blob_client = self.photos_container.get_blob_client(blob.name)
+                    return blob_client.download_blob().readall()
         except Exception as e:
-            logger.warning(f"Photo not found in Azure: {blob_name}")
-            return None
+            logger.warning(f"Failed fallback photo lookup for {org_uuid}/{emp_id}: {e}")
+
+        logger.warning(f"Photo not found in Azure for org={org_uuid}, emp={emp_id}")
+        return None
     
     def _get_photo_local(self, org_uuid: str, emp_id: str) -> Optional[bytes]:
         """Get photo from local filesystem."""
@@ -141,12 +163,14 @@ class StorageService:
     
     def _delete_photo_azure(self, org_uuid: str, emp_id: str) -> bool:
         """Delete photo from Azure Blob Storage."""
-        blob_name = f"{org_uuid}/{emp_id}/photo.jpg"
+        deleted_any = False
+        prefix = f"{org_uuid}/{emp_id}/"
         try:
-            blob_client = self.photos_container.get_blob_client(blob_name)
-            blob_client.delete_blob()
-            logger.info(f"Photo deleted from Azure: {blob_name}")
-            return True
+            for blob in self.photos_container.list_blobs(name_starts_with=prefix):
+                self.photos_container.get_blob_client(blob.name).delete_blob()
+                deleted_any = True
+                logger.info(f"Photo deleted from Azure: {blob.name}")
+            return deleted_any
         except Exception as e:
             logger.warning(f"Failed to delete photo from Azure: {e}")
             return False
